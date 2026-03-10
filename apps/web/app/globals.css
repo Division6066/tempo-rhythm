@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* 
+  קובץ העיצוב הגלובלי (Global CSS)
+  מגדיר משתני צבעים (CSS Variables) עבור מצב בהיר (Light) ומצב כהה (Dark).
+  משתמש ב-Tailwind CSS v4 (@theme).
+*/
+
+@theme {
+  /* משתני צבעים - מצב בהיר (ברירת מחדל) */
+  --color-background: #ffffff; /* צבע רקע ראשי */
+  --color-foreground: #09090b; /* צבע טקסט ראשי */
+
+  --color-card: #ffffff; /* צבע רקע לכרטיסים */
+  --color-card-foreground: #09090b; /* צבע טקסט בכרטיסים */
+
+  --color-popover: #ffffff; /* צבע רקע לתפריטים צפים */
+  --color-popover-foreground: #09090b;
+
+  --color-primary: #18181b; /* צבע ראשי (למשל כפתורים) */
+  --color-primary-foreground: #fafafa;
+
+  --color-secondary: #f4f4f5; /* צבע משני */
+  --color-secondary-foreground: #18181b;
+
+  --color-muted: #f4f4f5; /* צבעים לאלמנטים מוחלשים */
+  --color-muted-foreground: #71717a;
+
+  --color-accent: #f4f4f5; /* צבע להדגשה (Hover וכדומה) */
+  --color-accent-foreground: #18181b;
+
+  --color-destructive: #ef4444; /* צבע לפעולות הרסניות (שגיאה/מחיקה) */
+  --color-destructive-foreground: #fafafa;
+
+  --color-border: #e4e4e7; /* צבע גבולות */
+  --color-input: #e4e4e7; /* צבע גבולות לשדות קלט */
+  --color-ring: #09090b; /* צבע טבעת פוקוס */
+
+  /* רדיוסים לפינות (Radius) */
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+}
+
+/* הגדרות עבור מצב כהה (Dark Mode) */
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #09090b;
+    --color-foreground: #fafafa;
+    --color-card: #09090b;
+    --color-card-foreground: #fafafa;
+    --color-popover: #09090b;
+    --color-popover-foreground: #fafafa;
+    --color-primary: #fafafa;
+    --color-primary-foreground: #18181b;
+    --color-secondary: #27272a;
+    --color-secondary-foreground: #fafafa;
+    --color-muted: #27272a;
+    --color-muted-foreground: #a1a1aa;
+    --color-accent: #27272a;
+    --color-accent-foreground: #fafafa;
+    --color-destructive: #7f1d1d;
+    --color-destructive-foreground: #fafafa;
+    --color-border: #27272a;
+    --color-input: #27272a;
+    --color-ring: #d4d4d8;
+  }
+}
+
+/* הגדרות בסיסיות */
+* {
+  @apply border-border; /* החלת צבע גבול ברירת מחדל על כל האלמנטים */
+}
+
+body {
+  @apply bg-background text-foreground; /* צבעי רקע וטקסט ברירת מחדל */
+  font-family: Arial, Helvetica, sans-serif;
+}

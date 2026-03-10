@@ -1,0 +1,21 @@
+{
+  "name": "tempo-rhythm",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:web": "bun --cwd apps/web run dev",
+    "dev:mobile": "bun --cwd apps/mobile run dev",
+    "type-check": "bun --cwd apps/web run type-check && bun --cwd apps/mobile run type-check"
+  },
+  "dependencies": {
+    "@convex-dev/auth": "^0.0.91",
+    "convex": "^1.32.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0"
+  }
+}
