@@ -33,4 +33,6 @@ channel = "stable-25_05"
 
 [userenv.shared]
 OLLAMA_API_URL = "https://api.ollama.com"
-OLLAMA_MODEL = "llama3.1"
+OLLAMA_MODEL = "ministral-3"
+OLLAMA_MODEL_BACKUP = "magistral"
+OLLAMA_COUNCIL_MODELS = "gpt-oss,deepseek-v3.1,qwen3.5,minimax-m2.5,kimi-k2.5,glm-5"

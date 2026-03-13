@@ -13,7 +13,7 @@ import {
   AiGeneratePlanBody,
   AiGeneratePlanResponse,
 } from "@workspace/api-zod";
-import { openai, AI_MODEL } from "@workspace/integrations-openai-ai-server";
+import { callWithFallback, synthesizeCouncil } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
@@ -46,31 +46,36 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     return;
   }
 
-  const ctx = await getContext();
+  try {
+    const ctx = await getContext();
 
-  const completion = await openai.chat.completions.create({
-    model: AI_MODEL,
-    messages: [
+    const response = await callWithFallback([
       {
         role: "system",
         content: `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nMemories:\n${ctx.memories}`,
       },
       { role: "user", content: parsed.data.message },
-    ],
-  });
+    ]);
 
-  const response = completion.choices[0]?.message?.content || "I'm here to help. What would you like to work on?";
-
-  res.json(
-    AiChatResponse.parse({
-      response,
-      suggestions: [
-        "Plan my day",
-        "Help me break this down",
-        "What should I focus on?",
-      ],
-    })
-  );
+    res.json(
+      AiChatResponse.parse({
+        response,
+        suggestions: [
+          "Plan my day",
+          "Help me break this down",
+          "What should I focus on?",
+        ],
+      })
+    );
+  } catch (err) {
+    console.error("AI chat error:", err);
+    res.json(
+      AiChatResponse.parse({
+        response: "I'm here to help. What would you like to work on?",
+        suggestions: ["Plan my day", "Help me break this down", "What should I focus on?"],
+      })
+    );
+  }
 });
 
 router.post("/ai/extract-tasks", async (req, res): Promise<void> => {
@@ -80,22 +85,18 @@ router.post("/ai/extract-tasks", async (req, res): Promise<void> => {
     return;
   }
 
-  const ctx = await getContext();
+  try {
+    const ctx = await getContext();
 
-  const completion = await openai.chat.completions.create({
-    model: AI_MODEL,
-    messages: [
+    const content = await callWithFallback([
       {
         role: "system",
         content: `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nExtract actionable tasks from the user's messy text. Return valid JSON only, no markdown.
 Format: {"tasks": [{"title": "...", "priority": "high|medium|low", "estimatedMinutes": number|null, "tags": ["..."]}]}`,
       },
       { role: "user", content: parsed.data.text },
-    ],
-  });
+    ]);
 
-  try {
-    const content = completion.choices[0]?.message?.content || '{"tasks": []}';
     const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const result = JSON.parse(cleaned);
     res.json(AiExtractTasksResponse.parse(result));
@@ -111,9 +112,8 @@ router.post("/ai/chunk-task", async (req, res): Promise<void> => {
     return;
   }
 
-  const completion = await openai.chat.completions.create({
-    model: AI_MODEL,
-    messages: [
+  try {
+    const content = await callWithFallback([
       {
         role: "system",
         content: `${SYSTEM_PROMPT}\n\nBreak this task into 3-5 small, concrete subtasks that someone with ADHD can actually start. Each should take 10-30 minutes. Return valid JSON only, no markdown.
@@ -123,11 +123,8 @@ Format: {"subtasks": [{"title": "...", "priority": "high|medium|low", "estimated
         role: "user",
         content: `Task: ${parsed.data.taskTitle}${parsed.data.taskNotes ? `\nNotes: ${parsed.data.taskNotes}` : ""}`,
       },
-    ],
-  });
+    ]);
 
-  try {
-    const content = completion.choices[0]?.message?.content || '{"subtasks": [], "reasoning": ""}';
     const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const result = JSON.parse(cleaned);
     res.json(AiChunkTaskResponse.parse(result));
@@ -152,11 +149,10 @@ router.post("/ai/prioritize", async (req, res): Promise<void> => {
     return;
   }
 
-  const ctx = await getContext();
+  try {
+    const ctx = await getContext();
 
-  const completion = await openai.chat.completions.create({
-    model: AI_MODEL,
-    messages: [
+    const content = await callWithFallback([
       {
         role: "system",
         content: `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nPrioritize these tasks for someone with ADHD. Consider: urgency, energy required, quick wins for momentum. Return valid JSON only, no markdown.
@@ -166,11 +162,8 @@ Format: {"orderedTaskIds": [id1, id2, ...], "reasoning": "..."}`,
         role: "user",
         content: JSON.stringify(parsed.data.tasks),
       },
-    ],
-  });
+    ]);
 
-  try {
-    const content = completion.choices[0]?.message?.content || "{}";
     const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const result = JSON.parse(cleaned);
     res.json(AiPrioritizeResponse.parse(result));
@@ -191,44 +184,51 @@ router.post("/ai/generate-plan", async (req, res): Promise<void> => {
     return;
   }
 
-  const ctx = await getContext();
-
-  let taskList: Array<{ id: number; title: string; priority: string; estimatedMinutes: number | null }> = [];
-  if (parsed.data.taskIds && parsed.data.taskIds.length > 0) {
-    const tasks = await db
-      .select()
-      .from(tasksTable)
-      .where(inArray(tasksTable.id, parsed.data.taskIds));
-    taskList = tasks.map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes }));
-  } else {
-    const todayTasks = await db.select().from(tasksTable);
-    taskList = todayTasks
-      .filter((t) => t.status === "today" || t.status === "inbox")
-      .map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes }));
-  }
-
-  const completion = await openai.chat.completions.create({
-    model: AI_MODEL,
-    messages: [
-      {
-        role: "system",
-        content: `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nMemories:\n${ctx.memories}\n\nCreate a realistic, ADHD-friendly daily plan using these template blocks: top3, focusBlock, taskSection, reflection.
-The plan should be achievable and include breaks. Return valid JSON only, no markdown.
-Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."]}, {"type": "focusBlock", "title": "...", "startTime": "HH:MM", "duration": 90, "task": "..."}, {"type": "taskSection", "title": "Quick Wins", "tasks": ["..."]}, {"type": "reflection", "prompt": "..."}], "reasoning": "..."}`,
-      },
-      {
-        role: "user",
-        content: `Date: ${parsed.data.date}\nTasks: ${JSON.stringify(taskList)}`,
-      },
-    ],
-  });
-
   try {
-    const content = completion.choices[0]?.message?.content || "{}";
+    const ctx = await getContext();
+
+    let taskList: Array<{ id: number; title: string; priority: string; estimatedMinutes: number | null }> = [];
+    if (parsed.data.taskIds && parsed.data.taskIds.length > 0) {
+      const tasks = await db
+        .select()
+        .from(tasksTable)
+        .where(inArray(tasksTable.id, parsed.data.taskIds));
+      taskList = tasks.map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes }));
+    } else {
+      const todayTasks = await db.select().from(tasksTable);
+      taskList = todayTasks
+        .filter((t) => t.status === "today" || t.status === "inbox")
+        .map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes }));
+    }
+
+    const useCouncil = req.query.council === "true";
+    const prompt = `Date: ${parsed.data.date}\nTasks: ${JSON.stringify(taskList)}`;
+    const systemContent = `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nMemories:\n${ctx.memories}\n\nCreate a realistic, ADHD-friendly daily plan using these template blocks: top3, focusBlock, taskSection, reflection.
+The plan should be achievable and include breaks. Return valid JSON only, no markdown.
+Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."]}, {"type": "focusBlock", "title": "...", "startTime": "HH:MM", "duration": 90, "task": "..."}, {"type": "taskSection", "title": "Quick Wins", "tasks": ["..."]}, {"type": "reflection", "prompt": "..."}], "reasoning": "..."}`;
+
+    let content: string;
+
+    if (useCouncil) {
+      const council = await synthesizeCouncil(prompt, systemContent, { maxModels: 6 });
+      content = council.synthesis;
+    } else {
+      content = await callWithFallback([
+        { role: "system", content: systemContent },
+        { role: "user", content: prompt },
+      ]);
+    }
+
     const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const result = JSON.parse(cleaned);
     res.json(AiGeneratePlanResponse.parse(result));
   } catch {
+    const parsed2 = AiGeneratePlanBody.parse(req.body);
+    const todayTasks = await db.select().from(tasksTable);
+    const taskList = todayTasks
+      .filter((t) => t.status === "today" || t.status === "inbox")
+      .map((t) => ({ id: t.id, title: t.title }));
+
     res.json(
       AiGeneratePlanResponse.parse({
         blocks: [

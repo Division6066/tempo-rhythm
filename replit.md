@@ -136,17 +136,21 @@ cd lib/db && npx drizzle-kit push --force      # Push schema to PostgreSQL
 
 ## AI Provider
 
-- Uses OpenAI-compatible API (provider-agnostic)
-- Currently configured: Ollama Cloud
+- Uses OpenAI-compatible API (provider-agnostic) via Ollama Cloud
 - Client: `lib/integrations-openai-ai-server/src/client.ts`
-- Model constant exported as `AI_MODEL` from `@workspace/integrations-openai-ai-server`
+- Model priority: Default `ministral-3` → Backup `magistral` (auto-fallback)
+- Council mode (6 models queried in parallel, synthesized): `gpt-oss`, `deepseek-v3.1`, `qwen3.5`, `minimax-m2.5`, `kimi-k2.5`, `glm-5`
+- Council used for daily plan generation via `?council=true` query param
+- Exports: `AI_MODEL`, `AI_MODEL_BACKUP`, `COUNCIL_MODELS`, `callWithFallback`, `callCouncil`, `synthesizeCouncil`
 
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (provided by Replit)
 - `OLLAMA_API_KEY` — Ollama Cloud API key (stored in Replit Secrets)
 - `OLLAMA_API_URL` — Ollama API base URL (default: `https://api.ollama.com`)
-- `OLLAMA_MODEL` — Model name (default: `llama3.1`)
+- `OLLAMA_MODEL` — Default model (set to `ministral-3`)
+- `OLLAMA_MODEL_BACKUP` — Backup model (set to `magistral`)
+- `OLLAMA_COUNCIL_MODELS` — Comma-separated council models (set to `gpt-oss,deepseek-v3.1,qwen3.5,minimax-m2.5,kimi-k2.5,glm-5`)
 - Falls back to `AI_INTEGRATIONS_OPENAI_BASE_URL` / `AI_INTEGRATIONS_OPENAI_API_KEY` if Ollama vars not set
 
 ## Infrastructure Guide
