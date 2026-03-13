@@ -32,8 +32,17 @@ export default function Login() {
     const token = localStorage.getItem("tempo-token");
     if (stored && token) {
       try {
-        setUser(JSON.parse(stored));
-      } catch {}
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.displayName && parsed.planDetails) {
+          setUser(parsed);
+        } else {
+          localStorage.removeItem("tempo-user");
+          localStorage.removeItem("tempo-token");
+        }
+      } catch {
+        localStorage.removeItem("tempo-user");
+        localStorage.removeItem("tempo-token");
+      }
     }
   }, []);
 
