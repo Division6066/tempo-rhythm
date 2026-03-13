@@ -1,0 +1,17 @@
+packages:
+  "framer-motion": "For smooth page transitions, staggered reveals, and scroll animations required for a premium feel"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to safely merge Tailwind CSS classes"
+
+images:
+  - path: "artifacts/tempo-marketing/public/images/hero-abstract.png"
+    description: "Abstract soft gradient mesh in warm off-white, light beige, and subtle violet tones. Very minimal, elegant, clean, high key lighting, smooth flowing curves."
+    aspect_ratio: "16:9"
+  - path: "artifacts/tempo-marketing/public/images/focus-illustration.png"
+    description: "Minimalist elegant line art illustration of a brain or human head in deep focus, surrounded by organized abstract geometric shapes. Warm light off-white background, subtle violet accents, clean."
+    aspect_ratio: "1:1"
+
+notes:
+  - This is a static marketing frontend.
+  - Auth and Onboarding pages use local state and mock progression.
+  - Generous whitespace and elegant typography implemented as per Anthropic/NotePlan inspiration.

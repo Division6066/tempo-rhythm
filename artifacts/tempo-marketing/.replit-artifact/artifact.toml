@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/tempo-marketing/"
+title = "TEMPO Marketing Website"
+version = "1.0.0"
+id = "artifacts/tempo-marketing"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 25015
+name = "web"
+paths = ["/tempo-marketing/"]
+
+[services.development]
+run = "pnpm --filter @workspace/tempo-marketing run dev"
+
+[services.env]
+PORT = "25015"
+BASE_PATH = "/tempo-marketing/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/tempo-marketing", "run", "build"]
+publicDir = "artifacts/tempo-marketing/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

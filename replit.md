@@ -11,6 +11,9 @@ TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily plan
 - `artifacts/tempo/` — Vite React SPA with wouter routing + React Query
 - `lib/` — Shared packages (api-spec, api-client-react, api-zod, db)
 
+### Marketing Website
+- `artifacts/tempo-marketing/` — Vite React SPA marketing site (Anthropic-inspired design) with 7 pages: Home, Features, Pricing, About, Sign Up, Log In, Onboarding wizard
+
 ### Legacy (unused)
 - `tempo-app/` — Previous Convex-based monorepo (Next.js + Expo). Not active.
 
