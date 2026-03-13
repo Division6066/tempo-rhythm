@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "tyPp78kmhnbYgvDst4pqc"
+uri = "file://TEMPO_Infrastructure_Setup_Guide.md"
+type = "text"
+title = "TEMPO Infrastructure Setup Guide"

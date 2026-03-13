@@ -127,7 +127,29 @@ cd lib/api-spec && pnpm run codegen            # Regenerates api-client-react + 
 cd lib/db && npx drizzle-kit push --force      # Push schema to PostgreSQL
 ```
 
+## Authentication
+
+- Admin account: `admin` / `admin1234567` (Pro plan, admin role)
+- 10 beta testers: `beta1`–`beta10` / `beta1234567` (Pro plan, beta_tester role)
+- Session tokens: `tempo-session-{username}` (simple token-based, no expiry — beta phase only)
+- Login endpoint: POST `/api/auth/login`, profile: GET `/api/auth/me`
+
+## AI Provider
+
+- Uses OpenAI-compatible API (provider-agnostic)
+- Currently configured: Ollama Cloud
+- Client: `lib/integrations-openai-ai-server/src/client.ts`
+- Model constant exported as `AI_MODEL` from `@workspace/integrations-openai-ai-server`
+
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (provided by Replit)
-- `OPENAI_API_KEY` — OpenAI API key for AI features
+- `OLLAMA_API_KEY` — Ollama Cloud API key (stored in Replit Secrets)
+- `OLLAMA_API_URL` — Ollama API base URL (default: `https://api.ollama.com`)
+- `OLLAMA_MODEL` — Model name (default: `llama3.1`)
+- Falls back to `AI_INTEGRATIONS_OPENAI_BASE_URL` / `AI_INTEGRATIONS_OPENAI_API_KEY` if Ollama vars not set
+
+## Infrastructure Guide
+
+- `TEMPO_Infrastructure_Setup_Guide.md` — Full setup guide for Convex + Vercel deployment
+- Contains: account creation steps, credentials checklist, schema reference, architecture overview

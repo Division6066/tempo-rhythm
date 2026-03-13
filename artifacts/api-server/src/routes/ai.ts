@@ -13,7 +13,7 @@ import {
   AiGeneratePlanBody,
   AiGeneratePlanResponse,
 } from "@workspace/api-zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openai, AI_MODEL } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
@@ -49,8 +49,7 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
   const ctx = await getContext();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.2",
-    max_completion_tokens: 8192,
+    model: AI_MODEL,
     messages: [
       {
         role: "system",
@@ -84,8 +83,7 @@ router.post("/ai/extract-tasks", async (req, res): Promise<void> => {
   const ctx = await getContext();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.2",
-    max_completion_tokens: 8192,
+    model: AI_MODEL,
     messages: [
       {
         role: "system",
@@ -114,8 +112,7 @@ router.post("/ai/chunk-task", async (req, res): Promise<void> => {
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.2",
-    max_completion_tokens: 8192,
+    model: AI_MODEL,
     messages: [
       {
         role: "system",
@@ -158,8 +155,7 @@ router.post("/ai/prioritize", async (req, res): Promise<void> => {
   const ctx = await getContext();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.2",
-    max_completion_tokens: 8192,
+    model: AI_MODEL,
     messages: [
       {
         role: "system",
@@ -212,8 +208,7 @@ router.post("/ai/generate-plan", async (req, res): Promise<void> => {
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.2",
-    max_completion_tokens: 8192,
+    model: AI_MODEL,
     messages: [
       {
         role: "system",
