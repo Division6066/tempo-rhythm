@@ -3,16 +3,20 @@ import { Progress } from "@/components/ui/progress";
 import TaskCard from "@/components/TaskCard";
 
 export default function TodayView() {
-  const { data: tasks, isLoading } = useListTasks({ status: "today" });
+  const { data: todayActive, isLoading: loadingActive } = useListTasks({ status: "today" });
+  const { data: todayDone, isLoading: loadingDone } = useListTasks({ status: "done" });
 
-  const todayTasks = tasks || [];
-  const completedCount = todayTasks.filter(t => t.status === "done").length;
+  const isLoading = loadingActive || loadingDone;
+  const activeTasks = todayActive || [];
+  const doneTasks = todayDone || [];
+  const todayTasks = [...activeTasks, ...doneTasks];
+  const completedCount = doneTasks.length;
   const progress = todayTasks.length > 0 ? (completedCount / todayTasks.length) * 100 : 0;
 
-  const highPriority = todayTasks.filter(t => t.priority === "high" && t.status !== "done");
-  const mediumPriority = todayTasks.filter(t => t.priority === "medium" && t.status !== "done");
-  const lowPriority = todayTasks.filter(t => t.priority === "low" && t.status !== "done");
-  const completed = todayTasks.filter(t => t.status === "done");
+  const highPriority = activeTasks.filter(t => t.priority === "high");
+  const mediumPriority = activeTasks.filter(t => t.priority === "medium");
+  const lowPriority = activeTasks.filter(t => t.priority === "low");
+  const completed = doneTasks;
 
   if (isLoading) {
     return (

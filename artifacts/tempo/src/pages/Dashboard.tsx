@@ -13,7 +13,7 @@ export default function Dashboard() {
   const { data: projects, isLoading: projectsLoading } = useListProjects();
   const { data: prefs } = useGetPreferences();
 
-  const todayTasks = tasks?.filter(t => t.status === "today") || [];
+  const todayTasks = tasks?.filter(t => t.status === "today" || t.status === "done") || [];
   const inboxTasks = tasks?.filter(t => t.status === "inbox") || [];
   
   const totalToday = todayTasks.length;
