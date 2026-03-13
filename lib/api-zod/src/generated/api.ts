@@ -641,6 +641,112 @@ export const CompleteOnboardingResponse = zod.object({
 });
 
 /**
+ * @summary List pending staged AI suggestions
+ */
+export const listStagedSuggestionsQueryStatusDefault = `pending`;
+
+export const ListStagedSuggestionsQueryParams = zod.object({
+  type: zod.coerce.string().optional(),
+  status: zod
+    .enum(["pending", "accepted", "rejected"])
+    .default(listStagedSuggestionsQueryStatusDefault),
+});
+
+export const ListStagedSuggestionsResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  data: zod.record(zod.string(), zod.unknown()),
+  reasoning: zod.string().nullish(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  createdAt: zod.date(),
+  resolvedAt: zod.date().nullish(),
+});
+export const ListStagedSuggestionsResponse = zod.array(
+  ListStagedSuggestionsResponseItem,
+);
+
+/**
+ * @summary Stage an AI suggestion for review
+ */
+export const CreateStagedSuggestionBody = zod.object({
+  type: zod.string(),
+  data: zod.record(zod.string(), zod.unknown()),
+  reasoning: zod.string().optional(),
+});
+
+/**
+ * @summary Get a staged suggestion by ID
+ */
+export const GetStagedSuggestionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetStagedSuggestionResponse = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  data: zod.record(zod.string(), zod.unknown()),
+  reasoning: zod.string().nullish(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  createdAt: zod.date(),
+  resolvedAt: zod.date().nullish(),
+});
+
+/**
+ * @summary Accept a staged suggestion
+ */
+export const AcceptStagedSuggestionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AcceptStagedSuggestionResponse = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  data: zod.record(zod.string(), zod.unknown()),
+  reasoning: zod.string().nullish(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  createdAt: zod.date(),
+  resolvedAt: zod.date().nullish(),
+});
+
+/**
+ * @summary Reject a staged suggestion
+ */
+export const RejectStagedSuggestionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RejectStagedSuggestionResponse = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  data: zod.record(zod.string(), zod.unknown()),
+  reasoning: zod.string().nullish(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  createdAt: zod.date(),
+  resolvedAt: zod.date().nullish(),
+});
+
+/**
+ * @summary Edit the data of a staged suggestion
+ */
+export const UpdateStagedSuggestionDataParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateStagedSuggestionDataBody = zod.object({
+  data: zod.record(zod.string(), zod.unknown()),
+});
+
+export const UpdateStagedSuggestionDataResponse = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  data: zod.record(zod.string(), zod.unknown()),
+  reasoning: zod.string().nullish(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  createdAt: zod.date(),
+  resolvedAt: zod.date().nullish(),
+});
+
+/**
  * @summary List available plan templates
  */
 export const ListTemplatesResponseItem = zod.object({

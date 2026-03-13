@@ -3,19 +3,26 @@
 import { useState } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import AppLayout from "@/components/AppLayout";
 import TaskCard from "@/components/TaskCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Inbox as InboxIcon, Sparkles, CornerDownLeft, Trash2 } from "lucide-react";
+import { Inbox as InboxIcon, Sparkles, CornerDownLeft, Trash2, Check, X, Edit3 } from "lucide-react";
+
+type StagedTask = { title: string; priority: string; estimatedMinutes?: number; tags?: string[] };
 
 export default function InboxPage() {
   const tasks = useQuery(api.tasks.list, { status: "inbox" });
+  const stagedSuggestions = useQuery(api.staging.listPending, { type: "extractedTasks" });
   const createTask = useMutation(api.tasks.create);
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
   const extractTasks = useAction(api.ai.extractTasks);
+  const createStaged = useMutation(api.staging.create);
+  const acceptStaged = useMutation(api.staging.accept);
+  const rejectStaged = useMutation(api.staging.reject);
 
   const [quickTask, setQuickTask] = useState("");
   const [brainDump, setBrainDump] = useState("");
@@ -35,21 +42,34 @@ export default function InboxPage() {
     try {
       const res = await extractTasks({ text: brainDump });
       if (res.tasks) {
-        for (const t of res.tasks) {
-          await createTask({
-            title: t.title,
-            priority: t.priority,
-            estimatedMinutes: t.estimatedMinutes ?? undefined,
-            status: "inbox",
-            aiGenerated: true,
-          });
-        }
+        await createStaged({
+          type: "extractedTasks",
+          data: { tasks: res.tasks, sourceText: brainDump },
+          reasoning: `Extracted ${res.tasks.length} task(s) from brain dump.`,
+        });
         setBrainDump("");
         setIsDumping(false);
       }
     } finally {
       setExtracting(false);
     }
+  };
+
+  const handleAcceptExtracted = async (suggestionId: Id<"stagedSuggestions">, extractedTasks: StagedTask[]) => {
+    for (const t of extractedTasks) {
+      await createTask({
+        title: t.title,
+        priority: t.priority,
+        estimatedMinutes: t.estimatedMinutes ?? undefined,
+        status: "inbox",
+        aiGenerated: true,
+      });
+    }
+    await acceptStaged({ id: suggestionId });
+  };
+
+  const handleRejectExtracted = async (suggestionId: Id<"stagedSuggestions">) => {
+    await rejectStaged({ id: suggestionId });
   };
 
   return (
@@ -91,6 +111,46 @@ export default function InboxPage() {
             <Sparkles size={16} />
             Brain Dump (AI Extract)
           </Button>
+        )}
+
+        {stagedSuggestions && stagedSuggestions.length > 0 && (
+          <div className="space-y-4">
+            {stagedSuggestions.map((suggestion) => {
+              const extractedTasks = (suggestion.data as { tasks: StagedTask[] }).tasks || [];
+              return (
+                <div key={suggestion._id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                      <Sparkles size={14} />
+                      AI Extracted Tasks ({extractedTasks.length})
+                    </h3>
+                    <span className="text-xs text-muted-foreground">{suggestion.reasoning}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {extractedTasks.map((t: StagedTask, i: number) => (
+                      <div key={i} className="bg-card/50 p-3 rounded-lg flex items-center justify-between border border-border/50">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{t.title}</p>
+                          <div className="flex gap-2 mt-1">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{t.priority}</span>
+                            {t.estimatedMinutes && <span className="text-[10px] text-muted-foreground">{t.estimatedMinutes}m</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2 border-t border-border/30">
+                    <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 gap-1" onClick={() => handleRejectExtracted(suggestion._id)}>
+                      <X size={14} /> Reject All
+                    </Button>
+                    <Button size="sm" className="bg-teal-500 hover:bg-teal-400 text-white gap-1" onClick={() => handleAcceptExtracted(suggestion._id, extractedTasks)}>
+                      <Check size={14} /> Accept All
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
         <div className="space-y-3 mt-8">

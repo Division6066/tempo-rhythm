@@ -9,7 +9,9 @@ import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Clock, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, Sparkles, Trash2, Check, X } from "lucide-react";
+
+type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -19,7 +21,12 @@ export default function TaskDetailPage() {
   const task = useQuery(api.tasks.get, { id: taskId });
   const updateTask = useMutation(api.tasks.update);
   const deleteTask = useMutation(api.tasks.remove);
+  const createTask = useMutation(api.tasks.create);
   const chunkTask = useAction(api.ai.chunkTask);
+  const createStaged = useMutation(api.staging.create);
+  const stagedSuggestions = useQuery(api.staging.listPending, { type: "chunkedTask" });
+  const acceptStaged = useMutation(api.staging.accept);
+  const rejectStaged = useMutation(api.staging.reject);
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -59,14 +66,34 @@ export default function TaskDetailPage() {
     try {
       const res = await chunkTask({ taskTitle: title, taskNotes: notes });
       if (res.subtasks && res.subtasks.length > 0) {
-        const newNotes = notes + "\n\n**AI Chunked Subtasks:**\n" + res.subtasks.map((s: { title: string; estimatedMinutes: number }) => `- [ ] ${s.title} (${s.estimatedMinutes}m)`).join("\n");
-        setNotes(newNotes);
-        await updateTask({ id: taskId, notes: newNotes });
+        await createStaged({
+          type: "chunkedTask",
+          data: { parentTaskId: taskId, subtasks: res.subtasks, reasoning: res.reasoning },
+          reasoning: res.reasoning,
+        });
       }
     } finally {
       setChunking(false);
     }
   };
+
+  const handleAcceptChunks = async (suggestionId: Id<"stagedSuggestions">, subtasks: Subtask[]) => {
+    for (const s of subtasks) {
+      await createTask({
+        title: s.title,
+        priority: s.priority,
+        estimatedMinutes: s.estimatedMinutes,
+        status: task?.status || "inbox",
+        parentTaskId: taskId,
+        aiGenerated: true,
+      });
+    }
+    await acceptStaged({ id: suggestionId });
+  };
+
+  const thisTaskStaged = stagedSuggestions?.filter(
+    (s) => (s.data as { parentTaskId: string }).parentTaskId === taskId
+  ) || [];
 
   if (!task) {
     return (
@@ -126,6 +153,36 @@ export default function TaskDetailPage() {
             </label>
             <Input type="number" value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(e.target.value)} onBlur={handleSave} placeholder="e.g. 30" className="bg-card border-border w-1/3" />
           </div>
+
+          {thisTaskStaged.length > 0 && thisTaskStaged.map((suggestion) => {
+            const data = suggestion.data as { subtasks: Subtask[]; reasoning: string };
+            return (
+              <div key={suggestion._id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                  <Sparkles size={14} /> AI Subtasks
+                </h3>
+                <p className="text-xs text-muted-foreground">{data.reasoning}</p>
+                <div className="space-y-2">
+                  {data.subtasks.map((s, i) => (
+                    <div key={i} className="bg-card/50 p-3 rounded-lg flex items-center justify-between border border-border/50">
+                      <div>
+                        <p className="text-sm font-medium">{s.title}</p>
+                        <span className="text-[10px] text-muted-foreground">{s.estimatedMinutes}m - {s.priority}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-border/30">
+                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 gap-1" onClick={() => rejectStaged({ id: suggestion._id })}>
+                    <X size={14} /> Reject
+                  </Button>
+                  <Button size="sm" className="bg-teal-500 hover:bg-teal-400 text-white gap-1" onClick={() => handleAcceptChunks(suggestion._id, data.subtasks)}>
+                    <Check size={14} /> Accept & Create
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
 
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Notes</label>

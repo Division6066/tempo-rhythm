@@ -1,14 +1,26 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "./_helpers";
 
 export const list = query({
   args: {},
-  handler: async (ctx) => await ctx.db.query("notes").collect(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("notes")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+  },
 });
 
 export const get = query({
   args: { id: v.id("notes") },
-  handler: async (ctx, args) => await ctx.db.get(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const note = await ctx.db.get(args.id);
+    if (!note || note.userId !== userId) return null;
+    return note;
+  },
 });
 
 export const create = mutation({
@@ -22,8 +34,10 @@ export const create = mutation({
     isPinned: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
     const now = Date.now();
     return await ctx.db.insert("notes", {
+      userId,
       title: args.title,
       content: args.content ?? "",
       projectId: args.projectId,
@@ -46,6 +60,9 @@ export const update = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const note = await ctx.db.get(args.id);
+    if (!note || note.userId !== userId) throw new Error("Not found");
     const { id, ...updates } = args;
     const filtered: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [k, val] of Object.entries(updates)) {
@@ -57,5 +74,10 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { id: v.id("notes") },
-  handler: async (ctx, args) => await ctx.db.delete(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const note = await ctx.db.get(args.id);
+    if (!note || note.userId !== userId) throw new Error("Not found");
+    await ctx.db.delete(args.id);
+  },
 });

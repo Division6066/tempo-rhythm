@@ -1,22 +1,30 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "./_helpers";
 
 export const list = query({
   args: { status: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const all = await ctx.db
+      .query("tasks")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
     if (args.status) {
-      return await ctx.db
-        .query("tasks")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
-        .collect();
+      return all.filter((t) => t.status === args.status);
     }
-    return await ctx.db.query("tasks").collect();
+    return all;
   },
 });
 
 export const get = query({
   args: { id: v.id("tasks") },
-  handler: async (ctx, args) => await ctx.db.get(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const task = await ctx.db.get(args.id);
+    if (!task || task.userId !== userId) return null;
+    return task;
+  },
 });
 
 export const create = mutation({
@@ -35,8 +43,10 @@ export const create = mutation({
     aiGenerated: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
     const now = Date.now();
     return await ctx.db.insert("tasks", {
+      userId,
       title: args.title,
       status: args.status ?? "inbox",
       priority: args.priority ?? "medium",
@@ -68,6 +78,9 @@ export const update = mutation({
     scheduledDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const task = await ctx.db.get(args.id);
+    if (!task || task.userId !== userId) throw new Error("Not found");
     const { id, ...updates } = args;
     const filtered: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [k, val] of Object.entries(updates)) {
@@ -79,5 +92,10 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { id: v.id("tasks") },
-  handler: async (ctx, args) => await ctx.db.delete(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const task = await ctx.db.get(args.id);
+    if (!task || task.userId !== userId) throw new Error("Not found");
+    await ctx.db.delete(args.id);
+  },
 });

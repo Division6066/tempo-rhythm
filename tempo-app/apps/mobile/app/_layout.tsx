@@ -1,12 +1,12 @@
 import { Stack } from "expo-router";
-import { ConvexProvider } from "convex/react";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { StatusBar } from "expo-status-bar";
-import { convex } from "../lib/convex";
+import { convex, secureStorage } from "../lib/convex";
 import "../global.css";
 
 export default function RootLayout() {
   return (
-    <ConvexProvider client={convex}>
+    <ConvexAuthProvider client={convex} storage={secureStorage}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -15,6 +15,6 @@ export default function RootLayout() {
           animation: "slide_from_right",
         }}
       />
-    </ConvexProvider>
+    </ConvexAuthProvider>
   );
 }

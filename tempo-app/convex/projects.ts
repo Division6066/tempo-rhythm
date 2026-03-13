@@ -1,14 +1,26 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "./_helpers";
 
 export const list = query({
   args: {},
-  handler: async (ctx) => await ctx.db.query("projects").collect(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("projects")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+  },
 });
 
 export const get = query({
   args: { id: v.id("projects") },
-  handler: async (ctx, args) => await ctx.db.get(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const project = await ctx.db.get(args.id);
+    if (!project || project.userId !== userId) return null;
+    return project;
+  },
 });
 
 export const create = mutation({
@@ -20,8 +32,10 @@ export const create = mutation({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
     const now = Date.now();
     return await ctx.db.insert("projects", {
+      userId,
       name: args.name,
       description: args.description,
       folderId: args.folderId,
@@ -42,6 +56,9 @@ export const update = mutation({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const project = await ctx.db.get(args.id);
+    if (!project || project.userId !== userId) throw new Error("Not found");
     const { id, ...updates } = args;
     const filtered: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [k, val] of Object.entries(updates)) {
@@ -53,5 +70,10 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { id: v.id("projects") },
-  handler: async (ctx, args) => await ctx.db.delete(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const project = await ctx.db.get(args.id);
+    if (!project || project.userId !== userId) throw new Error("Not found");
+    await ctx.db.delete(args.id);
+  },
 });

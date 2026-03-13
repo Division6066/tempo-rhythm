@@ -1,9 +1,16 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "./_helpers";
 
 export const list = query({
   args: {},
-  handler: async (ctx) => await ctx.db.query("memories").collect(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("memories")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+  },
 });
 
 export const create = mutation({
@@ -13,7 +20,9 @@ export const create = mutation({
     decay: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
     return await ctx.db.insert("memories", {
+      userId,
       tier: args.tier ?? "warm",
       content: args.content,
       decay: args.decay ?? 100,
@@ -24,5 +33,10 @@ export const create = mutation({
 
 export const remove = mutation({
   args: { id: v.id("memories") },
-  handler: async (ctx, args) => await ctx.db.delete(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const memory = await ctx.db.get(args.id);
+    if (!memory || memory.userId !== userId) throw new Error("Not found");
+    await ctx.db.delete(args.id);
+  },
 });

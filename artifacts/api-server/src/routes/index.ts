@@ -10,6 +10,7 @@ import preferencesRouter from "./preferences";
 import memoriesRouter from "./memories";
 import templatesRouter from "./templates";
 import aiRouter from "./ai";
+import stagingRouter from "./staging";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(preferencesRouter);
 router.use(memoriesRouter);
 router.use(templatesRouter);
 router.use(aiRouter);
+router.use(stagingRouter);
 
 export default router;

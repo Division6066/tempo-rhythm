@@ -1,11 +1,15 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "./_helpers";
 
 export const get = query({
   args: {},
   handler: async (ctx) => {
-    const all = await ctx.db.query("preferences").collect();
-    return all[0] ?? null;
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
   },
 });
 
@@ -22,7 +26,11 @@ export const upsert = mutation({
     onboardingComplete: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const existing = await ctx.db.query("preferences").first();
+    const userId = await getAuthUserId(ctx);
+    const existing = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
     const now = Date.now();
     const updates: Record<string, unknown> = { updatedAt: now };
     for (const [k, val] of Object.entries(args)) {
@@ -33,6 +41,7 @@ export const upsert = mutation({
       return existing._id;
     }
     return await ctx.db.insert("preferences", {
+      userId,
       wakeTime: args.wakeTime ?? "07:00",
       sleepTime: args.sleepTime ?? "23:00",
       energyPeaks: args.energyPeaks ?? [],

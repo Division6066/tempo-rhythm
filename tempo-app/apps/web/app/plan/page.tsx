@@ -1,33 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useAction } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Sparkles, Check, X, Edit3 } from "lucide-react";
 import { format } from "date-fns";
 
-export default function DailyPlanPage() {
-  const plans = useQuery(api.dailyPlans.list, { date: new Date().toISOString().split("T")[0] });
-  const todayTasks = useQuery(api.tasks.list, { status: "today" });
-  const generatePlan = useAction(api.ai.generatePlan);
+type PlanBlock = { type: string; title?: string; items?: string[]; tasks?: string[]; task?: string; startTime?: string; duration?: number; prompt?: string };
 
-  const [generatedPlan, setGeneratedPlan] = useState<{ blocks: Array<{ type: string; title?: string; items?: string[]; tasks?: string[]; task?: string; startTime?: string; duration?: number; prompt?: string }>; reasoning: string } | null>(null);
+export default function DailyPlanPage() {
+  const todayDate = new Date().toISOString().split("T")[0];
+  const plans = useQuery(api.dailyPlans.list, { date: todayDate });
+  const stagedPlans = useQuery(api.staging.listPending, { type: "dailyPlan" });
+  const generatePlan = useAction(api.ai.generatePlan);
+  const createStaged = useMutation(api.staging.create);
+  const acceptStaged = useMutation(api.staging.accept);
+  const rejectStaged = useMutation(api.staging.reject);
+  const createPlan = useMutation(api.dailyPlans.create);
+
   const [generating, setGenerating] = useState(false);
 
   const existingPlan = plans && plans.length > 0 ? plans[0] : null;
-  const hasPlan = !!existingPlan || !!generatedPlan;
+  const pendingStagedPlan = stagedPlans && stagedPlans.length > 0 ? stagedPlans[0] : null;
+  const hasPlan = !!existingPlan;
 
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const res = await generatePlan({ date: new Date().toISOString().split("T")[0] });
-      setGeneratedPlan(res as typeof generatedPlan);
+      const res = await generatePlan({ date: todayDate });
+      await createStaged({
+        type: "dailyPlan",
+        data: { blocks: res.blocks, date: todayDate },
+        reasoning: res.reasoning,
+      });
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleAcceptPlan = async (suggestionId: Id<"stagedSuggestions">, blocks: PlanBlock[]) => {
+    await createPlan({
+      date: todayDate,
+      blocks,
+      aiGenerated: true,
+    });
+    await acceptStaged({ id: suggestionId });
+  };
+
+  const handleRejectPlan = async (suggestionId: Id<"stagedSuggestions">) => {
+    await rejectStaged({ id: suggestionId });
   };
 
   return (
@@ -43,7 +68,7 @@ export default function DailyPlanPage() {
           </div>
         </div>
 
-        {!hasPlan && (
+        {!hasPlan && !pendingStagedPlan && (
           <Card className="glass border-dashed border-primary/50 text-center py-12">
             <CardContent className="space-y-6">
               <div className="w-20 h-20 bg-primary/10 rounded-full mx-auto flex items-center justify-center">
@@ -63,36 +88,67 @@ export default function DailyPlanPage() {
           </Card>
         )}
 
-        {generatedPlan && !existingPlan && (
-          <div className="space-y-4 animate-in fade-in">
-            <div className="bg-primary/10 border border-primary/30 p-4 rounded-xl">
-              <h3 className="font-semibold text-primary mb-1">AI Reasoning</h3>
-              <p className="text-sm text-foreground/80">{generatedPlan.reasoning}</p>
+        {pendingStagedPlan && !hasPlan && (
+          <div className="space-y-4">
+            <div className="bg-primary/10 border border-primary/30 p-4 rounded-xl flex items-start gap-3">
+              <Sparkles className="text-primary mt-0.5 shrink-0" size={16} />
+              <div>
+                <h3 className="font-semibold text-primary mb-1">AI Suggestion</h3>
+                <p className="text-sm text-foreground/80">{pendingStagedPlan.reasoning}</p>
+              </div>
             </div>
 
             <div className="space-y-4">
-              {generatedPlan.blocks.map((block, i) => (
+              {((pendingStagedPlan.data as { blocks: PlanBlock[] }).blocks || []).map((block: PlanBlock, i: number) => (
                 <Card key={i} className="glass">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">{block.title || block.type}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground">
-                      {JSON.stringify(block, null, 2)}
-                    </pre>
+                    {block.items && (
+                      <ul className="space-y-1">
+                        {block.items.map((item, idx) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {block.tasks && (
+                      <ul className="space-y-1">
+                        {block.tasks.map((task, idx) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />
+                            {task}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {block.task && <p className="text-sm text-muted-foreground">{block.task}</p>}
+                    {block.startTime && <p className="text-xs text-primary mt-2">{block.startTime} - {block.duration}min</p>}
+                    {block.prompt && <p className="text-sm text-muted-foreground italic">{block.prompt}</p>}
                   </CardContent>
                 </Card>
               ))}
             </div>
 
-            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-card border border-border p-2 rounded-full shadow-xl">
-              <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/20 hover:text-destructive rounded-full" onClick={() => setGeneratedPlan(null)}>
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-card border border-border p-2 rounded-full shadow-xl z-50">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:bg-destructive/20 hover:text-destructive rounded-full"
+                onClick={() => handleRejectPlan(pendingStagedPlan._id)}
+                title="Reject plan"
+              >
                 <X size={20} />
               </Button>
-              <Button variant="ghost" size="icon" className="text-foreground hover:bg-white/10 rounded-full">
-                <Edit3 size={20} />
-              </Button>
-              <Button size="icon" className="bg-teal-500 hover:bg-teal-400 text-white rounded-full shadow-lg shadow-teal-500/20">
+              <Button
+                size="icon"
+                className="bg-teal-500 hover:bg-teal-400 text-white rounded-full shadow-lg shadow-teal-500/20"
+                onClick={() => handleAcceptPlan(pendingStagedPlan._id, (pendingStagedPlan.data as { blocks: PlanBlock[] }).blocks)}
+                title="Accept plan"
+              >
                 <Check size={20} />
               </Button>
             </div>
@@ -101,13 +157,30 @@ export default function DailyPlanPage() {
 
         {existingPlan && (
           <div className="space-y-4">
-            {(existingPlan.blocks as Array<{ title?: string; type?: string }>).map((block, i) => (
+            <div className="bg-teal-500/10 border border-teal-500/30 p-3 rounded-xl text-center">
+              <p className="text-sm text-teal-400 font-medium flex items-center justify-center gap-2">
+                <Check size={16} /> Plan accepted
+              </p>
+            </div>
+            {(existingPlan.blocks as PlanBlock[]).map((block: PlanBlock, i: number) => (
               <Card key={i} className="glass">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg text-primary">{block.title || "Block"}</CardTitle>
+                  <CardTitle className="text-lg text-primary">{block.title || block.type || "Block"}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <pre className="whitespace-pre-wrap font-sans text-sm">{JSON.stringify(block, null, 2)}</pre>
+                  {block.items && (
+                    <ul className="space-y-1">
+                      {block.items.map((item, idx) => <li key={idx} className="text-sm text-foreground">{item}</li>)}
+                    </ul>
+                  )}
+                  {block.tasks && (
+                    <ul className="space-y-1">
+                      {block.tasks.map((task, idx) => <li key={idx} className="text-sm text-foreground">{task}</li>)}
+                    </ul>
+                  )}
+                  {block.task && <p className="text-sm text-foreground">{block.task}</p>}
+                  {block.startTime && <p className="text-xs text-primary mt-2">{block.startTime} - {block.duration}min</p>}
+                  {block.prompt && <p className="text-sm text-foreground italic">{block.prompt}</p>}
                 </CardContent>
               </Card>
             ))}

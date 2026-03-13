@@ -8,6 +8,8 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../lib/theme";
 
+type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
+
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -16,7 +18,12 @@ export default function TaskDetailScreen() {
   const task = useQuery(api.tasks.get, { id: taskId });
   const updateTask = useMutation(api.tasks.update);
   const deleteTask = useMutation(api.tasks.remove);
+  const createTask = useMutation(api.tasks.create);
   const chunkTask = useAction(api.ai.chunkTask);
+  const createStaged = useMutation(api.staging.create);
+  const stagedSuggestions = useQuery(api.staging.listPending, { type: "chunkedTask" });
+  const acceptStaged = useMutation(api.staging.accept);
+  const rejectStaged = useMutation(api.staging.reject);
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -49,14 +56,34 @@ export default function TaskDetailScreen() {
     try {
       const res = await chunkTask({ taskTitle: title, taskNotes: notes });
       if (res.subtasks?.length) {
-        const newNotes = notes + "\n\nAI Chunked Subtasks:\n" + res.subtasks.map((s: { title: string; estimatedMinutes: number }) => `- ${s.title} (${s.estimatedMinutes}m)`).join("\n");
-        setNotes(newNotes);
-        await updateTask({ id: taskId, notes: newNotes });
+        await createStaged({
+          type: "chunkedTask",
+          data: { parentTaskId: taskId, subtasks: res.subtasks, reasoning: res.reasoning },
+          reasoning: res.reasoning,
+        });
       }
     } finally {
       setChunking(false);
     }
   };
+
+  const handleAcceptChunks = async (suggestionId: Id<"stagedSuggestions">, subtasks: Subtask[]) => {
+    for (const s of subtasks) {
+      await createTask({
+        title: s.title,
+        priority: s.priority,
+        estimatedMinutes: s.estimatedMinutes,
+        status: task?.status || "inbox",
+        parentTaskId: taskId,
+        aiGenerated: true,
+      });
+    }
+    await acceptStaged({ id: suggestionId });
+  };
+
+  const thisTaskStaged = stagedSuggestions?.filter(
+    (s) => (s.data as { parentTaskId: string }).parentTaskId === taskId
+  ) || [];
 
   if (!task) {
     return (
@@ -118,6 +145,35 @@ export default function TaskDetailScreen() {
             ))}
           </View>
         </View>
+
+        {thisTaskStaged.length > 0 && thisTaskStaged.map((suggestion) => {
+          const data = suggestion.data as { subtasks: Subtask[]; reasoning: string };
+          return (
+            <View key={suggestion._id} style={{ backgroundColor: "rgba(108,99,255,0.08)", borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <Ionicons name="sparkles" size={14} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>AI Subtasks</Text>
+              </View>
+              <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 10 }}>{data.reasoning}</Text>
+              {data.subtasks.map((s, i) => (
+                <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{s.title}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }}>{s.estimatedMinutes}m - {s.priority}</Text>
+                </View>
+              ))}
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <Pressable onPress={() => rejectStaged({ id: suggestion._id })} style={{ flexDirection: "row", alignItems: "center", gap: 4, padding: 10 }}>
+                  <Ionicons name="close" size={16} color={colors.danger} />
+                  <Text style={{ color: colors.danger, fontWeight: "600", fontSize: 13 }}>Reject</Text>
+                </Pressable>
+                <Pressable onPress={() => handleAcceptChunks(suggestion._id, data.subtasks)} style={{ backgroundColor: colors.teal, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Accept</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
 
         <View>
           <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Notes</Text>

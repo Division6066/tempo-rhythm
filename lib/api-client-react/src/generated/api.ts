@@ -32,6 +32,7 @@ import type {
   CreateMemoryBody,
   CreateNoteBody,
   CreateProjectBody,
+  CreateStagedSuggestionBody,
   CreateTagBody,
   CreateTaskBody,
   DailyPlan,
@@ -39,12 +40,14 @@ import type {
   HealthStatus,
   ListDailyPlansParams,
   ListNotesParams,
+  ListStagedSuggestionsParams,
   ListTasksParams,
   MemoryItem,
   Note,
   OnboardingBody,
   PreferenceMemory,
   Project,
+  StagedSuggestion,
   Tag,
   Task,
   Template,
@@ -53,6 +56,7 @@ import type {
   UpdateNoteBody,
   UpdatePreferencesBody,
   UpdateProjectBody,
+  UpdateStagedSuggestionDataBody,
   UpdateTaskBody,
 } from "./api.schemas";
 
@@ -3167,6 +3171,536 @@ export const useCompleteOnboarding = <
   TContext
 > => {
   return useMutation(getCompleteOnboardingMutationOptions(options));
+};
+
+/**
+ * @summary List pending staged AI suggestions
+ */
+export const getListStagedSuggestionsUrl = (
+  params?: ListStagedSuggestionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/staging?${stringifiedParams}`
+    : `/api/staging`;
+};
+
+export const listStagedSuggestions = async (
+  params?: ListStagedSuggestionsParams,
+  options?: RequestInit,
+): Promise<StagedSuggestion[]> => {
+  return customFetch<StagedSuggestion[]>(getListStagedSuggestionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListStagedSuggestionsQueryKey = (
+  params?: ListStagedSuggestionsParams,
+) => {
+  return [`/api/staging`, ...(params ? [params] : [])] as const;
+};
+
+export const getListStagedSuggestionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listStagedSuggestions>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListStagedSuggestionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listStagedSuggestions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListStagedSuggestionsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listStagedSuggestions>>
+  > = ({ signal }) =>
+    listStagedSuggestions(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listStagedSuggestions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListStagedSuggestionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listStagedSuggestions>>
+>;
+export type ListStagedSuggestionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List pending staged AI suggestions
+ */
+
+export function useListStagedSuggestions<
+  TData = Awaited<ReturnType<typeof listStagedSuggestions>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListStagedSuggestionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listStagedSuggestions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListStagedSuggestionsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Stage an AI suggestion for review
+ */
+export const getCreateStagedSuggestionUrl = () => {
+  return `/api/staging`;
+};
+
+export const createStagedSuggestion = async (
+  createStagedSuggestionBody: CreateStagedSuggestionBody,
+  options?: RequestInit,
+): Promise<StagedSuggestion> => {
+  return customFetch<StagedSuggestion>(getCreateStagedSuggestionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createStagedSuggestionBody),
+  });
+};
+
+export const getCreateStagedSuggestionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createStagedSuggestion>>,
+    TError,
+    { data: BodyType<CreateStagedSuggestionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createStagedSuggestion>>,
+  TError,
+  { data: BodyType<CreateStagedSuggestionBody> },
+  TContext
+> => {
+  const mutationKey = ["createStagedSuggestion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createStagedSuggestion>>,
+    { data: BodyType<CreateStagedSuggestionBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createStagedSuggestion(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateStagedSuggestionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createStagedSuggestion>>
+>;
+export type CreateStagedSuggestionMutationBody =
+  BodyType<CreateStagedSuggestionBody>;
+export type CreateStagedSuggestionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Stage an AI suggestion for review
+ */
+export const useCreateStagedSuggestion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createStagedSuggestion>>,
+    TError,
+    { data: BodyType<CreateStagedSuggestionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createStagedSuggestion>>,
+  TError,
+  { data: BodyType<CreateStagedSuggestionBody> },
+  TContext
+> => {
+  return useMutation(getCreateStagedSuggestionMutationOptions(options));
+};
+
+/**
+ * @summary Get a staged suggestion by ID
+ */
+export const getGetStagedSuggestionUrl = (id: number) => {
+  return `/api/staging/${id}`;
+};
+
+export const getStagedSuggestion = async (
+  id: number,
+  options?: RequestInit,
+): Promise<StagedSuggestion> => {
+  return customFetch<StagedSuggestion>(getGetStagedSuggestionUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStagedSuggestionQueryKey = (id: number) => {
+  return [`/api/staging/${id}`] as const;
+};
+
+export const getGetStagedSuggestionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStagedSuggestion>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStagedSuggestion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStagedSuggestionQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getStagedSuggestion>>
+  > = ({ signal }) => getStagedSuggestion(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStagedSuggestion>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStagedSuggestionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStagedSuggestion>>
+>;
+export type GetStagedSuggestionQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get a staged suggestion by ID
+ */
+
+export function useGetStagedSuggestion<
+  TData = Awaited<ReturnType<typeof getStagedSuggestion>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStagedSuggestion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStagedSuggestionQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Accept a staged suggestion
+ */
+export const getAcceptStagedSuggestionUrl = (id: number) => {
+  return `/api/staging/${id}/accept`;
+};
+
+export const acceptStagedSuggestion = async (
+  id: number,
+  options?: RequestInit,
+): Promise<StagedSuggestion> => {
+  return customFetch<StagedSuggestion>(getAcceptStagedSuggestionUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getAcceptStagedSuggestionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptStagedSuggestion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acceptStagedSuggestion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["acceptStagedSuggestion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acceptStagedSuggestion>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return acceptStagedSuggestion(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcceptStagedSuggestionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acceptStagedSuggestion>>
+>;
+
+export type AcceptStagedSuggestionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Accept a staged suggestion
+ */
+export const useAcceptStagedSuggestion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptStagedSuggestion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acceptStagedSuggestion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAcceptStagedSuggestionMutationOptions(options));
+};
+
+/**
+ * @summary Reject a staged suggestion
+ */
+export const getRejectStagedSuggestionUrl = (id: number) => {
+  return `/api/staging/${id}/reject`;
+};
+
+export const rejectStagedSuggestion = async (
+  id: number,
+  options?: RequestInit,
+): Promise<StagedSuggestion> => {
+  return customFetch<StagedSuggestion>(getRejectStagedSuggestionUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRejectStagedSuggestionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectStagedSuggestion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof rejectStagedSuggestion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["rejectStagedSuggestion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof rejectStagedSuggestion>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return rejectStagedSuggestion(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RejectStagedSuggestionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof rejectStagedSuggestion>>
+>;
+
+export type RejectStagedSuggestionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reject a staged suggestion
+ */
+export const useRejectStagedSuggestion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectStagedSuggestion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof rejectStagedSuggestion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getRejectStagedSuggestionMutationOptions(options));
+};
+
+/**
+ * @summary Edit the data of a staged suggestion
+ */
+export const getUpdateStagedSuggestionDataUrl = (id: number) => {
+  return `/api/staging/${id}/data`;
+};
+
+export const updateStagedSuggestionData = async (
+  id: number,
+  updateStagedSuggestionDataBody: UpdateStagedSuggestionDataBody,
+  options?: RequestInit,
+): Promise<StagedSuggestion> => {
+  return customFetch<StagedSuggestion>(getUpdateStagedSuggestionDataUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateStagedSuggestionDataBody),
+  });
+};
+
+export const getUpdateStagedSuggestionDataMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateStagedSuggestionData>>,
+    TError,
+    { id: number; data: BodyType<UpdateStagedSuggestionDataBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateStagedSuggestionData>>,
+  TError,
+  { id: number; data: BodyType<UpdateStagedSuggestionDataBody> },
+  TContext
+> => {
+  const mutationKey = ["updateStagedSuggestionData"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateStagedSuggestionData>>,
+    { id: number; data: BodyType<UpdateStagedSuggestionDataBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateStagedSuggestionData(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateStagedSuggestionDataMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateStagedSuggestionData>>
+>;
+export type UpdateStagedSuggestionDataMutationBody =
+  BodyType<UpdateStagedSuggestionDataBody>;
+export type UpdateStagedSuggestionDataMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Edit the data of a staged suggestion
+ */
+export const useUpdateStagedSuggestionData = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateStagedSuggestionData>>,
+    TError,
+    { id: number; data: BodyType<UpdateStagedSuggestionDataBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateStagedSuggestionData>>,
+  TError,
+  { id: number; data: BodyType<UpdateStagedSuggestionDataBody> },
+  TContext
+> => {
+  return useMutation(getUpdateStagedSuggestionDataMutationOptions(options));
 };
 
 /**

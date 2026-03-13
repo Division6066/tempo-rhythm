@@ -27,6 +27,8 @@ tags:
     description: AI assistant endpoints
   - name: onboarding
     description: Onboarding flow
+  - name: staging
+    description: AI suggestion staging (Accept/Edit/Reject)
 
 paths:
   /healthz:
@@ -724,6 +726,137 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PreferenceMemory"
+
+  /staging:
+    get:
+      operationId: listStagedSuggestions
+      tags: [staging]
+      summary: List pending staged AI suggestions
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, accepted, rejected]
+            default: pending
+      responses:
+        "200":
+          description: List of staged suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StagedSuggestion"
+    post:
+      operationId: createStagedSuggestion
+      tags: [staging]
+      summary: Stage an AI suggestion for review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStagedSuggestionBody"
+      responses:
+        "201":
+          description: Created staged suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagedSuggestion"
+
+  /staging/{id}:
+    get:
+      operationId: getStagedSuggestion
+      tags: [staging]
+      summary: Get a staged suggestion by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Staged suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagedSuggestion"
+
+  /staging/{id}/accept:
+    post:
+      operationId: acceptStagedSuggestion
+      tags: [staging]
+      summary: Accept a staged suggestion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagedSuggestion"
+
+  /staging/{id}/reject:
+    post:
+      operationId: rejectStagedSuggestion
+      tags: [staging]
+      summary: Reject a staged suggestion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagedSuggestion"
+
+  /staging/{id}/data:
+    patch:
+      operationId: updateStagedSuggestionData
+      tags: [staging]
+      summary: Edit the data of a staged suggestion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  additionalProperties: true
+              required:
+                - data
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagedSuggestion"
 
   /templates:
     get:
@@ -1500,3 +1633,47 @@ components:
         - type
         - content
         - isDefault
+
+    StagedSuggestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        reasoning:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - type
+        - data
+        - status
+        - createdAt
+
+    CreateStagedSuggestionBody:
+      type: object
+      properties:
+        type:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        reasoning:
+          type: string
+      required:
+        - type
+        - data

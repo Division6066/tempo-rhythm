@@ -456,6 +456,35 @@ export interface Template {
   isDefault: boolean;
 }
 
+export type StagedSuggestionData = { [key: string]: unknown };
+
+export type StagedSuggestionStatus =
+  (typeof StagedSuggestionStatus)[keyof typeof StagedSuggestionStatus];
+
+export const StagedSuggestionStatus = {
+  pending: "pending",
+  accepted: "accepted",
+  rejected: "rejected",
+} as const;
+
+export interface StagedSuggestion {
+  id: number;
+  type: string;
+  data: StagedSuggestionData;
+  reasoning?: string | null;
+  status: StagedSuggestionStatus;
+  createdAt: string;
+  resolvedAt?: string | null;
+}
+
+export type CreateStagedSuggestionBodyData = { [key: string]: unknown };
+
+export interface CreateStagedSuggestionBody {
+  type: string;
+  data: CreateStagedSuggestionBodyData;
+  reasoning?: string;
+}
+
 export type ListTasksParams = {
   status?: ListTasksStatus;
   projectId?: number;
@@ -480,4 +509,24 @@ export type ListNotesParams = {
 
 export type ListDailyPlansParams = {
   date?: string;
+};
+
+export type ListStagedSuggestionsParams = {
+  type?: string;
+  status?: ListStagedSuggestionsStatus;
+};
+
+export type ListStagedSuggestionsStatus =
+  (typeof ListStagedSuggestionsStatus)[keyof typeof ListStagedSuggestionsStatus];
+
+export const ListStagedSuggestionsStatus = {
+  pending: "pending",
+  accepted: "accepted",
+  rejected: "rejected",
+} as const;
+
+export type UpdateStagedSuggestionDataBodyData = { [key: string]: unknown };
+
+export type UpdateStagedSuggestionDataBody = {
+  data: UpdateStagedSuggestionDataBodyData;
 };

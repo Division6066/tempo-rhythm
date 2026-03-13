@@ -1,9 +1,16 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "./_helpers";
 
 export const list = query({
   args: {},
-  handler: async (ctx) => await ctx.db.query("folders").collect(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("folders")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+  },
 });
 
 export const create = mutation({
@@ -13,7 +20,9 @@ export const create = mutation({
     parentFolderId: v.optional(v.id("folders")),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
     return await ctx.db.insert("folders", {
+      userId,
       name: args.name,
       description: args.description,
       parentFolderId: args.parentFolderId,
@@ -29,6 +38,9 @@ export const update = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const folder = await ctx.db.get(args.id);
+    if (!folder || folder.userId !== userId) throw new Error("Not found");
     const { id, ...updates } = args;
     const filtered: Record<string, unknown> = {};
     for (const [k, val] of Object.entries(updates)) {
@@ -40,5 +52,10 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { id: v.id("folders") },
-  handler: async (ctx, args) => await ctx.db.delete(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const folder = await ctx.db.get(args.id);
+    if (!folder || folder.userId !== userId) throw new Error("Not found");
+    await ctx.db.delete(args.id);
+  },
 });

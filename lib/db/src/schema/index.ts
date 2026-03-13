@@ -6,3 +6,4 @@ export * from "./tags";
 export * from "./dailyPlans";
 export * from "./preferences";
 export * from "./memories";
+export * from "./stagedSuggestions";

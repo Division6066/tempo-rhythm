@@ -1,22 +1,33 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "./_helpers";
 
 export const list = query({
   args: { date: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
     if (args.date) {
       return await ctx.db
         .query("dailyPlans")
         .withIndex("by_date", (q) => q.eq("date", args.date!))
+        .filter((q) => q.eq(q.field("userId"), userId))
         .collect();
     }
-    return await ctx.db.query("dailyPlans").collect();
+    return await ctx.db
+      .query("dailyPlans")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
   },
 });
 
 export const get = query({
   args: { id: v.id("dailyPlans") },
-  handler: async (ctx, args) => await ctx.db.get(args.id),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const plan = await ctx.db.get(args.id);
+    if (!plan || plan.userId !== userId) return null;
+    return plan;
+  },
 });
 
 export const create = mutation({
@@ -28,8 +39,10 @@ export const create = mutation({
     aiGenerated: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
     const now = Date.now();
     return await ctx.db.insert("dailyPlans", {
+      userId,
       date: args.date,
       blocks: args.blocks ?? [],
       mood: args.mood,
@@ -50,6 +63,9 @@ export const update = mutation({
     acceptedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const plan = await ctx.db.get(args.id);
+    if (!plan || plan.userId !== userId) throw new Error("Not found");
     const { id, ...updates } = args;
     const filtered: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [k, val] of Object.entries(updates)) {

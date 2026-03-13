@@ -3,16 +3,23 @@ import { View, Text, ScrollView, Pressable, TextInput, Alert } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../lib/theme";
 
+type StagedTask = { title: string; priority: string; estimatedMinutes?: number };
+
 export default function InboxScreen() {
   const tasks = useQuery(api.tasks.list, { status: "inbox" });
+  const stagedSuggestions = useQuery(api.staging.listPending, { type: "extractedTasks" });
   const createTask = useMutation(api.tasks.create);
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
   const extractTasks = useAction(api.ai.extractTasks);
+  const createStaged = useMutation(api.staging.create);
+  const acceptStaged = useMutation(api.staging.accept);
+  const rejectStaged = useMutation(api.staging.reject);
   const router = useRouter();
 
   const [quickTask, setQuickTask] = useState("");
@@ -32,15 +39,30 @@ export default function InboxScreen() {
     try {
       const res = await extractTasks({ text: brainDump });
       if (res.tasks) {
-        for (const t of res.tasks) {
-          await createTask({ title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes ?? undefined, status: "inbox", aiGenerated: true });
-        }
+        await createStaged({
+          type: "extractedTasks",
+          data: { tasks: res.tasks, sourceText: brainDump },
+          reasoning: `Extracted ${res.tasks.length} task(s) from brain dump.`,
+        });
         setBrainDump("");
         setShowDump(false);
       }
     } finally {
       setExtracting(false);
     }
+  };
+
+  const handleAcceptExtracted = async (suggestionId: Id<"stagedSuggestions">, extractedTasks: StagedTask[]) => {
+    for (const t of extractedTasks) {
+      await createTask({
+        title: t.title,
+        priority: t.priority,
+        estimatedMinutes: t.estimatedMinutes ?? undefined,
+        status: "inbox",
+        aiGenerated: true,
+      });
+    }
+    await acceptStaged({ id: suggestionId });
   };
 
   return (
@@ -94,6 +116,39 @@ export default function InboxScreen() {
           </Pressable>
         )}
 
+        {stagedSuggestions && stagedSuggestions.length > 0 && stagedSuggestions.map((suggestion) => {
+          const extractedTasks = (suggestion.data as { tasks: StagedTask[] }).tasks || [];
+          return (
+            <View key={suggestion._id} style={{ backgroundColor: "rgba(108,99,255,0.08)", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                <Ionicons name="sparkles" size={14} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>AI Extracted Tasks ({extractedTasks.length})</Text>
+              </View>
+              {extractedTasks.map((t: StagedTask, i: number) => (
+                <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{t.title}</Text>
+                  <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
+                    <View style={{ backgroundColor: "rgba(108,99,255,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "600" }}>{t.priority}</Text>
+                    </View>
+                    {t.estimatedMinutes && <Text style={{ color: colors.muted, fontSize: 10 }}>{t.estimatedMinutes}m</Text>}
+                  </View>
+                </View>
+              ))}
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <Pressable onPress={() => rejectStaged({ id: suggestion._id })} style={{ flexDirection: "row", alignItems: "center", gap: 4, padding: 10 }}>
+                  <Ionicons name="close" size={16} color={colors.danger} />
+                  <Text style={{ color: colors.danger, fontWeight: "600", fontSize: 13 }}>Reject</Text>
+                </Pressable>
+                <Pressable onPress={() => handleAcceptExtracted(suggestion._id, extractedTasks)} style={{ backgroundColor: colors.teal, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Accept</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
+
         {tasks?.map((task) => (
           <Pressable
             key={task._id}
@@ -118,7 +173,7 @@ export default function InboxScreen() {
             </Pressable>
           </Pressable>
         ))}
-        {tasks && tasks.length === 0 && (
+        {tasks && tasks.length === 0 && !stagedSuggestions?.length && (
           <View style={{ padding: 40, alignItems: "center" }}>
             <Text style={{ color: colors.muted, fontSize: 14 }}>Inbox is empty.</Text>
           </View>
