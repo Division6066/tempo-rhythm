@@ -229,7 +229,7 @@ export default function Login() {
                   type="text"
                   required
                   autoComplete="username"
-                  placeholder="admin"
+                  placeholder="admin1234567"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-background border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"

@@ -129,7 +129,7 @@ cd lib/db && npx drizzle-kit push --force      # Push schema to PostgreSQL
 
 ## Authentication
 
-- Admin account: `admin` / `admin1234567` (Pro plan, admin role)
+- Admin account: `admin1234567` / `admin1234567` (Pro plan, admin role)
 - 10 beta testers: `beta1`–`beta10` / `beta1234567` (Pro plan, beta_tester role)
 - Session tokens: `tempo-session-{username}` (simple token-based, no expiry — beta phase only)
 - Login endpoint: POST `/api/auth/login`, profile: GET `/api/auth/me`

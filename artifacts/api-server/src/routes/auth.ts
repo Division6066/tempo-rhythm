@@ -3,7 +3,7 @@ import { Router, type IRouter } from "express";
 const router: IRouter = Router();
 
 const BETA_USERS = [
-  { username: "admin", password: "admin1234567", displayName: "Admin", email: "admin@tempo.app" },
+  { username: "admin1234567", password: "admin1234567", displayName: "Admin", email: "admin@tempo.app" },
   { username: "beta1", password: "beta1234567", displayName: "Sarah Chen", email: "sarah@tempo.app" },
   { username: "beta2", password: "beta1234567", displayName: "Alex Rivera", email: "alex@tempo.app" },
   { username: "beta3", password: "beta1234567", displayName: "Jordan Kim", email: "jordan@tempo.app" },
