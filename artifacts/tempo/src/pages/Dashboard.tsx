@@ -2,8 +2,7 @@ import { useListTasks, useListProjects, useGetPreferences } from "@workspace/api
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { ChevronRight, Inbox, Sparkles, Sun, ListTodo } from "lucide-react";
+import { ChevronRight, Inbox, Sparkles, Sun, ListTodo, Timer, Brain, Zap, Battery, BatteryLow, BatteryMedium } from "lucide-react";
 import { format } from "date-fns";
 import TaskCard from "@/components/TaskCard";
 import { Button } from "@/components/ui/button";
@@ -19,9 +18,16 @@ export default function Dashboard() {
   const totalToday = todayTasks.length;
   const doneToday = todayTasks.filter(t => t.status === "done").length;
   const progress = totalToday === 0 ? 0 : (doneToday / totalToday) * 100;
-  
   const inboxCount = inboxTasks.length;
   
+  const top3 = todayTasks
+    .filter(t => t.status !== "done")
+    .sort((a, b) => {
+      const pOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+      return (pOrder[a.priority] ?? 2) - (pOrder[b.priority] ?? 2);
+    })
+    .slice(0, 3);
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -54,7 +60,6 @@ export default function Dashboard() {
         )}
       </header>
 
-      {/* Progress Section */}
       <Card className="glass border-primary/20 shadow-lg shadow-black/20 overflow-hidden relative">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
         <CardContent className="p-6">
@@ -78,7 +83,7 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold mb-1">Today's Progress</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 {doneToday === totalToday && totalToday > 0 
-                  ? "All done for today! 🎉" 
+                  ? "All done for today!" 
                   : "Keep going, you're doing great!"}
               </p>
               <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
@@ -89,50 +94,82 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="glass border-border/50">
-          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-            <Sun className="text-amber-400 mb-2 h-5 w-5" />
-            <span className="text-2xl font-bold">{totalToday}</span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Today</span>
-          </CardContent>
-        </Card>
-        <Card className="glass border-border/50">
-          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-            <Inbox className="text-blue-400 mb-2 h-5 w-5" />
-            <span className="text-2xl font-bold">{inboxCount}</span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Inbox</span>
-          </CardContent>
-        </Card>
-        <Card className="glass border-border/50">
-          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-            <ListTodo className="text-teal-400 mb-2 h-5 w-5" />
-            <span className="text-2xl font-bold">{projects?.filter(p => p.status === 'active').length || 0}</span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Projects</span>
-          </CardContent>
-        </Card>
+        <Link href="/today">
+          <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
+            <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+              <Sun className="text-amber-400 mb-2 h-5 w-5" />
+              <span className="text-2xl font-bold">{totalToday}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Today</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/inbox">
+          <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
+            <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+              <Inbox className="text-blue-400 mb-2 h-5 w-5" />
+              <span className="text-2xl font-bold">{inboxCount}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Inbox</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/projects">
+          <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
+            <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+              <ListTodo className="text-teal-400 mb-2 h-5 w-5" />
+              <span className="text-2xl font-bold">{projects?.filter(p => p.status === 'active').length || 0}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Projects</span>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      {/* AI Assistant Promo */}
-      <Link href="/chat" className="block">
-        <Card className="bg-gradient-to-r from-card to-primary/10 border-primary/30 hover:border-primary/50 transition-colors cursor-pointer shadow-lg shadow-black/20 group">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                <Sparkles size={24} />
-              </div>
-              <div>
-                <h3 className="font-medium text-foreground text-lg">AI Assistant</h3>
-                <p className="text-sm text-muted-foreground">Chat, plan, or chunk tasks</p>
+      {top3.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Zap size={16} className="text-amber-400" />
+            <h3 className="font-semibold text-foreground">Top 3 — Focus on these</h3>
+          </div>
+          {top3.map((task, i) => (
+            <div key={task.id} className="flex items-center gap-3">
+              <span className="text-lg font-display font-bold text-primary w-6 text-center">{i + 1}</span>
+              <div className="flex-1">
+                <TaskCard task={task} />
               </div>
             </div>
-            <ChevronRight className="text-muted-foreground group-hover:text-primary transition-colors" />
-          </CardContent>
-        </Card>
-      </Link>
+          ))}
+        </div>
+      )}
 
-      {/* Up Next */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/focus">
+          <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform">
+                <Timer size={20} />
+              </div>
+              <div>
+                <h3 className="font-medium text-sm">Focus Timer</h3>
+                <p className="text-xs text-muted-foreground">Start a session</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/chat">
+          <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h3 className="font-medium text-sm">AI Assistant</h3>
+                <p className="text-xs text-muted-foreground">Chat or plan</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Up Next</h3>
@@ -140,9 +177,8 @@ export default function Dashboard() {
             <span className="text-xs text-primary font-medium hover:underline cursor-pointer">View all</span>
           </Link>
         </div>
-        
         <div className="space-y-3">
-          {todayTasks.filter(t => t.status !== "done").slice(0, 3).map(task => (
+          {todayTasks.filter(t => t.status !== "done").slice(0, 5).map(task => (
             <TaskCard key={task.id} task={task} />
           ))}
           {todayTasks.filter(t => t.status !== "done").length === 0 && (

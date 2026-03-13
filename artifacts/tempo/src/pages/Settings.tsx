@@ -7,17 +7,25 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings as SettingsIcon, BrainCircuit, Clock, Moon, Sun, Calendar, StickyNote, Filter, LayoutTemplate, FileText, FolderKanban, MessageSquare, ChevronRight } from "lucide-react";
+import {
+  Settings as SettingsIcon, BrainCircuit, Clock, Moon, Sun, Calendar,
+  StickyNote, Filter, LayoutTemplate, FileText, FolderKanban, MessageSquare,
+  ChevronRight, FolderOpen, Tag, Brain, Timer, Zap
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const NAV_LINKS = [
   { label: "Notes", icon: FileText, path: "/notes" },
   { label: "Projects", icon: FolderKanban, path: "/projects" },
+  { label: "Areas / Folders", icon: FolderOpen, path: "/folders" },
+  { label: "Tags", icon: Tag, path: "/tags" },
   { label: "Period Notes", icon: StickyNote, path: "/period-notes" },
   { label: "Task Filters", icon: Filter, path: "/filters" },
   { label: "Templates", icon: LayoutTemplate, path: "/templates" },
   { label: "Daily Plan", icon: Calendar, path: "/plan" },
+  { label: "Focus Timer", icon: Timer, path: "/focus" },
   { label: "AI Chat", icon: MessageSquare, path: "/chat" },
+  { label: "AI Memory", icon: Brain, path: "/memories" },
 ];
 
 export default function Settings() {
@@ -53,12 +61,10 @@ export default function Settings() {
 
   const handleSave = async () => {
     try {
-      await updatePrefs.mutateAsync({
-        data: formData
-      });
+      await updatePrefs.mutateAsync({ data: formData });
       queryClient.invalidateQueries({ queryKey: getGetPreferencesQueryKey() });
       toast({ title: "Settings saved" });
-    } catch (e) {
+    } catch {
       toast({ variant: "destructive", title: "Failed to save settings" });
     }
   };
@@ -112,8 +118,9 @@ export default function Settings() {
 
       <Card className="glass border-border/50">
         <CardContent className="p-6 space-y-6">
-          <h2 className="font-semibold text-lg border-b border-border/50 pb-2">Routine</h2>
-          
+          <h2 className="font-semibold text-lg border-b border-border/50 pb-2 flex items-center gap-2">
+            <Clock size={18} className="text-muted-foreground" /> Routine
+          </h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-2"><Sun size={16}/> Wake Time</Label>
@@ -139,11 +146,12 @@ export default function Settings() {
 
       <Card className="glass border-border/50">
         <CardContent className="p-6 space-y-6">
-          <h2 className="font-semibold text-lg border-b border-border/50 pb-2">Focus Sessions</h2>
-          
+          <h2 className="font-semibold text-lg border-b border-border/50 pb-2 flex items-center gap-2">
+            <Timer size={18} className="text-muted-foreground" /> Focus Sessions
+          </h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2"><Clock size={16}/> Focus (min)</Label>
+              <Label className="flex items-center gap-2"><Zap size={16} className="text-primary"/> Focus (min)</Label>
               <Input 
                 type="number" 
                 value={formData.focusSessionMinutes}

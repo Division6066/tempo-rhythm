@@ -6,6 +6,8 @@ import { QuickCapture } from "../QuickCapture";
 import CommandBar from "../CommandBar";
 import { useGetPreferences } from "@workspace/api-client-react";
 
+const MORE_PATHS = ["/settings", "/projects", "/notes", "/chat", "/plan", "/period-notes", "/filters", "/templates", "/folders", "/tags", "/memories", "/focus"];
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
@@ -20,6 +22,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       setLocation("/onboarding");
     }
   }, [preferences, location, setLocation]);
+
+  const isMoreActive = MORE_PATHS.some(p => location === p || location.startsWith("/projects/"));
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground pb-20">
@@ -70,7 +74,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </Link>
         <Link href="/settings">
-          <div className={`flex flex-col items-center justify-center w-full h-full min-h-[44px] min-w-[44px] cursor-pointer ${["/settings", "/projects", "/notes", "/chat", "/plan", "/period-notes", "/filters", "/templates"].includes(location) ? "text-primary" : "text-muted-foreground"}`}>
+          <div className={`flex flex-col items-center justify-center w-full h-full min-h-[44px] min-w-[44px] cursor-pointer ${isMoreActive ? "text-primary" : "text-muted-foreground"}`}>
             <MoreHorizontal size={24} />
             <span className="text-[10px] mt-1 font-medium">More</span>
           </div>

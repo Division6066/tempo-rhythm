@@ -11,6 +11,7 @@ import TaskDetail from "@/pages/TaskDetail";
 import Notes from "@/pages/Notes";
 import NoteEditor from "@/pages/NoteEditor";
 import Projects from "@/pages/Projects";
+import ProjectDetail from "@/pages/ProjectDetail";
 import Chat from "@/pages/Chat";
 import Settings from "@/pages/Settings";
 import Onboarding from "@/pages/Onboarding";
@@ -20,6 +21,10 @@ import PeriodNotes from "@/pages/PeriodNotes";
 import TaskFilters from "@/pages/TaskFilters";
 import NoteTemplates from "@/pages/NoteTemplates";
 import PublishedNote from "@/pages/PublishedNote";
+import FocusSession from "@/pages/FocusSession";
+import Folders from "@/pages/Folders";
+import Tags from "@/pages/Tags";
+import Memories from "@/pages/Memories";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -54,6 +59,9 @@ function Router() {
       <Route path="/projects">
         <AppLayout><Projects /></AppLayout>
       </Route>
+      <Route path="/projects/:id">
+        <AppLayout><ProjectDetail /></AppLayout>
+      </Route>
       <Route path="/chat">
         <AppLayout><Chat /></AppLayout>
       </Route>
@@ -74,6 +82,18 @@ function Router() {
       </Route>
       <Route path="/templates">
         <AppLayout><NoteTemplates /></AppLayout>
+      </Route>
+      <Route path="/focus">
+        <AppLayout><FocusSession /></AppLayout>
+      </Route>
+      <Route path="/folders">
+        <AppLayout><Folders /></AppLayout>
+      </Route>
+      <Route path="/tags">
+        <AppLayout><Tags /></AppLayout>
+      </Route>
+      <Route path="/memories">
+        <AppLayout><Memories /></AppLayout>
       </Route>
       
       <Route component={NotFound} />

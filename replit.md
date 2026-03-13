@@ -50,18 +50,23 @@ artifacts/
 │       └── transcribe.ts     # Voice transcription proxy (server-side)
 ├── tempo/src/
 │   ├── pages/
-│   │   ├── Dashboard.tsx     # Home with progress ring + stats
+│   │   ├── Dashboard.tsx     # Home with progress ring + Top 3 focus tasks + quick actions
 │   │   ├── TodayView.tsx     # Today's tasks by priority
 │   │   ├── Inbox.tsx         # Quick capture + brain dump + staging
-│   │   ├── Chat.tsx          # AI chat interface
-│   │   ├── DailyPlan.tsx     # AI plan generation + staging
+│   │   ├── Chat.tsx          # AI chat with localStorage persistence, quick prompts, memory panel
+│   │   ├── DailyPlan.tsx     # AI plan generation + accept/edit/reject staging
 │   │   ├── TaskDetail.tsx    # Task editor + AI chunking + time blocking + recurrence
 │   │   ├── Notes.tsx         # Notes list
 │   │   ├── NoteEditor.tsx    # Note editor with backlinks, publish, wiki-links, tags/@mentions
-│   │   ├── Projects.tsx      # Projects list
-│   │   ├── Settings.tsx      # Settings + navigation hub to features
-│   │   ├── Onboarding.tsx    # Multi-step setup flow
-│   │   ├── Calendar.tsx      # Monthly calendar view with events + tasks
+│   │   ├── Projects.tsx      # Projects list with progress bars + detail navigation
+│   │   ├── ProjectDetail.tsx # Project detail with linked tasks/notes, progress, archive/delete
+│   │   ├── Settings.tsx      # Settings + navigation hub (11 feature links)
+│   │   ├── Onboarding.tsx    # 6-step setup (ADHD, style, schedule, energy peaks, summary)
+│   │   ├── Calendar.tsx      # Month/week toggle, event CRUD, task/event indicators
+│   │   ├── FocusSession.tsx  # Pomodoro timer with task selection + session tracking
+│   │   ├── Folders.tsx       # Areas/folders CRUD with icons
+│   │   ├── Tags.tsx          # Tag management with color picker
+│   │   ├── Memories.tsx      # AI memory viewer (warm/cold tiers)
 │   │   ├── PeriodNotes.tsx   # Weekly/Monthly/Yearly period notes
 │   │   ├── TaskFilters.tsx   # Advanced task filters with save/load
 │   │   ├── NoteTemplates.tsx # Note templates (built-in + custom)
@@ -89,7 +94,7 @@ lib/
 
 ## Features
 
-1. **Calendar View** — Monthly calendar with event creation, task visualization
+1. **Calendar View** — Month/week toggle, event CRUD, task/event indicator dots, sorted day panel
 2. **Period Notes** — Weekly/Monthly/Yearly notes with auto-generated titles
 3. **Bi-directional Note Linking** — Link notes together, see incoming/outgoing connections
 4. **Command Bar** — Cmd+K global search and quick navigation
@@ -102,6 +107,14 @@ lib/
 11. **Voice Notes** — Browser recording with server-side transcription proxy (no client-side API keys)
 12. **Wiki-link Auto-Linking** — [[Note Title]] in content auto-creates note links on save, stale links removed
 13. **AI Staging Pattern** — Accept/Edit/Reject workflow for AI suggestions
+14. **Focus Timer** — Pomodoro-style timer with task selection, session tracking, break timer
+15. **Areas/Folders** — Broad life categories (Work, Personal, Learning) with icon picker
+16. **Tag Management** — Create/edit/delete tags with color picker
+17. **AI Memory** — Warm/cold tier memory system for AI personalization
+18. **Project Detail** — Linked tasks/notes view, progress bar, archive/delete
+19. **Enhanced Onboarding** — 6-step flow: welcome, ADHD mode, planning style, schedule, energy peaks, summary
+20. **Chat Persistence** — localStorage conversation history with clear, memory panel, quick prompts
+21. **Dashboard Top 3** — Priority-ranked focus tasks on home screen
 
 ## Design System
 

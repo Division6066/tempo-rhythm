@@ -3,15 +3,29 @@ import { useLocation } from "wouter";
 import { useGlobalSearch, Note, Task } from "@workspace/api-client-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FileText, CheckCircle2, Calendar, Filter, LayoutTemplate, StickyNote, Search } from "lucide-react";
+import {
+  FileText, CheckCircle2, Calendar, Filter, LayoutTemplate, StickyNote,
+  Search, FolderKanban, FolderOpen, Tag, Brain, Timer, MessageSquare,
+  Home, Sun, Inbox, Sparkles, Plus
+} from "lucide-react";
 
 const QUICK_ACTIONS = [
+  { label: "Home", icon: Home, path: "/" },
+  { label: "Today", icon: Sun, path: "/today" },
+  { label: "Inbox", icon: Inbox, path: "/inbox" },
   { label: "Calendar", icon: Calendar, path: "/calendar" },
+  { label: "Notes", icon: FileText, path: "/notes" },
+  { label: "Projects", icon: FolderKanban, path: "/projects" },
+  { label: "Areas / Folders", icon: FolderOpen, path: "/folders" },
+  { label: "Tags", icon: Tag, path: "/tags" },
+  { label: "Daily Plan", icon: Calendar, path: "/plan" },
+  { label: "Focus Timer", icon: Timer, path: "/focus" },
+  { label: "AI Chat", icon: Sparkles, path: "/chat" },
+  { label: "AI Memory", icon: Brain, path: "/memories" },
   { label: "Period Notes", icon: StickyNote, path: "/period-notes" },
   { label: "Task Filters", icon: Filter, path: "/filters" },
   { label: "Templates", icon: LayoutTemplate, path: "/templates" },
-  { label: "Notes", icon: FileText, path: "/notes" },
-  { label: "New Note", icon: FileText, path: "/notes/new" },
+  { label: "New Note", icon: Plus, path: "/notes/new" },
 ];
 
 export default function CommandBar() {
@@ -43,7 +57,7 @@ export default function CommandBar() {
 
   const filteredActions = query
     ? QUICK_ACTIONS.filter((a) => a.label.toLowerCase().includes(query.toLowerCase()))
-    : QUICK_ACTIONS;
+    : QUICK_ACTIONS.slice(0, 8);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -63,7 +77,9 @@ export default function CommandBar() {
         <div className="max-h-80 overflow-y-auto p-2">
           {filteredActions.length > 0 && (
             <div className="mb-2">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 mb-1">Quick Actions</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 mb-1">
+                {query ? "Matching pages" : "Quick Actions"}
+              </p>
               {filteredActions.map((action) => (
                 <button
                   key={action.path}
