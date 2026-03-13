@@ -1,15 +1,74 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "./_helpers";
+import { getAuthUserId, getOptionalAuthUserId } from "./_helpers";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    return await ctx.db
+    const all = await ctx.db
       .query("notes")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .collect();
+    return all.filter((n) => !n.periodType);
+  },
+});
+
+export const listPeriodNotes = query({
+  args: { periodType: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const all = await ctx.db
+      .query("notes")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    if (args.periodType) {
+      return all.filter((n) => n.periodType === args.periodType);
+    }
+    return all.filter((n) => !!n.periodType);
+  },
+});
+
+export const getByPeriod = query({
+  args: { periodType: v.string(), periodDate: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const all = await ctx.db
+      .query("notes")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    return all.find(
+      (n) => n.periodType === args.periodType && n.periodDate === args.periodDate
+    ) || null;
+  },
+});
+
+export const getBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const note = await ctx.db
+      .query("notes")
+      .withIndex("by_publishSlug", (q) => q.eq("publishSlug", args.slug))
+      .first();
+    if (!note || !note.isPublished) return null;
+    return { title: note.title, content: note.content, updatedAt: note.updatedAt };
+  },
+});
+
+export const search = query({
+  args: { query: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const all = await ctx.db
+      .query("notes")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    const q = args.query.toLowerCase();
+    return all.filter(
+      (n) =>
+        n.title.toLowerCase().includes(q) ||
+        n.content.toLowerCase().includes(q)
+    ).slice(0, 20);
   },
 });
 
@@ -32,6 +91,8 @@ export const create = mutation({
     tags: v.optional(v.array(v.string())),
     templateType: v.optional(v.string()),
     isPinned: v.optional(v.boolean()),
+    periodType: v.optional(v.string()),
+    periodDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -45,6 +106,8 @@ export const create = mutation({
       tags: args.tags ?? [],
       templateType: args.templateType,
       isPinned: args.isPinned ?? false,
+      periodType: args.periodType,
+      periodDate: args.periodDate,
       createdAt: now,
       updatedAt: now,
     });
@@ -58,6 +121,8 @@ export const update = mutation({
     content: v.optional(v.string()),
     isPinned: v.optional(v.boolean()),
     tags: v.optional(v.array(v.string())),
+    isPublished: v.optional(v.boolean()),
+    publishSlug: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useGetPreferences, useUpdatePreferences, getGetPreferencesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,10 +7,21 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings as SettingsIcon, BrainCircuit, Clock, Moon, Sun } from "lucide-react";
+import { Settings as SettingsIcon, BrainCircuit, Clock, Moon, Sun, Calendar, StickyNote, Filter, LayoutTemplate, FileText, FolderKanban, MessageSquare, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const NAV_LINKS = [
+  { label: "Notes", icon: FileText, path: "/notes" },
+  { label: "Projects", icon: FolderKanban, path: "/projects" },
+  { label: "Period Notes", icon: StickyNote, path: "/period-notes" },
+  { label: "Task Filters", icon: Filter, path: "/filters" },
+  { label: "Templates", icon: LayoutTemplate, path: "/templates" },
+  { label: "Daily Plan", icon: Calendar, path: "/plan" },
+  { label: "AI Chat", icon: MessageSquare, path: "/chat" },
+];
+
 export default function Settings() {
+  const [, setLocation] = useLocation();
   const { data: prefs, isLoading } = useGetPreferences();
   const updatePrefs = useUpdatePreferences();
   const queryClient = useQueryClient();
@@ -61,6 +73,24 @@ export default function Settings() {
         <SettingsIcon className="text-muted-foreground h-8 w-8" />
         <h1 className="text-3xl font-display font-bold text-foreground">Settings</h1>
       </div>
+
+      <Card className="glass border-border/50">
+        <CardContent className="p-4 space-y-1">
+          {NAV_LINKS.map((link) => (
+            <button
+              key={link.path}
+              onClick={() => setLocation(link.path)}
+              className="w-full flex items-center justify-between px-3 py-3 rounded-lg hover:bg-muted transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <link.icon size={18} className="text-primary" />
+                <span className="text-sm font-medium">{link.label}</span>
+              </div>
+              <ChevronRight size={16} className="text-muted-foreground" />
+            </button>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card className="glass border-border/50">
         <CardContent className="p-6 space-y-6">

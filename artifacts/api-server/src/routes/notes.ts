@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, notesTable } from "@workspace/db";
 import {
   ListNotesQueryParams,
@@ -11,6 +11,7 @@ import {
   UpdateNoteBody,
   UpdateNoteResponse,
   DeleteNoteParams,
+  PublishNoteParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -24,6 +25,17 @@ router.get("/notes", async (req, res): Promise<void> => {
   }
   if (query.success && query.data.folderId) {
     notes = notes.filter((n) => n.folderId === query.data.folderId);
+  }
+  if (query.success && query.data.periodType) {
+    notes = notes.filter((n) => n.periodType === query.data.periodType);
+  }
+  if (query.success && query.data.search) {
+    const searchLower = query.data.search.toLowerCase();
+    notes = notes.filter(
+      (n) =>
+        n.title.toLowerCase().includes(searchLower) ||
+        n.content.toLowerCase().includes(searchLower)
+    );
   }
 
   res.json(ListNotesResponse.parse(notes));
@@ -92,6 +104,54 @@ router.delete("/notes/:id", async (req, res): Promise<void> => {
   }
 
   res.sendStatus(204);
+});
+
+router.post("/notes/:id/publish", async (req, res): Promise<void> => {
+  const params = PublishNoteParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const { isPublished } = req.body;
+
+  const [existing] = await db.select().from(notesTable).where(eq(notesTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Note not found" });
+    return;
+  }
+
+  let publishSlug = existing.publishSlug;
+  if (isPublished && !publishSlug) {
+    const slugBase = existing.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    publishSlug = `${slugBase}-${Date.now().toString(36)}`;
+  }
+
+  const [note] = await db
+    .update(notesTable)
+    .set({ isPublished: !!isPublished, publishSlug: isPublished ? publishSlug : existing.publishSlug })
+    .where(eq(notesTable.id, params.data.id))
+    .returning();
+
+  res.json(GetNoteResponse.parse(note));
+});
+
+router.get("/published/:slug", async (req, res): Promise<void> => {
+  const slug = req.params.slug;
+  const [note] = await db
+    .select()
+    .from(notesTable)
+    .where(and(eq(notesTable.publishSlug, slug), eq(notesTable.isPublished, true)));
+
+  if (!note) {
+    res.status(404).json({ error: "Published note not found" });
+    return;
+  }
+
+  res.json(GetNoteResponse.parse(note));
 });
 
 export default router;

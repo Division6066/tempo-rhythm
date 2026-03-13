@@ -5,6 +5,7 @@ import {
   useUpdateTask,
   useDeleteTask,
   useCreateTask,
+  useCompleteTask,
   useAiChunkTask,
   getListTasksQueryKey,
   getGetTaskQueryKey,
@@ -14,13 +15,17 @@ import {
   useRejectStagedSuggestion,
   useUpdateStagedSuggestionData,
   getListStagedSuggestionsQueryKey,
+  UpdateTaskBodyStatus,
+  UpdateTaskBodyPriority,
+  CreateTaskBodyStatus,
+  CreateTaskBodyPriority,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Clock, Sparkles, Trash2, Check, X, Pencil } from "lucide-react";
+import { ArrowLeft, Clock, Sparkles, Trash2, Check, X, Pencil, Repeat, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
@@ -42,6 +47,7 @@ export default function TaskDetail() {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const createTask = useCreateTask();
+  const completeTask = useCompleteTask();
   const chunkTask = useAiChunkTask();
   const createStaged = useCreateStagedSuggestion();
   const { data: stagedSuggestions } = useListStagedSuggestions({ type: "chunkedTask", status: "pending" });
@@ -56,6 +62,11 @@ export default function TaskDetail() {
   const [status, setStatus] = useState<string>("inbox");
   const [priority, setPriority] = useState<string>("medium");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [duration, setDuration] = useState("");
+  const [recurrenceRule, setRecurrenceRule] = useState("");
+  const [customRecurrence, setCustomRecurrence] = useState("");
 
   useEffect(() => {
     if (task) {
@@ -64,6 +75,18 @@ export default function TaskDetail() {
       setStatus(task.status);
       setPriority(task.priority);
       setEstimatedMinutes(task.estimatedMinutes?.toString() || "");
+      setScheduledDate(task.scheduledDate || "");
+      setStartTime(task.startTime || "");
+      setDuration(task.duration?.toString() || "");
+      const rule = task.recurrenceRule || "";
+      const presets = ["daily", "weekdays", "weekly", "biweekly", "monthly", "yearly"];
+      if (rule && !presets.includes(rule)) {
+        setRecurrenceRule("custom");
+        setCustomRecurrence(rule);
+      } else {
+        setRecurrenceRule(rule);
+        setCustomRecurrence("");
+      }
     }
   }, [task]);
 
@@ -80,9 +103,13 @@ export default function TaskDetail() {
         data: {
           title,
           notes,
-          status: status as any,
-          priority: priority as any,
+          status: status as UpdateTaskBodyStatus,
+          priority: priority as UpdateTaskBodyPriority,
           estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
+          scheduledDate: scheduledDate || null,
+          startTime: startTime || null,
+          duration: duration ? parseInt(duration, 10) : null,
+          recurrenceRule: recurrenceRule === "custom" ? (customRecurrence || null) : (recurrenceRule || null),
         },
       });
       invalidateAll();
@@ -99,6 +126,17 @@ export default function TaskDetail() {
       setLocation("/");
     } catch {
       toast({ variant: "destructive", title: "Failed to delete task" });
+    }
+  };
+
+  const handleComplete = async () => {
+    try {
+      await completeTask.mutateAsync({ id: taskId });
+      invalidateAll();
+      toast({ title: recurrenceRule ? "Task completed, next occurrence created" : "Task completed" });
+      setLocation("/");
+    } catch {
+      toast({ variant: "destructive", title: "Failed to complete task" });
     }
   };
 
@@ -127,9 +165,9 @@ export default function TaskDetail() {
       await createTask.mutateAsync({
         data: {
           title: s.title,
-          priority: s.priority as any,
+          priority: s.priority as CreateTaskBodyPriority,
           estimatedMinutes: s.estimatedMinutes,
-          status: (task?.status as any) || "inbox",
+          status: (task?.status as CreateTaskBodyStatus) || "inbox",
           parentTaskId: taskId,
           aiGenerated: true,
         },
@@ -200,6 +238,17 @@ export default function TaskDetail() {
           <ArrowLeft size={20} />
         </Button>
         <div className="flex gap-2">
+          {task.status !== "done" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleComplete}
+              className="border-green-500/50 text-green-400 gap-2"
+            >
+              <Check size={16} />
+              Complete
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -208,7 +257,7 @@ export default function TaskDetail() {
             className="border-primary/50 text-primary gap-2"
           >
             <Sparkles size={16} />
-            {chunkTask.isPending ? "Chunking..." : "Chunk this task"}
+            {chunkTask.isPending ? "Chunking..." : "Chunk"}
           </Button>
           <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/20" onClick={handleDelete}>
             <Trash2 size={20} />
@@ -280,6 +329,89 @@ export default function TaskDetail() {
             placeholder="e.g. 30"
             className="bg-card border-border w-1/3"
           />
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <Calendar size={12} /> Time Blocking
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Date</label>
+              <Input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                onBlur={handleSave}
+                className="bg-background border-border text-sm h-9"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Start Time</label>
+              <Input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                onBlur={handleSave}
+                className="bg-background border-border text-sm h-9"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Duration (min)</label>
+              <Input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                onBlur={handleSave}
+                placeholder="60"
+                className="bg-background border-border text-sm h-9"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <Repeat size={12} /> Recurrence
+          </h3>
+          <Select
+            value={recurrenceRule || "none"}
+            onValueChange={(val) => {
+              setRecurrenceRule(val === "none" ? "" : val);
+              if (val !== "custom") {
+                setCustomRecurrence("");
+                setTimeout(handleSave, 0);
+              }
+            }}
+          >
+            <SelectTrigger className="bg-background border-border">
+              <SelectValue placeholder="No recurrence" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No recurrence</SelectItem>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekdays">Weekdays</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="biweekly">Biweekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+              <SelectItem value="custom">Custom...</SelectItem>
+            </SelectContent>
+          </Select>
+          {recurrenceRule === "custom" && (
+            <Input
+              placeholder="e.g. every 3 days, every 2 weeks"
+              value={customRecurrence}
+              onChange={(e) => setCustomRecurrence(e.target.value)}
+              onBlur={handleSave}
+              className="bg-background border-border text-sm"
+            />
+          )}
+          {recurrenceRule && recurrenceRule !== "none" && (
+            <p className="text-xs text-muted-foreground">
+              When completed, a new task will be automatically created for the next {recurrenceRule === "custom" ? customRecurrence || "custom" : recurrenceRule} occurrence.
+            </p>
+          )}
         </div>
 
         {thisTaskStaged.length > 0 &&

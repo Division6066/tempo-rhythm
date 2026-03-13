@@ -30,6 +30,11 @@ export default defineSchema({
     notes: v.optional(v.string()),
     parentTaskId: v.optional(v.id("tasks")),
     aiGenerated: v.boolean(),
+    startTime: v.optional(v.string()),
+    duration: v.optional(v.number()),
+    recurrenceRule: v.optional(v.string()),
+    recurrenceEndDate: v.optional(v.string()),
+    completedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -47,11 +52,17 @@ export default defineSchema({
     tags: v.array(v.string()),
     templateType: v.optional(v.string()),
     isPinned: v.boolean(),
+    isPublished: v.optional(v.boolean()),
+    publishSlug: v.optional(v.string()),
+    periodType: v.optional(v.string()),
+    periodDate: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_isPinned", ["isPinned"])
-    .index("by_userId", ["userId"]),
+    .index("by_userId", ["userId"])
+    .index("by_publishSlug", ["publishSlug"])
+    .index("by_periodType", ["periodType"]),
 
   projects: defineTable({
     userId: v.optional(v.string()),
@@ -133,4 +144,52 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_status", ["status"])
     .index("by_type", ["type"]),
+
+  calendarEvents: defineTable({
+    userId: v.string(),
+    title: v.string(),
+    description: v.optional(v.string()),
+    date: v.string(),
+    startTime: v.string(),
+    endTime: v.string(),
+    color: v.optional(v.string()),
+    isAllDay: v.optional(v.boolean()),
+    externalId: v.optional(v.string()),
+    source: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_date", ["date"]),
+
+  noteLinks: defineTable({
+    userId: v.string(),
+    sourceNoteId: v.id("notes"),
+    targetNoteId: v.id("notes"),
+    createdAt: v.number(),
+  })
+    .index("by_sourceNoteId", ["sourceNoteId"])
+    .index("by_targetNoteId", ["targetNoteId"])
+    .index("by_userId", ["userId"]),
+
+  savedFilters: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    conditions: v.any(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"]),
+
+  templates: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    content: v.string(),
+    category: v.optional(v.string()),
+    isBuiltIn: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"]),
 });

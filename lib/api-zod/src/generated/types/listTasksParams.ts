@@ -11,4 +11,6 @@ export type ListTasksParams = {
   status?: ListTasksStatus;
   projectId?: number;
   folderId?: number;
+  startDate?: string;
+  endDate?: string;
 };

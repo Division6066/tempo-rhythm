@@ -23,6 +23,8 @@ export const ListTasksQueryParams = zod.object({
     .optional(),
   projectId: zod.coerce.number().optional(),
   folderId: zod.coerce.number().optional(),
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
 });
 
 export const ListTasksResponseItem = zod.object({
@@ -68,6 +70,9 @@ export const CreateTaskBody = zod.object({
   notes: zod.string().nullish(),
   parentTaskId: zod.number().nullish(),
   aiGenerated: zod.boolean().default(createTaskBodyAiGeneratedDefault),
+  startTime: zod.string().nullish(),
+  duration: zod.number().nullish(),
+  recurrenceRule: zod.string().nullish(),
 });
 
 /**
@@ -116,6 +121,10 @@ export const UpdateTaskBody = zod.object({
   estimatedMinutes: zod.number().nullish(),
   notes: zod.string().nullish(),
   parentTaskId: zod.number().nullish(),
+  aiGenerated: zod.boolean().optional(),
+  startTime: zod.string().nullish(),
+  duration: zod.number().nullish(),
+  recurrenceRule: zod.string().nullish(),
 });
 
 export const UpdateTaskResponse = zod.object({
@@ -144,11 +153,59 @@ export const DeleteTaskParams = zod.object({
 });
 
 /**
+ * @summary Complete a task and auto-create next occurrence for recurring tasks
+ */
+export const CompleteTaskParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CompleteTaskResponse = zod.object({
+  completedTask: zod.object({
+    id: zod.number(),
+    title: zod.string(),
+    status: zod.enum(["inbox", "today", "scheduled", "done", "cancelled"]),
+    priority: zod.enum(["high", "medium", "low"]),
+    projectId: zod.number().nullish(),
+    folderId: zod.number().nullish(),
+    tags: zod.array(zod.string()),
+    dueDate: zod.string().nullish(),
+    scheduledDate: zod.string().nullish(),
+    estimatedMinutes: zod.number().nullish(),
+    notes: zod.string().nullish(),
+    parentTaskId: zod.number().nullish(),
+    aiGenerated: zod.boolean(),
+    createdAt: zod.date(),
+    updatedAt: zod.date(),
+  }),
+  nextTask: zod
+    .object({
+      id: zod.number(),
+      title: zod.string(),
+      status: zod.enum(["inbox", "today", "scheduled", "done", "cancelled"]),
+      priority: zod.enum(["high", "medium", "low"]),
+      projectId: zod.number().nullish(),
+      folderId: zod.number().nullish(),
+      tags: zod.array(zod.string()),
+      dueDate: zod.string().nullish(),
+      scheduledDate: zod.string().nullish(),
+      estimatedMinutes: zod.number().nullish(),
+      notes: zod.string().nullish(),
+      parentTaskId: zod.number().nullish(),
+      aiGenerated: zod.boolean(),
+      createdAt: zod.date(),
+      updatedAt: zod.date(),
+    })
+    .optional(),
+});
+
+/**
  * @summary List all notes
  */
 export const ListNotesQueryParams = zod.object({
   projectId: zod.coerce.number().optional(),
   folderId: zod.coerce.number().optional(),
+  periodType: zod.enum(["weekly", "monthly", "yearly"]).optional(),
+  search: zod.coerce.string().optional(),
 });
 
 export const ListNotesResponseItem = zod.object({
@@ -160,6 +217,10 @@ export const ListNotesResponseItem = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
+  periodType: zod.enum(["weekly", "monthly", "yearly"]).nullish(),
+  periodDate: zod.string().nullish(),
+  isPublished: zod.boolean(),
+  publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -179,6 +240,8 @@ export const CreateNoteBody = zod.object({
   tags: zod.array(zod.string()).optional(),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean().default(createNoteBodyIsPinnedDefault),
+  periodType: zod.enum(["weekly", "monthly", "yearly"]).nullish(),
+  periodDate: zod.string().nullish(),
 });
 
 /**
@@ -197,6 +260,10 @@ export const GetNoteResponse = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
+  periodType: zod.enum(["weekly", "monthly", "yearly"]).nullish(),
+  periodDate: zod.string().nullish(),
+  isPublished: zod.boolean(),
+  publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -216,6 +283,8 @@ export const UpdateNoteBody = zod.object({
   tags: zod.array(zod.string()).optional(),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean().optional(),
+  periodType: zod.string().nullish(),
+  periodDate: zod.string().nullish(),
 });
 
 export const UpdateNoteResponse = zod.object({
@@ -227,6 +296,10 @@ export const UpdateNoteResponse = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
+  periodType: zod.enum(["weekly", "monthly", "yearly"]).nullish(),
+  periodDate: zod.string().nullish(),
+  isPublished: zod.boolean(),
+  publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -768,3 +841,297 @@ export const ListTemplatesResponseItem = zod.object({
   isDefault: zod.boolean(),
 });
 export const ListTemplatesResponse = zod.array(ListTemplatesResponseItem);
+
+/**
+ * @summary List calendar events
+ */
+export const ListCalendarEventsQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+});
+
+export const ListCalendarEventsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  date: zod.string(),
+  startTime: zod.string().nullish(),
+  endTime: zod.string().nullish(),
+  duration: zod.number().nullish(),
+  color: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const ListCalendarEventsResponse = zod.array(
+  ListCalendarEventsResponseItem,
+);
+
+/**
+ * @summary Create a calendar event
+ */
+export const CreateCalendarEventBody = zod.object({
+  title: zod.string(),
+  description: zod.string().nullish(),
+  date: zod.string(),
+  startTime: zod.string().nullish(),
+  endTime: zod.string().nullish(),
+  duration: zod.number().nullish(),
+  color: zod.string().nullish(),
+});
+
+/**
+ * @summary Get a calendar event by ID
+ */
+export const GetCalendarEventParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetCalendarEventResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  date: zod.string(),
+  startTime: zod.string().nullish(),
+  endTime: zod.string().nullish(),
+  duration: zod.number().nullish(),
+  color: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Update a calendar event
+ */
+export const UpdateCalendarEventParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateCalendarEventBody = zod.object({
+  title: zod.string().optional(),
+  description: zod.string().nullish(),
+  date: zod.string().optional(),
+  startTime: zod.string().nullish(),
+  endTime: zod.string().nullish(),
+  duration: zod.number().nullish(),
+  color: zod.string().nullish(),
+});
+
+export const UpdateCalendarEventResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  date: zod.string(),
+  startTime: zod.string().nullish(),
+  endTime: zod.string().nullish(),
+  duration: zod.number().nullish(),
+  color: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Delete a calendar event
+ */
+export const DeleteCalendarEventParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List note links for a given note
+ */
+export const ListNoteLinksQueryParams = zod.object({
+  noteId: zod.coerce.number(),
+});
+
+export const ListNoteLinksResponseItem = zod.object({
+  id: zod.number(),
+  sourceNoteId: zod.number(),
+  targetNoteId: zod.number(),
+  targetNoteTitle: zod.string().optional(),
+  sourceNoteTitle: zod.string().optional(),
+  createdAt: zod.date(),
+});
+export const ListNoteLinksResponse = zod.array(ListNoteLinksResponseItem);
+
+/**
+ * @summary Create a link between two notes
+ */
+export const CreateNoteLinkBody = zod.object({
+  sourceNoteId: zod.number(),
+  targetNoteId: zod.number(),
+});
+
+/**
+ * @summary Delete a note link
+ */
+export const DeleteNoteLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List saved filters
+ */
+export const ListSavedFiltersResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  conditions: zod.array(zod.record(zod.string(), zod.unknown())),
+  createdAt: zod.date(),
+});
+export const ListSavedFiltersResponse = zod.array(ListSavedFiltersResponseItem);
+
+/**
+ * @summary Create a saved filter
+ */
+export const CreateSavedFilterBody = zod.object({
+  name: zod.string(),
+  conditions: zod.array(zod.record(zod.string(), zod.unknown())),
+});
+
+/**
+ * @summary Delete a saved filter
+ */
+export const DeleteSavedFilterParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List note templates
+ */
+export const ListNoteTemplatesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  content: zod.string(),
+  category: zod.string().nullish(),
+  isBuiltIn: zod.boolean(),
+  createdAt: zod.date(),
+});
+export const ListNoteTemplatesResponse = zod.array(
+  ListNoteTemplatesResponseItem,
+);
+
+/**
+ * @summary Create a note template
+ */
+export const createNoteTemplateBodyIsBuiltInDefault = false;
+
+export const CreateNoteTemplateBody = zod.object({
+  name: zod.string(),
+  description: zod.string().nullish(),
+  content: zod.string(),
+  category: zod.string().nullish(),
+  isBuiltIn: zod.boolean().default(createNoteTemplateBodyIsBuiltInDefault),
+});
+
+/**
+ * @summary Delete a note template
+ */
+export const DeleteNoteTemplateParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Seed built-in note templates
+ */
+export const SeedNoteTemplatesResponse = zod.object({
+  count: zod.number(),
+});
+
+/**
+ * @summary Publish or unpublish a note
+ */
+export const PublishNoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const PublishNoteBody = zod.object({
+  isPublished: zod.boolean(),
+});
+
+export const PublishNoteResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  projectId: zod.number().nullish(),
+  folderId: zod.number().nullish(),
+  tags: zod.array(zod.string()),
+  templateType: zod.string().nullish(),
+  isPinned: zod.boolean(),
+  periodType: zod.enum(["weekly", "monthly", "yearly"]).nullish(),
+  periodDate: zod.string().nullish(),
+  isPublished: zod.boolean(),
+  publishSlug: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Get a published note by slug (public, no auth)
+ */
+export const GetPublishedNoteParams = zod.object({
+  slug: zod.coerce.string(),
+});
+
+export const GetPublishedNoteResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  projectId: zod.number().nullish(),
+  folderId: zod.number().nullish(),
+  tags: zod.array(zod.string()),
+  templateType: zod.string().nullish(),
+  isPinned: zod.boolean(),
+  periodType: zod.enum(["weekly", "monthly", "yearly"]).nullish(),
+  periodDate: zod.string().nullish(),
+  isPublished: zod.boolean(),
+  publishSlug: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Search across notes and tasks
+ */
+export const GlobalSearchQueryParams = zod.object({
+  q: zod.coerce.string(),
+});
+
+export const GlobalSearchResponse = zod.object({
+  notes: zod.array(
+    zod.object({
+      id: zod.number(),
+      title: zod.string(),
+      content: zod.string(),
+      projectId: zod.number().nullish(),
+      folderId: zod.number().nullish(),
+      tags: zod.array(zod.string()),
+      templateType: zod.string().nullish(),
+      isPinned: zod.boolean(),
+      periodType: zod.enum(["weekly", "monthly", "yearly"]).nullish(),
+      periodDate: zod.string().nullish(),
+      isPublished: zod.boolean(),
+      publishSlug: zod.string().nullish(),
+      createdAt: zod.date(),
+      updatedAt: zod.date(),
+    }),
+  ),
+  tasks: zod.array(
+    zod.object({
+      id: zod.number(),
+      title: zod.string(),
+      status: zod.enum(["inbox", "today", "scheduled", "done", "cancelled"]),
+      priority: zod.enum(["high", "medium", "low"]),
+      projectId: zod.number().nullish(),
+      folderId: zod.number().nullish(),
+      tags: zod.array(zod.string()),
+      dueDate: zod.string().nullish(),
+      scheduledDate: zod.string().nullish(),
+      estimatedMinutes: zod.number().nullish(),
+      notes: zod.string().nullish(),
+      parentTaskId: zod.number().nullish(),
+      aiGenerated: zod.boolean(),
+      createdAt: zod.date(),
+      updatedAt: zod.date(),
+    }),
+  ),
+});

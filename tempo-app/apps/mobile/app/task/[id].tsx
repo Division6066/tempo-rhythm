@@ -10,6 +10,16 @@ import { colors } from "../../lib/theme";
 
 type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
 
+const RECURRENCE_OPTIONS = [
+  { value: "", label: "None" },
+  { value: "daily", label: "Daily" },
+  { value: "weekdays", label: "Weekdays" },
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Biweekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -17,6 +27,7 @@ export default function TaskDetailScreen() {
 
   const task = useQuery(api.tasks.get, { id: taskId });
   const updateTask = useMutation(api.tasks.update);
+  const completeTask = useMutation(api.tasks.complete);
   const deleteTask = useMutation(api.tasks.remove);
   const createTask = useMutation(api.tasks.create);
   const chunkTask = useAction(api.ai.chunkTask);
@@ -29,6 +40,10 @@ export default function TaskDetailScreen() {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("inbox");
   const [priority, setPriority] = useState("medium");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [duration, setDuration] = useState("");
+  const [recurrenceRule, setRecurrenceRule] = useState("");
   const [chunking, setChunking] = useState(false);
 
   useEffect(() => {
@@ -37,11 +52,33 @@ export default function TaskDetailScreen() {
       setNotes(task.notes || "");
       setStatus(task.status);
       setPriority(task.priority);
+      setScheduledDate(task.scheduledDate || "");
+      setStartTime(task.startTime || "");
+      setDuration(task.duration?.toString() || "");
+      setRecurrenceRule(task.recurrenceRule || "");
     }
   }, [task]);
 
   const handleSave = async () => {
-    await updateTask({ id: taskId, title, notes, status, priority });
+    await updateTask({
+      id: taskId,
+      title,
+      notes,
+      status,
+      priority,
+      scheduledDate: scheduledDate || null,
+      startTime: startTime || null,
+      duration: duration ? parseInt(duration, 10) : null,
+      recurrenceRule: recurrenceRule || null,
+    });
+  };
+
+  const handleComplete = async () => {
+    await completeTask({ id: taskId });
+    if (task?.recurrenceRule) {
+      Alert.alert("Completed", "Next occurrence has been created.");
+    }
+    router.back();
   };
 
   const handleDelete = () => {
@@ -145,6 +182,77 @@ export default function TaskDetailScreen() {
             ))}
           </View>
         </View>
+
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Schedule</Text>
+          <TextInput
+            value={scheduledDate}
+            onChangeText={setScheduledDate}
+            onBlur={handleSave}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={colors.muted}
+            style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, color: colors.foreground, borderWidth: 1, borderColor: colors.border, marginBottom: 8 }}
+          />
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.muted, fontSize: 10, marginBottom: 4 }}>Start Time</Text>
+              <TextInput
+                value={startTime}
+                onChangeText={setStartTime}
+                onBlur={handleSave}
+                placeholder="HH:MM"
+                placeholderTextColor={colors.muted}
+                style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, color: colors.foreground, borderWidth: 1, borderColor: colors.border }}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.muted, fontSize: 10, marginBottom: 4 }}>Duration (min)</Text>
+              <TextInput
+                value={duration}
+                onChangeText={setDuration}
+                onBlur={handleSave}
+                placeholder="60"
+                placeholderTextColor={colors.muted}
+                keyboardType="numeric"
+                style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, color: colors.foreground, borderWidth: 1, borderColor: colors.border }}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Recurrence</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {RECURRENCE_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.value}
+                onPress={() => { setRecurrenceRule(opt.value); setTimeout(handleSave, 0); }}
+                style={{
+                  backgroundColor: recurrenceRule === opt.value ? colors.primary : colors.surface,
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderWidth: 1,
+                  borderColor: recurrenceRule === opt.value ? colors.primary : colors.border,
+                }}
+              >
+                <Text style={{ color: recurrenceRule === opt.value ? "#fff" : colors.foreground, fontSize: 12, fontWeight: "600" }}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {task.status !== "done" && (
+          <Pressable
+            onPress={handleComplete}
+            style={{ backgroundColor: colors.teal, borderRadius: 14, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 20 }}
+          >
+            <Ionicons name="checkmark" size={20} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>
+              {task.recurrenceRule ? "Complete & Create Next" : "Mark Complete"}
+            </Text>
+          </Pressable>
+        )}
 
         {thisTaskStaged.length > 0 && thisTaskStaged.map((suggestion) => {
           const data = suggestion.data as { subtasks: Subtask[]; reasoning: string };

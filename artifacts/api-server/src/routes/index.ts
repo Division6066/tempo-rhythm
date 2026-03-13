@@ -11,6 +11,12 @@ import memoriesRouter from "./memories";
 import templatesRouter from "./templates";
 import aiRouter from "./ai";
 import stagingRouter from "./staging";
+import calendarEventsRouter from "./calendarEvents";
+import noteLinksRouter from "./noteLinks";
+import savedFiltersRouter from "./savedFilters";
+import noteTemplatesRouter from "./noteTemplates";
+import searchRouter from "./search";
+import transcribeRouter from "./transcribe";
 
 const router: IRouter = Router();
 
@@ -26,5 +32,11 @@ router.use(memoriesRouter);
 router.use(templatesRouter);
 router.use(aiRouter);
 router.use(stagingRouter);
+router.use(calendarEventsRouter);
+router.use(noteLinksRouter);
+router.use(savedFiltersRouter);
+router.use(noteTemplatesRouter);
+router.use(searchRouter);
+router.use(transcribeRouter);
 
 export default router;

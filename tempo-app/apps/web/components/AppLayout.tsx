@@ -3,8 +3,16 @@
 import { ReactNode, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Sun, Inbox, MoreHorizontal, Plus } from "lucide-react";
+import {
+  Home,
+  Sun,
+  Inbox,
+  MoreHorizontal,
+  Plus,
+  Calendar,
+} from "lucide-react";
 import { QuickCapture } from "./QuickCapture";
+import { CommandBar } from "./CommandBar";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -25,26 +33,41 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       <nav className="fixed bottom-0 left-0 right-0 h-20 bg-card border-t border-border flex items-center justify-around px-2 pb-safe z-40">
         <Link href="/">
-          <div className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${pathname === "/" ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${pathname === "/" ? "text-primary" : "text-muted-foreground"}`}
+          >
             <Home size={24} />
             <span className="text-[10px] mt-1 font-medium">Home</span>
           </div>
         </Link>
         <Link href="/today">
-          <div className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${pathname === "/today" ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${pathname === "/today" ? "text-primary" : "text-muted-foreground"}`}
+          >
             <Sun size={24} />
             <span className="text-[10px] mt-1 font-medium">Today</span>
           </div>
         </Link>
-        <div className="w-10" />
+        <Link href="/calendar">
+          <div
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${pathname === "/calendar" ? "text-primary" : "text-muted-foreground"}`}
+          >
+            <Calendar size={24} />
+            <span className="text-[10px] mt-1 font-medium">Calendar</span>
+          </div>
+        </Link>
         <Link href="/inbox">
-          <div className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${pathname === "/inbox" ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${pathname === "/inbox" ? "text-primary" : "text-muted-foreground"}`}
+          >
             <Inbox size={24} />
             <span className="text-[10px] mt-1 font-medium">Inbox</span>
           </div>
         </Link>
         <Link href="/settings">
-          <div className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${["/settings", "/projects", "/notes", "/chat", "/plan"].includes(pathname) ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${["/settings", "/projects", "/notes", "/chat", "/plan", "/templates", "/filters"].includes(pathname) ? "text-primary" : "text-muted-foreground"}`}
+          >
             <MoreHorizontal size={24} />
             <span className="text-[10px] mt-1 font-medium">More</span>
           </div>
@@ -52,6 +75,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </nav>
 
       <QuickCapture open={quickCaptureOpen} onOpenChange={setQuickCaptureOpen} />
+      <CommandBar />
     </div>
   );
 }

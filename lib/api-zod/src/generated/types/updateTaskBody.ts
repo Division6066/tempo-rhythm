@@ -20,4 +20,8 @@ export interface UpdateTaskBody {
   estimatedMinutes?: number | null;
   notes?: string | null;
   parentTaskId?: number | null;
+  aiGenerated?: boolean;
+  startTime?: string | null;
+  duration?: number | null;
+  recurrenceRule?: string | null;
 }

@@ -9,9 +9,33 @@ import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Clock, Sparkles, Trash2, Check, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  Sparkles,
+  Trash2,
+  Check,
+  X,
+  Repeat,
+  Calendar,
+} from "lucide-react";
 
-type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
+type Subtask = {
+  title: string;
+  priority: string;
+  estimatedMinutes: number;
+  tags: string[];
+};
+
+const RECURRENCE_OPTIONS = [
+  { value: "", label: "No recurrence" },
+  { value: "daily", label: "Daily" },
+  { value: "weekdays", label: "Weekdays" },
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Every 2 weeks" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -20,11 +44,14 @@ export default function TaskDetailPage() {
 
   const task = useQuery(api.tasks.get, { id: taskId });
   const updateTask = useMutation(api.tasks.update);
+  const completeTask = useMutation(api.tasks.complete);
   const deleteTask = useMutation(api.tasks.remove);
   const createTask = useMutation(api.tasks.create);
   const chunkTask = useAction(api.ai.chunkTask);
   const createStaged = useMutation(api.staging.create);
-  const stagedSuggestions = useQuery(api.staging.listPending, { type: "chunkedTask" });
+  const stagedSuggestions = useQuery(api.staging.listPending, {
+    type: "chunkedTask",
+  });
   const acceptStaged = useMutation(api.staging.accept);
   const rejectStaged = useMutation(api.staging.reject);
 
@@ -33,6 +60,10 @@ export default function TaskDetailPage() {
   const [status, setStatus] = useState("inbox");
   const [priority, setPriority] = useState("medium");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [duration, setDuration] = useState("");
+  const [recurrenceRule, setRecurrenceRule] = useState("");
   const [chunking, setChunking] = useState(false);
 
   useEffect(() => {
@@ -42,6 +73,10 @@ export default function TaskDetailPage() {
       setStatus(task.status);
       setPriority(task.priority);
       setEstimatedMinutes(task.estimatedMinutes?.toString() || "");
+      setScheduledDate(task.scheduledDate || "");
+      setStartTime(task.startTime || "");
+      setDuration(task.duration?.toString() || "");
+      setRecurrenceRule(task.recurrenceRule || "");
     }
   }, [task]);
 
@@ -53,7 +88,18 @@ export default function TaskDetailPage() {
       status,
       priority,
       estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
+      scheduledDate: scheduledDate || null,
+      startTime: startTime || null,
+      duration: duration ? parseInt(duration, 10) : null,
+      recurrenceRule: recurrenceRule || null,
     });
+  };
+
+  const handleComplete = async () => {
+    await completeTask({ id: taskId });
+    if (task?.recurrenceRule) {
+      router.push("/today");
+    }
   };
 
   const handleDelete = async () => {
@@ -68,7 +114,11 @@ export default function TaskDetailPage() {
       if (res.subtasks && res.subtasks.length > 0) {
         await createStaged({
           type: "chunkedTask",
-          data: { parentTaskId: taskId, subtasks: res.subtasks, reasoning: res.reasoning },
+          data: {
+            parentTaskId: taskId,
+            subtasks: res.subtasks,
+            reasoning: res.reasoning,
+          },
           reasoning: res.reasoning,
         });
       }
@@ -77,7 +127,10 @@ export default function TaskDetailPage() {
     }
   };
 
-  const handleAcceptChunks = async (suggestionId: Id<"stagedSuggestions">, subtasks: Subtask[]) => {
+  const handleAcceptChunks = async (
+    suggestionId: Id<"stagedSuggestions">,
+    subtasks: Subtask[]
+  ) => {
     for (const s of subtasks) {
       await createTask({
         title: s.title,
@@ -91,9 +144,10 @@ export default function TaskDetailPage() {
     await acceptStaged({ id: suggestionId });
   };
 
-  const thisTaskStaged = stagedSuggestions?.filter(
-    (s) => (s.data as { parentTaskId: string }).parentTaskId === taskId
-  ) || [];
+  const thisTaskStaged =
+    stagedSuggestions?.filter(
+      (s) => (s.data as { parentTaskId: string }).parentTaskId === taskId
+    ) || [];
 
   if (!task) {
     return (
@@ -109,27 +163,56 @@ export default function TaskDetailPage() {
     <AppLayout>
       <div className="space-y-6 pb-12">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/")}
+          >
             <ArrowLeft size={20} />
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleChunk} disabled={chunking} className="border-primary/50 text-primary gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleChunk}
+              disabled={chunking}
+              className="border-primary/50 text-primary gap-2"
+            >
               <Sparkles size={16} />
               {chunking ? "Chunking..." : "Chunk this task"}
             </Button>
-            <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/20" onClick={handleDelete}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:bg-destructive/20"
+              onClick={handleDelete}
+            >
               <Trash2 size={20} />
             </Button>
           </div>
         </div>
 
         <div className="space-y-4">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={handleSave} className="text-2xl font-bold border-none bg-transparent px-0 focus-visible:ring-0" />
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={handleSave}
+            className="text-2xl font-bold border-none bg-transparent px-0 focus-visible:ring-0"
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Status</label>
-              <select value={status} onChange={(e) => { setStatus(e.target.value); setTimeout(handleSave, 0); }} className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm">
+              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setTimeout(handleSave, 0);
+                }}
+                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm"
+              >
                 <option value="inbox">Inbox</option>
                 <option value="today">Today</option>
                 <option value="scheduled">Scheduled</option>
@@ -138,8 +221,17 @@ export default function TaskDetailPage() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Priority</label>
-              <select value={priority} onChange={(e) => { setPriority(e.target.value); setTimeout(handleSave, 0); }} className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm">
+              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                Priority
+              </label>
+              <select
+                value={priority}
+                onChange={(e) => {
+                  setPriority(e.target.value);
+                  setTimeout(handleSave, 0);
+                }}
+                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm"
+              >
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
@@ -147,46 +239,162 @@ export default function TaskDetailPage() {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
-              <Clock size={12} /> Estimated Minutes
-            </label>
-            <Input type="number" value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(e.target.value)} onBlur={handleSave} placeholder="e.g. 30" className="bg-card border-border w-1/3" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                <Calendar size={12} /> Scheduled Date
+              </label>
+              <Input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                onBlur={handleSave}
+                className="bg-card border-border"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                <Clock size={12} /> Estimated Minutes
+              </label>
+              <Input
+                type="number"
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(e.target.value)}
+                onBlur={handleSave}
+                placeholder="e.g. 30"
+                className="bg-card border-border"
+              />
+            </div>
           </div>
 
-          {thisTaskStaged.length > 0 && thisTaskStaged.map((suggestion) => {
-            const data = suggestion.data as { subtasks: Subtask[]; reasoning: string };
-            return (
-              <div key={suggestion._id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
-                  <Sparkles size={14} /> AI Subtasks
-                </h3>
-                <p className="text-xs text-muted-foreground">{data.reasoning}</p>
-                <div className="space-y-2">
-                  {data.subtasks.map((s, i) => (
-                    <div key={i} className="bg-card/50 p-3 rounded-lg flex items-center justify-between border border-border/50">
-                      <div>
-                        <p className="text-sm font-medium">{s.title}</p>
-                        <span className="text-[10px] text-muted-foreground">{s.estimatedMinutes}m - {s.priority}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex justify-end gap-2 pt-2 border-t border-border/30">
-                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 gap-1" onClick={() => rejectStaged({ id: suggestion._id })}>
-                    <X size={14} /> Reject
-                  </Button>
-                  <Button size="sm" className="bg-teal-500 hover:bg-teal-400 text-white gap-1" onClick={() => handleAcceptChunks(suggestion._id, data.subtasks)}>
-                    <Check size={14} /> Accept & Create
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                <Clock size={12} /> Start Time
+              </label>
+              <Input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                onBlur={handleSave}
+                className="bg-card border-border"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                <Clock size={12} /> Duration (min)
+              </label>
+              <Input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                onBlur={handleSave}
+                placeholder="e.g. 60"
+                className="bg-card border-border"
+              />
+            </div>
+          </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Notes</label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={handleSave} placeholder="Add some details..." className="min-h-[200px] bg-card border-border resize-none" />
+            <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+              <Repeat size={12} /> Recurrence
+            </label>
+            <select
+              value={recurrenceRule}
+              onChange={(e) => {
+                setRecurrenceRule(e.target.value);
+                setTimeout(handleSave, 0);
+              }}
+              className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm"
+            >
+              {RECURRENCE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {task.status !== "done" && (
+            <Button
+              onClick={handleComplete}
+              className="w-full gap-2 bg-teal-500 hover:bg-teal-400 text-white"
+            >
+              <Check size={16} />
+              {task.recurrenceRule
+                ? "Complete & Create Next"
+                : "Mark Complete"}
+            </Button>
+          )}
+
+          {thisTaskStaged.length > 0 &&
+            thisTaskStaged.map((suggestion) => {
+              const data = suggestion.data as {
+                subtasks: Subtask[];
+                reasoning: string;
+              };
+              return (
+                <div
+                  key={suggestion._id}
+                  className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-3"
+                >
+                  <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                    <Sparkles size={14} /> AI Subtasks
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {data.reasoning}
+                  </p>
+                  <div className="space-y-2">
+                    {data.subtasks.map((s, i) => (
+                      <div
+                        key={i}
+                        className="bg-card/50 p-3 rounded-lg flex items-center justify-between border border-border/50"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{s.title}</p>
+                          <span className="text-[10px] text-muted-foreground">
+                            {s.estimatedMinutes}m - {s.priority}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2 border-t border-border/30">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10 gap-1"
+                      onClick={() =>
+                        rejectStaged({ id: suggestion._id })
+                      }
+                    >
+                      <X size={14} /> Reject
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-teal-500 hover:bg-teal-400 text-white gap-1"
+                      onClick={() =>
+                        handleAcceptChunks(suggestion._id, data.subtasks)
+                      }
+                    >
+                      <Check size={14} /> Accept & Create
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              Notes
+            </label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              onBlur={handleSave}
+              placeholder="Add some details..."
+              className="min-h-[200px] bg-card border-border resize-none"
+            />
           </div>
         </div>
       </div>

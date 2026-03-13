@@ -15,6 +15,11 @@ import Chat from "@/pages/Chat";
 import Settings from "@/pages/Settings";
 import Onboarding from "@/pages/Onboarding";
 import DailyPlan from "@/pages/DailyPlan";
+import Calendar from "@/pages/Calendar";
+import PeriodNotes from "@/pages/PeriodNotes";
+import TaskFilters from "@/pages/TaskFilters";
+import NoteTemplates from "@/pages/NoteTemplates";
+import PublishedNote from "@/pages/PublishedNote";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -23,6 +28,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/onboarding" component={Onboarding} />
+      
+      <Route path="/published/:slug">
+        <PublishedNote />
+      </Route>
       
       <Route path="/">
         <AppLayout><Dashboard /></AppLayout>
@@ -53,6 +62,18 @@ function Router() {
       </Route>
       <Route path="/plan">
         <AppLayout><DailyPlan /></AppLayout>
+      </Route>
+      <Route path="/calendar">
+        <AppLayout><Calendar /></AppLayout>
+      </Route>
+      <Route path="/period-notes">
+        <AppLayout><PeriodNotes /></AppLayout>
+      </Route>
+      <Route path="/filters">
+        <AppLayout><TaskFilters /></AppLayout>
+      </Route>
+      <Route path="/templates">
+        <AppLayout><NoteTemplates /></AppLayout>
       </Route>
       
       <Route component={NotFound} />

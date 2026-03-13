@@ -29,6 +29,14 @@ tags:
     description: Onboarding flow
   - name: staging
     description: AI suggestion staging (Accept/Edit/Reject)
+  - name: calendarEvents
+    description: Calendar event management
+  - name: noteLinks
+    description: Bi-directional note linking
+  - name: savedFilters
+    description: Saved task filters
+  - name: noteTemplates
+    description: Note templates
 
 paths:
   /healthz:
@@ -63,6 +71,14 @@ paths:
           in: query
           schema:
             type: integer
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of tasks
@@ -151,6 +167,27 @@ paths:
         "404":
           description: Not found
 
+  /tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      tags: [tasks]
+      summary: Complete a task and auto-create next occurrence for recurring tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completed task (and optionally the next recurring instance)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteTaskResponse"
+        "404":
+          description: Not found
+
   /notes:
     get:
       operationId: listNotes
@@ -165,6 +202,15 @@ paths:
           in: query
           schema:
             type: integer
+        - name: periodType
+          in: query
+          schema:
+            type: string
+            enum: [weekly, monthly, yearly]
+        - name: search
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of notes
@@ -873,6 +919,347 @@ paths:
                 items:
                   $ref: "#/components/schemas/Template"
 
+  /calendar-events:
+    get:
+      operationId: listCalendarEvents
+      tags: [calendarEvents]
+      summary: List calendar events
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of calendar events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarEvent"
+    post:
+      operationId: createCalendarEvent
+      tags: [calendarEvents]
+      summary: Create a calendar event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCalendarEventBody"
+      responses:
+        "201":
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+
+  /calendar-events/{id}:
+    get:
+      operationId: getCalendarEvent
+      tags: [calendarEvents]
+      summary: Get a calendar event by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Calendar event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCalendarEvent
+      tags: [calendarEvents]
+      summary: Update a calendar event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCalendarEventBody"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCalendarEvent
+      tags: [calendarEvents]
+      summary: Delete a calendar event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /note-links:
+    get:
+      operationId: listNoteLinks
+      tags: [noteLinks]
+      summary: List note links for a given note
+      parameters:
+        - name: noteId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of linked notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NoteLink"
+    post:
+      operationId: createNoteLink
+      tags: [noteLinks]
+      summary: Create a link between two notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteLinkBody"
+      responses:
+        "201":
+          description: Created note link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteLink"
+
+  /note-links/{id}:
+    delete:
+      operationId: deleteNoteLink
+      tags: [noteLinks]
+      summary: Delete a note link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /saved-filters:
+    get:
+      operationId: listSavedFilters
+      tags: [savedFilters]
+      summary: List saved filters
+      responses:
+        "200":
+          description: List of saved filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedFilter"
+    post:
+      operationId: createSavedFilter
+      tags: [savedFilters]
+      summary: Create a saved filter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSavedFilterBody"
+      responses:
+        "201":
+          description: Created filter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedFilter"
+
+  /saved-filters/{id}:
+    delete:
+      operationId: deleteSavedFilter
+      tags: [savedFilters]
+      summary: Delete a saved filter
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /note-templates:
+    get:
+      operationId: listNoteTemplates
+      tags: [noteTemplates]
+      summary: List note templates
+      responses:
+        "200":
+          description: List of note templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NoteTemplate"
+    post:
+      operationId: createNoteTemplate
+      tags: [noteTemplates]
+      summary: Create a note template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteTemplateBody"
+      responses:
+        "201":
+          description: Created template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteTemplate"
+
+  /note-templates/{id}:
+    delete:
+      operationId: deleteNoteTemplate
+      tags: [noteTemplates]
+      summary: Delete a note template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /note-templates/seed:
+    post:
+      operationId: seedNoteTemplates
+      tags: [noteTemplates]
+      summary: Seed built-in note templates
+      responses:
+        "200":
+          description: Seeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                required:
+                  - count
+
+  /notes/{id}/publish:
+    post:
+      operationId: publishNote
+      tags: [notes]
+      summary: Publish or unpublish a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isPublished:
+                  type: boolean
+              required:
+                - isPublished
+      responses:
+        "200":
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+
+  /published/{slug}:
+    get:
+      operationId: getPublishedNote
+      tags: [notes]
+      summary: Get a published note by slug (public, no auth)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "404":
+          description: Not found
+
+  /search:
+    get:
+      operationId: globalSearch
+      tags: [notes]
+      summary: Search across notes and tasks
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+
 components:
   schemas:
     HealthStatus:
@@ -980,6 +1367,15 @@ components:
         aiGenerated:
           type: boolean
           default: false
+        startTime:
+          type: string
+          nullable: true
+        duration:
+          type: integer
+          nullable: true
+        recurrenceRule:
+          type: string
+          nullable: true
       required:
         - title
 
@@ -1019,6 +1415,27 @@ components:
         parentTaskId:
           type: integer
           nullable: true
+        aiGenerated:
+          type: boolean
+        startTime:
+          type: string
+          nullable: true
+        duration:
+          type: integer
+          nullable: true
+        recurrenceRule:
+          type: string
+          nullable: true
+
+    CompleteTaskResponse:
+      type: object
+      properties:
+        completedTask:
+          $ref: "#/components/schemas/Task"
+        nextTask:
+          $ref: "#/components/schemas/Task"
+      required:
+        - completedTask
 
     Note:
       type: object
@@ -1044,6 +1461,18 @@ components:
           nullable: true
         isPinned:
           type: boolean
+        periodType:
+          type: string
+          nullable: true
+          enum: [weekly, monthly, yearly]
+        periodDate:
+          type: string
+          nullable: true
+        isPublished:
+          type: boolean
+        publishSlug:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -1056,6 +1485,7 @@ components:
         - content
         - tags
         - isPinned
+        - isPublished
         - createdAt
         - updatedAt
 
@@ -1083,6 +1513,13 @@ components:
         isPinned:
           type: boolean
           default: false
+        periodType:
+          type: string
+          nullable: true
+          enum: [weekly, monthly, yearly]
+        periodDate:
+          type: string
+          nullable: true
       required:
         - title
 
@@ -1108,6 +1545,12 @@ components:
           nullable: true
         isPinned:
           type: boolean
+        periodType:
+          type: string
+          nullable: true
+        periodDate:
+          type: string
+          nullable: true
 
     Project:
       type: object
@@ -1677,3 +2120,219 @@ components:
       required:
         - type
         - data
+
+    CalendarEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        date:
+          type: string
+        startTime:
+          type: string
+          nullable: true
+        endTime:
+          type: string
+          nullable: true
+        duration:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - date
+        - createdAt
+        - updatedAt
+
+    CreateCalendarEventBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        date:
+          type: string
+        startTime:
+          type: string
+          nullable: true
+        endTime:
+          type: string
+          nullable: true
+        duration:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          nullable: true
+      required:
+        - title
+        - date
+
+    UpdateCalendarEventBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        date:
+          type: string
+        startTime:
+          type: string
+          nullable: true
+        endTime:
+          type: string
+          nullable: true
+        duration:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          nullable: true
+
+    NoteLink:
+      type: object
+      properties:
+        id:
+          type: integer
+        sourceNoteId:
+          type: integer
+        targetNoteId:
+          type: integer
+        targetNoteTitle:
+          type: string
+        sourceNoteTitle:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sourceNoteId
+        - targetNoteId
+        - createdAt
+
+    CreateNoteLinkBody:
+      type: object
+      properties:
+        sourceNoteId:
+          type: integer
+        targetNoteId:
+          type: integer
+      required:
+        - sourceNoteId
+        - targetNoteId
+
+    SavedFilter:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        conditions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - conditions
+        - createdAt
+
+    CreateSavedFilterBody:
+      type: object
+      properties:
+        name:
+          type: string
+        conditions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - name
+        - conditions
+
+    NoteTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        content:
+          type: string
+        category:
+          type: string
+          nullable: true
+        isBuiltIn:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - content
+        - isBuiltIn
+        - createdAt
+
+    CreateNoteTemplateBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        content:
+          type: string
+        category:
+          type: string
+          nullable: true
+        isBuiltIn:
+          type: boolean
+          default: false
+      required:
+        - name
+        - content
+
+    SearchResults:
+      type: object
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Note"
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+      required:
+        - notes
+        - tasks

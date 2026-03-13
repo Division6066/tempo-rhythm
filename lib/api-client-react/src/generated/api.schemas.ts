@@ -78,6 +78,9 @@ export interface CreateTaskBody {
   notes?: string | null;
   parentTaskId?: number | null;
   aiGenerated?: boolean;
+  startTime?: string | null;
+  duration?: number | null;
+  recurrenceRule?: string | null;
 }
 
 export type UpdateTaskBodyStatus =
@@ -112,7 +115,26 @@ export interface UpdateTaskBody {
   estimatedMinutes?: number | null;
   notes?: string | null;
   parentTaskId?: number | null;
+  aiGenerated?: boolean;
+  startTime?: string | null;
+  duration?: number | null;
+  recurrenceRule?: string | null;
 }
+
+export interface CompleteTaskResponse {
+  completedTask: Task;
+  nextTask?: Task;
+}
+
+export type NotePeriodType =
+  | (typeof NotePeriodType)[keyof typeof NotePeriodType]
+  | null;
+
+export const NotePeriodType = {
+  weekly: "weekly",
+  monthly: "monthly",
+  yearly: "yearly",
+} as const;
 
 export interface Note {
   id: number;
@@ -123,9 +145,23 @@ export interface Note {
   tags: string[];
   templateType?: string | null;
   isPinned: boolean;
+  periodType?: NotePeriodType;
+  periodDate?: string | null;
+  isPublished: boolean;
+  publishSlug?: string | null;
   createdAt: string;
   updatedAt: string;
 }
+
+export type CreateNoteBodyPeriodType =
+  | (typeof CreateNoteBodyPeriodType)[keyof typeof CreateNoteBodyPeriodType]
+  | null;
+
+export const CreateNoteBodyPeriodType = {
+  weekly: "weekly",
+  monthly: "monthly",
+  yearly: "yearly",
+} as const;
 
 export interface CreateNoteBody {
   title: string;
@@ -135,6 +171,8 @@ export interface CreateNoteBody {
   tags?: string[];
   templateType?: string | null;
   isPinned?: boolean;
+  periodType?: CreateNoteBodyPeriodType;
+  periodDate?: string | null;
 }
 
 export interface UpdateNoteBody {
@@ -145,6 +183,8 @@ export interface UpdateNoteBody {
   tags?: string[];
   templateType?: string | null;
   isPinned?: boolean;
+  periodType?: string | null;
+  periodDate?: string | null;
 }
 
 export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
@@ -485,10 +525,98 @@ export interface CreateStagedSuggestionBody {
   reasoning?: string;
 }
 
+export interface CalendarEvent {
+  id: number;
+  title: string;
+  description?: string | null;
+  date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  duration?: number | null;
+  color?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCalendarEventBody {
+  title: string;
+  description?: string | null;
+  date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  duration?: number | null;
+  color?: string | null;
+}
+
+export interface UpdateCalendarEventBody {
+  title?: string;
+  description?: string | null;
+  date?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  duration?: number | null;
+  color?: string | null;
+}
+
+export interface NoteLink {
+  id: number;
+  sourceNoteId: number;
+  targetNoteId: number;
+  targetNoteTitle?: string;
+  sourceNoteTitle?: string;
+  createdAt: string;
+}
+
+export interface CreateNoteLinkBody {
+  sourceNoteId: number;
+  targetNoteId: number;
+}
+
+export type SavedFilterConditionsItem = { [key: string]: unknown };
+
+export interface SavedFilter {
+  id: number;
+  name: string;
+  conditions: SavedFilterConditionsItem[];
+  createdAt: string;
+}
+
+export type CreateSavedFilterBodyConditionsItem = { [key: string]: unknown };
+
+export interface CreateSavedFilterBody {
+  name: string;
+  conditions: CreateSavedFilterBodyConditionsItem[];
+}
+
+export interface NoteTemplate {
+  id: number;
+  name: string;
+  description?: string | null;
+  content: string;
+  category?: string | null;
+  isBuiltIn: boolean;
+  createdAt: string;
+}
+
+export interface CreateNoteTemplateBody {
+  name: string;
+  description?: string | null;
+  content: string;
+  category?: string | null;
+  isBuiltIn?: boolean;
+}
+
+export interface SearchResults {
+  notes: Note[];
+  tasks: Task[];
+}
+
 export type ListTasksParams = {
   status?: ListTasksStatus;
   projectId?: number;
   folderId?: number;
+  startDate?: string;
+  endDate?: string;
 };
 
 export type ListTasksStatus =
@@ -505,7 +633,18 @@ export const ListTasksStatus = {
 export type ListNotesParams = {
   projectId?: number;
   folderId?: number;
+  periodType?: ListNotesPeriodType;
+  search?: string;
 };
+
+export type ListNotesPeriodType =
+  (typeof ListNotesPeriodType)[keyof typeof ListNotesPeriodType];
+
+export const ListNotesPeriodType = {
+  weekly: "weekly",
+  monthly: "monthly",
+  yearly: "yearly",
+} as const;
 
 export type ListDailyPlansParams = {
   date?: string;
@@ -529,4 +668,25 @@ export type UpdateStagedSuggestionDataBodyData = { [key: string]: unknown };
 
 export type UpdateStagedSuggestionDataBody = {
   data: UpdateStagedSuggestionDataBodyData;
+};
+
+export type ListCalendarEventsParams = {
+  startDate?: string;
+  endDate?: string;
+};
+
+export type ListNoteLinksParams = {
+  noteId: number;
+};
+
+export type SeedNoteTemplates200 = {
+  count: number;
+};
+
+export type PublishNoteBody = {
+  isPublished: boolean;
+};
+
+export type GlobalSearchParams = {
+  q: string;
 };

@@ -5,8 +5,11 @@
  * TEMPO ADHD-friendly AI daily planner API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListNotesPeriodType } from "./listNotesPeriodType";
 
 export type ListNotesParams = {
   projectId?: number;
   folderId?: number;
+  periodType?: ListNotesPeriodType;
+  search?: string;
 };

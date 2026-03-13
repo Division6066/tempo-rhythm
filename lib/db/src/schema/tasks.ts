@@ -16,6 +16,9 @@ export const tasksTable = pgTable("tasks", {
   notes: text("notes"),
   parentTaskId: integer("parent_task_id"),
   aiGenerated: boolean("ai_generated").notNull().default(false),
+  startTime: text("start_time"),
+  duration: integer("duration"),
+  recurrenceRule: text("recurrence_rule"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

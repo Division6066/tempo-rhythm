@@ -7,7 +7,19 @@ import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings as SettingsIcon, BrainCircuit, Clock, Moon, Sun } from "lucide-react";
+import {
+  Settings as SettingsIcon,
+  BrainCircuit,
+  Clock,
+  Moon,
+  Sun,
+  FileText,
+  Filter,
+  BookTemplate,
+  Calendar,
+  Hash,
+  MessageSquare,
+} from "lucide-react";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -74,13 +86,17 @@ export default function SettingsPage() {
                   <BrainCircuit className="text-primary" size={18} />
                   ADHD Mode
                 </label>
-                <p className="text-sm text-muted-foreground">Gentle prompts, visual chunking, and overwhelm reduction.</p>
+                <p className="text-sm text-muted-foreground">
+                  Gentle prompts, visual chunking, and overwhelm reduction.
+                </p>
               </div>
               <button
                 onClick={() => handleChange("adhdMode", !formData.adhdMode)}
                 className={`w-11 h-6 rounded-full transition-colors cursor-pointer ${formData.adhdMode ? "bg-primary" : "bg-muted"}`}
               >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${formData.adhdMode ? "translate-x-5.5" : "translate-x-0.5"}`} />
+                <div
+                  className={`w-5 h-5 bg-white rounded-full transition-transform ${formData.adhdMode ? "translate-x-5.5" : "translate-x-0.5"}`}
+                />
               </button>
             </div>
           </CardContent>
@@ -88,15 +104,31 @@ export default function SettingsPage() {
 
         <Card className="glass border-border/50">
           <CardContent className="p-6 space-y-6">
-            <h2 className="font-semibold text-lg border-b border-border/50 pb-2">Routine</h2>
+            <h2 className="font-semibold text-lg border-b border-border/50 pb-2">
+              Routine
+            </h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm"><Sun size={16} /> Wake Time</label>
-                <Input type="time" value={formData.wakeTime} onChange={(e) => handleChange("wakeTime", e.target.value)} className="bg-background" />
+                <label className="flex items-center gap-2 text-sm">
+                  <Sun size={16} /> Wake Time
+                </label>
+                <Input
+                  type="time"
+                  value={formData.wakeTime}
+                  onChange={(e) => handleChange("wakeTime", e.target.value)}
+                  className="bg-background"
+                />
               </div>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm"><Moon size={16} /> Sleep Time</label>
-                <Input type="time" value={formData.sleepTime} onChange={(e) => handleChange("sleepTime", e.target.value)} className="bg-background" />
+                <label className="flex items-center gap-2 text-sm">
+                  <Moon size={16} /> Sleep Time
+                </label>
+                <Input
+                  type="time"
+                  value={formData.sleepTime}
+                  onChange={(e) => handleChange("sleepTime", e.target.value)}
+                  className="bg-background"
+                />
               </div>
             </div>
           </CardContent>
@@ -104,22 +136,50 @@ export default function SettingsPage() {
 
         <Card className="glass border-border/50">
           <CardContent className="p-6 space-y-6">
-            <h2 className="font-semibold text-lg border-b border-border/50 pb-2">Focus Sessions</h2>
+            <h2 className="font-semibold text-lg border-b border-border/50 pb-2">
+              Focus Sessions
+            </h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm"><Clock size={16} /> Focus (min)</label>
-                <Input type="number" value={formData.focusSessionMinutes} onChange={(e) => handleChange("focusSessionMinutes", parseInt(e.target.value))} className="bg-background" />
+                <label className="flex items-center gap-2 text-sm">
+                  <Clock size={16} /> Focus (min)
+                </label>
+                <Input
+                  type="number"
+                  value={formData.focusSessionMinutes}
+                  onChange={(e) =>
+                    handleChange(
+                      "focusSessionMinutes",
+                      parseInt(e.target.value)
+                    )
+                  }
+                  className="bg-background"
+                />
               </div>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm"><Clock size={16} className="text-muted-foreground" /> Break (min)</label>
-                <Input type="number" value={formData.breakMinutes} onChange={(e) => handleChange("breakMinutes", parseInt(e.target.value))} className="bg-background" />
+                <label className="flex items-center gap-2 text-sm">
+                  <Clock size={16} className="text-muted-foreground" /> Break
+                  (min)
+                </label>
+                <Input
+                  type="number"
+                  value={formData.breakMinutes}
+                  onChange={(e) =>
+                    handleChange("breakMinutes", parseInt(e.target.value))
+                  }
+                  className="bg-background"
+                />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <div className="space-y-3">
-          <Button onClick={handleSave} disabled={saving} className="w-full h-12 text-lg">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full h-12 text-lg"
+          >
             {saving ? "Saving..." : "Save Settings"}
           </Button>
           <div className="grid grid-cols-2 gap-3">
@@ -130,9 +190,38 @@ export default function SettingsPage() {
               <Link href="/notes">Notes</Link>
             </Button>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button asChild variant="outline" className="h-12 gap-2">
+              <Link href="/templates">
+                <BookTemplate size={16} /> Templates
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-12 gap-2">
+              <Link href="/filters">
+                <Filter size={16} /> Filters
+              </Link>
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button asChild variant="outline" className="h-12 gap-2">
+              <Link href="/calendar">
+                <Calendar size={16} /> Calendar
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-12 gap-2">
+              <Link href="/chat">
+                <MessageSquare size={16} /> AI Chat
+              </Link>
+            </Button>
+          </div>
           <Button asChild variant="outline" className="w-full h-12">
-            <Link href="/chat">AI Chat</Link>
+            <Link href="/plan">Daily Plan</Link>
           </Button>
+          <div className="mt-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Tip: Press Cmd+K (or Ctrl+K) to open the command bar
+            </p>
+          </div>
         </div>
       </div>
     </AppLayout>

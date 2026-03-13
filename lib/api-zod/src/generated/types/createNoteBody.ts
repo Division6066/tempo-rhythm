@@ -5,6 +5,7 @@
  * TEMPO ADHD-friendly AI daily planner API
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateNoteBodyPeriodType } from "./createNoteBodyPeriodType";
 
 export interface CreateNoteBody {
   title: string;
@@ -14,4 +15,6 @@ export interface CreateNoteBody {
   tags?: string[];
   templateType?: string | null;
   isPinned?: boolean;
+  periodType?: CreateNoteBodyPeriodType;
+  periodDate?: string | null;
 }

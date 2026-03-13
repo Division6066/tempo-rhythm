@@ -7,3 +7,7 @@ export * from "./dailyPlans";
 export * from "./preferences";
 export * from "./memories";
 export * from "./stagedSuggestions";
+export * from "./calendarEvents";
+export * from "./noteLinks";
+export * from "./savedFilters";
+export * from "./noteTemplates";

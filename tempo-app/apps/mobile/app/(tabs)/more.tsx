@@ -10,7 +10,10 @@ export default function MoreScreen() {
   const items = [
     { label: "Projects", icon: "folder" as const, color: colors.teal, route: "/projects" },
     { label: "Notes", icon: "document-text" as const, color: colors.primary, route: "/notes" },
-    { label: "Daily Plan", icon: "calendar" as const, color: colors.amber, route: "/plan" },
+    { label: "Calendar", icon: "calendar" as const, color: colors.amber, route: "/calendar" },
+    { label: "Daily Plan", icon: "today" as const, color: colors.amber, route: "/plan" },
+    { label: "Templates", icon: "copy" as const, color: colors.teal, route: "/templates" },
+    { label: "Filters", icon: "filter" as const, color: colors.primary, route: "/filters" },
     { label: "Settings", icon: "settings" as const, color: colors.muted, route: "/settings" },
   ];
 
