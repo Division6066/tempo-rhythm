@@ -1,0 +1,19 @@
+{
+  "name": "tempo-app",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:mobile": "cd apps/mobile && npx expo start",
+    "dev:convex": "npx convex dev",
+    "build:web": "cd apps/web && npm run build",
+    "deploy:convex": "npx convex deploy"
+  },
+  "devDependencies": {
+    "convex": "^1.31.0"
+  }
+}

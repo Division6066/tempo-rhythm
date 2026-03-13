@@ -2,74 +2,84 @@
 
 ## Overview
 
-TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily planning, tasks, notes, projects, folders, tags, lightweight personal memory, and AI-assisted planning into one tool. Built as a React + Vite web app with an Express backend.
+TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily planning, tasks, notes, projects, folders, tags, lightweight personal memory, and AI-assisted planning into one tool.
 
-## Stack
+## Two Implementations
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **Frontend**: React + Vite + Tailwind CSS + Framer Motion + Wouter
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **AI**: OpenAI via Replit AI Integrations (gpt-5.2)
-- **Validation**: Zod (zod/v4), drizzle-zod
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle for API server)
-- **Icons**: Lucide React
+### 1. Original (React + Vite + Express + PostgreSQL)
+Located in `artifacts/tempo` + `artifacts/api-server`. Fully functional reference implementation.
+
+### 2. Convex Monorepo (Next.js + Expo + Convex)
+Located in `tempo-app/`. Restructured for cross-platform deployment with a shared Convex backend.
+
+## Stack (Convex Monorepo)
+
+- **Monorepo tool**: npm workspaces
+- **Backend**: Convex (real-time, serverless)
+- **Web**: Next.js 15 + Tailwind CSS v4 + Framer Motion
+- **Mobile**: Expo SDK 54 + NativeWind + Expo Router
+- **Auth**: @convex-dev/auth (Password provider)
+- **AI**: OpenAI via fetch (gpt-4o)
+- **Icons**: Lucide React (web), @expo/vector-icons (mobile)
 - **Date utils**: date-fns
-- **Markdown**: react-markdown
+- **Markdown**: react-markdown (web)
 
-## Structure
+## Structure (tempo-app/)
 
 ```text
-artifacts-monorepo/
-├── artifacts/
-│   ├── api-server/                  # Express API server
-│   │   └── src/routes/
-│   │       ├── tasks.ts             # Task CRUD
-│   │       ├── notes.ts             # Note CRUD
-│   │       ├── projects.ts          # Project CRUD
-│   │       ├── folders.ts           # Folder CRUD
-│   │       ├── tags.ts              # Tag CRUD
-│   │       ├── dailyPlans.ts        # Daily plan CRUD
-│   │       ├── preferences.ts       # User preferences + onboarding
-│   │       ├── memories.ts          # Memory items CRUD
-│   │       ├── templates.ts         # Plan template primitives
-│   │       └── ai.ts               # AI endpoints (chat, extract, chunk, prioritize, plan)
-│   ├── tempo/                       # React + Vite frontend
-│   │   └── src/
-│   │       ├── pages/               # All app pages
-│   │       ├── components/          # Shared components (Layout, TaskCard, QuickCapture)
-│   │       └── index.css            # TEMPO design tokens
-│   └── mockup-sandbox/             # Design mockup sandbox
-├── lib/
-│   ├── api-spec/                    # OpenAPI spec + codegen config
-│   ├── api-client-react/            # Generated React Query hooks
-│   ├── api-zod/                     # Generated Zod schemas
-│   ├── db/                          # Drizzle ORM schema + DB connection
-│   │   └── src/schema/
-│   │       ├── tasks.ts
-│   │       ├── notes.ts
-│   │       ├── projects.ts
-│   │       ├── folders.ts
-│   │       ├── tags.ts
-│   │       ├── dailyPlans.ts
-│   │       ├── preferences.ts
-│   │       └── memories.ts
-│   └── integrations-openai-ai-server/  # OpenAI AI integration
-├── pnpm-workspace.yaml
-├── tsconfig.base.json
-└── tsconfig.json
+tempo-app/
+├── package.json                    # npm workspaces root
+├── convex/                         # Shared Convex backend
+│   ├── schema.ts                   # 8 tables: users, tasks, notes, projects, folders, tags, dailyPlans, preferences, memories
+│   ├── auth.ts                     # Password auth with createOrUpdateUser
+│   ├── auth.config.ts              # Convex auth config
+│   ├── http.ts                     # HTTP router for auth
+│   ├── tasks.ts                    # Task CRUD (list, get, create, update, remove)
+│   ├── notes.ts                    # Note CRUD
+│   ├── projects.ts                 # Project CRUD
+│   ├── folders.ts                  # Folder CRUD
+│   ├── tags.ts                     # Tag CRUD
+│   ├── dailyPlans.ts               # Daily plan CRUD
+│   ├── preferences.ts              # Preferences upsert
+│   ├── memories.ts                 # Memory CRUD
+│   ├── users.ts                    # User queries
+│   └── ai.ts                       # AI actions (chat, extractTasks, chunkTask, prioritize, generatePlan)
+├── apps/
+│   ├── web/                        # Next.js 15 web app
+│   │   ├── app/
+│   │   │   ├── page.tsx            # Dashboard
+│   │   │   ├── layout.tsx          # Root layout with Convex provider
+│   │   │   ├── globals.css         # TEMPO design tokens
+│   │   │   ├── today/page.tsx      # Today's tasks
+│   │   │   ├── inbox/page.tsx      # Inbox + brain dump
+│   │   │   ├── chat/page.tsx       # AI chat
+│   │   │   ├── projects/page.tsx   # Projects list
+│   │   │   ├── notes/page.tsx      # Notes list
+│   │   │   ├── notes/[id]/page.tsx # Note editor
+│   │   │   ├── plan/page.tsx       # Daily plan
+│   │   │   ├── settings/page.tsx   # Settings
+│   │   │   ├── onboarding/page.tsx # Onboarding flow
+│   │   │   └── tasks/[id]/page.tsx # Task detail
+│   │   ├── components/             # UI components
+│   │   ├── lib/utils.ts            # Utility functions
+│   │   └── middleware.ts           # Convex auth middleware
+│   └── mobile/                     # Expo SDK 54 mobile app
+│       ├── app/
+│       │   ├── _layout.tsx         # Root layout with Convex
+│       │   ├── (tabs)/             # Tab navigation
+│       │   │   ├── index.tsx       # Home
+│       │   │   ├── today.tsx       # Today
+│       │   │   ├── inbox.tsx       # Inbox
+│       │   │   ├── chat.tsx        # AI Chat
+│       │   │   └── more.tsx        # More menu
+│       │   ├── task/[id].tsx       # Task detail
+│       │   ├── note/[id].tsx       # Note editor
+│       │   ├── notes.tsx           # Notes list
+│       │   ├── projects.tsx        # Projects
+│       │   ├── plan.tsx            # Daily plan
+│       │   └── settings.tsx        # Settings
+│       └── lib/                    # Theme + Convex client
 ```
-
-## Architecture Layers
-
-1. **Layer A - Transactional State** (PostgreSQL): Tasks, notes, projects, folders, tags, daily plans, accepted AI outputs
-2. **Layer B - Memory** (PostgreSQL): User preferences, routines, energy patterns, ADHD constraints, planning context
-3. **Layer C - Templates**: Fixed library of plan block primitives (top3, focusBlock, taskSection, reflection, etc.)
-4. **Layer D - AI Helper** (Advisory only): Task extraction, prioritization, chunking, plan generation. Never writes directly to planner state.
 
 ## Design System
 
@@ -81,35 +91,51 @@ artifacts-monorepo/
 - Error: Red #FF6B6B
 - Dark-first theme, ADHD-friendly with low cognitive load
 
-## Key Pages
+## Key Pages (both web and mobile)
 
-- `/` - Dashboard with progress, stats, AI assistant link
-- `/today` - Today's tasks grouped by priority
-- `/inbox` - Quick capture + brain dump with AI extraction
-- `/chat` - AI assistant chat interface
-- `/projects` - Color-coded project list
-- `/notes` - Notes list + markdown editor
-- `/settings` - Preferences + memory viewer
-- `/onboarding` - Multi-step ADHD preference setup
-- `/plan` - AI-generated daily plan with accept/edit/reject
+- Dashboard with progress ring, stats, AI assistant link
+- Today's tasks grouped by priority
+- Inbox with quick capture + brain dump (AI extraction)
+- AI assistant chat interface
+- Color-coded project list
+- Notes list + markdown editor (web) / plain text (mobile)
+- Settings with ADHD mode toggle, routine, focus sessions
+- Onboarding with multi-step ADHD preference setup (web)
+- AI-generated daily plan with accept/edit/reject pattern
 
-## API Endpoints
+## AI Features
 
-All under `/api`:
-- Tasks: GET/POST `/tasks`, GET/PATCH/DELETE `/tasks/:id`
-- Notes: GET/POST `/notes`, GET/PATCH/DELETE `/notes/:id`
-- Projects: GET/POST `/projects`, PATCH/DELETE `/projects/:id`
-- Folders: GET/POST `/folders`, PATCH/DELETE `/folders/:id`
-- Tags: GET/POST `/tags`, DELETE `/tags/:id`
-- Daily Plans: GET/POST `/daily-plans`, GET/PATCH `/daily-plans/:id`
-- Preferences: GET/PUT `/preferences`
-- Memories: GET/POST `/memories`, DELETE `/memories/:id`
-- AI: POST `/ai/chat`, `/ai/extract-tasks`, `/ai/chunk-task`, `/ai/prioritize`, `/ai/generate-plan`
-- Onboarding: POST `/onboarding`
-- Templates: GET `/templates`
+All AI actions use OpenAI gpt-4o via Convex actions:
+- **Chat**: ADHD-aware conversational assistant with memory context
+- **Extract Tasks**: Parse messy brain dumps into structured tasks
+- **Chunk Task**: Break large tasks into 3-5 small subtasks (10-30 min each)
+- **Prioritize**: ADHD-optimized task ordering
+- **Generate Plan**: Create daily plan with blocks (top3, focusBlock, taskSection, reflection)
 
-## Commands
+## Environment Variables
 
-- `pnpm --filter @workspace/api-spec run codegen` - Regenerate API client hooks
-- `pnpm --filter @workspace/db run push` - Push DB schema changes
-- `pnpm run typecheck` - Full typecheck
+### Convex (.env.local in tempo-app/)
+- `OPENAI_API_KEY` - OpenAI API key for AI features
+- `OPENAI_BASE_URL` - Optional custom OpenAI endpoint
+
+### Web (apps/web/.env.local)
+- `NEXT_PUBLIC_CONVEX_URL` - Convex deployment URL
+- `CONVEX_DEPLOYMENT` - Convex deployment name
+
+### Mobile (apps/mobile/.env.local)
+- `EXPO_PUBLIC_CONVEX_URL` - Convex deployment URL
+
+## Setup Commands
+
+```bash
+cd tempo-app
+npm install
+npx convex dev          # Start Convex dev server (creates .env.local)
+cd apps/web && npm run dev    # Start Next.js dev server
+cd apps/mobile && npx expo start  # Start Expo dev server
+```
+
+## Original Stack Commands
+
+- `pnpm --filter @workspace/api-server run dev` - Start Express API server
+- `pnpm --filter @workspace/tempo run dev` - Start Vite frontend

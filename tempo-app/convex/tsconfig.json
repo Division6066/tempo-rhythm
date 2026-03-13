@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "allowJs": true,
+    "outDir": "./_generated"
+  },
+  "include": ["./**/*.ts", "./**/*.tsx"],
+  "exclude": ["node_modules", "./_generated"]
+}
