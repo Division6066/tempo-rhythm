@@ -17,9 +17,11 @@ import savedFiltersRouter from "./savedFilters";
 import noteTemplatesRouter from "./noteTemplates";
 import searchRouter from "./search";
 import transcribeRouter from "./transcribe";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
+router.use(authRouter);
 router.use(healthRouter);
 router.use(tasksRouter);
 router.use(notesRouter);

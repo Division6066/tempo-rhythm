@@ -7,22 +7,41 @@ import Layout from "@/components/Layout";
 export default function Login() {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Mock login delay
-    setTimeout(() => {
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        localStorage.setItem("tempo-token", data.token);
+        localStorage.setItem("tempo-user", JSON.stringify(data.user));
+        setLocation("/");
+      } else {
+        setError(data.error || "Invalid credentials");
+      }
+    } catch {
+      setError("Unable to connect to server");
+    } finally {
       setIsLoading(false);
-      // Since it's a marketing site, redirecting to home or onboarding
-      setLocation("/");
-    }, 1000);
+    }
   };
 
   return (
     <Layout hideNavFooter>
       <div className="min-h-screen flex flex-col md:flex-row">
-        {/* Left Side - Form */}
         <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12">
           <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-fit mb-12">
             <ArrowLeft size={16} /> Back to home
@@ -52,15 +71,23 @@ export default function Login() {
               <div className="flex-grow border-t border-border"></div>
             </div>
 
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label htmlFor="login-email" className="text-sm font-medium text-foreground">Email</label>
+                <label htmlFor="login-username" className="text-sm font-medium text-foreground">Username</label>
                 <input 
-                  id="login-email"
-                  type="email" 
+                  id="login-username"
+                  type="text" 
                   required
-                  autoComplete="email"
-                  placeholder="you@example.com"
+                  autoComplete="username"
+                  placeholder="admin"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-background border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
@@ -75,6 +102,8 @@ export default function Login() {
                   required
                   autoComplete="current-password"
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-background border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
@@ -95,7 +124,6 @@ export default function Login() {
           </motion.div>
         </div>
 
-        {/* Right Side - Visual */}
         <div className="hidden md:block md:w-1/2 bg-accent relative overflow-hidden">
           <img 
             src={`${import.meta.env.BASE_URL}images/hero-abstract.png`} 
