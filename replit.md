@@ -101,7 +101,7 @@ lib/
 5. **Time Blocking** — Schedule tasks with date, start time, and duration
 6. **Recurring Tasks** — Auto-create next occurrence on completion (daily/weekly/monthly/yearly/custom)
 7. **Advanced Task Filters** — Filter by status, priority, search; save/load filter presets (conditions array format)
-8. **Templates** — Built-in + custom note templates with variable substitution
+8. **Templates** — 10 built-in + custom note templates with variable substitution
 9. **Tags & @Mentions** — Auto-detected clickable #tags and @mentions in note content (navigate to search)
 10. **Note Publishing** — Toggle notes as published, generates public slug
 11. **Voice Notes** — Browser recording with server-side transcription proxy (no client-side API keys)
@@ -118,13 +118,15 @@ lib/
 
 ## Design System
 
-- Background: Deep indigo `#1A1A2E`
-- Surface/cards: `#252540`
+- Background: Warm white `#FAF8F5`
+- Surface/cards: White with glass effect
 - Primary: Violet `#6C63FF`
 - Success: Teal `#00C9A7`
 - Warning: Amber `#FFB347`
 - Error: Red `#FF6B6B`
-- Dark-first theme, ADHD-friendly with low cognitive load
+- Warm light theme, ADHD-friendly with low cognitive load
+- Now/Soon/Later friendly priority labels (replaces High/Medium/Low)
+- Energy level icons on tasks (BatteryLow/Medium/High)
 
 ## Key Commands
 

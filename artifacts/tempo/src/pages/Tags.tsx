@@ -86,7 +86,7 @@ export default function Tags() {
                       key={c.value}
                       type="button"
                       onClick={() => setColor(c.value)}
-                      className={`w-8 h-8 rounded-full border-2 transition-transform ${color === c.value ? "border-white scale-110" : "border-transparent"}`}
+                      className={`w-8 h-8 rounded-full border-2 transition-transform ${color === c.value ? "border-foreground scale-110" : "border-transparent"}`}
                       style={{ backgroundColor: c.value }}
                     />
                   ))}

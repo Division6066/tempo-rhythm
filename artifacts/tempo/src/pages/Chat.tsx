@@ -185,7 +185,7 @@ export default function Chat() {
                 {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
               </div>
               <div className={`flex flex-col gap-2 max-w-[80%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                <div className={`p-4 rounded-2xl ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border rounded-tl-sm text-foreground prose prose-invert prose-p:leading-snug prose-p:my-1"}`}>
+                <div className={`p-4 rounded-2xl ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border rounded-tl-sm text-foreground prose prose-neutral prose-p:leading-snug prose-p:my-1"}`}>
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
                 {msg.suggestions && msg.suggestions.length > 0 && (

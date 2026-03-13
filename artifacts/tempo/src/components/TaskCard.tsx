@@ -1,7 +1,19 @@
-import { CheckCircle2, Circle, Clock } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Battery, BatteryLow, BatteryMedium } from "lucide-react";
 import { Link } from "wouter";
 import { Task, useUpdateTask, getListTasksQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+
+const PRIORITY_LABELS: Record<string, string> = {
+  high: "Now",
+  medium: "Soon",
+  low: "Later",
+};
+
+const ENERGY_ICONS: Record<number, { icon: typeof Battery; label: string; color: string }> = {
+  1: { icon: BatteryLow, label: "Low energy", color: "text-green-500" },
+  2: { icon: BatteryMedium, label: "Med energy", color: "text-amber-500" },
+  3: { icon: Battery, label: "High energy", color: "text-red-500" },
+};
 
 export default function TaskCard({ task }: { task: Task }) {
   const updateTask = useUpdateTask();
@@ -20,10 +32,12 @@ export default function TaskCard({ task }: { task: Task }) {
   };
 
   const priorityColors = {
-    high: "bg-teal-500/20 text-teal-400",
-    medium: "bg-amber-500/20 text-amber-400",
+    high: "bg-teal-500/20 text-teal-600",
+    medium: "bg-amber-500/20 text-amber-600",
     low: "bg-muted text-muted-foreground"
   };
+
+  const energyInfo = task.energyLevel ? ENERGY_ICONS[task.energyLevel] : null;
 
   return (
     <Link href={`/tasks/${task.id}`}>
@@ -41,12 +55,18 @@ export default function TaskCard({ task }: { task: Task }) {
           </p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
-              {task.priority}
+              {PRIORITY_LABELS[task.priority] || task.priority}
             </span>
             {task.estimatedMinutes && (
               <span className="flex items-center text-[10px] text-muted-foreground">
                 <Clock size={10} className="mr-1" />
                 {task.estimatedMinutes}m
+              </span>
+            )}
+            {energyInfo && (
+              <span className={`flex items-center text-[10px] ${energyInfo.color}`}>
+                <energyInfo.icon size={10} className="mr-1" />
+                {energyInfo.label}
               </span>
             )}
             {task.aiGenerated && (

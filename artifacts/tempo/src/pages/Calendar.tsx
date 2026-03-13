@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import {
   useListCalendarEvents,
   useCreateCalendarEvent,
+  useUpdateCalendarEvent,
   useDeleteCalendarEvent,
   useListTasks,
   getListCalendarEventsQueryKey,
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, Trash2, LayoutGrid, Rows3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, Trash2, LayoutGrid, Rows3, Pencil, Check, X } from "lucide-react";
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -38,6 +39,7 @@ const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "Ju
 const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type ViewMode = "month" | "week";
+type DayItem = { id: number; title: string; startTime: string | null; endTime?: string | null; type: "event" | "task"; priority?: string };
 
 export default function Calendar() {
   const [, setLocation] = useLocation();
@@ -56,18 +58,24 @@ export default function Calendar() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
 
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+
   const startDate = formatDate(currentYear, currentMonth, 1);
   const endDate = formatDate(currentYear, currentMonth, getDaysInMonth(currentYear, currentMonth));
 
   const { data: events } = useListCalendarEvents({ startDate, endDate });
   const { data: tasks } = useListTasks({ startDate, endDate });
   const createEvent = useCreateCalendarEvent();
+  const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
 
   const todayStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
 
   const eventsByDate = useMemo(() => {
-    const map: Record<string, Array<{ id: number; title: string; startTime: string | null; endTime?: string | null; type: "event" | "task"; priority?: string }>> = {};
+    const map: Record<string, DayItem[]> = {};
     events?.forEach((e) => {
       const d = e.date;
       if (!map[d]) map[d] = [];
@@ -145,6 +153,39 @@ export default function Calendar() {
       queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
     } catch {
       toast({ variant: "destructive", title: "Failed to delete event" });
+    }
+  };
+
+  const startEditEvent = (item: DayItem) => {
+    setEditingEventId(item.id);
+    setEditTitle(item.title);
+    setEditStartTime(item.startTime || "");
+    setEditEndTime(item.endTime || "");
+  };
+
+  const cancelEditEvent = () => {
+    setEditingEventId(null);
+    setEditTitle("");
+    setEditStartTime("");
+    setEditEndTime("");
+  };
+
+  const saveEditEvent = async () => {
+    if (!editingEventId || !editTitle.trim()) return;
+    try {
+      await updateEvent.mutateAsync({
+        id: editingEventId,
+        data: {
+          title: editTitle,
+          startTime: editStartTime || null,
+          endTime: editEndTime || null,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
+      cancelEditEvent();
+      toast({ title: "Event updated" });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to update event" });
     }
   };
 
@@ -318,28 +359,62 @@ export default function Calendar() {
               {selectedEvents
                 .sort((a, b) => (a.startTime || "99:99").localeCompare(b.startTime || "99:99"))
                 .map((item) => (
-                <div key={`${item.type}-${item.id}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-1 h-8 rounded-full ${item.type === "event" ? "bg-primary" : priorityDotColor(item.priority)}`} />
-                    <div>
-                      {item.startTime && (
-                        <span className="text-xs text-muted-foreground font-mono block">{item.startTime}{item.endTime ? ` - ${item.endTime}` : ""}</span>
-                      )}
-                      <p className="text-sm font-medium">{item.title}</p>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.type === "event" ? "bg-primary/20 text-primary" : "bg-amber-500/20 text-amber-400"}`}>
-                        {item.type}
-                      </span>
+                <div key={`${item.type}-${item.id}`} className="p-3 bg-muted/50 rounded-lg">
+                  {editingEventId === item.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="bg-background border-border text-sm h-9"
+                        autoFocus
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground">Start</label>
+                          <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} className="bg-background h-8 text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground">End</label>
+                          <Input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} className="bg-background h-8 text-sm" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEditEvent}><X size={14} /></Button>
+                        <Button size="icon" className="h-7 w-7" onClick={saveEditEvent} disabled={updateEvent.isPending}><Check size={14} /></Button>
+                      </div>
                     </div>
-                  </div>
-                  {item.type === "event" && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteEvent(item.id)}>
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
-                  {item.type === "task" && (
-                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => setLocation(`/tasks/${item.id}`)}>
-                      View
-                    </Button>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-1 h-8 rounded-full ${item.type === "event" ? "bg-primary" : priorityDotColor(item.priority)}`} />
+                        <div>
+                          {item.startTime && (
+                            <span className="text-xs text-muted-foreground font-mono block">{item.startTime}{item.endTime ? ` - ${item.endTime}` : ""}</span>
+                          )}
+                          <p className="text-sm font-medium">{item.title}</p>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.type === "event" ? "bg-primary/20 text-primary" : "bg-amber-500/20 text-amber-600"}`}>
+                            {item.type}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {item.type === "event" && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => startEditEvent(item)}>
+                              <Pencil size={14} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteEvent(item.id)}>
+                              <Trash2 size={14} />
+                            </Button>
+                          </>
+                        )}
+                        {item.type === "task" && (
+                          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setLocation(`/tasks/${item.id}`)}>
+                            View
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}

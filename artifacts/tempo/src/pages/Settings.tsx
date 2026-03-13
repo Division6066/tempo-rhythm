@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Settings as SettingsIcon, BrainCircuit, Clock, Moon, Sun, Calendar,
   StickyNote, Filter, LayoutTemplate, FileText, FolderKanban, MessageSquare,
-  ChevronRight, FolderOpen, Tag, Brain, Timer, Zap
+  ChevronRight, FolderOpen, Tag, Brain, Timer, Zap, Battery, CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,6 +28,15 @@ const NAV_LINKS = [
   { label: "AI Memory", icon: Brain, path: "/memories" },
 ];
 
+const ENERGY_OPTIONS = [
+  { id: "early_morning", label: "Early Morning", desc: "6–9 AM", icon: "🌅" },
+  { id: "late_morning", label: "Late Morning", desc: "9–12 PM", icon: "☀️" },
+  { id: "early_afternoon", label: "Early Afternoon", desc: "12–3 PM", icon: "🌤" },
+  { id: "late_afternoon", label: "Late Afternoon", desc: "3–6 PM", icon: "🌇" },
+  { id: "evening", label: "Evening", desc: "6–9 PM", icon: "🌙" },
+  { id: "night", label: "Night", desc: "9 PM+", icon: "🦉" },
+];
+
 export default function Settings() {
   const [, setLocation] = useLocation();
   const { data: prefs, isLoading } = useGetPreferences();
@@ -41,6 +50,8 @@ export default function Settings() {
     sleepTime: "23:00",
     focusSessionMinutes: 25,
     breakMinutes: 5,
+    energyPeaks: [] as string[],
+    planningStyle: "morning" as string,
   });
 
   useEffect(() => {
@@ -51,12 +62,20 @@ export default function Settings() {
         sleepTime: prefs.sleepTime,
         focusSessionMinutes: prefs.focusSessionMinutes,
         breakMinutes: prefs.breakMinutes,
+        energyPeaks: (prefs.energyPeaks as string[]) || [],
+        planningStyle: (prefs.planningStyle as string) || "morning",
       });
     }
   }, [prefs]);
 
-  const handleChange = (key: string, value: any) => {
+  const handleChange = (key: string, value: string | number | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const toggleEnergyPeak = (id: string) => {
+    const current = formData.energyPeaks;
+    const updated = current.includes(id) ? current.filter(e => e !== id) : [...current, id];
+    handleChange("energyPeaks", updated);
   };
 
   const handleSave = async () => {
@@ -168,6 +187,35 @@ export default function Settings() {
                 className="bg-background"
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass border-border/50">
+        <CardContent className="p-6 space-y-4">
+          <h2 className="font-semibold text-lg border-b border-border/50 pb-2 flex items-center gap-2">
+            <Battery size={18} className="text-muted-foreground" /> Energy Peaks
+          </h2>
+          <p className="text-sm text-muted-foreground">When do you feel most focused? AI uses this to schedule high-energy tasks at your peak times.</p>
+          <div className="grid grid-cols-2 gap-3">
+            {ENERGY_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => toggleEnergyPeak(opt.id)}
+                className={`p-3 rounded-xl border transition-all text-left ${
+                  formData.energyPeaks.includes(opt.id)
+                    ? "bg-teal-500/10 border-teal-500"
+                    : "bg-card border-border"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-lg">{opt.icon}</span>
+                  {formData.energyPeaks.includes(opt.id) && <CheckCircle size={14} className="text-teal-500" />}
+                </div>
+                <h3 className="font-medium text-sm">{opt.label}</h3>
+                <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>

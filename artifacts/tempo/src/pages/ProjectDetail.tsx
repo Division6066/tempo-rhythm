@@ -12,9 +12,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Trash2, CheckCircle2, Circle, FileText, Archive, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, FileText, Archive, RotateCcw, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TaskCard from "@/components/TaskCard";
+
+const PROJECT_COLORS = ["#6C63FF", "#00C9A7", "#FFB347", "#FF6B6B", "#9D4EDD", "#3B82F6", "#EC4899", "#22C55E"];
 
 export default function ProjectDetail() {
   const [, params] = useRoute("/projects/:id");
@@ -33,6 +35,7 @@ export default function ProjectDetail() {
 
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   if (!project) {
     return (
@@ -59,6 +62,13 @@ export default function ProjectDetail() {
     toast({ title: "Project renamed" });
   };
 
+  const handleColorChange = async (newColor: string) => {
+    await updateProject.mutateAsync({ id: project.id, data: { color: newColor } });
+    queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+    setShowColorPicker(false);
+    toast({ title: "Color updated" });
+  };
+
   const handleArchive = async () => {
     const newStatus = project.status === "archived" ? "active" : "archived";
     await updateProject.mutateAsync({ id: project.id, data: { status: newStatus } });
@@ -80,7 +90,12 @@ export default function ProjectDetail() {
       </button>
 
       <div className="flex items-center gap-4">
-        <div className="w-6 h-6 rounded-full shrink-0" style={{ backgroundColor: project.color || "#6C63FF" }} />
+        <button
+          className="w-6 h-6 rounded-full shrink-0 ring-2 ring-transparent hover:ring-primary/50 transition-all"
+          style={{ backgroundColor: project.color || "#6C63FF" }}
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          title="Change color"
+        />
         {editing ? (
           <form onSubmit={(e) => { e.preventDefault(); handleRename(); }} className="flex gap-2 flex-1">
             <Input value={editName} onChange={e => setEditName(e.target.value)} autoFocus className="bg-card" />
@@ -96,6 +111,26 @@ export default function ProjectDetail() {
           </h1>
         )}
       </div>
+
+      {showColorPicker && (
+        <div className="flex gap-2 items-center bg-card border border-border rounded-xl p-3">
+          <Palette size={16} className="text-muted-foreground shrink-0" />
+          {PROJECT_COLORS.map(c => (
+            <button
+              key={c}
+              onClick={() => handleColorChange(c)}
+              className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
+                (project.color || "#6C63FF") === c ? "border-foreground scale-110" : "border-transparent"
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+        </div>
+      )}
+
+      {project.description && (
+        <p className="text-sm text-muted-foreground">{project.description}</p>
+      )}
 
       {projectTasks.length > 0 && (
         <Card className="glass border-border/50">

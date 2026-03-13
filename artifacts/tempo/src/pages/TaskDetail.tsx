@@ -25,10 +25,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Clock, Sparkles, Trash2, Check, X, Pencil, Repeat, Calendar } from "lucide-react";
+import { ArrowLeft, Clock, Sparkles, Trash2, Check, X, Pencil, Repeat, Calendar, Battery, BatteryLow, BatteryMedium } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
+
+const ENERGY_LEVELS = [
+  { value: "1", label: "Low Energy", icon: BatteryLow, color: "text-green-500", desc: "Light tasks, admin, reading" },
+  { value: "2", label: "Med Energy", icon: BatteryMedium, color: "text-amber-500", desc: "Regular work, meetings" },
+  { value: "3", label: "High Energy", icon: Battery, color: "text-red-500", desc: "Deep focus, creative work" },
+];
 
 export default function TaskDetail() {
   const [, params] = useRoute("/tasks/:id");
@@ -61,6 +67,7 @@ export default function TaskDetail() {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<string>("inbox");
   const [priority, setPriority] = useState<string>("medium");
+  const [energyLevel, setEnergyLevel] = useState<string>("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -74,6 +81,7 @@ export default function TaskDetail() {
       setNotes(task.notes || "");
       setStatus(task.status);
       setPriority(task.priority);
+      setEnergyLevel(task.energyLevel?.toString() || "");
       setEstimatedMinutes(task.estimatedMinutes?.toString() || "");
       setScheduledDate(task.scheduledDate || "");
       setStartTime(task.startTime || "");
@@ -105,6 +113,7 @@ export default function TaskDetail() {
           notes,
           status: status as UpdateTaskBodyStatus,
           priority: priority as UpdateTaskBodyPriority,
+          energyLevel: energyLevel ? parseInt(energyLevel, 10) : null,
           estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
           scheduledDate: scheduledDate || null,
           startTime: startTime || null,
@@ -243,7 +252,7 @@ export default function TaskDetail() {
               variant="outline"
               size="sm"
               onClick={handleComplete}
-              className="border-green-500/50 text-green-400 gap-2"
+              className="border-green-500/50 text-green-600 gap-2"
             >
               <Check size={16} />
               Complete
@@ -309,11 +318,39 @@ export default function TaskDetail() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="high">Now (High)</SelectItem>
+                <SelectItem value="medium">Soon (Medium)</SelectItem>
+                <SelectItem value="low">Later (Low)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+            <Battery size={12} /> Energy Level
+          </label>
+          <div className="flex gap-2">
+            {ENERGY_LEVELS.map(el => (
+              <button
+                key={el.value}
+                onClick={() => {
+                  setEnergyLevel(energyLevel === el.value ? "" : el.value);
+                  setTimeout(handleSave, 0);
+                }}
+                className={`flex-1 p-3 rounded-xl border transition-all text-left ${
+                  energyLevel === el.value
+                    ? "bg-primary/10 border-primary"
+                    : "bg-card border-border hover:border-border/80"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <el.icon size={16} className={el.color} />
+                  <span className="text-xs font-medium">{el.label}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">{el.desc}</p>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -425,7 +462,7 @@ export default function TaskDetail() {
               <div key={suggestion.id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
                   <Sparkles size={14} /> AI Subtasks
-                  {isEditing && <span className="text-xs text-amber-400 font-normal ml-1">Editing</span>}
+                  {isEditing && <span className="text-xs text-amber-500 font-normal ml-1">Editing</span>}
                 </h3>
                 <p className="text-xs text-muted-foreground">{reasoning}</p>
                 <div className="space-y-2">
@@ -450,9 +487,9 @@ export default function TaskDetail() {
                               onChange={(e) => updateEditingSubtask(i, "priority", e.target.value)}
                               className="bg-background border border-border rounded-md text-xs px-2 py-1 text-foreground"
                             >
-                              <option value="high">High</option>
-                              <option value="medium">Medium</option>
-                              <option value="low">Low</option>
+                              <option value="high">Now (High)</option>
+                              <option value="medium">Soon (Medium)</option>
+                              <option value="low">Later (Low)</option>
                             </select>
                             <Input
                               type="number"
@@ -496,12 +533,12 @@ export default function TaskDetail() {
                     </>
                   ) : (
                     <>
-                      <Button variant="ghost" size="sm" className="text-amber-400 hover:bg-amber-500/10 gap-1" onClick={() => startEditingChunks(suggestion.id, subtasks)}>
+                      <Button variant="ghost" size="sm" className="text-amber-500 hover:bg-amber-500/10 gap-1" onClick={() => startEditingChunks(suggestion.id, subtasks)}>
                         <Pencil size={14} /> Edit
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-[hsl(168,100%,39%)] hover:bg-[hsl(168,100%,45%)] text-white gap-1"
+                        className="bg-teal-500 hover:bg-teal-600 text-white gap-1"
                         onClick={() => handleAcceptChunks(suggestion.id, subtasks)}
                       >
                         <Check size={14} /> Accept & Create

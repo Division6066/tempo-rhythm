@@ -35,6 +35,48 @@ const BUILT_IN_TEMPLATES = [
     category: "project",
     isBuiltIn: true,
   },
+  {
+    name: "Brain Dump",
+    description: "Unload everything on your mind",
+    content: "# Brain Dump - {{date}}\n\nJust write. Don't filter. Get it all out.\n\n---\n\n\n\n---\n\n## After dumping, sort into:\n\n### Tasks to add\n- \n\n### Things to let go\n- \n\n### Ideas to explore later\n- ",
+    category: "daily",
+    isBuiltIn: true,
+  },
+  {
+    name: "Study Session",
+    description: "Active recall and study notes",
+    content: "# Study Session - {{date}}\n\n**Subject:**\n\n**Goal for this session:**\n\n## Key Concepts\n1. \n2. \n3. \n\n## Questions\n- \n\n## Summary (in my own words)\n\n\n## What to review next time\n- ",
+    category: "study",
+    isBuiltIn: true,
+  },
+  {
+    name: "Daily Plan",
+    description: "Plan your day with time blocks",
+    content: "# Daily Plan - {{date}}\n\n## Energy Level: \n\n## Morning Block\n- [ ] \n- [ ] \n\n## Afternoon Block\n- [ ] \n- [ ] \n\n## Evening Block\n- [ ] \n\n## Non-negotiables\n- \n\n## If I only do ONE thing today:\n- ",
+    category: "daily",
+    isBuiltIn: true,
+  },
+  {
+    name: "Habit Tracker",
+    description: "Track daily habits and streaks",
+    content: "# Habit Tracker - {{date}}\n\n| Habit | Mon | Tue | Wed | Thu | Fri | Sat | Sun |\n|-------|-----|-----|-----|-----|-----|-----|-----|\n| Exercise |  |  |  |  |  |  |  |\n| Reading |  |  |  |  |  |  |  |\n| Meditation |  |  |  |  |  |  |  |\n| Water |  |  |  |  |  |  |  |\n\n## Notes\n",
+    category: "weekly",
+    isBuiltIn: true,
+  },
+  {
+    name: "Decision Matrix",
+    description: "Weigh options when making a decision",
+    content: "# Decision: {{title}}\n\n## Context\nWhat am I deciding?\n\n## Options\n\n### Option A:\n- Pros:\n- Cons:\n- Gut feeling:\n\n### Option B:\n- Pros:\n- Cons:\n- Gut feeling:\n\n## What matters most?\n1. \n2. \n3. \n\n## Decision:\n\n## Why:\n",
+    category: "personal",
+    isBuiltIn: true,
+  },
+  {
+    name: "Retrospective",
+    description: "Reflect on a completed project or sprint",
+    content: "# Retrospective - {{date}}\n\n## What went well\n- \n\n## What didn't go well\n- \n\n## What surprised me\n- \n\n## What I'd do differently\n- \n\n## Key takeaway\n\n\n## Action items for next time\n- [ ] \n- [ ] ",
+    category: "project",
+    isBuiltIn: true,
+  },
 ];
 
 const router: IRouter = Router();
@@ -73,18 +115,17 @@ router.delete("/note-templates/:id", async (req, res): Promise<void> => {
 
 router.post("/note-templates/seed", async (_req, res): Promise<void> => {
   const existing = await db.select().from(noteTemplatesTable);
-  const builtInExists = existing.some((t) => t.isBuiltIn);
+  const existingNames = new Set(existing.map((t) => t.name));
 
-  if (builtInExists) {
-    res.json({ count: 0 });
-    return;
-  }
-
+  let count = 0;
   for (const tmpl of BUILT_IN_TEMPLATES) {
-    await db.insert(noteTemplatesTable).values(tmpl);
+    if (!existingNames.has(tmpl.name)) {
+      await db.insert(noteTemplatesTable).values(tmpl);
+      count++;
+    }
   }
 
-  res.json({ count: BUILT_IN_TEMPLATES.length });
+  res.json({ count });
 });
 
 export default router;
