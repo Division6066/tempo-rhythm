@@ -21,7 +21,7 @@ function buildUserProfile(user: typeof BETA_USERS[0]) {
     username: user.username,
     displayName: user.displayName,
     email: user.email,
-    role: user.username === "admin" ? "admin" : "beta_tester",
+    role: user.username === "admin1234567" ? "admin" : "beta_tester",
     plan: "pro",
     planDetails: {
       name: "Pro",
@@ -87,7 +87,7 @@ router.get("/auth/users", (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace("Bearer ", "");
 
-  if (token !== "tempo-session-admin") {
+  if (token !== "tempo-session-admin1234567") {
     return res.status(403).json({ error: "Admin access required" });
   }
 
