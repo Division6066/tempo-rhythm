@@ -1,0 +1,2326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tempo – Find Your Rhythm</title>
+<style>
+  /* ── DESIGN TOKENS ─────────────────────────────────────────────── */
+  :root {
+    --bg:        #1A1A2E;
+    --bg2:       #13132A;
+    --surface:   #252540;
+    --card:      rgba(255,255,255,0.08);
+    --card-h:    rgba(255,255,255,0.13);
+    --accent:    #6C63FF;
+    --accent2:   #8B83FF;
+    --green:     #00C9A7;
+    --orange:    #FFB347;
+    --red:       #FF6B6B;
+    --purple2:   #A855F7;
+    --txt1:      #F0F0FF;
+    --txt2:      #B0B0CC;
+    --txt3:      #6B6B8A;
+    --border:    rgba(255,255,255,0.1);
+    --r-sm:      8px;
+    --r-md:      14px;
+    --r-lg:      20px;
+    --r-xl:      28px;
+  }
+
+  /* ── RESET ──────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0e0e1c;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: var(--txt1);
+    overflow-x: hidden;
+  }
+
+  /* ── STAGE ──────────────────────────────────────────────────────── */
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+    min-height: 100vh;
+  }
+  .stage-title {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--txt3);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  /* ── PHONE FRAME ────────────────────────────────────────────────── */
+  .phone {
+    width: 375px;
+    height: 812px;
+    background: var(--bg);
+    border-radius: 44px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.08);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 126px; height: 34px;
+    background: #0e0e1c;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
+
+  /* ── SCREENS ────────────────────────────────────────────────────── */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ── SCREEN NAV (bottom) ─────────────────────────────────────────── */
+  .screen-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 18px;
+    max-width: 660px;
+  }
+  .screen-nav button {
+    background: rgba(108,99,255,0.15);
+    border: 1px solid rgba(108,99,255,0.3);
+    color: var(--txt2);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .screen-nav button:hover,
+  .screen-nav button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ── TYPOGRAPHY HELPERS ─────────────────────────────────────────── */
+  .h1 { font-size: 28px; font-weight: 700; line-height: 1.25; }
+  .h2 { font-size: 22px; font-weight: 700; line-height: 1.3; }
+  .h3 { font-size: 17px; font-weight: 600; line-height: 1.35; }
+  .body { font-size: 14px; line-height: 1.55; }
+  .small { font-size: 12px; line-height: 1.4; }
+  .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+
+  /* ── LAYOUT HELPERS ─────────────────────────────────────────────── */
+  .col { display: flex; flex-direction: column; }
+  .row { display: flex; flex-direction: row; align-items: center; }
+  .sp { justify-content: space-between; }
+  .center { align-items: center; justify-content: center; }
+  .g4  { gap: 4px; }
+  .g8  { gap: 8px; }
+  .g12 { gap: 12px; }
+  .g16 { gap: 16px; }
+  .g20 { gap: 20px; }
+  .px16 { padding-left: 16px; padding-right: 16px; }
+  .px20 { padding-left: 20px; padding-right: 20px; }
+  .py8  { padding-top: 8px; padding-bottom: 8px; }
+  .py12 { padding-top: 12px; padding-bottom: 12px; }
+  .flex1 { flex: 1; }
+  .scroll { overflow-y: auto; flex: 1; }
+  .scroll::-webkit-scrollbar { width: 0; }
+
+  /* ── CARD ───────────────────────────────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px;
+  }
+  .card-sm { border-radius: var(--r-sm); padding: 10px 12px; }
+
+  /* ── BUTTON ─────────────────────────────────────────────────────── */
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.2s;
+    width: 100%;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn-ghost {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--txt2);
+  }
+  .btn-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  /* ── INPUT ──────────────────────────────────────────────────────── */
+  .inp {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+    color: var(--txt1);
+    font-size: 14px;
+    width: 100%;
+    outline: none;
+  }
+  .inp:focus { border-color: var(--accent); }
+  .inp-label { font-size: 12px; color: var(--txt3); margin-bottom: 5px; }
+
+  /* ── STATUS BAR ─────────────────────────────────────────────────── */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 6px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--txt1);
+    position: relative;
+    z-index: 10;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+
+  /* ── TAB BAR ────────────────────────────────────────────────────── */
+  .tab-bar {
+    height: 80px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+    flex-shrink: 0;
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--txt3);
+    font-size: 10px;
+    transition: color 0.2s;
+  }
+  .tab-item.active { color: var(--accent); }
+  .tab-icon { font-size: 22px; line-height: 1; }
+
+  /* ── TOP BAR ────────────────────────────────────────────────────── */
+  .top-bar {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 10px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .top-bar-title { font-size: 16px; font-weight: 700; flex: 1; }
+
+  /* ── CHIP ───────────────────────────────────────────────────────── */
+  .chip {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--txt2);
+  }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.green { background: rgba(0,201,167,0.15); border-color: var(--green); color: var(--green); }
+  .chip.orange { background: rgba(255,179,71,0.15); border-color: var(--orange); color: var(--orange); }
+  .chip.red { background: rgba(255,107,107,0.15); border-color: var(--red); color: var(--red); }
+  .chip.purple { background: rgba(168,85,247,0.15); border-color: var(--purple2); color: var(--purple2); }
+
+  /* ── PROGRESS BAR ───────────────────────────────────────────────── */
+  .progress-track {
+    width: 100%;
+    height: 5px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+  }
+
+  /* ── AVATAR CIRCLE ──────────────────────────────────────────────── */
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ── TOGGLE ─────────────────────────────────────────────────────── */
+  .toggle {
+    width: 44px; height: 24px;
+    border-radius: 12px;
+    background: var(--accent);
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .toggle.off { background: var(--txt3); }
+  .toggle.off::after { left: 3px; right: auto; }
+
+  /* ── FAB ────────────────────────────────────────────────────────── */
+  .fab {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    position: absolute;
+    bottom: 90px; right: 20px;
+    box-shadow: 0 6px 20px rgba(108,99,255,0.4);
+    cursor: pointer;
+    z-index: 20;
+    border: none;
+    color: #fff;
+  }
+
+  /* ── MESSAGE BUBBLES ────────────────────────────────────────────── */
+  .bubble-row { display: flex; gap: 8px; align-items: flex-end; }
+  .bubble-row.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .bubble.ai {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--txt1);
+  }
+  .bubble.user-msg {
+    background: var(--accent);
+    border-bottom-right-radius: 4px;
+    color: #fff;
+  }
+  .bubble-ai-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  /* ── SCROLLABLE CONTENT ─────────────────────────────────────────── */
+  .content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .content-scroll::-webkit-scrollbar { width: 0; }
+
+  /* ── GRADIENT BG ────────────────────────────────────────────────── */
+  .grad-bg {
+    background: radial-gradient(ellipse at top, rgba(108,99,255,0.2) 0%, transparent 65%),
+                var(--bg);
+  }
+
+  /* ── DOT INDICATOR ──────────────────────────────────────────────── */
+  .dot-row { display: flex; gap: 6px; justify-content: center; }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 3px;
+    background: var(--txt3);
+    transition: all 0.3s;
+  }
+  .dot.active { width: 20px; background: var(--accent); }
+
+  /* ── SECTION HEADER ─────────────────────────────────────────────── */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    margin-bottom: 4px;
+  }
+  .see-all { font-size: 12px; color: var(--accent); cursor: pointer; }
+
+  /* ── PERSONA CARD ───────────────────────────────────────────────── */
+  .persona-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .persona-card:hover { border-color: var(--accent); }
+  .persona-card.selected { border-color: var(--accent); background: rgba(108,99,255,0.12); }
+
+  /* ── CHAT INPUT BAR ─────────────────────────────────────────────── */
+  .chat-input-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .chat-inp {
+    flex: 1;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 22px;
+    padding: 10px 16px;
+    color: var(--txt1);
+    font-size: 14px;
+    outline: none;
+  }
+  .chat-inp:focus { border-color: var(--accent); }
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── MEMORY CARD ────────────────────────────────────────────────── */
+  .memory-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    margin: 3px;
+  }
+  .memory-pill::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .memory-pill.hot::before { background: #FF6B6B; }
+  .memory-pill.warm::before { background: #FFB347; }
+  .memory-pill.cold::before { background: #6B6B8A; }
+
+  /* ── PLAN CARD ──────────────────────────────────────────────────── */
+  .plan-card {
+    flex: 1;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.2s;
+  }
+  .plan-card.featured {
+    background: linear-gradient(135deg, rgba(108,99,255,0.25), rgba(139,131,255,0.15));
+    border-color: var(--accent);
+  }
+  .plan-price-big { font-size: 26px; font-weight: 800; }
+  .plan-price-per { font-size: 11px; color: var(--txt3); }
+
+  /* ── COUNCIL NODES ──────────────────────────────────────────────── */
+  .council-viz {
+    position: relative;
+    width: 280px; height: 200px;
+    margin: 0 auto;
+  }
+  .council-node {
+    position: absolute;
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600;
+    gap: 2px;
+    border: 2px solid transparent;
+    background: var(--card);
+  }
+  .council-node .n-icon { font-size: 20px; }
+  .council-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: rgba(108,99,255,0.2);
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+  }
+  .council-line {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 90px; height: 1px;
+    background: linear-gradient(90deg, rgba(108,99,255,0.6), transparent);
+    transform-origin: 0 50%;
+  }
+
+  /* ── VOICE ORB ──────────────────────────────────────────────────── */
+  .voice-orb {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 38%, var(--accent2), var(--accent), #3a35aa);
+    position: relative;
+    animation: orb-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 60px rgba(108,99,255,0.5), 0 0 120px rgba(108,99,255,0.2);
+  }
+  @keyframes orb-pulse {
+    0%,100% { transform: scale(1); box-shadow: 0 0 60px rgba(108,99,255,0.5); }
+    50% { transform: scale(1.06); box-shadow: 0 0 90px rgba(108,99,255,0.7); }
+  }
+
+  /* ── HABIT ──────────────────────────────────────────────────────── */
+  .habit-circle {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .habit-circle.done { background: var(--accent); border-color: var(--accent); }
+
+  /* ── SSO BTN ────────────────────────────────────────────────────── */
+  .sso-btn {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--txt1);
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .sso-btn:hover { border-color: var(--accent2); }
+
+  /* ── DIVIDER ────────────────────────────────────────────────────── */
+  .divider { border: none; border-top: 1px solid var(--border); }
+  .or-row { display: flex; align-items: center; gap: 12px; color: var(--txt3); font-size: 12px; }
+  .or-row::before, .or-row::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+
+  /* ── STRENGTH BARS ──────────────────────────────────────────────── */
+  .strength-bar {
+    height: 4px; flex: 1;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .strength-bar.fill { background: var(--accent); }
+
+  /* ── PLANNER ────────────────────────────────────────────────────── */
+  .task-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .task-check {
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .task-check.done { background: var(--accent); border-color: var(--accent); }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+  }
+  .cal-day {
+    padding: 8px 4px;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .cal-day.today {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+  }
+  .cal-day.has-event { position: relative; }
+  .cal-day.has-event::after {
+    content: '';
+    position: absolute;
+    bottom: 2px; left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .cal-header { font-size: 11px; color: var(--txt3); font-weight: 600; padding: 4px; }
+
+  /* ── NOTES ──────────────────────────────────────────────────────── */
+  .note-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px;
+  }
+  .note-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .note-card p { font-size: 12px; color: var(--txt2); line-height: 1.6; }
+  .note-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(108,99,255,0.15);
+    color: var(--accent2);
+    margin-top: 8px;
+  }
+
+  /* ── SETTINGS ROW ───────────────────────────────────────────────── */
+  .setting-row {
+    display: flex; align-items: center;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    cursor: pointer;
+  }
+  .setting-icon {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: var(--card);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .setting-label { flex: 1; font-size: 14px; }
+  .setting-value { font-size: 12px; color: var(--txt3); }
+
+  /* ── SKILL ITEM ─────────────────────────────────────────────────── */
+  .skill-file {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 12px;
+  }
+  .file-icon {
+    width: 38px; height: 44px;
+    border-radius: 6px;
+    background: rgba(108,99,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── AI COPILOT ─────────────────────────────────────────────────── */
+  .copilot-suggestion {
+    background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(168,85,247,0.1));
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: var(--r-md);
+    padding: 12px 14px;
+  }
+
+  /* ── REMINDER ───────────────────────────────────────────────────── */
+  .reminder-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .reminder-time {
+    font-size: 13px; font-weight: 700;
+    color: var(--accent2);
+    min-width: 42px;
+  }
+
+  /* ── WEEKLY REVIEW ──────────────────────────────────────────────── */
+  .stat-box {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px;
+    text-align: center;
+  }
+  .stat-num { font-size: 28px; font-weight: 800; color: var(--accent2); }
+  .stat-label { font-size: 11px; color: var(--txt3); margin-top: 2px; }
+
+  /* ── MODE TOGGLE ────────────────────────────────────────────────── */
+  .mode-toggle {
+    display: flex;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px;
+    gap: 2px;
+    font-size: 11px;
+  }
+  .mode-btn {
+    padding: 4px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+    color: var(--txt3);
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .mode-btn.active { background: var(--accent); color: #fff; }
+
+  /* ── CONFIDENCE BAR ─────────────────────────────────────────────── */
+  .confidence-bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  /* ── PLANNER TAB STRIP ──────────────────────────────────────────── */
+  .planner-tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  .planner-tabs::-webkit-scrollbar { height: 0; }
+  .planner-tab {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--txt3);
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .planner-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── GLOW RING ──────────────────────────────────────────────────── */
+  @keyframes glow-ring {
+    0%,100% { box-shadow: 0 0 30px rgba(108,99,255,0.4); }
+    50% { box-shadow: 0 0 60px rgba(108,99,255,0.7), 0 0 120px rgba(108,99,255,0.3); }
+  }
+
+  /* ── TYPING DOTS ────────────────────────────────────────────────── */
+  .typing-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: typing 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing {
+    0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────────── */
+  @media (max-width: 430px) {
+    .phone { width: 100%; height: 100svh; border-radius: 0; }
+    .stage { padding: 0; }
+    .stage-title { display: none; }
+    .screen-nav { display: none; }
+  }
+
+    @keyframes wave {
+      0%,100% { transform: scaleY(0.4); }
+      50%      { transform: scaleY(1.2); }
+    }
+    @keyframes waveRing {
+      0%   { transform: scale(1);   opacity: 0.6; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .voice-orb .wave-ring {
+      animation: waveRing 1.8s ease-out infinite;
+    }
+    .voice-orb .wave-ring:nth-child(2) { animation-delay: 0.6s; }
+    .voice-orb .wave-ring:nth-child(3) { animation-delay: 1.2s; }
+
+  </style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-title">Tempo · Interactive Prototype</div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  PHONE FRAME                                                   -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="phone" id="phone">
+
+    <!-- ── 01 SPLASH ──────────────────────────────────────────────── -->
+    <div class="screen active grad-bg center col" id="s01" data-screen="s01">
+      <div class="status-bar" style="position:absolute;top:0;left:0;right:0;background:transparent;">
+        <span class="time">9:41</span>
+        <div class="status-icons">📶 🔋</div>
+      </div>
+      <div class="col center g8" style="margin-top:-40px;">
+        <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#6C63FF,#A855F7);display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 12px 40px rgba(108,99,255,0.45);">🎵</div>
+        <div style="font-size:38px;font-weight:800;letter-spacing:-0.5px;margin-top:12px;">Tempo</div>
+        <div style="font-size:15px;color:var(--txt2);font-weight:500;">Find Your Rhythm</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:4px;">by Concilium</div>
+      </div>
+      <div style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);">
+        <div style="display:flex;gap:5px;">
+          <div style="width:8px;height:8px;border-radius:4px;background:var(--accent);animation:orb-pulse 1.5s infinite;"></div>
+          <div style="width:8px;height:8px;border-radius:4px;background:var(--accent);animation:orb-pulse 1.5s 0.2s infinite;"></div>
+          <div style="width:8px;height:8px;border-radius:4px;background:var(--accent);animation:orb-pulse 1.5s 0.4s infinite;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 02 ONBOARDING WELCOME ───────────────────────────────────── -->
+    <div class="screen grad-bg col" id="s02" data-screen="s02">
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="flex1 col px20" style="padding-top:20px;gap:20px;">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+          <div style="width:220px;height:220px;border-radius:40px;background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(168,85,247,0.2));border:1px solid rgba(108,99,255,0.4);display:flex;align-items:center;justify-content:center;font-size:80px;">🎵</div>
+        </div>
+        <div class="col g8">
+          <div class="h1">Your AI,<br>Your Way</div>
+          <div class="body" style="color:var(--txt2);">Choose your personas. Build your workflow.<br>Let Tempo adapt to you.</div>
+        </div>
+        <div class="dot-row" style="margin-bottom:4px;">
+          <div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+      </div>
+      <div class="col px20" style="padding-bottom:48px;gap:12px;">
+        <button class="btn" onclick="goTo('s03')">Get Started</button>
+        <button class="btn btn-ghost" onclick="goTo('s04')">Log In</button>
+      </div>
+    </div>
+
+    <!-- ── 03 ONBOARDING SETUP ─────────────────────────────────────── -->
+    <div class="screen grad-bg col" id="s03" data-screen="s03">
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="content-scroll" style="padding-top:24px;">
+        <div class="h2 px16" style="margin-bottom:4px;">What brings you here?</div>
+        <div class="body px16" style="color:var(--txt2);margin-bottom:20px;">Select all that apply</div>
+        <div class="col px16 g12">
+          <div class="persona-card selected" onclick="this.classList.toggle('selected')">
+            <div class="row g12"><span style="font-size:26px;">🧠</span><div><div class="h3">Deep Work</div><div class="small" style="color:var(--txt2);">Focus sessions, flow states, Pomodoro</div></div></div>
+          </div>
+          <div class="persona-card" onclick="this.classList.toggle('selected')">
+            <div class="row g12"><span style="font-size:26px;">📚</span><div><div class="h3">Research</div><div class="small" style="color:var(--txt2);">Literature review, synthesis, citations</div></div></div>
+          </div>
+          <div class="persona-card" onclick="this.classList.toggle('selected')">
+            <div class="row g12"><span style="font-size:26px;">✍️</span><div><div class="h3">Creative Writing</div><div class="small" style="color:var(--txt2);">Stories, scripts, brainstorming</div></div></div>
+          </div>
+          <div class="persona-card selected" onclick="this.classList.toggle('selected')">
+            <div class="row g12"><span style="font-size:26px;">💬</span><div><div class="h3">AI Companion</div><div class="small" style="color:var(--txt2);">Daily check-ins, emotional support</div></div></div>
+          </div>
+          <div class="persona-card" onclick="this.classList.toggle('selected')">
+            <div class="row g12"><span style="font-size:26px;">📅</span><div><div class="h3">Planner</div><div class="small" style="color:var(--txt2);">Tasks, habits, goals, calendar</div></div></div>
+          </div>
+        </div>
+        <div class="dot-row" style="margin:20px 0 8px;">
+          <div class="dot"></div><div class="dot active"></div><div class="dot"></div>
+        </div>
+      </div>
+      <div class="col px20" style="padding-bottom:48px;gap:10px;">
+        <button class="btn" onclick="goTo('s05')">Continue</button>
+      </div>
+    </div>
+
+    <!-- ── 04 LOGIN ────────────────────────────────────────────────── -->
+    <div class="screen col" id="s04" data-screen="s04" style="background:var(--bg);">
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="content-scroll" style="padding-top:28px;">
+        <div class="h2 px16" style="margin-bottom:4px;">Welcome back</div>
+        <div class="body px16" style="color:var(--txt2);margin-bottom:28px;">Sign in to your Tempo account</div>
+        <div class="col px16 g16">
+          <div class="col g4">
+            <div class="inp-label">Email</div>
+            <input class="inp" type="email" placeholder="you@example.com">
+          </div>
+          <div class="col g4">
+            <div class="inp-label">Password</div>
+            <input class="inp" type="password" placeholder="••••••••">
+          </div>
+          <div style="text-align:right;margin-top:-4px;">
+            <span class="small" style="color:var(--accent);cursor:pointer;" onclick="goTo('s06')">Forgot password?</span>
+          </div>
+          <button class="btn" onclick="goTo('s07')">Log In</button>
+          <div class="or-row">or</div>
+          <div class="sso-btn" onclick="goTo('s07')">🍎 Continue with Apple</div>
+          <div class="sso-btn" onclick="goTo('s07')">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/></svg>
+            Continue with Google
+          </div>
+        </div>
+        <div class="col center" style="margin-top:20px;">
+          <div class="small" style="color:var(--txt3);">Don't have an account? <span style="color:var(--accent);cursor:pointer;" onclick="goTo('s05')">Sign up</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 05 SIGN UP ──────────────────────────────────────────────── -->
+    <div class="screen col" id="s05" data-screen="s05" style="background:var(--bg);">
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="content-scroll" style="padding-top:24px;">
+        <div class="h2 px16" style="margin-bottom:4px;">Create account</div>
+        <div class="body px16" style="color:var(--txt2);margin-bottom:24px;">Join Tempo today</div>
+        <div class="col px16 g14" style="gap:14px;">
+          <div class="col g4"><div class="inp-label">Full Name</div><input class="inp" type="text" placeholder="Amit Levin"></div>
+          <div class="col g4"><div class="inp-label">Email</div><input class="inp" type="email" placeholder="you@example.com"></div>
+          <div class="col g4">
+            <div class="inp-label">Password</div>
+            <input class="inp" type="password" placeholder="Create a strong password">
+            <div class="row g4" style="margin-top:6px;">
+              <div class="strength-bar fill"></div>
+              <div class="strength-bar fill"></div>
+              <div class="strength-bar fill"></div>
+              <div class="strength-bar"></div>
+            </div>
+            <div class="small" style="color:var(--orange);margin-top:4px;">Medium strength</div>
+          </div>
+          <button class="btn" onclick="goTo('s07')">Create Account</button>
+          <div class="or-row">or</div>
+          <div class="sso-btn" onclick="goTo('s07')">🍎 Continue with Apple</div>
+          <div class="sso-btn" onclick="goTo('s07')">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/></svg>
+            Continue with Google
+          </div>
+          <div class="small center" style="color:var(--txt3);text-align:center;">By continuing you agree to our <span style="color:var(--accent);">Terms</span> &amp; <span style="color:var(--accent);">Privacy</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 06 FORGOT PASSWORD ──────────────────────────────────────── -->
+    <div class="screen col center" id="s06" data-screen="s06" style="background:var(--bg);">
+      <div class="status-bar" style="position:absolute;top:0;left:0;right:0;"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="col px20 center g20" style="width:100%;padding-top:40px;">
+        <div style="width:88px;height:88px;border-radius:50%;background:rgba(108,99,255,0.15);border:2px solid rgba(108,99,255,0.3);display:flex;align-items:center;justify-content:center;font-size:40px;">🔒</div>
+        <div class="col center g8" style="text-align:center;">
+          <div class="h2">Reset Password</div>
+          <div class="body" style="color:var(--txt2);">Enter your email and we'll send<br>you a reset link</div>
+        </div>
+        <div class="col g4" style="width:100%;">
+          <div class="inp-label">Email Address</div>
+          <input class="inp" type="email" placeholder="you@example.com">
+        </div>
+        <button class="btn" onclick="goTo('s04')" style="width:100%;">Send Reset Link</button>
+        <div class="small" style="color:var(--txt3);cursor:pointer;" onclick="goTo('s04')">← Back to Log In</div>
+      </div>
+    </div>
+
+    <!-- ── 07 APP HOME (THE DESK) ──────────────────────────────────── -->
+    <div class="screen col" id="s07" data-screen="s07" style="background:var(--bg);">
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <!-- Greeting -->
+      <div class="px20" style="padding-top:12px;padding-bottom:12px;flex-shrink:0;">
+        <div class="row sp">
+          <div>
+            <div class="small" style="color:var(--txt3);">Good morning ☀️</div>
+            <div class="h2" style="margin-top:2px;">Amit</div>
+          </div>
+          <div class="row g8">
+            <div class="btn-icon" onclick="goTo('s14')">⚙️</div>
+            <div class="avatar" style="background:rgba(108,99,255,0.2);">😊</div>
+          </div>
+        </div>
+      </div>
+      <!-- Content -->
+      <div class="content-scroll">
+        <!-- Active Persona section -->
+        <div class="section-header"><div class="label" style="color:var(--txt3);">Active Personas</div><span class="see-all" onclick="goTo('s11')">Manage →</span></div>
+        <div class="row g10 px16" style="overflow-x:auto;padding-bottom:4px;flex-shrink:0;flex-wrap:nowrap;">
+          <div class="persona-card selected" style="min-width:130px;cursor:pointer;" onclick="goTo('s08')">
+            <div style="font-size:28px;">👨‍🏫</div>
+            <div style="font-size:13px;font-weight:600;">Teacher</div>
+            <div class="chip active" style="font-size:10px;padding:2px 8px;">Active</div>
+          </div>
+          <div class="persona-card" style="min-width:130px;cursor:pointer;" onclick="goTo('s08')">
+            <div style="font-size:28px;">🔬</div>
+            <div style="font-size:13px;font-weight:600;">Researcher</div>
+            <div class="chip" style="font-size:10px;padding:2px 8px;">Ready</div>
+          </div>
+          <div class="persona-card" style="min-width:130px;cursor:pointer;" onclick="goTo('s08')">
+            <div style="font-size:28px;">🧙</div>
+            <div style="font-size:13px;font-weight:600;">Mentor</div>
+            <div class="chip" style="font-size:10px;padding:2px 8px;">Ready</div>
+          </div>
+        </div>
+        <!-- Quick actions -->
+        <div class="section-header" style="margin-top:12px;"><div class="label" style="color:var(--txt3);">Quick Start</div></div>
+        <div class="row g10 px16" style="flex-wrap:wrap;">
+          <div class="card-sm card row g8" style="flex:1;cursor:pointer;min-width:100px;" onclick="goTo('s09')">
+            <span style="font-size:20px;">⚖️</span><div class="small" style="font-weight:600;">Council</div>
+          </div>
+          <div class="card-sm card row g8" style="flex:1;cursor:pointer;min-width:100px;" onclick="goTo('s10')">
+            <span style="font-size:20px;">🎙️</span><div class="small" style="font-weight:600;">Voice</div>
+          </div>
+          <div class="card-sm card row g8" style="flex:1;cursor:pointer;min-width:100px;" onclick="goTo('s25')">
+            <span style="font-size:20px;">📅</span><div class="small" style="font-weight:600;">Planner</div>
+          </div>
+        </div>
+        <!-- Recent Chats -->
+        <div class="section-header" style="margin-top:12px;"><div class="label" style="color:var(--txt3);">Recent Chats</div><span class="see-all">See all</span></div>
+        <div class="col px16 g8">
+          <div class="card row g12" style="cursor:pointer;" onclick="goTo('s08')">
+            <div class="avatar" style="background:rgba(108,99,255,0.2);">👨‍🏫</div>
+            <div class="flex1">
+              <div class="row sp"><div style="font-size:13px;font-weight:600;">Teacher</div><div class="small" style="color:var(--txt3);">2m ago</div></div>
+              <div class="small" style="color:var(--txt2);margin-top:2px;">Let's review the Pythagorean theorem...</div>
+            </div>
+          </div>
+          <div class="card row g12" style="cursor:pointer;" onclick="goTo('s08')">
+            <div class="avatar" style="background:rgba(0,201,167,0.2);">🔬</div>
+            <div class="flex1">
+              <div class="row sp"><div style="font-size:13px;font-weight:600;">Researcher</div><div class="small" style="color:var(--txt3);">1h ago</div></div>
+              <div class="small" style="color:var(--txt2);margin-top:2px;">Key findings in the neuroscience paper...</div>
+            </div>
+          </div>
+          <div class="card row g12" style="cursor:pointer;" onclick="goTo('s09')">
+            <div class="avatar" style="background:rgba(255,179,71,0.2);">⚖️</div>
+            <div class="flex1">
+              <div class="row sp"><div style="font-size:13px;font-weight:600;">Council Session</div><div class="small" style="color:var(--txt3);">Yesterday</div></div>
+              <div class="small" style="color:var(--txt2);margin-top:2px;">Debate on climate policy approaches...</div>
+            </div>
+          </div>
+        </div>
+        <div style="height:20px;"></div>
+      </div>
+      <!-- FAB -->
+      <button class="fab" onclick="goTo('s08')">✏️</button>
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item active" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Planner</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">🎭</div><div>Personas</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- ── 08 CHAT ─────────────────────────────────────────────────── -->
+    <div class="screen col" id="s08" data-screen="s08" style="background:var(--bg);">
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="top-bar">
+        <div class="btn-icon" onclick="goTo('s07')" style="font-size:18px;">←</div>
+        <div class="avatar" style="background:rgba(108,99,255,0.2);width:34px;height:34px;font-size:16px;">👨‍🏫</div>
+        <div class="flex1"><div class="top-bar-title">Teacher</div><div class="small" style="color:var(--green);">● Online</div></div>
+        <div class="mode-toggle">
+          <div class="mode-btn active">Auto</div>
+          <div class="mode-btn" onclick="goTo('s09')">Council</div>
+          <div class="mode-btn" onclick="goTo('s10')">Voice</div>
+        </div>
+      </div>
+      <div class="content-scroll" style="gap:14px;padding-top:18px;">
+        <div class="bubble-row"><div class="bubble-ai-icon">👨‍🏫</div><div class="bubble ai">Hello Amit! I'm your Teacher persona. What would you like to explore today? We could work through a concept, practice problems, or dive into a new topic.</div></div>
+        <div class="bubble-row user"><div class="bubble user-msg">Can you explain quantum entanglement in simple terms?</div></div>
+        <div class="bubble-row"><div class="bubble-ai-icon">👨‍🏫</div>
+          <div class="bubble ai">Great question! Quantum entanglement is like a magical connection between two particles. Imagine you have two coins — when you flip one and it lands heads, the other <em>instantly</em> becomes tails, no matter how far apart they are.<br><br>Key points:<br>• Particles are "linked" regardless of distance<br>• Measuring one instantly affects the other<br>• Einstein called it "spooky action at a distance" 👻</div>
+        </div>
+        <div class="bubble-row user"><div class="bubble user-msg">How does this relate to quantum computing?</div></div>
+        <div class="bubble-row">
+          <div class="bubble-ai-icon">👨‍🏫</div>
+          <div class="bubble ai" style="display:flex;align-items:center;gap:8px;">
+            <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+          </div>
+        </div>
+        <div style="height:10px;"></div>
+      </div>
+      <div class="chat-input-bar">
+        <div class="btn-icon" style="font-size:18px;">📎</div>
+        <input class="chat-inp" placeholder="Ask anything…">
+        <div class="btn-icon" style="font-size:18px;">🎙️</div>
+        <button class="send-btn">↑</button>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item active"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Planner</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">🎭</div><div>Personas</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- ── 09 COUNCIL (DEBATE ROOM) ────────────────────────────────── -->
+    <div class="screen col" id="s09" data-screen="s09" style="background:var(--bg);">
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="top-bar">
+        <div class="btn-icon" onclick="goTo('s08')">←</div>
+        <div class="top-bar-title">⚖️ Council Mode</div>
+        <div class="chip green">Live</div>
+      </div>
+      <div class="content-scroll" style="gap:14px;">
+        <!-- Query -->
+        <div class="card" style="background:rgba(108,99,255,0.1);border-color:rgba(108,99,255,0.3);">
+          <div class="small" style="color:var(--txt3);">Debate topic</div>
+          <div style="font-size:14px;margin-top:4px;font-weight:500;">Is AGI achievable within 10 years?</div>
+        </div>
+        <!-- Network viz -->
+        <div class="council-viz">
+          <div class="council-line" style="transform:rotate(45deg);"></div>
+          <div class="council-line" style="transform:rotate(135deg);"></div>
+          <div class="council-line" style="transform:rotate(225deg);"></div>
+          <div class="council-line" style="transform:rotate(315deg);"></div>
+          <div class="council-center">⚖️</div>
+          <div class="council-node" style="top:10px;left:20px;border-color:var(--green);"><div class="n-icon">🤖</div><div>GPT-4</div></div>
+          <div class="council-node" style="top:10px;right:20px;border-color:var(--accent);"><div class="n-icon">🧠</div><div>Claude</div></div>
+          <div class="council-node" style="bottom:10px;left:20px;border-color:var(--orange);"><div class="n-icon">💎</div><div>Gemini</div></div>
+          <div class="council-node" style="bottom:10px;right:20px;border-color:var(--purple2);"><div class="n-icon">🦙</div><div>Llama</div></div>
+        </div>
+        <!-- Progress -->
+        <div class="col g4 px16">
+          <div class="row sp"><div class="small">Round 2 of 3</div><div class="small" style="color:var(--txt3);">67%</div></div>
+          <div class="progress-track"><div class="progress-fill" style="width:67%;"></div></div>
+        </div>
+        <!-- Council card -->
+        <div class="card col g10">
+          <div class="row sp"><div class="row g8"><div class="avatar" style="background:rgba(0,201,167,0.2);width:28px;height:28px;font-size:14px;">🤖</div><div style="font-size:13px;font-weight:600;">GPT-4</div></div><div class="chip green" style="font-size:10px;">Pro</div></div>
+          <div class="body" style="font-size:13px;">Yes — current scaling laws suggest we're on track. The key breakthroughs in reasoning and planning are showing exponential progress.</div>
+          <div class="col g4">
+            <div class="row sp"><div class="small" style="color:var(--txt3);">Confidence</div><div class="small" style="color:var(--green);">82%</div></div>
+            <div class="confidence-bar"><div class="confidence-fill" style="width:82%;"></div></div>
+          </div>
+        </div>
+        <div class="card col g10">
+          <div class="row sp"><div class="row g8"><div class="avatar" style="background:rgba(108,99,255,0.2);width:28px;height:28px;font-size:14px;">🧠</div><div style="font-size:13px;font-weight:600;">Claude</div></div><div class="chip" style="font-size:10px;background:rgba(255,107,107,0.15);border-color:var(--red);color:var(--red);">Con</div></div>
+          <div class="body" style="font-size:13px;">Current benchmarks measure narrow tasks. True AGI requires embodiment, common sense, and social intelligence we haven't begun to replicate.</div>
+          <div class="col g4">
+            <div class="row sp"><div class="small" style="color:var(--txt3);">Confidence</div><div class="small" style="color:var(--accent2);">71%</div></div>
+            <div class="confidence-bar"><div class="confidence-fill" style="width:71%;"></div></div>
+          </div>
+        </div>
+        <!-- Consensus -->
+        <div class="card" style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(168,85,247,0.07));border-color:rgba(108,99,255,0.3);">
+          <div class="row g8 sp">
+            <div style="font-size:13px;font-weight:600;">🎯 Consensus Emerging</div>
+            <div class="chip" style="font-size:10px;">62%</div>
+          </div>
+          <div class="small" style="color:var(--txt2);margin-top:6px;">Mixed — narrow AGI is likely within 10 years, but general-purpose AGI remains uncertain. Key disagreement on definition of "AGI".</div>
+        </div>
+        <div style="height:10px;"></div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item active"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Planner</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">🎭</div><div>Personas</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- ── 10 VOICE MODE ────────────────────────────────────────────── -->
+    <div class="screen col center" id="s10" data-screen="s10" style="background:radial-gradient(ellipse at center,rgba(108,99,255,0.2) 0%,var(--bg) 65%);">
+      <div class="status-bar" style="position:absolute;top:0;left:0;right:0;"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+      <div class="col center g20" style="width:100%;padding:40px 20px;">
+        <div class="small" style="color:var(--txt3);">Voice Mode · Teacher</div>
+        <div class="voice-orb"></div>
+        <div class="h2" style="animation:orb-pulse 1.5s ease-in-out infinite;">Listening…</div>
+        <div style="font-size:13px;color:var(--txt2);text-align:center;max-width:250px;">Say anything — Tempo is ready</div>
+        <div style="height:40px;"></div>
+        <!-- Waveform -->
+        <div class="row g3" style="align-items:center;gap:3px;height:40px;">
+          <div style="width:3px;border-radius:2px;background:var(--accent2);height:15px;animation:wave 0.8s ease-in-out infinite;"></div>
+          <div style="width:3px;border-radius:2px;background:var(--accent2);height:30px;animation:wave 0.8s 0.1s ease-in-out infinite;"></div>
+          <div style="width:3px;border-radius:2px;background:var(--accent2);height:25px;animation:wave 0.8s 0.2s ease-in-out infinite;"></div>
+          <div style="width:3px;border-radius:2px;background:var(--accent);height:38px;animation:wave 0.8s 0.3s ease-in-out infinite;"></div>
+          <div style="width:3px;border-radius:2px;background:var(--accent2);height:20px;animation:wave 0.8s 0.4s ease-in-out infinite;"></div>
+          <div style="width:3px;border-radius:2px;background:var(--accent2);height:32px;animation:wave 0.8s 0.5s ease-in-out infinite;"></div>
+          <div style="width:3px;border-radius:2px;background:var(--accent2);height:18px;animation:wave 0.8s 0.6s ease-in-out infinite;"></div>
+        </div>
+        <!-- Controls -->
+        <div class="row g24" style="gap:24px;margin-top:20px;">
+          <div class="col center g6" style="cursor:pointer;">
+            <div style="width:58px;height:58px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;">🔇</div>
+            <div class="small" style="color:var(--txt3);">Mute</div>
+          </div>
+          <div class="col center g6" style="cursor:pointer;" onclick="goTo('s08')">
+            <div style="width:72px;height:72px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 20px rgba(255,107,107,0.4);">📵</div>
+            <div class="small" style="color:var(--txt3);">End</div>
+          </div>
+          <div class="col center g6" style="cursor:pointer;">
+            <div style="width:58px;height:58px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;">🔊</div>
+            <div class="small" style="color:var(--txt3);">Speaker</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- S11: PERSONAS (The Roster) -->
+    <div class="screen" id="s11">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s07')">←</button>
+        <span>The Roster</span>
+        <button class="icon-btn">＋</button>
+      </div>
+      <div class="screen-body" style="padding:16px;overflow-y:auto">
+        <p style="color:var(--txt2);font-size:13px;margin-bottom:16px">Your AI council members. Each persona has unique skills, tone & memory.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="persona-card" onclick="goTo('s07')" style="background:linear-gradient(135deg,rgba(108,99,255,.25),rgba(108,99,255,.08));border:1px solid rgba(108,99,255,.4)">
+            <div style="font-size:32px;margin-bottom:8px">🧠</div>
+            <div style="font-weight:700;color:var(--txt1)">ARIA</div>
+            <div style="font-size:11px;color:var(--accent);margin:2px 0 6px">Strategy & Vision</div>
+            <div style="font-size:11px;color:var(--txt2);line-height:1.4">Analytical, precise, long-term thinker.</div>
+            <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+              <span style="background:rgba(108,99,255,.2);color:var(--accent);font-size:10px;padding:2px 6px;border-radius:10px">Planning</span>
+              <span style="background:rgba(108,99,255,.2);color:var(--accent);font-size:10px;padding:2px 6px;border-radius:10px">Research</span>
+            </div>
+            <div style="margin-top:10px;width:100%;height:3px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:88%;height:100%;background:var(--accent);border-radius:2px"></div></div>
+            <div style="font-size:10px;color:var(--txt2);margin-top:3px">Active · 88 sessions</div>
+          </div>
+          <div class="persona-card" style="background:linear-gradient(135deg,rgba(0,201,167,.25),rgba(0,201,167,.08));border:1px solid rgba(0,201,167,.4)">
+            <div style="font-size:32px;margin-bottom:8px">💚</div>
+            <div style="font-weight:700;color:var(--txt1)">ECHO</div>
+            <div style="font-size:11px;color:var(--green);margin:2px 0 6px">Emotional Coach</div>
+            <div style="font-size:11px;color:var(--txt2);line-height:1.4">Empathetic, reflective, mindfulness-first.</div>
+            <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+              <span style="background:rgba(0,201,167,.2);color:var(--green);font-size:10px;padding:2px 6px;border-radius:10px">Wellness</span>
+              <span style="background:rgba(0,201,167,.2);color:var(--green);font-size:10px;padding:2px 6px;border-radius:10px">Journal</span>
+            </div>
+            <div style="margin-top:10px;width:100%;height:3px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:72%;height:100%;background:var(--green);border-radius:2px"></div></div>
+            <div style="font-size:10px;color:var(--txt2);margin-top:3px">Active · 54 sessions</div>
+          </div>
+          <div class="persona-card" style="background:linear-gradient(135deg,rgba(255,179,71,.25),rgba(255,179,71,.08));border:1px solid rgba(255,179,71,.4)">
+            <div style="font-size:32px;margin-bottom:8px">🔥</div>
+            <div style="font-weight:700;color:var(--txt1)">BLAZE</div>
+            <div style="font-size:11px;color:var(--orange);margin:2px 0 6px">Creative Spark</div>
+            <div style="font-size:11px;color:var(--txt2);line-height:1.4">Bold, unconventional, brainstorm king.</div>
+            <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+              <span style="background:rgba(255,179,71,.2);color:var(--orange);font-size:10px;padding:2px 6px;border-radius:10px">Ideas</span>
+              <span style="background:rgba(255,179,71,.2);color:var(--orange);font-size:10px;padding:2px 6px;border-radius:10px">Writing</span>
+            </div>
+            <div style="margin-top:10px;width:100%;height:3px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:61%;height:100%;background:var(--orange);border-radius:2px"></div></div>
+            <div style="font-size:10px;color:var(--txt2);margin-top:3px">Active · 41 sessions</div>
+          </div>
+          <div class="persona-card" style="background:linear-gradient(135deg,rgba(168,85,247,.25),rgba(168,85,247,.08));border:1px solid rgba(168,85,247,.4)">
+            <div style="font-size:32px;margin-bottom:8px">🔮</div>
+            <div style="font-weight:700;color:var(--txt1)">SAGE</div>
+            <div style="font-size:11px;color:var(--purple2);margin:2px 0 6px">Deep Research</div>
+            <div style="font-size:11px;color:var(--txt2);line-height:1.4">Philosophical, data-driven, thorough.</div>
+            <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+              <span style="background:rgba(168,85,247,.2);color:var(--purple2);font-size:10px;padding:2px 6px;border-radius:10px">Analysis</span>
+              <span style="background:rgba(168,85,247,.2);color:var(--purple2);font-size:10px;padding:2px 6px;border-radius:10px">Facts</span>
+            </div>
+            <div style="margin-top:10px;width:100%;height:3px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:79%;height:100%;background:var(--purple2);border-radius:2px"></div></div>
+            <div style="font-size:10px;color:var(--txt2);margin-top:3px">Active · 66 sessions</div>
+          </div>
+        </div>
+        <button class="btn" style="margin-top:16px;width:100%;background:rgba(108,99,255,.15);color:var(--accent);border:1px solid rgba(108,99,255,.3)">＋ Create New Persona</button>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Plan</div></div>
+        <div class="tab-item active" onclick="goTo('s11')"><div class="tab-icon">👥</div><div>Roster</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- S12: MEMORY (The Cortex) -->
+    <div class="screen" id="s12">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s07')">←</button>
+        <span>The Cortex</span>
+        <button class="icon-btn">🔍</button>
+      </div>
+      <div class="screen-body" style="padding:16px;overflow-y:auto">
+        <p style="color:var(--txt2);font-size:13px;margin-bottom:16px">Your AI remembers what matters. Memories decay unless reinforced.</p>
+        <!-- HOT memories -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:16px">🔴</span>
+          <span style="font-weight:600;color:var(--red)">HOT — Core Identity</span>
+        </div>
+        <div class="memory-pill" style="border-left:3px solid var(--red)">
+          <div style="font-size:12px;color:var(--txt1);margin-bottom:4px">"I am a product designer focused on AI tools."</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="width:80%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:94%;height:100%;background:var(--red);border-radius:2px"></div></div>
+            <span style="font-size:10px;color:var(--txt2)">Permanent</span>
+          </div>
+        </div>
+        <div class="memory-pill" style="border-left:3px solid var(--red)">
+          <div style="font-size:12px;color:var(--txt1);margin-bottom:4px">"Preferred AI: ARIA for strategy, ECHO for reflection."</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="width:80%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:88%;height:100%;background:var(--red);border-radius:2px"></div></div>
+            <span style="font-size:10px;color:var(--txt2)">94 refs</span>
+          </div>
+        </div>
+        <!-- WARM memories -->
+        <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+          <span style="font-size:16px">🟠</span>
+          <span style="font-weight:600;color:var(--orange)">WARM — Recent Context</span>
+        </div>
+        <div class="memory-pill" style="border-left:3px solid var(--orange)">
+          <div style="font-size:12px;color:var(--txt1);margin-bottom:4px">"Working on TEMPO app launch — due March 20."</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="width:80%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:67%;height:100%;background:var(--orange);border-radius:2px"></div></div>
+            <span style="font-size:10px;color:var(--txt2)">7d left</span>
+          </div>
+        </div>
+        <div class="memory-pill" style="border-left:3px solid var(--orange)">
+          <div style="font-size:12px;color:var(--txt1);margin-bottom:4px">"Sleep goal: 7.5hrs. Currently averaging 6.2hrs."</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="width:80%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:45%;height:100%;background:var(--orange);border-radius:2px"></div></div>
+            <span style="font-size:10px;color:var(--txt2)">4d left</span>
+          </div>
+        </div>
+        <!-- COLD memories -->
+        <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+          <span style="font-size:16px">🔵</span>
+          <span style="font-weight:600;color:#60a5fa">COLD — Fading</span>
+        </div>
+        <div class="memory-pill" style="border-left:3px solid #60a5fa;opacity:0.7">
+          <div style="font-size:12px;color:var(--txt1);margin-bottom:4px">"Read Atomic Habits. Key insight: 1% better daily."</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="width:80%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:22%;height:100%;background:#60a5fa;border-radius:2px"></div></div>
+            <span style="font-size:10px;color:var(--txt2)">Fading · 2d</span>
+          </div>
+        </div>
+        <button class="btn" style="margin-top:16px;width:100%;background:rgba(108,99,255,.15);color:var(--accent);border:1px solid rgba(108,99,255,.3)">＋ Add Memory</button>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Plan</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">👥</div><div>Roster</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- S13: SKILLS & TOOLS -->
+    <div class="screen" id="s13">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s07')">←</button>
+        <span>Skills &amp; Tools</span>
+        <button class="icon-btn">＋</button>
+      </div>
+      <div class="screen-body" style="padding:16px;overflow-y:auto">
+        <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
+          <button style="background:var(--accent);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;white-space:nowrap">All</button>
+          <button style="background:rgba(255,255,255,.08);color:var(--txt2);border:none;border-radius:20px;padding:6px 14px;font-size:12px;white-space:nowrap">Files</button>
+          <button style="background:rgba(255,255,255,.08);color:var(--txt2);border:none;border-radius:20px;padding:6px 14px;font-size:12px;white-space:nowrap">Connectors</button>
+          <button style="background:rgba(255,255,255,.08);color:var(--txt2);border:none;border-radius:20px;padding:6px 14px;font-size:12px;white-space:nowrap">Automations</button>
+        </div>
+        <!-- Files -->
+        <div style="font-weight:600;color:var(--txt2);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📁 Uploaded Files</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+          <div class="card" style="padding:10px;text-align:center">
+            <div style="font-size:24px;margin-bottom:4px">📄</div>
+            <div style="font-size:11px;color:var(--txt1)">TEMPO_Brief.pdf</div>
+            <div style="font-size:10px;color:var(--txt2)">2.4 MB</div>
+          </div>
+          <div class="card" style="padding:10px;text-align:center">
+            <div style="font-size:24px;margin-bottom:4px">📊</div>
+            <div style="font-size:11px;color:var(--txt1)">Q1_Goals.xlsx</div>
+            <div style="font-size:10px;color:var(--txt2)">156 KB</div>
+          </div>
+          <div class="card" style="padding:10px;text-align:center">
+            <div style="font-size:24px;margin-bottom:4px">🎨</div>
+            <div style="font-size:11px;color:var(--txt1)">Design_Kit.fig</div>
+            <div style="font-size:10px;color:var(--txt2)">8.1 MB</div>
+          </div>
+          <div class="card" style="padding:10px;text-align:center;border:1px dashed rgba(255,255,255,.2);background:transparent">
+            <div style="font-size:24px;margin-bottom:4px;opacity:.4">＋</div>
+            <div style="font-size:11px;color:var(--txt2)">Add File</div>
+          </div>
+        </div>
+        <!-- Connectors -->
+        <div style="font-weight:600;color:var(--txt2);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">⚡ Connectors</div>
+        <div class="setting-row" style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">⚡</span>
+            <div>
+              <div style="font-size:13px;color:var(--txt1);font-weight:600">Zapier MCP</div>
+              <div style="font-size:11px;color:var(--green)">● Connected · 12 zaps</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="setting-row" style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">🔁</span>
+            <div>
+              <div style="font-size:13px;color:var(--txt1);font-weight:600">n8n Workflows</div>
+              <div style="font-size:11px;color:var(--green)">● Connected · 5 flows</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="setting-row">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">📅</span>
+            <div>
+              <div style="font-size:13px;color:var(--txt1);font-weight:600">Google Calendar</div>
+              <div style="font-size:11px;color:var(--txt2)">○ Not connected</div>
+            </div>
+          </div>
+          <button style="background:rgba(108,99,255,.2);color:var(--accent);border:1px solid rgba(108,99,255,.4);border-radius:8px;padding:4px 10px;font-size:11px">Connect</button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Plan</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">👥</div><div>Roster</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- S14: SETTINGS -->
+    <div class="screen" id="s14">
+      <div class="top-bar">
+        <span>Settings</span>
+        <button class="icon-btn" onclick="goTo('s07')">✕</button>
+      </div>
+      <div class="screen-body" style="overflow-y:auto">
+        <!-- Profile -->
+        <div style="padding:20px 16px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple2));display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 10px">A</div>
+          <div style="font-size:16px;font-weight:700;color:var(--txt1)">Amit</div>
+          <div style="font-size:13px;color:var(--txt2)">amitlevin65@protonmail.com</div>
+          <div style="display:inline-block;background:linear-gradient(135deg,var(--accent),var(--purple2));color:#fff;font-size:11px;padding:3px 12px;border-radius:20px;margin-top:8px">PRO Plan</div>
+        </div>
+        <!-- Settings sections -->
+        <div style="padding:12px 16px">
+          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">AI Preferences</div>
+          <div class="setting-row" style="margin-bottom:8px">
+            <span style="font-size:13px;color:var(--txt1)">Default Persona</span>
+            <span style="font-size:13px;color:var(--accent)">ARIA ›</span>
+          </div>
+          <div class="setting-row" style="margin-bottom:8px">
+            <span style="font-size:13px;color:var(--txt1)">Response Length</span>
+            <span style="font-size:13px;color:var(--accent)">Balanced ›</span>
+          </div>
+          <div class="setting-row">
+            <span style="font-size:13px;color:var(--txt1)">Voice Mode</span>
+            <div class="toggle on"></div>
+          </div>
+        </div>
+        <div style="padding:0 16px 12px">
+          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Memory &amp; Data</div>
+          <div class="setting-row" style="margin-bottom:8px">
+            <span style="font-size:13px;color:var(--txt1)">Memory System</span>
+            <div class="toggle on"></div>
+          </div>
+          <div class="setting-row" style="margin-bottom:8px">
+            <span style="font-size:13px;color:var(--txt1)">Auto-learn from chats</span>
+            <div class="toggle on"></div>
+          </div>
+          <div class="setting-row">
+            <span style="font-size:13px;color:var(--txt1)">Export My Data</span>
+            <span style="font-size:13px;color:var(--accent)">›</span>
+          </div>
+        </div>
+        <div style="padding:0 16px 12px">
+          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Notifications</div>
+          <div class="setting-row" style="margin-bottom:8px">
+            <span style="font-size:13px;color:var(--txt1)">Daily Briefing</span>
+            <div class="toggle on"></div>
+          </div>
+          <div class="setting-row">
+            <span style="font-size:13px;color:var(--txt1)">Habit Reminders</span>
+            <div class="toggle on"></div>
+          </div>
+        </div>
+        <div style="padding:0 16px 12px">
+          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Subscription</div>
+          <div class="setting-row" style="margin-bottom:8px">
+            <span style="font-size:13px;color:var(--txt1)">Current Plan</span>
+            <span style="font-size:13px;color:var(--accent)">PRO · $12.99/mo ›</span>
+          </div>
+          <div class="setting-row" onclick="goTo('s15')">
+            <span style="font-size:13px;color:var(--txt1)">Upgrade to Elite</span>
+            <span style="font-size:13px;color:var(--purple2)">›</span>
+          </div>
+        </div>
+        <div style="padding:0 16px 20px">
+          <button class="btn" style="width:100%;background:rgba(255,107,107,.1);color:var(--red);border:1px solid rgba(255,107,107,.3)">Sign Out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- S15: PAYWALL (The Access Pass) -->
+    <div class="screen" id="s15">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s14')">←</button>
+        <span>The Access Pass</span>
+      </div>
+      <div class="screen-body" style="padding:16px;overflow-y:auto">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:28px;margin-bottom:6px">⚡</div>
+          <div style="font-size:18px;font-weight:800;color:var(--txt1)">Unlock Your Full AI Council</div>
+          <div style="font-size:13px;color:var(--txt2);margin-top:4px">Choose the plan that matches your ambition.</div>
+        </div>
+        <!-- STARTER -->
+        <div class="plan-card" style="margin-bottom:10px;border:1px solid rgba(255,255,255,.12)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--txt1)">Starter</div>
+              <div style="font-size:11px;color:var(--txt2);margin-top:2px">For curious explorers</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:800;color:var(--txt1)">$5.99</div>
+              <div style="font-size:11px;color:var(--txt2)">/month</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">
+            <div style="font-size:12px;color:var(--txt2)">✓ 1 Persona (ARIA)</div>
+            <div style="font-size:12px;color:var(--txt2)">✓ 50 messages / day</div>
+            <div style="font-size:12px;color:var(--txt2)">✓ Basic memory (7 days)</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.25)">✕ Voice Mode</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.25)">✕ Council Debates</div>
+          </div>
+          <button class="btn" style="margin-top:12px;width:100%;background:rgba(255,255,255,.08);color:var(--txt1)">Get Starter</button>
+        </div>
+        <!-- PRO (highlighted) -->
+        <div class="plan-card" style="margin-bottom:10px;border:2px solid var(--accent);background:linear-gradient(135deg,rgba(108,99,255,.2),rgba(108,99,255,.05))">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:15px;font-weight:700;color:var(--txt1)">PRO</span>
+                <span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px">POPULAR</span>
+              </div>
+              <div style="font-size:11px;color:var(--txt2);margin-top:2px">For peak performers</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:800;color:var(--accent)">$12.99</div>
+              <div style="font-size:11px;color:var(--txt2)">/month</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">
+            <div style="font-size:12px;color:var(--txt1)">✓ All 4 Personas</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ Unlimited messages</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ Long-term memory</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ Voice Mode</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ Council Debates</div>
+          </div>
+          <button class="btn" style="margin-top:12px;width:100%">Current Plan ✓</button>
+        </div>
+        <!-- ELITE -->
+        <div class="plan-card" style="margin-bottom:16px;border:1px solid rgba(168,85,247,.4);background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(168,85,247,.03))">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--txt1)">Elite</div>
+              <div style="font-size:11px;color:var(--txt2);margin-top:2px">For power users &amp; teams</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:800;color:var(--purple2)">$24.99</div>
+              <div style="font-size:11px;color:var(--txt2)">/month</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">
+            <div style="font-size:12px;color:var(--txt1)">✓ Everything in PRO</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ Custom personas (unlimited)</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ API integrations</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ Team sharing</div>
+            <div style="font-size:12px;color:var(--txt1)">✓ Priority support</div>
+          </div>
+          <button class="btn" style="margin-top:12px;width:100%;background:linear-gradient(135deg,var(--purple2),var(--accent))">Upgrade to Elite</button>
+        </div>
+        <p style="text-align:center;font-size:11px;color:var(--txt2)">Cancel anytime. 7-day free trial on all plans.</p>
+      </div>
+    </div>
+
+    <!-- S25: PLANNER — TODAY -->
+    <div class="screen" id="s25">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s07')">←</button>
+        <span>Planner</span>
+        <button class="icon-btn">＋</button>
+      </div>
+      <div class="screen-body" style="overflow-y:auto">
+        <!-- Planner tabs -->
+        <div class="planner-tabs">
+          <div class="p-tab active" onclick="goTo('s25')">Today</div>
+          <div class="p-tab" onclick="goTo('s26')">Calendar</div>
+          <div class="p-tab" onclick="goTo('s27')">Tasks</div>
+          <div class="p-tab" onclick="goTo('s28')">Habits</div>
+          <div class="p-tab" onclick="goTo('s29')">Notes</div>
+        </div>
+        <div style="padding:16px">
+          <!-- Date header -->
+          <div style="margin-bottom:16px">
+            <div style="font-size:22px;font-weight:800;color:var(--txt1)">Friday, March 13</div>
+            <div style="font-size:13px;color:var(--txt2)">3 tasks · 2 habits · 1 meeting</div>
+          </div>
+          <!-- AI Morning Brief -->
+          <div class="card" style="background:linear-gradient(135deg,rgba(108,99,255,.2),rgba(108,99,255,.05));border:1px solid rgba(108,99,255,.3);margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:16px">🌅</span>
+              <span style="font-weight:600;color:var(--accent)">AI Morning Brief</span>
+            </div>
+            <div style="font-size:13px;color:var(--txt1);line-height:1.5">Good morning! You have a focused day ahead. Top priority: finish the TEMPO prototype. Your energy peak is 9–11am — protect that time.</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--txt2)">Confidence: 87% · Based on your patterns</div>
+          </div>
+          <!-- Tasks for today -->
+          <div style="font-weight:600;color:var(--txt2);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Today's Tasks</div>
+          <div class="task-row" style="margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">✓</div>
+              <div>
+                <div style="font-size:13px;color:var(--txt1);text-decoration:line-through;opacity:.5">Morning standup call</div>
+                <div style="font-size:11px;color:var(--txt2)">9:00 AM · Done</div>
+              </div>
+            </div>
+            <span style="font-size:11px;color:var(--green)">Done</span>
+          </div>
+          <div class="task-row" style="margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0"></div>
+              <div>
+                <div style="font-size:13px;color:var(--txt1)">Finish TEMPO prototype</div>
+                <div style="font-size:11px;color:var(--txt2)">Due: Today · 🔴 High</div>
+              </div>
+            </div>
+            <span style="font-size:11px;color:var(--orange)">In Progress</span>
+          </div>
+          <div class="task-row" style="margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.2);flex-shrink:0"></div>
+              <div>
+                <div style="font-size:13px;color:var(--txt1)">Review investor deck</div>
+                <div style="font-size:11px;color:var(--txt2)">5:00 PM · Normal</div>
+              </div>
+            </div>
+            <span style="font-size:11px;color:var(--txt2)">Pending</span>
+          </div>
+          <!-- Habits today -->
+          <div style="font-weight:600;color:var(--txt2);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Habits</div>
+          <div style="display:flex;gap:12px;margin-bottom:16px">
+            <div class="habit-circle done" style="background:rgba(0,201,167,.2);border:2px solid var(--green)">
+              <div style="font-size:18px">💧</div>
+              <div style="font-size:10px;color:var(--green);margin-top:4px">Water</div>
+            </div>
+            <div class="habit-circle done" style="background:rgba(0,201,167,.2);border:2px solid var(--green)">
+              <div style="font-size:18px">🧘</div>
+              <div style="font-size:10px;color:var(--green);margin-top:4px">Meditate</div>
+            </div>
+            <div class="habit-circle" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.15)">
+              <div style="font-size:18px;opacity:.4">🏃</div>
+              <div style="font-size:10px;color:var(--txt2);margin-top:4px">Run</div>
+            </div>
+            <div class="habit-circle" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.15)">
+              <div style="font-size:18px;opacity:.4">📚</div>
+              <div style="font-size:10px;color:var(--txt2);margin-top:4px">Read</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item active" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Plan</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">👥</div><div>Roster</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- S26: PLANNER — CALENDAR -->
+    <div class="screen" id="s26">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s07')">←</button>
+        <span>Planner</span>
+        <button class="icon-btn">＋</button>
+      </div>
+      <div class="screen-body" style="overflow-y:auto">
+        <div class="planner-tabs">
+          <div class="p-tab" onclick="goTo('s25')">Today</div>
+          <div class="p-tab active" onclick="goTo('s26')">Calendar</div>
+          <div class="p-tab" onclick="goTo('s27')">Tasks</div>
+          <div class="p-tab" onclick="goTo('s28')">Habits</div>
+          <div class="p-tab" onclick="goTo('s29')">Notes</div>
+        </div>
+        <div style="padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <button style="background:none;border:none;color:var(--txt2);font-size:18px">‹</button>
+            <span style="font-weight:700;color:var(--txt1)">March 2026</span>
+            <button style="background:none;border:none;color:var(--txt2);font-size:18px">›</button>
+          </div>
+          <div class="cal-grid">
+            <div style="color:var(--txt2);font-size:11px;text-align:center">S</div>
+            <div style="color:var(--txt2);font-size:11px;text-align:center">M</div>
+            <div style="color:var(--txt2);font-size:11px;text-align:center">T</div>
+            <div style="color:var(--txt2);font-size:11px;text-align:center">W</div>
+            <div style="color:var(--txt2);font-size:11px;text-align:center">T</div>
+            <div style="color:var(--txt2);font-size:11px;text-align:center">F</div>
+            <div style="color:var(--txt2);font-size:11px;text-align:center">S</div>
+            <!-- Week 1 -->
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">1</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">2</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">3</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">4</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">5</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">6</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">7</div>
+            <!-- Week 2 -->
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">8</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">9</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">10</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">11</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">12</div>
+            <div style="background:var(--accent);border-radius:50%;text-align:center;padding:6px;font-size:13px;color:#fff;font-weight:700">13</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">14</div>
+            <!-- Week 3 -->
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">15</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">16</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">17</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">18</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">19</div>
+            <div style="background:rgba(255,179,71,.2);border-radius:50%;text-align:center;padding:6px;font-size:13px;color:var(--orange)">20</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">21</div>
+            <!-- Week 4 -->
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">22</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">23</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">24</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">25</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">26</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">27</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">28</div>
+            <!-- Week 5 -->
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">29</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">30</div>
+            <div style="text-align:center;padding:6px;font-size:13px;color:var(--txt2)">31</div>
+          </div>
+          <!-- Events today -->
+          <div style="margin-top:16px">
+            <div style="font-weight:600;color:var(--txt2);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">March 13 Events</div>
+            <div class="card" style="padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--accent)">
+              <div style="font-size:13px;font-weight:600;color:var(--txt1)">TEMPO Prototype Review</div>
+              <div style="font-size:11px;color:var(--txt2)">2:00 PM – 3:00 PM · Remote</div>
+            </div>
+            <div class="card" style="padding:10px 12px;border-left:3px solid var(--orange)">
+              <div style="font-size:13px;font-weight:600;color:var(--txt1)">Investor Deck Deadline</div>
+              <div style="font-size:11px;color:var(--orange)">5:00 PM · 🔔 Due</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item active" onclick="goTo('s26')"><div class="tab-icon">📅</div><div>Plan</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">👥</div><div>Roster</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- S27: PLANNER — TASKS -->
+    <div class="screen" id="s27">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s07')">←</button>
+        <span>Planner</span>
+        <button class="icon-btn">＋</button>
+      </div>
+      <div class="screen-body" style="overflow-y:auto">
+        <div class="planner-tabs">
+          <div class="p-tab" onclick="goTo('s25')">Today</div>
+          <div class="p-tab" onclick="goTo('s26')">Calendar</div>
+          <div class="p-tab active" onclick="goTo('s27')">Tasks</div>
+          <div class="p-tab" onclick="goTo('s28')">Habits</div>
+          <div class="p-tab" onclick="goTo('s29')">Notes</div>
+        </div>
+        <div style="padding:16px">
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button style="background:var(--accent);color:#fff;border:none;border-radius:20px;padding:5px 14px;font-size:12px">All (8)</button>
+            <button style="background:rgba(255,255,255,.08);color:var(--txt2);border:none;border-radius:20px;padding:5px 14px;font-size:12px">Today (3)</button>
+            <button style="background:rgba(255,255,255,.08);color:var(--txt2);border:none;border-radius:20px;padding:5px 14px;font-size:12px">Done (2)</button>
+          </div>
+          <!-- Task list -->
+          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔴 High Priority</div>
+          <div class="task-row" style="margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:4px;border:2px solid var(--red);flex-shrink:0"></div>
+              <div>
+                <div style="font-size:13px;color:var(--txt1)">Finish TEMPO prototype</div>
+                <div style="font-size:11px;color:var(--red)">Due: Today</div>
+              </div>
+            </div>
+            <span style="font-size:18px;opacity:.5">⋯</span>
+          </div>
+          <div class="task-row" style="margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:4px;border:2px solid var(--red);flex-shrink:0"></div>
+              <div>
+                <div style="font-size:13px;color:var(--txt1)">Investor deck review</div>
+                <div style="font-size:11px;color:var(--red)">Due: Today 5pm</div>
+              </div>
+            </div>
+            <span style="font-size:18px;opacity:.5">⋯</span>
+          </div>
+          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🟡 Normal</div>
+          <div class="task-row" style="margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:4px;border:2px solid var(--orange);flex-shrink:0"></div>
+              <div>
+                <div style="font-size:13px;color:var(--txt1)">Write weekly newsletter</div>
+                <div style="font-size:11px;color:var(--txt2)">Due: Mar 15</div>
+              </div>
+            </div>
+            <span style="font-size:18px;opacity:.5">⋯</span>
+          </div>
+          <div class="task-row" style="margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:4px;border:2px solid var(--orange);flex-shrink:0"></div>
+              <div>
+                <div style="font-size:13px;color:var(--txt1)">Research competitors</div>
+                <div style="font-size:11px;color:var(--txt2)">Due: Mar 17</div>
+              </div>
+            </div>
+            <span style="font-size:18px;opacity:.5">⋯</span>
+          </div>
+          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px">✅ Completed</div>
+          <div class="task-row" style="margin-bottom:6px;opacity:.5">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:4px;background:var(--green);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff">✓</div>
+              <div style="text-decoration:line-through">
+                <div style="font-size:13px;color:var(--txt1)">Morning standup</div>
+                <div style="font-size:11px;color:var(--txt2)">Mar 13</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item active" onclick="goTo('s27')"><div class="tab-icon">📅</div><div>Plan</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">👥</div><div>Roster</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+    <!-- S28: PLANNER — HABITS -->
+    <div class="screen" id="s28">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('s07')">←</button>
+        <span>Planner</span>
+        <button class="icon-btn">＋</button>
+      </div>
+      <div class="screen-body" style="overflow-y:auto">
+        <div class="planner-tabs">
+          <div class="p-tab" onclick="goTo('s25')">Today</div>
+          <div class="p-tab" onclick="goTo('s26')">Calendar</div>
+          <div class="p-tab" onclick="goTo('s27')">Tasks</div>
+          <div class="p-tab active" onclick="goTo('s28')">Habits</div>
+          <div class="p-tab" onclick="goTo('s29')">Notes</div>
+        </div>
+        <div style="padding:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-size:18px;font-weight:800;color:var(--txt1)">Streak: 🔥 14 days</div>
+              <div style="font-size:13px;color:var(--txt2)">4/6 habits done today</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:800;color:var(--green)">67%</div>
+              <div style="font-size:11px;color:var(--txt2)">Today</div>
+            </div>
+          </div>
+          <!-- Habit cards -->
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="card" style="padding:12px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-size:20px">💧</span>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--txt1)">Drink Water</div>
+                    <div style="font-size:11px;color:var(--txt2)">8 glasses · Daily</div>
+                  </div>
+                </div>
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:14px">✓</div>
+              </div>
+              <div style="display:flex;gap:4px">
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px"></div>
+              </div>
+              <div style="font-size:10px;color:var(--txt2);margin-top:4px">6/8 glasses · 14-day streak 🔥</div>
+            </div>
+            <div class="card" style="padding:12px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-size:20px">🧘</span>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--txt1)">Meditate</div>
+                    <div style="font-size:11px;color:var(--txt2)">10 min · Daily</div>
+                  </div>
+                </div>
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:14px">✓</div>
+              </div>
+              <div style="display:flex;gap:4px">
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--green);border-radius:2px"></div>
+              </div>
+              <div style="font-size:10px;color:var(--txt2);margin-top:4px">Done · 14-day streak 🔥</div>
+            </div>
+            <div class="card" style="padding:12px 14px;opacity:.8">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-size:20px">🏃</span>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--txt1)">Run 5K</div>
+                    <div style="font-size:11px;color:var(--txt2)">Every day · 6:00 AM</div>
+                  </div>
+                </div>
+                <div style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--txt2)">○</div>
+              </div>
+              <div style="display:flex;gap:4px">
+                <div style="flex:1;height:4px;background:var(--accent);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--accent);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--accent);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:var(--accent);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px"></div>
+                <div style="flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px"></div>
+              </div>
+              <div style="font-size:10px;color:var(--txt2);margin-top:4px">Not done today · 4-day streak</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item" onclick="goTo('s07')"><div class="tab-icon">🏠</div><div>Home</div></div>
+        <div class="tab-item" onclick="goTo('s08')"><div class="tab-icon">💬</div><div>Chat</div></div>
+        <div class="tab-item active" onclick="goTo('s28')"><div class="tab-icon">📅</div><div>Plan</div></div>
+        <div class="tab-item" onclick="goTo('s11')"><div class="tab-icon">👥</div><div>Roster</div></div>
+        <div class="tab-item" onclick="goTo('s14')"><div class="tab-icon">⚙️</div><div>Settings</div></div>
+      </div>
+    </div>
+
+  <!-- S29: PLANNER — NOTES -->
+  <div class="screen" id="s29">
+    <div class="top-bar">
+      <span onclick="goTo('s25')" style="cursor:pointer;font-size:20px;">‹</span>
+      <span style="font-weight:700;font-size:17px;">Notes</span>
+      <span style="font-size:20px;">🔍</span>
+    </div>
+    <div style="padding:0 16px 8px;display:flex;gap:8px;">
+      <input class="inp" placeholder="Search notes…" style="flex:1;padding:10px 14px;font-size:14px;" />
+      <button class="btn" onclick="" style="padding:10px 16px;font-size:18px;background:var(--accent);">＋</button>
+    </div>
+    <div style="padding:0 16px 4px;display:flex;gap:8px;overflow-x:auto;">
+      <div style="background:var(--accent);color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;white-space:nowrap;">All</div>
+      <div style="background:var(--surface);color:var(--txt2);padding:5px 14px;border-radius:20px;font-size:12px;white-space:nowrap;">Work</div>
+      <div style="background:var(--surface);color:var(--txt2);padding:5px 14px;border-radius:20px;font-size:12px;white-space:nowrap;">Personal</div>
+      <div style="background:var(--surface);color:var(--txt2);padding:5px 14px;border-radius:20px;font-size:12px;white-space:nowrap;">Ideas</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="note-card" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(108,99,255,0.25),rgba(168,85,247,0.15));border:1px solid rgba(108,99,255,0.4);">
+        <div style="font-size:11px;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">📌 Pinned</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px;">Q1 Strategy</div>
+        <div style="font-size:13px;color:var(--txt2);line-height:1.5;">Focus on growth channels, reduce CAC by 20%, launch referral program by end of March…</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:10px;">Updated 2 hours ago</div>
+      </div>
+      <div class="note-card">
+        <div style="font-size:20px;margin-bottom:8px;">💡</div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:6px;">Product Ideas</div>
+        <div style="font-size:12px;color:var(--txt2);line-height:1.5;">AI-powered onboarding, contextual tips, memory export…</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:8px;">Yesterday</div>
+      </div>
+      <div class="note-card">
+        <div style="font-size:20px;margin-bottom:8px;">📚</div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:6px;">Reading List</div>
+        <div style="font-size:12px;color:var(--txt2);line-height:1.5;">Atomic Habits, The Mom Test, Zero to One…</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:8px;">Mar 10</div>
+      </div>
+      <div class="note-card">
+        <div style="font-size:20px;margin-bottom:8px;">🤝</div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:6px;">Meeting Notes</div>
+        <div style="font-size:12px;color:var(--txt2);line-height:1.5;">Investor call — traction, runway, product roadmap…</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:8px;">Mar 11</div>
+      </div>
+      <div class="note-card">
+        <div style="font-size:20px;margin-bottom:8px;">🎯</div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:6px;">OKRs</div>
+        <div style="font-size:12px;color:var(--txt2);line-height:1.5;">O1: Launch v2. KR1: 1000 users. KR2: &lt;2% churn…</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:8px;">Mar 8</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Today</div></div>
+      <div class="tab-item" onclick="goTo('s26')"><div class="tab-icon">🗓️</div><div>Calendar</div></div>
+      <div class="tab-item" onclick="goTo('s27')"><div class="tab-icon">✅</div><div>Tasks</div></div>
+      <div class="tab-item" onclick="goTo('s28')"><div class="tab-icon">🔥</div><div>Habits</div></div>
+      <div class="tab-item active" onclick="goTo('s29')"><div class="tab-icon">📝</div><div>Notes</div></div>
+    </div>
+  </div>
+
+
+  <!-- S30: PLANNER — REMINDERS -->
+  <div class="screen" id="s30">
+    <div class="top-bar">
+      <span onclick="goTo('s25')" style="cursor:pointer;font-size:20px;">‹</span>
+      <span style="font-weight:700;font-size:17px;">Reminders</span>
+      <span style="font-size:20px;">＋</span>
+    </div>
+    <div style="padding:0 16px 12px;display:flex;gap:8px;">
+      <div style="background:var(--accent);color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;">Today</div>
+      <div style="background:var(--surface);color:var(--txt2);padding:5px 14px;border-radius:20px;font-size:12px;">Upcoming</div>
+      <div style="background:var(--surface);color:var(--txt2);padding:5px 14px;border-radius:20px;font-size:12px;">All</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 16px;">
+      <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Morning</div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,201,167,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">🏃</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">Morning Run</div>
+          <div style="font-size:12px;color:var(--txt2);">7:00 AM · Repeats daily</div>
+        </div>
+        <div class="toggle" style="background:var(--green);"><div class="toggle-thumb" style="transform:translateX(20px);"></div></div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(108,99,255,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">💊</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">Take Vitamins</div>
+          <div style="font-size:12px;color:var(--txt2);">8:30 AM · Repeats daily</div>
+        </div>
+        <div class="toggle" style="background:var(--green);"><div class="toggle-thumb" style="transform:translateX(20px);"></div></div>
+      </div>
+      <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px;">Afternoon</div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;border-left:3px solid var(--orange);">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,179,71,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">📞</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">Investor Call</div>
+          <div style="font-size:12px;color:var(--orange);">2:00 PM · In 3 hours</div>
+        </div>
+        <div style="font-size:20px;">🔔</div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(108,99,255,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">📝</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">Weekly Review</div>
+          <div style="font-size:12px;color:var(--txt2);">5:00 PM · Every Friday</div>
+        </div>
+        <div class="toggle" style="background:var(--green);"><div class="toggle-thumb" style="transform:translateX(20px);"></div></div>
+      </div>
+      <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px;">Tomorrow</div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;opacity:0.7;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">🎂</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">Team Birthday</div>
+          <div style="font-size:12px;color:var(--txt2);">Mar 14 · 10:00 AM</div>
+        </div>
+        <div style="font-size:12px;color:var(--txt2);">Tomorrow</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item" onclick="goTo('s25')"><div class="tab-icon">📅</div><div>Today</div></div>
+      <div class="tab-item" onclick="goTo('s26')"><div class="tab-icon">🗓️</div><div>Calendar</div></div>
+      <div class="tab-item" onclick="goTo('s27')"><div class="tab-icon">✅</div><div>Tasks</div></div>
+      <div class="tab-item active" onclick="goTo('s28')"><div class="tab-icon">🔔</div><div>Remind</div></div>
+      <div class="tab-item" onclick="goTo('s29')"><div class="tab-icon">📝</div><div>Notes</div></div>
+    </div>
+  </div>
+
+
+  <!-- S31: PLANNER — WEEKLY REVIEW -->
+  <div class="screen" id="s31">
+    <div class="top-bar">
+      <span onclick="goTo('s25')" style="cursor:pointer;font-size:20px;">‹</span>
+      <span style="font-weight:700;font-size:17px;">Weekly Review</span>
+      <span style="font-size:14px;color:var(--accent);">Mar 7–13</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 16px 16px;">
+      <div class="card" style="background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(0,201,167,0.15));border:1px solid rgba(108,99,255,0.4);margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:24px;">✨</span>
+          <div>
+            <div style="font-weight:700;font-size:15px;">ARIA's Summary</div>
+            <div style="font-size:12px;color:var(--txt2);">AI-generated · Just now</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--txt1);line-height:1.7;">
+          "Amit, this was a <span style="color:var(--green);font-weight:600;">strong week</span>. You completed 18 of 22 tasks (82%), hit your streak goals on 4 of 5 habits, and had two high-impact investor calls. Your focus time was 6.5 hrs/day — above your 6hr target. The one area to improve: late evening work sessions spiked cortisol indicators. Consider a hard stop at 9 PM next week."
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div class="card" style="text-align:center;padding:16px 12px;">
+          <div style="font-size:28px;font-weight:700;color:var(--green);">82%</div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:4px;">Tasks Done</div>
+          <div style="font-size:11px;color:var(--green);">↑ 8% vs last week</div>
+        </div>
+        <div class="card" style="text-align:center;padding:16px 12px;">
+          <div style="font-size:28px;font-weight:700;color:var(--accent);">6.5h</div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:4px;">Daily Focus</div>
+          <div style="font-size:11px;color:var(--accent);">↑ 0.5h vs target</div>
+        </div>
+        <div class="card" style="text-align:center;padding:16px 12px;">
+          <div style="font-size:28px;font-weight:700;color:var(--orange);">4/5</div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:4px;">Habits Kept</div>
+          <div style="font-size:11px;color:var(--orange);">Missed: Sleep 8h</div>
+        </div>
+        <div class="card" style="text-align:center;padding:16px 12px;">
+          <div style="font-size:28px;font-weight:700;color:var(--purple2);">12</div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:4px;">Day Streak</div>
+          <div style="font-size:11px;color:var(--purple2);">Personal best 🎉</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div style="font-weight:600;font-size:14px;margin-bottom:10px;">Top Wins 🏆</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--txt2);">
+            <span style="color:var(--green);">✓</span> Closed partnership deal with TechCorp
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--txt2);">
+            <span style="color:var(--green);">✓</span> Shipped feature v2.3 — under budget
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--txt2);">
+            <span style="color:var(--green);">✓</span> Personal record: 5K in 24:30
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div style="font-weight:600;font-size:14px;margin-bottom:10px;">Next Week Focus 🎯</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:center;font-size:13px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);"></div>
+            <span style="color:var(--txt2);">Launch referral program beta</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;font-size:13px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--orange);"></div>
+            <span style="color:var(--txt2);">Hard stop at 9 PM daily</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;font-size:13px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+            <span style="color:var(--txt2);">Hit 8-hour sleep goal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 16px 20px;">
+      <button class="btn" style="width:100%;background:var(--accent);padding:14px;font-size:15px;font-weight:600;">
+        Start Next Week Planning →
+      </button>
+    </div>
+  </div>
+
+
+  <!-- S32: AI COPILOT PLANNER -->
+  <div class="screen" id="s32">
+    <div class="top-bar">
+      <span onclick="goTo('s25')" style="cursor:pointer;font-size:20px;">‹</span>
+      <span style="font-weight:700;font-size:17px;">AI Copilot</span>
+      <span style="font-size:20px;">⚡</span>
+    </div>
+    <div style="padding:0 16px 10px;">
+      <div class="card" style="background:linear-gradient(135deg,rgba(108,99,255,0.25),rgba(168,85,247,0.15));border:1px solid rgba(108,99,255,0.35);display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple2));display:flex;align-items:center;justify-content:center;font-size:18px;">✨</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;">ARIA Planning Mode</div>
+          <div style="font-size:12px;color:var(--txt2);">Proactive · Context-aware · Always on</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 16px;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple2));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">✨</div>
+        <div class="bubble" style="background:var(--surface);border-radius:4px 16px 16px 16px;max-width:80%;">
+          <div style="font-size:13px;line-height:1.6;">Good morning Amit! 👋 I've analyzed your week and prepared your optimal schedule. You have 3 priorities today — want me to walk you through it?</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <div class="bubble" style="background:var(--accent);border-radius:16px 4px 16px 16px;max-width:80%;">
+          <div style="font-size:13px;line-height:1.6;">Yes! What's most critical today?</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple2));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">✨</div>
+        <div style="max-width:85%;">
+          <div class="bubble" style="background:var(--surface);border-radius:4px 16px 16px 16px;margin-bottom:8px;">
+            <div style="font-size:13px;line-height:1.6;">Here's your priority stack for today:</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="card" style="padding:10px 12px;display:flex;gap:8px;align-items:center;">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">1</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Investor deck final review</div>
+                <div style="font-size:11px;color:var(--txt2);">Due today · 2 hrs blocked</div>
+              </div>
+            </div>
+            <div class="card" style="padding:10px 12px;display:flex;gap:8px;align-items:center;">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">2</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Team standup @ 10 AM</div>
+                <div style="font-size:11px;color:var(--txt2);">30 mins · Sprint review</div>
+              </div>
+            </div>
+            <div class="card" style="padding:10px 12px;display:flex;gap:8px;align-items:center;">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">3</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Deep work: feature spec</div>
+                <div style="font-size:11px;color:var(--txt2);">3 PM – 5 PM · Protected</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <div class="bubble" style="background:var(--accent);border-radius:16px 4px 16px 16px;max-width:80%;">
+          <div style="font-size:13px;line-height:1.6;">Can you reschedule the deep work to tomorrow? I need the afternoon free.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple2));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">✨</div>
+        <div class="bubble" style="background:var(--surface);border-radius:4px 16px 16px 16px;max-width:80%;">
+          <div style="font-size:13px;line-height:1.6;">Done ✓ Moved to tomorrow 2–4 PM. Your afternoon is now free. I've also shifted the feature spec deadline to Mar 14. Anything else?</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0;">
+        <div style="background:var(--surface);padding:6px 12px;border-radius:16px;font-size:12px;color:var(--accent);border:1px solid rgba(108,99,255,0.3);cursor:pointer;">Block focus time</div>
+        <div style="background:var(--surface);padding:6px 12px;border-radius:16px;font-size:12px;color:var(--accent);border:1px solid rgba(108,99,255,0.3);cursor:pointer;">Weekly plan</div>
+        <div style="background:var(--surface);padding:6px 12px;border-radius:16px;font-size:12px;color:var(--accent);border:1px solid rgba(108,99,255,0.3);cursor:pointer;">Energy check</div>
+      </div>
+    </div>
+    <div class="chat-input-bar">
+      <input class="inp" placeholder="Ask ARIA to plan anything…" style="flex:1;padding:10px 14px;font-size:14px;" />
+      <button class="btn" style="padding:10px 16px;background:var(--accent);font-size:18px;">➤</button>
+    </div>
+  </div>
+
+
+  </div><!-- /.phone -->
+  </div><!-- /.stage -->
+
+  <!-- SCREEN NAV BUTTONS -->
+  <div class="screen-nav">
+    <div style="font-size:11px;color:#888;text-align:center;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Onboarding</div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:10px;">
+      <button data-target="s01" onclick="goTo('s01')">Splash</button>
+      <button data-target="s02" onclick="goTo('s02')">Welcome</button>
+      <button data-target="s03" onclick="goTo('s03')">Setup</button>
+      <button data-target="s04" onclick="goTo('s04')">Login</button>
+      <button data-target="s05" onclick="goTo('s05')">Sign Up</button>
+      <button data-target="s06" onclick="goTo('s06')">Forgot PW</button>
+    </div>
+    <div style="font-size:11px;color:#888;text-align:center;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Main App</div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:10px;">
+      <button data-target="s07" onclick="goTo('s07')">🏠 Home</button>
+      <button data-target="s08" onclick="goTo('s08')">💬 Chat</button>
+      <button data-target="s09" onclick="goTo('s09')">⚔️ Council</button>
+      <button data-target="s10" onclick="goTo('s10')">🎙️ Voice</button>
+      <button data-target="s11" onclick="goTo('s11')">🧑‍🤝‍🧑 Personas</button>
+      <button data-target="s12" onclick="goTo('s12')">🧠 Memory</button>
+      <button data-target="s13" onclick="goTo('s13')">🛠️ Skills</button>
+      <button data-target="s14" onclick="goTo('s14')">⚙️ Settings</button>
+      <button data-target="s15" onclick="goTo('s15')">💎 Paywall</button>
+    </div>
+    <div style="font-size:11px;color:#888;text-align:center;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Planner</div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;">
+      <button data-target="s25" onclick="goTo('s25')">📅 Today</button>
+      <button data-target="s26" onclick="goTo('s26')">🗓️ Calendar</button>
+      <button data-target="s27" onclick="goTo('s27')">✅ Tasks</button>
+      <button data-target="s28" onclick="goTo('s28')">🔥 Habits</button>
+      <button data-target="s29" onclick="goTo('s29')">📝 Notes</button>
+      <button data-target="s30" onclick="goTo('s30')">🔔 Reminders</button>
+      <button data-target="s31" onclick="goTo('s31')">📊 Review</button>
+      <button data-target="s32" onclick="goTo('s32')">✨ Copilot</button>
+    </div>
+  </div>
+
+  <script>
+    function goTo(id) {
+      document.querySelectorAll('.screen').forEach(function(s) {
+        s.classList.remove('active');
+      });
+      var target = document.getElementById(id);
+      if (target) {
+        target.classList.add('active');
+        target.scrollTop = 0;
+      }
+      document.querySelectorAll('.screen-nav button').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.target === id);
+      });
+    }
+
+    // Planner tab active state helper
+    function setPlannerTab(activeId) {
+      document.querySelectorAll('.p-tab').forEach(function(t) {
+        t.classList.remove('active');
+      });
+      var active = document.querySelector('.p-tab[onclick*="' + activeId + '"]');
+      if (active) active.classList.add('active');
+    }
+
+    // Toggle interaction
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('toggle') || e.target.classList.contains('toggle-thumb')) {
+        var tog = e.target.closest('.toggle');
+        if (tog) {
+          var isOn = tog.style.background === 'rgb(0, 201, 167)' ||
+                     tog.style.background === 'var(--green)';
+          tog.style.background = isOn ? '#444' : 'var(--green)';
+          var thumb = tog.querySelector('.toggle-thumb');
+          if (thumb) thumb.style.transform = isOn ? 'translateX(0)' : 'translateX(20px)';
+        }
+      }
+    });
+
+    // Start on splash screen
+    goTo('s01');
+  </script>
+</body>
+</html>

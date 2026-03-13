@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Tempo"
+version = "1.0.0"
+id = "artifacts/tempo"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 26126
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/tempo run dev"
+
+[services.env]
+PORT = "26126"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/tempo", "run", "build"]
+publicDir = "artifacts/tempo/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

@@ -1,0 +1,593 @@
+You are acting as my product architect, technical strategist, and repo-scaffolding advisor for a new app.
+
+I want a broad, high-level, technically serious overview — not a day-by-day execution schedule.
+
+Your job is to help me define the product, architecture, repo strategy, model stack, phase scope, and dependency direction for an ADHD-friendly AI daily planner app.
+
+IMPORTANT:
+- Be brutally honest.
+- Optimize for KISS.
+- Do not overengineer.
+- Do not assume I want a giant autonomous agent framework in week one.
+- Separate Alpha, Beta, Gamma, and MVP clearly.
+- Distinguish MUST-HAVE from NICE-TO-HAVE.
+- Use the 80/20 rule.
+- Keep the planner deterministic under the hood.
+- AI is a helper layer, not the sole source of truth.
+- The user always overrides everything.
+- External trusted data overrides internal AI guesses.
+- Internal schema/state overrides AI suggestions unless the user explicitly accepts the AI suggestion.
+
+==================================================
+1) PRODUCT SUMMARY
+==================================================
+
+I want to build a calm, minimalist, ADHD-friendly planning app that combines:
+- daily planning
+- tasks
+- simple notes
+- folders/areas/projects
+- lightweight memory
+- AI-assisted prioritization
+- AI-assisted task chunking
+- AI-assisted planning from messy input
+
+The app should feel like a clean hybrid of:
+- NotePlan
+- Joplin / markdown notes
+- a lightweight planner
+- a calm AI assistant
+
+It should NOT become:
+- a full Notion replacement
+- a giant PKM system in alpha
+- a full autonomous “agent OS” in alpha
+- a team collaboration platform
+- a giant second-brain app in week one
+
+The goal is:
+1. ship a genuinely useful internal alpha fast
+2. polish it into beta/gamma
+3. reach a serious MVP in about a month
+4. only after that add shiny or advanced features
+
+==================================================
+2) TARGET USER
+==================================================
+
+Primary target:
+- ADHD / executive-function-challenged users
+- users who need help turning messy thoughts into realistic plans
+- users who need calm prioritization, task chunking, and memory of preferences/routines
+
+Secondary target:
+- students
+- builders / solopreneurs
+- people who find Notion or ClickUp too overwhelming
+
+==================================================
+3) DESIGN / UX PRINCIPLES
+==================================================
+
+The app must feel:
+- minimalist
+- low cognitive load
+- monochrome or black/white/grayscale
+- readable
+- mobile-friendly
+- web-friendly
+- calm
+- obvious
+- forgiving
+
+UI principles:
+- one main action per screen
+- always-visible inbox or quick capture
+- always-visible “plan my day” action
+- easy manual override
+- no giant cluttered dashboard in alpha
+- mobile and web should share the same product logic
+
+Style direction:
+- simple black/white/neutral palette
+- no dark mode required for alpha
+- design should feel polished but easy to implement
+- use a stable reusable design system, not handcrafted visual chaos
+
+==================================================
+4) PRODUCT PHASES
+==================================================
+
+I want you to define the app clearly by phase.
+
+-------------------
+ALPHA (week-one internal alpha)
+-------------------
+
+Goal:
+Ship a usable internal web app + workable Android APK / mobile build that actually helps plan the day.
+
+Alpha must include:
+- onboarding
+- inbox capture
+- tasks
+- notes
+- projects
+- folders/areas
+- tags
+- today view
+- assistant panel
+- AI extraction from messy text
+- AI prioritization
+- AI task chunking
+- AI daily-plan generation
+- AI rewriting into ADHD-friendly plan style
+- editable output
+- lightweight personal memory / retrieval for planner context
+- shared web + mobile codebase
+- simple but real backend
+- no giant external connector burden
+
+Alpha memory/retrieval should only cover:
+- user preferences
+- planning style
+- wake/sleep tendencies
+- travel / prep buffers
+- recurring routines
+- ADHD preferences
+- recent relevant context
+- study/planning preferences
+- known constraints
+
+Alpha non-goals:
+- no giant knowledge-base ingestion
+- no heavy RAG over huge document libraries
+- no advanced council/search required
+- no giant automation ecosystem
+- no broad external connectors
+- no complex calendar sync
+- no overloaded dashboards
+
+-------------------
+BETA
+-------------------
+
+Goal:
+Polish the alpha and make it less fragile.
+
+Beta can include:
+- better editor reliability
+- better parser reliability
+- better note/task synchronization
+- better search/filtering
+- better onboarding
+- recurring task logic
+- better template customization
+- better assistant guardrails
+- better mobile polish
+- basic notification/reminder logic if nearly free
+- stronger observability/error handling
+
+-------------------
+GAMMA
+-------------------
+
+Goal:
+Pre-MVP stabilization plus first serious external connection and stronger intelligence.
+
+Gamma can include:
+- first Google connection (at minimum read/import, then maybe write if sane)
+- improved retrieval-backed memory
+- stronger plan verification
+- optional lightweight “council” or verification workflow
+- better study workflows
+- stronger import/export
+- more robust recurrence, prep-time logic, and reminders
+- better cross-device consistency
+- more mature search
+
+-------------------
+MVP (around a month)
+-------------------
+
+Goal:
+A serious ADHD planner with standard productivity features and strong memory.
+
+MVP should include:
+- solid planner core
+- strong daily planning loop
+- reliable notes/tasks/projects/folders/tags
+- Google connection at minimum
+- better recurrence and reminders
+- cron-based scheduled prompts/reminders
+- stronger retrieval-backed memory
+- speech-to-text
+- text-to-speech
+- study support workflows
+- optional limited knowledge-base ingestion
+- better search
+- stronger mobile UX
+- stronger assistant reliability
+- ability to support broader personal productivity use cases
+
+MVP nice-to-have if realistically feasible:
+- recipe/keto or other domain packs
+- study-note ingestion
+- meeting prep enhancements
+- better goal-aware planning
+- improved time estimation
+- better weekly review and review workflows
+
+-------------------
+POST-MVP / EXTRA SHINY
+-------------------
+
+These are explicitly lower priority and should not pollute alpha:
+- huge knowledge-base ingestion from YouTube playlists, article libraries, and large reference dumps
+- advanced Karpathy-style research loops
+- advanced multi-model councils everywhere
+- giant dev-task / vibe-kanban integrations
+- very broad connector ecosystem
+- big automation marketplace
+- complex dashboards
+- collaboration/team features
+
+==================================================
+5) CORE ARCHITECTURE PRINCIPLES
+==================================================
+
+I want the app architecture to be simple and robust.
+
+Core rule:
+Do NOT make the LLM or RAG the source of truth for live planner state.
+
+The architecture should separate:
+
+A. Transactional planner state
+- tasks
+- notes metadata
+- projects
+- folders/areas
+- tags
+- daily plan
+- accepted AI outputs
+- recurrence state
+- reminders state
+- external imported events/tasks if added later
+
+B. Retrieval-backed memory
+- preferences
+- routines
+- buffers
+- personal planning tendencies
+- recent relevant user context
+- maybe small study context
+- remembered constraints
+
+C. Template / primitive layer
+The app should use a small library of known blocks/primitives instead of freeform arbitrary AI-generated page layouts.
+
+Examples:
+- heading
+- checklist
+- task section
+- top 3 section
+- focus block
+- study session block
+- meeting prep block
+- notes section
+- reflection block
+- habit section
+- weekly review section
+
+D. AI helper layer
+The AI should:
+- parse messy input
+- extract tasks
+- suggest priorities
+- suggest next actions
+- chunk large work
+- rewrite into calmer plans
+- generate from known templates/primitives
+- retrieve relevant memory when appropriate
+
+The AI should NOT:
+- invent commitments
+- silently overwrite user intent
+- become a freeform autonomous planner with no deterministic schema
+- hallucinate schedule facts
+- mutate the planner without user visibility
+
+==================================================
+6) SOURCE-OF-TRUTH ORDER
+==================================================
+
+Use this hierarchy:
+1. user input wins
+2. trusted external source wins over internal guesses
+3. internal planner state wins over AI suggestions
+4. AI suggestions are advisory until accepted
+
+==================================================
+7) DATA MODEL OVERVIEW
+==================================================
+
+I want a concise recommended domain model for:
+- User
+- PreferenceMemory
+- Task
+- Note
+- Project
+- Folder/Area
+- Tag
+- DailyPlan
+- Template
+- Reminder / Recurrence (later)
+- ExternalEvent / ExternalTask (later)
+
+Give me a practical minimal schema, not an overcomplicated enterprise schema.
+
+==================================================
+8) AI / MODEL STACK STRATEGY
+==================================================
+
+I want you to include a model-routing and model-rating section.
+
+Use current public references like:
+- Hugging Face Open LLM Leaderboard
+- LM Arena / coding leaderboard
+- official model docs/pages
+
+But do NOT blindly follow one leaderboard.
+Use them as signals plus practical product reasoning.
+
+I want a model stack section that covers at least:
+- Mistral
+- Qwen
+- DeepSeek
+- Kimi
+- optional Claude role in development/orchestration
+- optional future council setup
+
+My current assumption:
+- base/default open model route can be Mistral
+- stronger reasoning route can use Qwen / DeepSeek
+- multimodal or research-heavy route can use Kimi or Qwen multimodal
+- Claude Code is for building/orchestration, not necessarily the in-app runtime model
+
+Please rate the model families for THIS PRODUCT USE CASE on a practical 10-point scale, for example:
+- planner copilot quality
+- reasoning quality
+- coding/dev quality
+- multimodal usefulness
+- cost-efficiency
+- self-hostability / open-weight usefulness
+- suitability for alpha
+- suitability for MVP
+
+I want you to consider at least these model families / variants:
+- Mistral Large 3 or current best practical Mistral open model
+- Qwen3 / Qwen3.5 / Qwen3-Coder-Next as applicable
+- DeepSeek-R1 / DeepSeek-V3.2 / deepseek-reasoner as applicable
+- Kimi K2.5 / kimi-k2-thinking or equivalent if relevant
+
+I want you to recommend:
+A. the best base default open model for the app
+B. the best “upgrade route” for harder planning/reasoning
+C. the best multimodal route
+D. the best coding/dev helper route
+E. an optional future “council” stack for verification if worth doing
+
+Important:
+- For alpha, keep model orchestration simple.
+- For MVP, model routing can be more sophisticated.
+- If council/search is overkill for early stages, say so clearly.
+
+==================================================
+9) SKILLS / AGENT LAYER
+==================================================
+
+I want a skills strategy section.
+
+Assume I only want:
+- official Anthropic skills
+- official Anthropic custom skills if I build my own
+- official/high-trust Vercel skills.sh ecosystem items
+- high-trust transparent skill packages from respected maintainers
+- maybe OpenClaw/ClawHub only if extremely transparent and reputable
+
+Do NOT assume I want random community skills.
+Do NOT assume I want risky packages.
+
+Important:
+- Anthropic official prebuilt skills are likely not enough by themselves for planner logic.
+- Therefore I may need my own custom planner skill(s).
+
+I want you to recommend:
+- which parts should be skills
+- which parts should remain deterministic app logic
+- whether I should build a custom “planner skill”
+- whether I should build specialized subagents
+- how to keep the skill layer safe and narrow
+
+Likely good skill candidates:
+- planner skill
+- task extraction skill
+- ADHD chunking skill
+- prioritization skill
+- note-to-template conversion skill
+- study-plan generation skill (later)
+
+==================================================
+10) REPO / STARTER / TEMPLATE SHORTLIST
+==================================================
+
+Please analyze these as possible references or foundations.
+Rank them by:
+- use as direct base
+- borrow architecture from
+- borrow UI/components from
+- borrow data model ideas from
+- use only as inspiration
+
+Reference repos / projects / tools to consider:
+
+Product references:
+- NotePlan (product reference, not open-source base)
+- Joplin
+- Super Productivity
+- Logseq
+- AppFlowy
+- Capacities
+- Notion / Notion MCP
+
+Foundation / starter candidates:
+- https://github.com/syntaxlexx/turbo-expo-tanstack-convex-monorepo
+- https://github.com/get-convex/expo-convex-auth
+- https://github.com/get-convex/turbo-expo-nextjs-clerk-convex-monorepo
+- https://github.com/obytes/react-native-template-obytes
+- https://github.com/chvvkrishnakumar/expo-nativewind-template
+- https://github.com/kimchouard/expo-router-nativewind-template
+- https://github.com/shadcnstore/shadcn-dashboard-landing-template
+- https://github.com/laurent22/joplin
+- https://github.com/super-productivity/super-productivity
+- https://github.com/logseq/logseq
+- https://github.com/AppFlowy-IO/AppFlowy
+
+Tooling / build workflow references:
+- Claude Code
+- Claude custom skills
+- Claude subagents
+- Claude Agent SDK
+- Cursor
+- Replit
+- Base44
+- Pencil
+- Miro wireframe templates
+- Apify
+- MCP
+- Notion MCP
+- Convex
+- Convex Auth
+- Expo
+- Expo Router
+- NativeWind / Tailwind-like RN stack
+
+I want a recommendation like:
+- “best direct starting point”
+- “best auth starter”
+- “best cross-platform starter”
+- “best repo to study for note/task schema”
+- “best repo to study for markdown-ish structure”
+- “best repo to study for planner logic”
+- “best repo to study for local-first knowledge patterns”
+
+==================================================
+11) APIFY / WEB INGESTION / BROWSER AUTOMATION
+==================================================
+
+I am also considering Apify.
+
+Assume this means Apify (browser automation / scraping / web-data ingestion / browser-as-a-service style workflows).
+
+I want you to evaluate whether Apify is a good idea for:
+- website/article ingestion
+- YouTube playlist/article knowledge-base ingestion later
+- browser automation
+- future RAG pipelines
+- future research workflows
+
+Important:
+- tell me whether Apify should be Alpha, Beta, Gamma, MVP, or post-MVP
+- if it is overkill for alpha, say so clearly
+- if it is useful later, explain the exact use cases
+- keep it KISS
+
+==================================================
+12) MEMORY / RAG STRATEGY
+==================================================
+
+I want two layers clearly separated:
+
+Layer 1: Alpha planner memory
+- preferences
+- routines
+- travel buffers
+- work/study style
+- ADHD planning constraints
+- recent planner context
+This is there to reduce hallucinations and improve planning quality.
+
+Layer 2: Bigger knowledge-base RAG
+- study notes
+- course notes
+- recipes
+- meal planning
+- YouTube playlist knowledge bases
+- article/reference libraries
+This is MVP or post-MVP, not alpha-critical.
+
+I want you to explain:
+- what belongs in alpha memory
+- what belongs later
+- what should be normal schema vs retrieval-backed memory
+- how to avoid turning memory into mush
+
+==================================================
+13) GOOGLE / MICROSOFT / CONNECTORS
+==================================================
+
+I want at minimum Google considered for later phases.
+
+Please recommend:
+- what should wait until Gamma or MVP
+- what level of Google support to target first
+- whether Microsoft should be deferred
+- what a sane connector strategy is without exploding scope
+
+==================================================
+14) WHAT I WANT FROM YOU
+==================================================
+
+Give me a structured response with these sections:
+
+1. Executive summary
+2. Product definition
+3. Alpha scope
+4. Beta scope
+5. Gamma scope
+6. MVP scope
+7. Post-MVP ideas
+8. Non-goals and scope cuts
+9. Recommended architecture
+10. Recommended data model
+11. Recommended repo/starter stack
+12. Recommended AI/model stack and ratings
+13. Recommended skills/subagents strategy
+14. Recommended memory/RAG strategy
+15. Recommended connector strategy
+16. Recommended dependency categories
+17. Biggest risks / hidden complexity
+18. What to cut if I want to ship in one week
+19. Final recommendation: the simplest viable architecture that still scales
+
+==================================================
+15) IMPORTANT BIAS / SCOPING RULES
+==================================================
+
+Please do NOT:
+- turn this into an enterprise platform
+- recommend ten fancy subsystems for alpha
+- assume that more AI automatically makes the app better
+- make RAG the live task database
+- make council/search mandatory for week one
+- sneak post-MVP features into alpha
+
+Please do:
+- keep it brutally practical
+- keep it KISS
+- optimize for a real internal alpha first
+- build a path to MVP without needing a rewrite
+- tell me where I am still overcomplicating things
+
+Use broad overview and architecture language, not a daily project plan.

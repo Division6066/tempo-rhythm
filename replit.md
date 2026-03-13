@@ -1,8 +1,8 @@
-# Workspace
+# TEMPO - ADHD-Friendly AI Daily Planner
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily planning, tasks, notes, projects, folders, tags, lightweight personal memory, and AI-assisted planning into one tool. Built as a React + Vite web app with an Express backend.
 
 ## Stack
 
@@ -10,87 +10,106 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
+- **Frontend**: React + Vite + Tailwind CSS + Framer Motion + Wouter
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
+- **AI**: OpenAI via Replit AI Integrations (gpt-5.2)
+- **Validation**: Zod (zod/v4), drizzle-zod
 - **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **Build**: esbuild (CJS bundle for API server)
+- **Icons**: Lucide React
+- **Date utils**: date-fns
+- **Markdown**: react-markdown
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+├── artifacts/
+│   ├── api-server/                  # Express API server
+│   │   └── src/routes/
+│   │       ├── tasks.ts             # Task CRUD
+│   │       ├── notes.ts             # Note CRUD
+│   │       ├── projects.ts          # Project CRUD
+│   │       ├── folders.ts           # Folder CRUD
+│   │       ├── tags.ts              # Tag CRUD
+│   │       ├── dailyPlans.ts        # Daily plan CRUD
+│   │       ├── preferences.ts       # User preferences + onboarding
+│   │       ├── memories.ts          # Memory items CRUD
+│   │       ├── templates.ts         # Plan template primitives
+│   │       └── ai.ts               # AI endpoints (chat, extract, chunk, prioritize, plan)
+│   ├── tempo/                       # React + Vite frontend
+│   │   └── src/
+│   │       ├── pages/               # All app pages
+│   │       ├── components/          # Shared components (Layout, TaskCard, QuickCapture)
+│   │       └── index.css            # TEMPO design tokens
+│   └── mockup-sandbox/             # Design mockup sandbox
+├── lib/
+│   ├── api-spec/                    # OpenAPI spec + codegen config
+│   ├── api-client-react/            # Generated React Query hooks
+│   ├── api-zod/                     # Generated Zod schemas
+│   ├── db/                          # Drizzle ORM schema + DB connection
+│   │   └── src/schema/
+│   │       ├── tasks.ts
+│   │       ├── notes.ts
+│   │       ├── projects.ts
+│   │       ├── folders.ts
+│   │       ├── tags.ts
+│   │       ├── dailyPlans.ts
+│   │       ├── preferences.ts
+│   │       └── memories.ts
+│   └── integrations-openai-ai-server/  # OpenAI AI integration
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+└── tsconfig.json
 ```
 
-## TypeScript & Composite Projects
+## Architecture Layers
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+1. **Layer A - Transactional State** (PostgreSQL): Tasks, notes, projects, folders, tags, daily plans, accepted AI outputs
+2. **Layer B - Memory** (PostgreSQL): User preferences, routines, energy patterns, ADHD constraints, planning context
+3. **Layer C - Templates**: Fixed library of plan block primitives (top3, focusBlock, taskSection, reflection, etc.)
+4. **Layer D - AI Helper** (Advisory only): Task extraction, prioritization, chunking, plan generation. Never writes directly to planner state.
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+## Design System
 
-## Root Scripts
+- Background: Deep indigo #1A1A2E
+- Surface/cards: #252540
+- Primary: Violet #6C63FF
+- Success: Teal #00C9A7
+- Warning: Amber #FFB347
+- Error: Red #FF6B6B
+- Dark-first theme, ADHD-friendly with low cognitive load
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+## Key Pages
 
-## Packages
+- `/` - Dashboard with progress, stats, AI assistant link
+- `/today` - Today's tasks grouped by priority
+- `/inbox` - Quick capture + brain dump with AI extraction
+- `/chat` - AI assistant chat interface
+- `/projects` - Color-coded project list
+- `/notes` - Notes list + markdown editor
+- `/settings` - Preferences + memory viewer
+- `/onboarding` - Multi-step ADHD preference setup
+- `/plan` - AI-generated daily plan with accept/edit/reject
 
-### `artifacts/api-server` (`@workspace/api-server`)
+## API Endpoints
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+All under `/api`:
+- Tasks: GET/POST `/tasks`, GET/PATCH/DELETE `/tasks/:id`
+- Notes: GET/POST `/notes`, GET/PATCH/DELETE `/notes/:id`
+- Projects: GET/POST `/projects`, PATCH/DELETE `/projects/:id`
+- Folders: GET/POST `/folders`, PATCH/DELETE `/folders/:id`
+- Tags: GET/POST `/tags`, DELETE `/tags/:id`
+- Daily Plans: GET/POST `/daily-plans`, GET/PATCH `/daily-plans/:id`
+- Preferences: GET/PUT `/preferences`
+- Memories: GET/POST `/memories`, DELETE `/memories/:id`
+- AI: POST `/ai/chat`, `/ai/extract-tasks`, `/ai/chunk-task`, `/ai/prioritize`, `/ai/generate-plan`
+- Onboarding: POST `/onboarding`
+- Templates: GET `/templates`
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+## Commands
 
-### `lib/db` (`@workspace/db`)
-
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+- `pnpm --filter @workspace/api-spec run codegen` - Regenerate API client hooks
+- `pnpm --filter @workspace/db run push` - Push DB schema changes
+- `pnpm run typecheck` - Full typecheck

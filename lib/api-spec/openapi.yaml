@@ -1,22 +1,39 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: TEMPO ADHD-friendly AI daily planner API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: tasks
+    description: Task management
+  - name: notes
+    description: Note management
+  - name: projects
+    description: Project management
+  - name: folders
+    description: Folder/area management
+  - name: tags
+    description: Tag management
+  - name: dailyPlans
+    description: Daily plan management
+  - name: preferences
+    description: User preferences and memory
+  - name: ai
+    description: AI assistant endpoints
+  - name: onboarding
+    description: Onboarding flow
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +41,705 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List all tasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [inbox, today, scheduled, done, cancelled]
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+        - name: folderId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskBody"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get a task by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskBody"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /notes:
+    get:
+      operationId: listNotes
+      tags: [notes]
+      summary: List all notes
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+        - name: folderId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Note"
+    post:
+      operationId: createNote
+      tags: [notes]
+      summary: Create a new note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteBody"
+      responses:
+        "201":
+          description: Created note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+
+  /notes/{id}:
+    get:
+      operationId: getNote
+      tags: [notes]
+      summary: Get a note by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Note details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateNote
+      tags: [notes]
+      summary: Update a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNoteBody"
+      responses:
+        "200":
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteNote
+      tags: [notes]
+      summary: Delete a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectBody"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /folders:
+    get:
+      operationId: listFolders
+      tags: [folders]
+      summary: List all folders
+      responses:
+        "200":
+          description: List of folders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Folder"
+    post:
+      operationId: createFolder
+      tags: [folders]
+      summary: Create a new folder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFolderBody"
+      responses:
+        "201":
+          description: Created folder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+
+  /folders/{id}:
+    patch:
+      operationId: updateFolder
+      tags: [folders]
+      summary: Update a folder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFolderBody"
+      responses:
+        "200":
+          description: Updated folder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteFolder
+      tags: [folders]
+      summary: Delete a folder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /tags:
+    get:
+      operationId: listTags
+      tags: [tags]
+      summary: List all tags
+      responses:
+        "200":
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+    post:
+      operationId: createTag
+      tags: [tags]
+      summary: Create a new tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTagBody"
+      responses:
+        "201":
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+
+  /tags/{id}:
+    delete:
+      operationId: deleteTag
+      tags: [tags]
+      summary: Delete a tag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /daily-plans:
+    get:
+      operationId: listDailyPlans
+      tags: [dailyPlans]
+      summary: List daily plans
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: List of daily plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyPlan"
+    post:
+      operationId: createDailyPlan
+      tags: [dailyPlans]
+      summary: Create or update a daily plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDailyPlanBody"
+      responses:
+        "201":
+          description: Created daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+
+  /daily-plans/{id}:
+    get:
+      operationId: getDailyPlan
+      tags: [dailyPlans]
+      summary: Get a daily plan by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Daily plan details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateDailyPlan
+      tags: [dailyPlans]
+      summary: Update a daily plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDailyPlanBody"
+      responses:
+        "200":
+          description: Updated daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          description: Not found
+
+  /preferences:
+    get:
+      operationId: getPreferences
+      tags: [preferences]
+      summary: Get user preferences
+      responses:
+        "200":
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceMemory"
+    put:
+      operationId: updatePreferences
+      tags: [preferences]
+      summary: Update user preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreferencesBody"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceMemory"
+
+  /memories:
+    get:
+      operationId: listMemories
+      tags: [preferences]
+      summary: List memory items
+      responses:
+        "200":
+          description: List of memory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MemoryItem"
+    post:
+      operationId: createMemory
+      tags: [preferences]
+      summary: Create a memory item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemoryBody"
+      responses:
+        "201":
+          description: Created memory item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryItem"
+
+  /memories/{id}:
+    delete:
+      operationId: deleteMemory
+      tags: [preferences]
+      summary: Delete a memory item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: Send a message to the AI assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatBody"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiChatResponse"
+
+  /ai/extract-tasks:
+    post:
+      operationId: aiExtractTasks
+      tags: [ai]
+      summary: Extract tasks from messy text input
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiExtractBody"
+      responses:
+        "200":
+          description: Extracted tasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiExtractResponse"
+
+  /ai/chunk-task:
+    post:
+      operationId: aiChunkTask
+      tags: [ai]
+      summary: Break a large task into smaller subtasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChunkBody"
+      responses:
+        "200":
+          description: Chunked subtasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiChunkResponse"
+
+  /ai/prioritize:
+    post:
+      operationId: aiPrioritize
+      tags: [ai]
+      summary: Suggest priority ordering for tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiPrioritizeBody"
+      responses:
+        "200":
+          description: Prioritized tasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiPrioritizeResponse"
+
+  /ai/generate-plan:
+    post:
+      operationId: aiGeneratePlan
+      tags: [ai]
+      summary: Generate a daily plan from tasks and preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiGeneratePlanBody"
+      responses:
+        "200":
+          description: Generated daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiGeneratePlanResponse"
+
+  /onboarding:
+    post:
+      operationId: completeOnboarding
+      tags: [onboarding]
+      summary: Complete onboarding and save preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingBody"
+      responses:
+        "200":
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceMemory"
+
+  /templates:
+    get:
+      operationId: listTemplates
+      tags: [dailyPlans]
+      summary: List available plan templates
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Template"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +750,753 @@ components:
       required:
         - status
 
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        status:
+          type: string
+          enum: [inbox, today, scheduled, done, cancelled]
+        priority:
+          type: string
+          enum: [high, medium, low]
+        projectId:
+          type: integer
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        dueDate:
+          type: string
+          nullable: true
+        scheduledDate:
+          type: string
+          nullable: true
+        estimatedMinutes:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        parentTaskId:
+          type: integer
+          nullable: true
+        aiGenerated:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - status
+        - priority
+        - tags
+        - aiGenerated
+        - createdAt
+        - updatedAt
+
+    CreateTaskBody:
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+          enum: [inbox, today, scheduled, done, cancelled]
+          default: inbox
+        priority:
+          type: string
+          enum: [high, medium, low]
+          default: medium
+        projectId:
+          type: integer
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        dueDate:
+          type: string
+          nullable: true
+        scheduledDate:
+          type: string
+          nullable: true
+        estimatedMinutes:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        parentTaskId:
+          type: integer
+          nullable: true
+        aiGenerated:
+          type: boolean
+          default: false
+      required:
+        - title
+
+    UpdateTaskBody:
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+          enum: [inbox, today, scheduled, done, cancelled]
+        priority:
+          type: string
+          enum: [high, medium, low]
+        projectId:
+          type: integer
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        dueDate:
+          type: string
+          nullable: true
+        scheduledDate:
+          type: string
+          nullable: true
+        estimatedMinutes:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        parentTaskId:
+          type: integer
+          nullable: true
+
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        projectId:
+          type: integer
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        templateType:
+          type: string
+          nullable: true
+        isPinned:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - content
+        - tags
+        - isPinned
+        - createdAt
+        - updatedAt
+
+    CreateNoteBody:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+          default: ""
+        projectId:
+          type: integer
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        templateType:
+          type: string
+          nullable: true
+        isPinned:
+          type: boolean
+          default: false
+      required:
+        - title
+
+    UpdateNoteBody:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        projectId:
+          type: integer
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        templateType:
+          type: string
+          nullable: true
+        isPinned:
+          type: boolean
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, archived]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateProjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, archived]
+          default: active
+      required:
+        - name
+
+    UpdateProjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        folderId:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, archived]
+
+    Folder:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        parentFolderId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+
+    CreateFolderBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        parentFolderId:
+          type: integer
+          nullable: true
+      required:
+        - name
+
+    UpdateFolderBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        parentFolderId:
+          type: integer
+          nullable: true
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+
+    CreateTagBody:
+      type: object
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+          nullable: true
+      required:
+        - name
+
+    DailyPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        mood:
+          type: string
+          nullable: true
+        energyLevel:
+          type: integer
+          nullable: true
+        aiGenerated:
+          type: boolean
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - date
+        - blocks
+        - aiGenerated
+        - createdAt
+        - updatedAt
+
+    CreateDailyPlanBody:
+      type: object
+      properties:
+        date:
+          type: string
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        mood:
+          type: string
+          nullable: true
+        energyLevel:
+          type: integer
+          nullable: true
+        aiGenerated:
+          type: boolean
+          default: false
+      required:
+        - date
+        - blocks
+
+    UpdateDailyPlanBody:
+      type: object
+      properties:
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        mood:
+          type: string
+          nullable: true
+        energyLevel:
+          type: integer
+          nullable: true
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PreferenceMemory:
+      type: object
+      properties:
+        id:
+          type: integer
+        wakeTime:
+          type: string
+        sleepTime:
+          type: string
+        energyPeaks:
+          type: array
+          items:
+            type: string
+        prepBufferMinutes:
+          type: integer
+        planningStyle:
+          type: string
+          enum: [morning, reactive, evening]
+        adhdMode:
+          type: boolean
+        focusSessionMinutes:
+          type: integer
+        breakMinutes:
+          type: integer
+        onboardingComplete:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - wakeTime
+        - sleepTime
+        - energyPeaks
+        - prepBufferMinutes
+        - planningStyle
+        - adhdMode
+        - focusSessionMinutes
+        - breakMinutes
+        - onboardingComplete
+        - updatedAt
+
+    UpdatePreferencesBody:
+      type: object
+      properties:
+        wakeTime:
+          type: string
+        sleepTime:
+          type: string
+        energyPeaks:
+          type: array
+          items:
+            type: string
+        prepBufferMinutes:
+          type: integer
+        planningStyle:
+          type: string
+          enum: [morning, reactive, evening]
+        adhdMode:
+          type: boolean
+        focusSessionMinutes:
+          type: integer
+        breakMinutes:
+          type: integer
+        onboardingComplete:
+          type: boolean
+
+    MemoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        tier:
+          type: string
+          enum: [hot, warm, cold]
+        content:
+          type: string
+        decay:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tier
+        - content
+        - decay
+        - createdAt
+
+    CreateMemoryBody:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [hot, warm, cold]
+        content:
+          type: string
+        decay:
+          type: integer
+          default: 100
+      required:
+        - tier
+        - content
+
+    AiChatBody:
+      type: object
+      properties:
+        message:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+          nullable: true
+      required:
+        - message
+
+    AiChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+      required:
+        - response
+        - suggestions
+
+    AiExtractBody:
+      type: object
+      properties:
+        text:
+          type: string
+      required:
+        - text
+
+    AiExtractResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedTask"
+      required:
+        - tasks
+
+    ExtractedTask:
+      type: object
+      properties:
+        title:
+          type: string
+        priority:
+          type: string
+          enum: [high, medium, low]
+        estimatedMinutes:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - priority
+
+    AiChunkBody:
+      type: object
+      properties:
+        taskTitle:
+          type: string
+        taskNotes:
+          type: string
+          nullable: true
+      required:
+        - taskTitle
+
+    AiChunkResponse:
+      type: object
+      properties:
+        subtasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedTask"
+        reasoning:
+          type: string
+      required:
+        - subtasks
+        - reasoning
+
+    AiPrioritizeBody:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+              priority:
+                type: string
+              estimatedMinutes:
+                type: integer
+                nullable: true
+            required:
+              - id
+              - title
+      required:
+        - tasks
+
+    AiPrioritizeResponse:
+      type: object
+      properties:
+        orderedTaskIds:
+          type: array
+          items:
+            type: integer
+        reasoning:
+          type: string
+      required:
+        - orderedTaskIds
+        - reasoning
+
+    AiGeneratePlanBody:
+      type: object
+      properties:
+        date:
+          type: string
+        taskIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - date
+
+    AiGeneratePlanResponse:
+      type: object
+      properties:
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        reasoning:
+          type: string
+      required:
+        - blocks
+        - reasoning
+
+    OnboardingBody:
+      type: object
+      properties:
+        adhdMode:
+          type: boolean
+        planningStyle:
+          type: string
+          enum: [morning, reactive, evening]
+        wakeTime:
+          type: string
+        sleepTime:
+          type: string
+        energyPeaks:
+          type: array
+          items:
+            type: string
+        focusSessionMinutes:
+          type: integer
+        breakMinutes:
+          type: integer
+        prepBufferMinutes:
+          type: integer
+      required:
+        - adhdMode
+        - planningStyle
+        - wakeTime
+        - sleepTime
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [heading, checklist, taskSection, top3, focusBlock, studySession, notesSection, reflection, habitSection, weeklyReview]
+        content:
+          type: object
+          additionalProperties: true
+        isDefault:
+          type: boolean
+      required:
+        - id
+        - name
+        - type
+        - content
+        - isDefault

@@ -1,0 +1,17 @@
+packages:
+  "framer-motion": "Smooth page transitions and micro-interactions"
+  "date-fns": "Date formatting and manipulation"
+  "lucide-react": "Beautiful icons for UI"
+  "react-markdown": "Markdown rendering for notes and chat responses"
+  "clsx": "Utility for constructing className strings"
+  "tailwind-merge": "Utility for merging tailwind classes safely"
+images:
+  - path: "artifacts/tempo/public/images/empty-inbox.png"
+    description: "Minimalist abstract 3D illustration of an empty tray or floating gentle spheres in deep indigo and violet colors, soft lighting, calm adhd-friendly vibe"
+    aspect_ratio: "1:1"
+  - path: "artifacts/tempo/public/images/hero-bg.png"
+    description: "Abstract soft gradient mesh in deep indigo, violet, and teal, very dark and calm, blurred, perfect for a planner background header"
+    aspect_ratio: "16:9"
+notes:
+  - Using generated React Query hooks from @workspace/api-client-react as instructed
+  - Implementing full TEMPO dark mode aesthetic with deep indigo #1A1A2E background

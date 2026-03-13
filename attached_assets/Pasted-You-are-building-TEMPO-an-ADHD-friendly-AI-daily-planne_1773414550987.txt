@@ -1,0 +1,512 @@
+You are building TEMPO — an ADHD-friendly AI daily planner.
+
+Read this entire briefing before doing anything. Then explore the uploaded files.
+Then ask your clarifying questions. Then wait for my go-ahead before building.
+
+═══════════════════════════════
+PART 1 — WHAT IS TEMPO?
+═══════════════════════════════
+
+TEMPO is a calm, minimalist, ADHD-friendly planning app that combines:
+  - daily planning
+  - tasks
+  - simple notes
+  - folders / areas / projects
+  - tags
+  - lightweight personal memory
+  - AI-assisted prioritization
+  - AI-assisted task chunking
+  - AI-assisted planning from messy input
+
+It should feel like a clean hybrid of NotePlan, Joplin, and a calm AI assistant.
+
+It should NOT become:
+  - a full Notion replacement
+  - a giant PKM system
+  - a full autonomous "agent OS"
+  - a team collaboration platform
+  - a giant second-brain app
+
+The goal for THIS BUILD is Alpha: a genuinely useful internal prototype that
+ships fast. Polish comes later. Shiny features come later.
+
+═══════════════════════════════
+PART 2 — WHO IS IT FOR?
+═══════════════════════════════
+
+Primary users:
+  - ADHD / executive-function-challenged people
+  - Users who need calm prioritization, task chunking, memory of preferences
+  - Users who need help turning messy thoughts into realistic plans
+
+Secondary users:
+  - Students
+  - Solopreneurs and builders
+  - Anyone who finds Notion or ClickUp too overwhelming
+
+═══════════════════════════════
+PART 3 — DESIGN + UX PRINCIPLES
+═══════════════════════════════
+
+The app must feel:
+  - minimalist
+  - low cognitive load
+  - monochrome / black / white / grayscale
+  - readable and calm
+  - mobile-friendly and web-friendly
+  - obvious and forgiving
+
+UI rules (non-negotiable):
+  1. One main action per screen
+  2. Always-visible quick capture
+  3. Always-visible "Plan my day" action
+  4. Easy manual override on everything AI does
+  5. No giant cluttered dashboard in alpha
+  6. Mobile and web share the same product logic
+
+Style:
+  - Simple dark palette: deep indigo #1A1A2E background
+  - Jewel tone accents: Violet #6C63FF, Teal #00C9A7, Amber #FFB347
+  - Typography: Instrument Serif (titles) + Inter (UI)
+  - NEVER use spinners — use breathing-light border animations instead
+  - Calm transitions (200ms ease-out max)
+  - Touch targets minimum 44×44px
+
+═══════════════════════════════
+PART 4 — PHASE DEFINITIONS
+═══════════════════════════════
+
+You are building ALPHA. Read the phase table carefully.
+Do not sneak beta/gamma/MVP features into alpha.
+
+──────────────────────
+ALPHA (this build)
+──────────────────────
+Goal: A usable internal web app + working Android APK that actually helps plan the day.
+
+Must include:
+  ✅ Onboarding
+  ✅ Inbox / quick capture
+  ✅ Tasks
+  ✅ Notes
+  ✅ Projects
+  ✅ Folders / areas
+  ✅ Tags
+  ✅ Today view
+  ✅ Assistant panel
+  ✅ AI extraction from messy text
+  ✅ AI prioritization
+  ✅ AI task chunking
+  ✅ AI daily-plan generation
+  ✅ AI rewriting into ADHD-friendly plan style
+  ✅ Editable AI output (user always overrides)
+  ✅ Lightweight personal memory (preferences, routines, buffers, constraints)
+  ✅ Shared web + mobile codebase
+  ✅ Simple but real backend
+
+Alpha memory covers ONLY:
+  - user preferences and planning style
+  - wake/sleep tendencies
+  - travel / prep buffers
+  - recurring routines
+  - ADHD preferences and constraints
+  - recent relevant planner context
+
+Alpha explicitly EXCLUDES:
+  ❌ Giant knowledge-base ingestion
+  ❌ Heavy RAG over large document libraries
+  ❌ Multi-model councils
+  ❌ Broad external connectors (no Google Calendar, no Zapier yet)
+  ❌ Complex calendar sync
+  ❌ Overloaded dashboards
+  ❌ Autonomous agents
+
+──────────────────────
+BETA (after alpha ships)
+──────────────────────
+  - Better editor and parser reliability
+  - Better search/filtering
+  - Better onboarding
+  - Recurring task logic
+  - Basic reminders
+  - Better mobile polish
+  - Better assistant guardrails
+
+──────────────────────
+GAMMA (pre-MVP stabilization)
+──────────────────────
+  - First Google connection (read/import minimum)
+  - Improved retrieval-backed memory
+  - Stronger plan verification
+  - Optional lightweight council/verification
+  - Better study workflows
+  - More robust recurrence and prep-time logic
+  - Better cross-device consistency
+
+──────────────────────
+MVP (~one month)
+──────────────────────
+  - Solid planner core with full daily loop
+  - Reliable notes / tasks / projects / folders / tags
+  - Google connection
+  - Better recurrence and reminders
+  - Cron-based reminders
+  - Stronger retrieval-backed memory
+  - Speech-to-text
+  - Text-to-speech
+  - Study support workflows
+  - Optional limited knowledge-base ingestion
+  - Better mobile UX
+
+──────────────────────
+POST-MVP — explicitly excluded from this build
+──────────────────────
+  - YouTube playlist / article knowledge-base ingestion
+  - Advanced multi-model councils everywhere
+  - Giant connector ecosystem
+  - Team collaboration
+  - Complex dashboards
+  - Big automation marketplace
+
+═══════════════════════════════
+PART 5 — ARCHITECTURE RULES
+═══════════════════════════════
+
+CRITICAL: Do NOT make the LLM or RAG the source of truth for live planner state.
+
+Source-of-truth hierarchy (always apply this):
+  1. User input wins
+  2. Trusted external source wins over internal guesses
+  3. Internal planner state wins over AI suggestions
+  4. AI suggestions are advisory until the user explicitly accepts them
+
+The architecture has four clearly separated layers:
+
+LAYER A — Transactional planner state (the real database, always deterministic):
+  tasks, notes metadata, projects, folders/areas, tags, daily plan,
+  accepted AI outputs, recurrence state, reminders, external events if added later
+
+LAYER B — Retrieval-backed memory (preferences and context, not live state):
+  user preferences, routines, travel buffers, personal planning tendencies,
+  recent relevant context, known constraints
+
+LAYER C — Template / primitive layer (a small fixed library of known blocks):
+  heading, checklist, task section, top-3 section, focus block,
+  study session block, notes section, reflection block, habit section
+
+LAYER D — AI helper layer (advisory only, never writes directly to planner state):
+  The AI parses messy input, extracts tasks, suggests priorities,
+  chunks large work, rewrites into calmer plans, generates from templates,
+  retrieves relevant memory when appropriate.
+
+  The AI NEVER:
+  - invents commitments
+  - silently overwrites user intent
+  - hallucinates schedule facts
+  - mutates planner state without user visibility
+
+═══════════════════════════════
+PART 6 — TECH STACK
+═══════════════════════════════
+
+  Framework:       Next.js 14+ App Router
+  Language:        TypeScript (strict)
+  Styling:         Tailwind CSS v3
+  Animation:       Framer Motion
+  Icons:           Lucide React
+  Fonts:           Instrument Serif + Inter (next/font/google)
+  Backend:         Convex (real-time DB + serverless functions)
+  Auth:            Convex Auth + Google OAuth (stub for alpha)
+  AI:              OpenRouter API — mock responses for alpha, real for beta+
+  Payments:        RevenueCat (stub for alpha)
+  Deployment:      Vercel (web) + Expo EAS (mobile)
+
+═══════════════════════════════
+PART 7 — FILES YOU HAVE
+═══════════════════════════════
+
+── /designs/index.html ──────────────────────────────────
+
+This is a single self-contained HTML file (no external deps, ~122KB).
+It contains 23 fully styled, navigable screens built from the TEMPO design system.
+
+Screens in this file:
+  Onboarding:    s01 Welcome, s02 ADHD Check, s03 Planning Style, s04 Time Preferences,
+                 s05 Energy Patterns, s06 Setup Complete
+  Main App:      s07 Dashboard, s08 Inbox, s09 Today View, s10 Task Detail,
+                 s11 Note Editor, s12 Projects, s13 Assistant Panel,
+                 s14 Quick Capture, s15 Settings
+  Planner:       s25 Daily Plan, s26 Plan Generation, s27 Plan Review,
+                 s28 Plan Edit, s29 Weekly View, s30 Focus Block,
+                 s31 Memory Viewer, s32 Paywall
+
+How to use this file:
+  - Open it in a browser to see and navigate all 23 screens
+  - Use it as your pixel-perfect visual reference
+  - When building each screen, study its HTML/CSS structure
+  - Re-implement it as proper Next.js components — do NOT copy/paste the raw HTML
+  - The file uses CSS custom properties as design tokens — extract and apply them
+
+Navigation in the file:
+  - Each screen has a data-screen ID
+  - goTo(screenId) switches screens
+  - Tab bars, back buttons, and CTAs are all wired up
+
+Known: the file has a @keyframes wave animation for Voice Mode — it's already patched in.
+
+── /templates/ ───────────────────────────────────────────
+
+These are Nir London's bootcamp production-ready starter templates.
+Do NOT rebuild from scratch what already exists in these templates.
+
+  next-convex-starter/     → PRIMARY BASE: Next.js 14 + Convex wired up
+  expo-rn-starter/         → MOBILE BASE: React Native + Expo
+  convex-auth-google/      → AUTH: Google OAuth + Convex Auth
+  openrouter-chat/         → AI: OpenRouter chat integration
+  revenuecat-paywall/      → PAYMENTS: RevenueCat paywall
+
+Strategy:
+  - Start with next-convex-starter as the project base
+  - Progressively merge in the other templates as you build each feature area
+  - These templates are production patterns — trust them
+
+── /assets/ (if present) ────────────────────────────────
+  Icons, fonts, or brand assets — use these directly
+
+═══════════════════════════════
+PART 8 — DATA MODEL (alpha schema)
+═══════════════════════════════
+
+Implement this exact minimal schema in Convex. Do not add fields you don't need yet.
+
+users:
+  id, email, name, createdAt, isPremium (bool, default false), onboardingComplete (bool)
+
+preferenceMemory:
+  userId, wakeTime, sleepTime, energyPeaks (string[]), prepBufferMinutes (int),
+  planningStyle (enum: morning|reactive|evening), adhdMode (bool),
+  focusSessionMinutes (int), breakMinutes (int), updatedAt
+
+tasks:
+  id, userId, title, status (enum: inbox|today|scheduled|done|cancelled),
+  priority (enum: high|medium|low), projectId?, folderId?, tags (string[]),
+  dueDate?, scheduledDate?, estimatedMinutes?, notes?, parentTaskId?,
+  aiGenerated (bool), createdAt, updatedAt
+
+notes:
+  id, userId, title, content (markdown string), projectId?, folderId?,
+  tags (string[]), templateType?, isPinned (bool), createdAt, updatedAt
+
+projects:
+  id, userId, name, description?, folderId?, color?, status (active|archived),
+  createdAt, updatedAt
+
+folders:
+  id, userId, name, description?, parentFolderId?, createdAt
+
+tags:
+  id, userId, name, color?
+
+dailyPlans:
+  id, userId, date (ISO date string), blocks (JSON array of template primitives),
+  mood?, energyLevel (1-5)?, aiGenerated (bool), acceptedAt?, createdAt, updatedAt
+
+templates:
+  id, userId?, name, type (enum: heading|checklist|taskSection|top3|focusBlock|
+  studySession|notesSection|reflection|habitSection|weeklyReview),
+  content (JSON), isDefault (bool)
+
+// Leave these for beta+:
+// reminders, recurrenceRules, externalEvents
+
+═══════════════════════════════
+PART 9 — MOCK DATA
+═══════════════════════════════
+
+Use this in lib/mock-data.ts for all prototype state. No real backend in alpha.
+```typescript
+export const mockUser = {
+  id: "user_1",
+  name: "Amit",
+  email: "amit@example.com",
+  isPremium: false,
+  onboardingComplete: false,
+};
+
+export const mockPreferences = {
+  wakeTime: "07:00",
+  sleepTime: "23:30",
+  energyPeaks: ["09:00-11:00", "15:00-17:00"],
+  prepBufferMinutes: 30,
+  planningStyle: "morning",
+  adhdMode: true,
+  focusSessionMinutes: 25,
+  breakMinutes: 5,
+};
+
+export const mockTasks = [
+  { id: "t1", title: "Review TEMPO wireframes", status: "today", priority: "high",
+    estimatedMinutes: 45, aiGenerated: false },
+  { id: "t2", title: "Write onboarding copy", status: "today", priority: "medium",
+    estimatedMinutes: 30, aiGenerated: false },
+  { id: "t3", title: "Test chat prototype", status: "inbox", priority: "high",
+    estimatedMinutes: 20, aiGenerated: false },
+  { id: "t4", title: "Email dentist re: appointment", status: "inbox", priority: "low",
+    estimatedMinutes: 5, aiGenerated: false },
+  { id: "t5", title: "Read Replit Agent 4 docs", status: "scheduled", priority: "medium",
+    estimatedMinutes: 60, aiGenerated: false },
+];
+
+export const mockProjects = [
+  { id: "p1", name: "TEMPO App", color: "#6C63FF", status: "active" },
+  { id: "p2", name: "Client Work", color: "#00C9A7", status: "active" },
+  { id: "p3", name: "Personal", color: "#FFB347", status: "active" },
+];
+
+export const mockNotes = [
+  { id: "n1", title: "TEMPO feature ideas", content: "## Ideas\n- Voice capture\n- Energy tracking\n- Smart scheduling", tags: ["tempo", "ideas"] },
+  { id: "n2", title: "Weekly goals", content: "## This week\n- Ship alpha\n- Test with 3 users", tags: ["goals"] },
+];
+
+export const mockDailyPlan = {
+  date: new Date().toISOString().split("T")[0],
+  energyLevel: 4,
+  blocks: [
+    { type: "top3", items: ["Finish TEMPO prototype", "Client email", "Gym"] },
+    { type: "focusBlock", title: "Deep Work", startTime: "09:00", duration: 90, task: "TEMPO prototype" },
+    { type: "taskSection", title: "Quick wins", tasks: ["t4"] },
+    { type: "reflection", prompt: "What's the ONE thing that would make today a win?" },
+  ],
+  aiGenerated: true,
+};
+
+export const mockMemories = [
+  { tier: "hot",  content: "Working on TEMPO — ADHD planner app. Alpha due ASAP.", decay: 92 },
+  { tier: "hot",  content: "Morning person. Best focus 9–11am.", decay: 85 },
+  { tier: "warm", content: "Uses 25/5 Pomodoro. Needs 30min buffer before calls.", decay: 60 },
+  { tier: "cold", content: "Background: accounting + digital journalism.", decay: 15 },
+];
+
+export const aiResponsePool = [
+  "Got it. I'd suggest starting with the smallest task to build momentum.",
+  "That sounds like a full morning's work. Want me to split it into two 25-min blocks?",
+  "On a high-energy day like today, tackle the hardest thing first.",
+  "I noticed you have a call at 2pm — want a prep block before it?",
+  "Let's chunk that down. What's the very first step?",
+];
+```
+
+═══════════════════════════════
+PART 10 — SCREENS TO BUILD
+═══════════════════════════════
+
+All screen IDs reference the designs/index.html file. Study the HTML for each
+before implementing the corresponding Next.js page.
+
+TIER 1 — Alpha must-ship (build first):
+  s01-s06   Onboarding flow         → app/onboarding/
+  s07       Dashboard               → app/ (page.tsx)
+  s08       Inbox / quick capture   → app/inbox/
+  s09       Today view              → app/today/
+  s13       Assistant panel         → app/chat/
+  s32       Paywall                 → app/paywall/
+
+TIER 2 — Alpha should-ship:
+  s10       Task detail             → app/tasks/[id]/
+  s11       Note editor             → app/notes/[id]/
+  s12       Projects                → app/projects/
+  s14       Quick capture sheet     → components/QuickCapture (bottom sheet)
+  s15       Settings                → app/settings/
+  s31       Memory viewer           → app/memory/
+
+TIER 3 — Alpha nice-to-have:
+  s25-s29   Planner flow            → app/plan/
+  s30       Focus block             → app/focus/
+
+TIER 4 — Beta+:
+  s26-s28 plan generation/review    → build after core is solid
+
+═══════════════════════════════
+PART 11 — AI BEHAVIOR RULES
+═══════════════════════════════
+
+For alpha, AI uses mock responses only. Leave clean TODO comments everywhere
+a real OpenRouter call should go. Use the openrouter-chat template as the
+reference pattern for wiring in real AI later.
+
+AI features to mock in alpha:
+  - Plan generation from task list + preferences
+  - Task extraction from messy text (brain dump input)
+  - Prioritization suggestions
+  - Task chunking (large task → subtasks)
+  - ADHD-friendly rewrite (simplify language, reduce overwhelm)
+
+Mock behavior pattern:
+  User submits input → 1800ms delay → breathing-light indicator →
+  show response from aiResponsePool cycling → user can accept/edit/reject
+
+The accept/edit/reject pattern is CRITICAL. AI output always goes into a
+staging area first. It only reaches the planner state when the user taps Accept.
+
+═══════════════════════════════
+PART 12 — NAVIGATION STRUCTURE
+═══════════════════════════════
+
+Bottom tab bar (4 tabs):
+  Home (House icon)    → /        Dashboard
+  Today (Sun icon)     → /today   Today view
+  Inbox (Inbox icon)   → /inbox   Inbox
+  More (Menu icon)     → /more    Projects, Notes, Memory, Settings
+
+Floating elements (appear on multiple screens):
+  - Quick capture FAB (bottom-right, always present except on onboarding)
+  - Assistant button (fixed, opens /chat as overlay)
+
+Onboarding is a separate flow (/onboarding) that redirects to / on completion.
+
+═══════════════════════════════
+PART 13 — DESIGN TOKENS
+═══════════════════════════════
+
+Extract these from the designs/index.html CSS custom properties.
+Apply consistently via Tailwind config.
+
+Colors:
+  --bg-base:         #1A1A2E   (all page backgrounds)
+  --surface:         #252540   (cards, panels, tab bar)
+  --violet:          #6C63FF   (primary, brand, CTA)
+  --teal:            #00C9A7   (success, accept states)
+  --amber:           #FFB347   (warnings, energy)
+  --red:             #FF6B6B   (error, destructive)
+  --text-primary:    #F0F0FF
+  --text-secondary:  #B0B0CC
+  --text-muted:      #6B6B8A
+  --border-subtle:   rgba(255,255,255,0.10)
+  --border-active:   rgba(108,99,255,0.60)
+
+Animation:
+  Breathing light: box-shadow pulse, rgba(108,99,255,0→0.4→0), 2s infinite
+  Button press: scale(0.96) + shadow-reduce, 200ms ease-out
+  Page transitions: opacity+translateY 150ms ease-out
+  prefers-reduced-motion: disable ALL animations
+
+Component patterns to replicate from the HTML:
+  GlassPanel, JewelButton, GlassButton, GlassInput, PrismCard,
+  Badge, FAB, Avatar, DecayBar, TogglePill, BottomSheet
+
+═══════════════════════════════
+PART 14 — WHAT TO DO NOW
+═══════════════════════════════
+
+1. Unzip all three zip files into the project
+2. Open designs/index.html in Replit's browser preview
+3. Navigate through all 23 screens — understand the full product
+4. Open templates/ and read each template's README
+5. Open next-convex-starter/ and read its README fully
+6. Report back:
+   a. List all 23 screen IDs and their titles from the HTML file
+   b. List all template folders found
+   c. List any questions you have about the build
+   d. Propose your build plan: which parallel agents for Stage 1, what order
+
+DO NOT start building yet. Explore, read, understand, then ask.
