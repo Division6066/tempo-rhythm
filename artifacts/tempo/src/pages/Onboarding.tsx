@@ -62,7 +62,7 @@ export default function Onboarding() {
       <p className="text-xl text-muted-foreground max-w-sm">
         The calm, minimalist AI planner designed for how your brain actually works.
       </p>
-      <Button onClick={handleNext} className="mt-8 w-full max-w-xs h-14 text-lg bg-white text-background hover:bg-white/90 rounded-2xl">
+      <Button onClick={handleNext} className="mt-8 w-full max-w-xs h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl">
         Let's get started
       </Button>
     </div>,
@@ -76,14 +76,14 @@ export default function Onboarding() {
       <div className="grid gap-4">
         <button 
           onClick={() => setFormData({...formData, adhdMode: true})}
-          className={clsx("p-6 rounded-2xl border transition-all text-left", formData.adhdMode ? "bg-primary/10 border-primary" : "bg-card border-white/5")}
+          className={clsx("p-6 rounded-2xl border transition-all text-left", formData.adhdMode ? "bg-primary/10 border-primary" : "bg-card border-border")}
         >
           <h3 className="font-bold text-lg mb-1 flex justify-between">Yes, turn it on {formData.adhdMode && <CheckCircle className="text-primary"/>}</h3>
           <p className="text-muted-foreground text-sm">Help me break things down and start easily.</p>
         </button>
         <button 
           onClick={() => setFormData({...formData, adhdMode: false})}
-          className={clsx("p-6 rounded-2xl border transition-all text-left", !formData.adhdMode ? "bg-primary/10 border-primary" : "bg-card border-white/5")}
+          className={clsx("p-6 rounded-2xl border transition-all text-left", !formData.adhdMode ? "bg-primary/10 border-primary" : "bg-card border-border")}
         >
           <h3 className="font-bold text-lg mb-1 flex justify-between">No thanks {!formData.adhdMode && <CheckCircle className="text-primary"/>}</h3>
           <p className="text-muted-foreground text-sm">Just standard minimalist planning.</p>
@@ -106,7 +106,7 @@ export default function Onboarding() {
           <button 
             key={style.id}
             onClick={() => setFormData({...formData, planningStyle: style.id as any})}
-            className={clsx("p-5 rounded-2xl border transition-all text-left flex justify-between items-center", formData.planningStyle === style.id ? "bg-amber-500/10 border-amber-500" : "bg-card border-white/5")}
+            className={clsx("p-5 rounded-2xl border transition-all text-left flex justify-between items-center", formData.planningStyle === style.id ? "bg-amber-500/10 border-amber-500" : "bg-card border-border")}
           >
             <div>
               <h3 className="font-bold text-lg">{style.title}</h3>
@@ -129,7 +129,7 @@ export default function Onboarding() {
         <p className="text-muted-foreground">When does your day start and end?</p>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-card rounded-2xl border border-white/5 p-5 space-y-3">
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
           <div className="flex items-center gap-2 text-amber-400">
             <Sun size={18} />
             <span className="font-semibold">Wake up</span>
@@ -141,7 +141,7 @@ export default function Onboarding() {
             className="bg-background border-border text-lg h-12"
           />
         </div>
-        <div className="bg-card rounded-2xl border border-white/5 p-5 space-y-3">
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
           <div className="flex items-center gap-2 text-blue-400">
             <Moon size={18} />
             <span className="font-semibold">Sleep</span>
@@ -154,7 +154,7 @@ export default function Onboarding() {
           />
         </div>
       </div>
-      <div className="bg-card rounded-2xl border border-white/5 p-5 space-y-3">
+      <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
         <div className="flex items-center gap-2 text-teal-400">
           <Timer size={18} />
           <span className="font-semibold">Focus session length</span>
@@ -197,7 +197,7 @@ export default function Onboarding() {
               "p-4 rounded-2xl border transition-all text-left",
               formData.energyPeaks.includes(opt.id)
                 ? "bg-teal-500/10 border-teal-500"
-                : "bg-card border-white/5"
+                : "bg-card border-border"
             )}
           >
             <div className="flex items-center justify-between mb-1">
@@ -223,7 +223,7 @@ export default function Onboarding() {
       <p className="text-muted-foreground max-w-sm">
         We've tuned TEMPO to your brain. You can adjust the fine details in settings later.
       </p>
-      <div className="w-full max-w-xs space-y-3 bg-card rounded-2xl border border-white/5 p-5 text-left">
+      <div className="w-full max-w-xs space-y-3 bg-card rounded-2xl border border-border p-5 text-left">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">ADHD Mode</span>
           <span className="font-medium">{formData.adhdMode ? "On" : "Off"}</span>
@@ -259,7 +259,7 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col p-6 items-center pt-20 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+      <div className="absolute top-0 left-0 w-full h-1 bg-border">
         <div 
           className="h-full bg-primary transition-all duration-500 ease-out"
           style={{ width: `${((step + 1) / steps.length) * 100}%` }}

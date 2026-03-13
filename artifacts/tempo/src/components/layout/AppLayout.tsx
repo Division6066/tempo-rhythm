@@ -14,10 +14,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { data: preferences } = useGetPreferences();
 
   useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
-
-  useEffect(() => {
     if (preferences && !preferences.onboardingComplete && location !== "/onboarding") {
       setLocation("/onboarding");
     }

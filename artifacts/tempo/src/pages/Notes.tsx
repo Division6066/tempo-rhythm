@@ -76,7 +76,7 @@ export default function Notes() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {pinned.map(note => (
                 <Link key={note.id} href={`/notes/${note.id}`}>
-                  <div className="glass p-4 rounded-xl cursor-pointer hover:bg-white/5 transition-all border border-primary/30 h-32 flex flex-col">
+                  <div className="glass p-4 rounded-xl cursor-pointer hover:bg-muted/50 transition-all border border-primary/30 h-32 flex flex-col">
                     <h3 className="font-semibold text-foreground truncate">{note.title || "Untitled"}</h3>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-3 flex-1">{note.content || "Empty note"}</p>
                   </div>
@@ -98,7 +98,7 @@ export default function Notes() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {other.map(note => (
                 <Link key={note.id} href={`/notes/${note.id}`}>
-                  <div className="glass p-4 rounded-xl cursor-pointer hover:bg-white/5 transition-all border border-border/50 h-32 flex flex-col">
+                  <div className="glass p-4 rounded-xl cursor-pointer hover:bg-muted/50 transition-all border border-border/50 h-32 flex flex-col">
                     <h3 className="font-medium text-foreground truncate">{note.title || "Untitled"}</h3>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-3 flex-1">{note.content || "Empty note"}</p>
                   </div>

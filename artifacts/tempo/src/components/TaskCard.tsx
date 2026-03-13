@@ -27,7 +27,7 @@ export default function TaskCard({ task }: { task: Task }) {
 
   return (
     <Link href={`/tasks/${task.id}`}>
-      <div className="glass p-4 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-white/5 transition-all border border-border/50 hover:border-primary/30">
+      <div className="glass p-4 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-muted/50 transition-all border border-border/50 hover:border-primary/30">
         <button onClick={toggleStatus} className="mt-0.5 text-muted-foreground hover:text-primary transition-colors">
           {task.status === "done" ? (
             <CheckCircle2 className="text-primary h-5 w-5" />

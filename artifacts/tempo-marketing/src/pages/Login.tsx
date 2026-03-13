@@ -66,7 +66,7 @@ export default function Login() {
         setUser(data.user);
         setRedirecting(true);
         setTimeout(() => {
-          window.location.href = "/tempo/calendar";
+          window.location.href = "/calendar";
         }, 1500);
       } else {
         setError(data.error || "Invalid credentials");
@@ -86,7 +86,7 @@ export default function Login() {
   };
 
   const handleOpenApp = () => {
-    window.location.href = "/tempo/calendar";
+    window.location.href = "/calendar";
   };
 
   if (user) {
