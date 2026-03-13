@@ -60,7 +60,7 @@ export default function Dashboard() {
         )}
       </header>
 
-      <Card className="glass border-primary/20 shadow-lg shadow-black/20 overflow-hidden relative">
+      <Card className="glass border-primary/20 shadow-lg shadow-black/5 overflow-hidden relative">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
         <CardContent className="p-6">
           <div className="flex items-center gap-6">
