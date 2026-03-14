@@ -65,6 +65,7 @@ export default function TaskDetailPage() {
   const [duration, setDuration] = useState("");
   const [recurrenceRule, setRecurrenceRule] = useState("");
   const [chunking, setChunking] = useState(false);
+  const [chunkError, setChunkError] = useState("");
 
   useEffect(() => {
     if (task) {
@@ -109,6 +110,7 @@ export default function TaskDetailPage() {
 
   const handleChunk = async () => {
     setChunking(true);
+    setChunkError("");
     try {
       const res = await chunkTask({ taskTitle: title, taskNotes: notes });
       if (res.subtasks && res.subtasks.length > 0) {
@@ -122,6 +124,8 @@ export default function TaskDetailPage() {
           reasoning: res.reasoning,
         });
       }
+    } catch {
+      setChunkError("AI chunking is currently unavailable. Try breaking the task down manually.");
     } finally {
       setChunking(false);
     }
@@ -181,6 +185,9 @@ export default function TaskDetailPage() {
               <Sparkles size={16} />
               {chunking ? "Chunking..." : "Chunk this task"}
             </Button>
+            {chunkError && (
+              <span className="text-xs text-destructive">{chunkError}</span>
+            )}
             <Button
               variant="ghost"
               size="icon"

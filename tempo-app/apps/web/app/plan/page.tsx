@@ -23,6 +23,7 @@ export default function DailyPlanPage() {
   const createPlan = useMutation(api.dailyPlans.create);
 
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
 
   const existingPlan = plans && plans.length > 0 ? plans[0] : null;
   const pendingStagedPlan = stagedPlans && stagedPlans.length > 0 ? stagedPlans[0] : null;
@@ -30,6 +31,7 @@ export default function DailyPlanPage() {
 
   const handleGenerate = async () => {
     setGenerating(true);
+    setGenerateError("");
     try {
       const res = await generatePlan({ date: todayDate });
       await createStaged({
@@ -37,6 +39,8 @@ export default function DailyPlanPage() {
         data: { blocks: res.blocks, date: todayDate },
         reasoning: res.reasoning,
       });
+    } catch {
+      setGenerateError("AI planning is currently unavailable. Please try again later or plan your day manually.");
     } finally {
       setGenerating(false);
     }
@@ -84,6 +88,11 @@ export default function DailyPlanPage() {
                 <Sparkles size={20} />
                 {generating ? "Analyzing & Planning..." : "Generate AI Plan"}
               </Button>
+              {generateError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-lg px-4 py-3 mt-4 max-w-sm mx-auto">
+                  {generateError}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

@@ -22,6 +22,15 @@ TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily plan
 - Auth: Convex Auth with email/password (sign-in + sign-up), expo-secure-store for native token storage
 - Env: `EXPO_PUBLIC_CONVEX_URL` in `tempo-app/apps/mobile/.env.local`
 
+### Next.js Web App (tempo-app/apps/web)
+- `tempo-app/apps/web/` — Next.js 15 app with Convex Auth, AI features, and full Playwright e2e test suite
+- AI features degrade gracefully when OPENAI_API_KEY is missing (shows user-friendly messages)
+- VoiceNote transcription uses `/api/transcribe` API route (proxies to OpenAI Whisper, 25MB file limit)
+- Playwright e2e tests in `tempo-app/apps/web/e2e/` covering auth, navigation, dashboard, tasks, notes, projects, calendar, settings, onboarding, AI features, templates, and filters
+
+### Legacy (unused)
+- `tempo-app/` — Previous Next.js + Expo app code (not active; only `convex/` subfolder is used)
+
 ## Stack
 
 - **Backend**: Express + PostgreSQL + Drizzle ORM

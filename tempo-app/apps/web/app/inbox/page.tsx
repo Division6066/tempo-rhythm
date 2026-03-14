@@ -36,9 +36,12 @@ export default function InboxPage() {
     setQuickTask("");
   };
 
+  const [extractError, setExtractError] = useState("");
+
   const handleExtract = async () => {
     if (!brainDump.trim()) return;
     setExtracting(true);
+    setExtractError("");
     try {
       const res = await extractTasks({ text: brainDump });
       if (res.tasks) {
@@ -50,6 +53,8 @@ export default function InboxPage() {
         setBrainDump("");
         setIsDumping(false);
       }
+    } catch {
+      setExtractError("AI extraction is currently unavailable. You can still add tasks manually above.");
     } finally {
       setExtracting(false);
     }
@@ -98,6 +103,11 @@ export default function InboxPage() {
               placeholder="Type all your messy thoughts here. AI will extract actionable tasks..."
               className="min-h-[150px] bg-background border-border resize-none"
             />
+            {extractError && (
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-lg px-4 py-3">
+                {extractError}
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setIsDumping(false)}>Cancel</Button>
               <Button onClick={handleExtract} disabled={!brainDump.trim() || extracting} className="bg-primary text-primary-foreground gap-2">

@@ -12,8 +12,11 @@ Rules:
 - When suggesting plans, consider energy levels and realistic time estimates.
 - Never invent commitments or deadlines the user didn't mention.`;
 
-async function callOpenAI(messages: Array<{ role: string; content: string }>) {
+async function callOpenAI(messages: Array<{ role: string; content: string }>): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI features are not configured. Please set the OPENAI_API_KEY environment variable.");
+  }
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
@@ -27,6 +30,10 @@ async function callOpenAI(messages: Array<{ role: string; content: string }>) {
       messages,
     }),
   });
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "Unknown error");
+    throw new Error(`AI service error (${res.status}): ${errorText}`);
+  }
   const data = await res.json();
   return data.choices?.[0]?.message?.content ?? "";
 }

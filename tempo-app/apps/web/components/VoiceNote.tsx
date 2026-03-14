@@ -47,8 +47,11 @@ export function VoiceNote({ onTranscription }: VoiceNoteProps) {
     }
   }, [isRecording]);
 
+  const [error, setError] = useState("");
+
   const transcribeAudio = async (audioBlob: Blob) => {
     setIsTranscribing(true);
+    setError("");
     try {
       const formData = new FormData();
       formData.append("file", audioBlob, "recording.webm");
@@ -61,11 +64,13 @@ export function VoiceNote({ onTranscription }: VoiceNoteProps) {
       if (res.ok) {
         const data = await res.json();
         onTranscription(data.text || "[No transcription available]");
+      } else if (res.status === 503) {
+        setError("Voice transcription requires an OpenAI API key.");
       } else {
-        onTranscription("[Transcription failed]");
+        setError("Transcription failed. Please try again.");
       }
     } catch {
-      onTranscription("[Transcription error]");
+      setError("Could not connect to transcription service.");
     } finally {
       setIsTranscribing(false);
     }
@@ -73,6 +78,11 @@ export function VoiceNote({ onTranscription }: VoiceNoteProps) {
 
   return (
     <div className="flex items-center gap-2">
+      {error && (
+        <span className="text-xs text-destructive max-w-[200px] truncate" title={error}>
+          {error}
+        </span>
+      )}
       {isTranscribing ? (
         <Button variant="outline" size="sm" disabled className="gap-2">
           <Loader2 size={14} className="animate-spin" />
