@@ -1,5 +1,4 @@
 import { Link } from "wouter";
-import { Twitter, Github, Linkedin } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -12,11 +11,6 @@ export default function Footer() {
           <p className="text-muted-foreground text-sm leading-relaxed mb-6">
             Your ADHD brain deserves a planner that gets it. AI-powered daily planning for neurodivergent minds.
           </p>
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="hover:text-primary transition-colors"><Twitter size={20} /></a>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="hover:text-primary transition-colors"><Github size={20} /></a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="hover:text-primary transition-colors"><Linkedin size={20} /></a>
-          </div>
         </div>
 
         <div>

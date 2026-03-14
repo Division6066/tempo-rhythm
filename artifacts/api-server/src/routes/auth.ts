@@ -83,6 +83,56 @@ router.get("/auth/me", (req, res) => {
   return res.status(401).json({ authenticated: false, error: "Not authenticated" });
 });
 
+router.post("/auth/signup", (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: "Name, email, and password are required" });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters" });
+  }
+
+  const existing = BETA_USERS.find((u) => u.email === email);
+  if (existing) {
+    return res.status(409).json({ error: "An account with this email already exists" });
+  }
+
+  const username = email.split("@")[0] + Math.random().toString(36).slice(2, 8);
+  const newUser = { username, password, displayName: name, email };
+  BETA_USERS.push(newUser);
+
+  const profile = buildUserProfile(newUser);
+  return res.json({
+    success: true,
+    user: profile,
+    token: `tempo-session-${username}`,
+  });
+});
+
+router.post("/auth/onboarding", (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace("Bearer ", "");
+
+  if (!token?.startsWith("tempo-session-")) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  const username = token.replace("tempo-session-", "");
+  const user = BETA_USERS.find((u) => u.username === username);
+
+  if (!user) {
+    return res.status(401).json({ error: "User not found" });
+  }
+
+  const { challenge, focusTime, dailyTaskCount } = req.body;
+  return res.json({
+    success: true,
+    preferences: { challenge, focusTime, dailyTaskCount },
+  });
+});
+
 router.get("/auth/users", (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace("Bearer ", "");

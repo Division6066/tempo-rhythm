@@ -65,7 +65,8 @@ export default function Pricing() {
       ],
       cta: "Get Started",
       href: "/signup",
-      highlight: false
+      highlight: false,
+      isExternal: false
     },
     {
       name: "Pro",
@@ -83,7 +84,8 @@ export default function Pricing() {
       missing: [],
       cta: "Start 14-Day Trial",
       href: "/signup",
-      highlight: true
+      highlight: true,
+      isExternal: false
     },
     {
       name: "Team",
@@ -99,8 +101,9 @@ export default function Pricing() {
       ],
       missing: [],
       cta: "Contact Sales",
-      href: "#",
-      highlight: false
+      href: "mailto:sales@tempo.app",
+      highlight: false,
+      isExternal: true
     }
   ];
 
@@ -162,17 +165,29 @@ export default function Pricing() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href={tier.href}
-                  className={cn(
-                    "w-full text-center py-4 rounded-xl font-semibold transition-all",
-                    tier.highlight 
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg" 
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  )}
-                >
-                  {tier.cta}
-                </Link>
+                {tier.isExternal ? (
+                  <a
+                    href={tier.href}
+                    className={cn(
+                      "w-full block text-center py-4 rounded-xl font-semibold transition-all",
+                      "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
+                  >
+                    {tier.cta}
+                  </a>
+                ) : (
+                  <Link
+                    href={tier.href}
+                    className={cn(
+                      "w-full text-center py-4 rounded-xl font-semibold transition-all",
+                      tier.highlight 
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg" 
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
+                  >
+                    {tier.cta}
+                  </Link>
+                )}
               </motion.div>
             ))}
           </div>

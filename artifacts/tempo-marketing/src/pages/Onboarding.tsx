@@ -1,29 +1,45 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { Check, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const MAIN_APP_URL = import.meta.env.VITE_MAIN_APP_URL || "/";
+
 export default function Onboarding() {
-  const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
+  const [challenge, setChallenge] = useState<number | null>(null);
+  const [focusTime, setFocusTime] = useState<string | null>(null);
+  const [dailyTaskCount, setDailyTaskCount] = useState(5);
   const totalSteps = 4;
 
   const nextStep = () => {
     if (step < totalSteps) setStep(step + 1);
   };
 
-  const finish = () => {
-    setLocation("/");
+  const finish = async () => {
+    const token = localStorage.getItem("tempo-token");
+    if (token) {
+      try {
+        await fetch("/api/auth/onboarding", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ challenge, focusTime, dailyTaskCount }),
+        });
+      } catch {
+      }
+    }
+    window.location.href = MAIN_APP_URL;
   };
 
   return (
     <Layout hideNavFooter>
       <SEO title="Get Started — TEMPO" description="Set up your TEMPO account and personalize your ADHD-friendly planning experience." path="/onboarding" robots="noindex,nofollow" />
       <div className="min-h-screen bg-background flex flex-col pt-12">
-        {/* Progress Bar */}
         <div className="max-w-2xl w-full mx-auto px-6 mb-12">
           <div className="h-2 bg-secondary rounded-full overflow-hidden">
             <motion.div 
@@ -42,13 +58,13 @@ export default function Onboarding() {
           <div className="max-w-xl w-full">
             <AnimatePresence mode="wait">
               {step === 1 && (
-                <Step1 key="step1" onNext={nextStep} />
+                <Step1 key="step1" selected={challenge} setSelected={setChallenge} onNext={nextStep} />
               )}
               {step === 2 && (
-                <Step2 key="step2" onNext={nextStep} />
+                <Step2 key="step2" selected={focusTime} setSelected={setFocusTime} onNext={nextStep} />
               )}
               {step === 3 && (
-                <Step3 key="step3" onNext={nextStep} />
+                <Step3 key="step3" val={dailyTaskCount} setVal={setDailyTaskCount} onNext={nextStep} />
               )}
               {step === 4 && (
                 <Step4 key="step4" onFinish={finish} />
@@ -61,8 +77,7 @@ export default function Onboarding() {
   );
 }
 
-function Step1({ onNext }: { onNext: () => void }) {
-  const [selected, setSelected] = useState<number | null>(null);
+function Step1({ selected, setSelected, onNext }: { selected: number | null; setSelected: (v: number) => void; onNext: () => void }) {
   const options = [
     "I get overwhelmed by large tasks",
     "I forget to check my to-do list",
@@ -112,9 +127,7 @@ function Step1({ onNext }: { onNext: () => void }) {
   );
 }
 
-function Step2({ onNext }: { onNext: () => void }) {
-  const [selected, setSelected] = useState<string | null>(null);
-  
+function Step2({ selected, setSelected, onNext }: { selected: string | null; setSelected: (v: string) => void; onNext: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -162,9 +175,7 @@ function Step2({ onNext }: { onNext: () => void }) {
   );
 }
 
-function Step3({ onNext }: { onNext: () => void }) {
-  const [val, setVal] = useState(5);
-  
+function Step3({ val, setVal, onNext }: { val: number; setVal: (v: number) => void; onNext: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
