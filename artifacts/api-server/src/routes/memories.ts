@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, ilike, and, lte } from "drizzle-orm";
 import { db, memoriesTable } from "@workspace/db";
+import type { Memory } from "@workspace/db";
 import {
   ListMemoriesResponse,
   CreateMemoryBody,
@@ -9,22 +10,31 @@ import {
 
 const router: IRouter = Router();
 
+interface MemoryStats {
+  tier: string;
+  count: string;
+  avg_decay: string;
+  oldest: string;
+  newest: string;
+}
+
 router.get("/memories", async (req, res): Promise<void> => {
   const tier = req.query.tier as string | undefined;
   const q = req.query.q as string | undefined;
 
-  let query = db.select().from(memoriesTable);
+  let conditions = [];
+  if (tier) conditions.push(eq(memoriesTable.tier, tier));
+  if (q) conditions.push(ilike(memoriesTable.content, `%${q}%`));
 
-  if (tier) {
-    query = query.where(eq(memoriesTable.tier, tier)) as any;
+  let memories: Memory[];
+  if (conditions.length > 0) {
+    memories = await db.select().from(memoriesTable)
+      .where(conditions.length === 1 ? conditions[0] : and(...conditions))
+      .orderBy(memoriesTable.createdAt);
+  } else {
+    memories = await db.select().from(memoriesTable).orderBy(memoriesTable.createdAt);
   }
 
-  if (q) {
-    const pattern = `%${q}%`;
-    query = query.where(ilike(memoriesTable.content, pattern)) as any;
-  }
-
-  const memories = await query.orderBy(memoriesTable.createdAt);
   res.json(ListMemoriesResponse.parse(memories));
 });
 
@@ -59,42 +69,44 @@ router.post("/memories/decay", async (_req, res): Promise<void> => {
   try {
     await db.execute(sql`
       UPDATE memories 
-      SET decay = GREATEST(0, decay - 0.05)
+      SET decay = GREATEST(0, decay - 5)
       WHERE decay > 0
     `);
 
     const pruned = await db.delete(memoriesTable)
       .where(and(
-        lte(memoriesTable.decay, sql`0.1`),
+        lte(memoriesTable.decay, 10),
         eq(memoriesTable.tier, "short")
       ))
       .returning();
 
     res.json({ 
-      message: "Decay applied",
+      message: "Decay applied (scale 0-100, step -5)",
       pruned: pruned.length,
     });
   } catch (err) {
     console.error("Memory decay error:", err);
-    res.json({ message: "Decay applied", pruned: 0 });
+    res.status(500).json({ error: "Decay operation failed", details: err instanceof Error ? err.message : String(err) });
   }
 });
 
 router.get("/memories/stats", async (_req, res): Promise<void> => {
   try {
-    const stats = await db.execute(sql`
+    const result = await db.execute(sql`
       SELECT 
         tier,
-        COUNT(*) as count,
-        AVG(decay) as avg_decay,
-        MIN(created_at) as oldest,
-        MAX(created_at) as newest
+        COUNT(*)::text as count,
+        AVG(decay)::text as avg_decay,
+        MIN(created_at)::text as oldest,
+        MAX(created_at)::text as newest
       FROM memories
       GROUP BY tier
     `);
-    res.json(Array.isArray(stats) ? stats : (stats as any).rows || []);
-  } catch {
-    res.json([]);
+    const rows: MemoryStats[] = Array.isArray(result) ? result : (result as { rows: MemoryStats[] }).rows;
+    res.json(rows);
+  } catch (err) {
+    console.error("Memory stats error:", err);
+    res.status(500).json({ error: "Failed to fetch memory stats" });
   }
 });
 

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, tasksTable, preferencesTable, memoriesTable, aiActionLogTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc } from "drizzle-orm";
 import {
   AiChatBody,
   AiChatResponse,
@@ -15,55 +15,86 @@ import {
 } from "@workspace/api-zod";
 import { callWithFallback, callWithFallbackDetailed, synthesizeCouncil, getModelHealthStats } from "@workspace/integrations-openai-ai-server";
 import type { AiCallResult, CouncilResult } from "@workspace/integrations-openai-ai-server";
+import type { InsertAiActionLog } from "@workspace/db";
 
 const router: IRouter = Router();
 
-async function logAiAction(
-  action: string,
-  result: AiCallResult | CouncilResult,
-  isCouncil = false
-) {
+const COST_PER_1K_TOKENS: Record<string, { input: number; output: number }> = {
+  "ministral-3": { input: 0.0001, output: 0.0003 },
+  "magistral": { input: 0.0005, output: 0.0015 },
+  "gpt-oss": { input: 0.0003, output: 0.001 },
+  "deepseek-v3.1": { input: 0.00014, output: 0.00028 },
+  "qwen3.5": { input: 0.0002, output: 0.0006 },
+  "minimax-m2.5": { input: 0.0002, output: 0.0006 },
+  "kimi-k2.5": { input: 0.0002, output: 0.0006 },
+  "glm-5": { input: 0.0002, output: 0.0006 },
+};
+
+function estimateCost(model: string, inputTokens?: number, outputTokens?: number): number {
+  const rates = COST_PER_1K_TOKENS[model] || { input: 0.0003, output: 0.001 };
+  const inputCost = ((inputTokens || 0) / 1000) * rates.input;
+  const outputCost = ((outputTokens || 0) / 1000) * rates.output;
+  return Math.round((inputCost + outputCost) * 1000000) / 1000000;
+}
+
+async function logAiAction(action: string, result: AiCallResult | CouncilResult): Promise<void> {
   try {
-    const entry: Record<string, unknown> = {
-      action,
-      status: "success",
-    };
-
     if ("synthesis" in result) {
-      entry.model = result.synthesisModel;
-      entry.totalTokens = result.totalTokens;
-      entry.latencyMs = result.totalLatencyMs;
-      entry.councilModels = result.responses.map(r => r.model).join(",");
-      entry.councilResponseCount = result.responses.length;
-      entry.metadata = { scores: result.responses.map(r => ({ model: r.model, score: r.score })) };
-    } else {
-      entry.model = result.model;
-      entry.inputTokens = result.inputTokens;
-      entry.outputTokens = result.outputTokens;
-      entry.totalTokens = result.totalTokens;
-      entry.latencyMs = result.latencyMs;
-    }
+      const totalInputTokens = result.responses.reduce((sum, r) => sum + (r.tokens || 0), 0);
+      const totalCost = result.responses.reduce(
+        (sum, r) => sum + estimateCost(r.model, r.tokens, 0),
+        0
+      );
 
-    await db.insert(aiActionLogTable).values(entry as any);
+      const entry: InsertAiActionLog = {
+        action,
+        model: result.synthesisModel,
+        totalTokens: result.totalTokens || null,
+        costUsd: totalCost || null,
+        latencyMs: result.totalLatencyMs || null,
+        status: "success",
+        councilModels: result.responses.map(r => r.model).join(","),
+        councilResponseCount: result.responses.length,
+        metadata: { scores: result.responses.map(r => ({ model: r.model, score: r.score })) },
+      };
+
+      await db.insert(aiActionLogTable).values(entry);
+    } else {
+      const cost = estimateCost(result.model, result.inputTokens, result.outputTokens);
+
+      const entry: InsertAiActionLog = {
+        action,
+        model: result.model,
+        inputTokens: result.inputTokens || null,
+        outputTokens: result.outputTokens || null,
+        totalTokens: result.totalTokens || null,
+        costUsd: cost || null,
+        latencyMs: result.latencyMs || null,
+        status: "success",
+      };
+
+      await db.insert(aiActionLogTable).values(entry);
+    }
   } catch (err) {
     console.warn("Failed to log AI action:", err);
   }
 }
 
-async function logAiError(action: string, model: string, error: unknown) {
+async function logAiError(action: string, model: string, error: unknown): Promise<void> {
   try {
-    await db.insert(aiActionLogTable).values({
+    const entry: InsertAiActionLog = {
       action,
       model,
       status: "error",
       error: error instanceof Error ? error.message : String(error),
-    });
+    };
+    await db.insert(aiActionLogTable).values(entry);
   } catch (err) {
     console.warn("Failed to log AI error:", err);
   }
 }
 
-async function getContext() {
+async function getContext(): Promise<{ preferences: string; memories: string }> {
   const prefs = await db.select().from(preferencesTable);
   const memories = await db.select().from(memoriesTable);
   const pref = prefs[0];
@@ -108,7 +139,7 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
         { maxModels: 4, timeoutMs: 30000 }
       );
       response = council.synthesis;
-      await logAiAction("chat:council", council, true);
+      await logAiAction("chat:council", council);
     } else {
       const result = await callWithFallbackDetailed([
         {
@@ -283,7 +314,7 @@ Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."]}, {"type": "
     if (useCouncil) {
       const council = await synthesizeCouncil(prompt, systemContent, { maxModels: 6, timeoutMs: 45000 });
       content = council.synthesis;
-      await logAiAction("generate-plan:council", council, true);
+      await logAiAction("generate-plan:council", council);
     } else {
       const result = await callWithFallbackDetailed([
         { role: "system", content: systemContent },
@@ -319,7 +350,7 @@ Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."]}, {"type": "
 
 router.get("/ai/action-log", async (req, res): Promise<void> => {
   const limit = parseInt(req.query.limit as string) || 50;
-  const logs = await db.select().from(aiActionLogTable).orderBy(aiActionLogTable.createdAt).limit(limit);
+  const logs = await db.select().from(aiActionLogTable).orderBy(desc(aiActionLogTable.createdAt)).limit(limit);
   res.json(logs);
 });
 

@@ -191,7 +191,7 @@ router.post("/import", async (req, res): Promise<void> => {
       const memValues = pack.memories.map(m => ({
         content: m.content,
         tier: m.tier || "core",
-        decay: m.decay ?? 1.0,
+        decay: m.decay ?? 100,
       }));
       await db.insert(memoriesTable).values(memValues);
       results.memories = memValues.length;
