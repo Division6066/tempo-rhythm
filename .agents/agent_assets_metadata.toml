@@ -6,3 +6,9 @@ id = "tyPp78kmhnbYgvDst4pqc"
 uri = "file://TEMPO_Infrastructure_Setup_Guide.md"
 type = "text"
 title = "TEMPO — What You Need To Set Up (Convex & Vercel Guide)"
+
+[[outputs]]
+id = "b0GmK8RB0B8MA-E3pRxyA"
+uri = "file://docs/PERPLEXITY_SETUP_MEGADOC.md"
+type = "text"
+title = "TEMPO — Perplexity Computer Setup Mega-Prompts"
