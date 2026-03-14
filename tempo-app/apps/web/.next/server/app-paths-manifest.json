@@ -1,0 +1,21 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/calendar/page": "app/calendar/page.js",
+  "/chat/page": "app/chat/page.js",
+  "/inbox/page": "app/inbox/page.js",
+  "/notes/[id]/page": "app/notes/[id]/page.js",
+  "/notes/page": "app/notes/page.js",
+  "/login/page": "app/login/page.js",
+  "/notes/period/[type]/page": "app/notes/period/[type]/page.js",
+  "/onboarding/page": "app/onboarding/page.js",
+  "/plan/page": "app/plan/page.js",
+  "/page": "app/page.js",
+  "/projects/page": "app/projects/page.js",
+  "/published/[slug]/page": "app/published/[slug]/page.js",
+  "/tasks/[id]/page": "app/tasks/[id]/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/signup/page": "app/signup/page.js",
+  "/templates/page": "app/templates/page.js",
+  "/today/page": "app/today/page.js",
+  "/filters/page": "app/filters/page.js"
+}
