@@ -14,8 +14,11 @@ TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily plan
 ### Marketing Website
 - `artifacts/tempo-marketing/` — Vite React SPA marketing site (Anthropic-inspired design) with 7 pages: Home, Features, Pricing, About, Sign Up, Log In, Onboarding wizard
 
+### Convex Backend
+- `tempo-app/convex/` — Convex schema + functions (deployed to `precious-wildcat-890`)
+
 ### Legacy (unused)
-- `tempo-app/` — Previous Convex-based monorepo (Next.js + Expo). Not active.
+- `tempo-app/` — Previous Next.js + Expo app code (not active; only `convex/` subfolder is used)
 
 ## Stack
 
@@ -168,14 +171,44 @@ cd lib/db && npx drizzle-kit push --force      # Push schema to PostgreSQL
 - Exports: `AI_MODEL`, `AI_MODEL_BACKUP`, `COUNCIL_MODELS`, `callWithFallback`, `callWithFallbackDetailed`, `callCouncil`, `synthesizeCouncil`, `getModelHealthStats`
 - AI Action Log: every AI call logged to `ai_action_log` table (model, tokens, latency, status)
 
+## Convex Backend (Production)
+
+- **Project**: `precious-wildcat-890` (Europe/Ireland)
+- **URL**: `https://precious-wildcat-890.eu-west-1.convex.cloud`
+- **Schema**: 15 tables deployed from `tempo-app/convex/schema.ts`
+- **Functions**: All query/mutation functions deployed from `tempo-app/convex/`
+- **Auth**: `@convex-dev/auth` configured
+
+## Vercel Hosting
+
+- **tempo-web** (`prj_QMyolOA1yVIc2AmECP9oyAs0ielY`): Main app from `artifacts/tempo`
+- **tempo-marketing** (`prj_9xEEDBHKuNng55NNsUSJ3PztBLtI`): Marketing site from `artifacts/tempo-marketing`
+- Both projects have `VITE_CONVEX_URL` set in Vercel environment
+
+## Deployment
+
+```bash
+pnpm run deploy:convex      # Deploy Convex schema + functions
+pnpm run deploy:vercel       # Deploy both apps to Vercel (preview)
+pnpm run deploy:vercel:prod  # Deploy both apps to Vercel (production)
+pnpm run deploy              # Deploy Convex + both Vercel apps (production)
+```
+
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (provided by Replit)
+- `CONVEX_URL` — Convex production deployment URL
+- `CONVEX_DEPLOY_KEY` — Convex production deploy key (secret)
+- `VITE_CONVEX_URL` — Convex URL exposed to frontend via Vite
+- `VERCEL_TOKEN` — Vercel API token for deployments (secret)
+- `VERCEL_ORG_ID` — Vercel organization ID
+- `VERCEL_PROJECT_ID_APP` — Vercel project ID for tempo-web
+- `VERCEL_PROJECT_ID_MARKETING` — Vercel project ID for tempo-marketing
 - `OLLAMA_API_KEY` — Ollama Cloud API key (stored in Replit Secrets)
 - `OLLAMA_API_URL` — Ollama API base URL (default: `https://api.ollama.com`)
 - `OLLAMA_MODEL` — Default model (set to `ministral-3`)
 - `OLLAMA_MODEL_BACKUP` — Backup model (set to `magistral`)
-- `OLLAMA_COUNCIL_MODELS` — Comma-separated council models (set to `gpt-oss,deepseek-v3.1,qwen3.5,minimax-m2.5,kimi-k2.5,glm-5`)
+- `OLLAMA_COUNCIL_MODELS` — Comma-separated council models
 - Falls back to `AI_INTEGRATIONS_OPENAI_BASE_URL` / `AI_INTEGRATIONS_OPENAI_API_KEY` if Ollama vars not set
 
 ## Infrastructure Guide
