@@ -1,0 +1,875 @@
+Below is a **compare-to-MVP architecture**, not a build plan. I’m assuming:
+
+* **one unified repo**
+* **Expo/React Native + web**
+* **one Convex backend as system of record**
+* **AI as a helper/control plane**
+* **skills are versioned, explicit, and narrow**
+* **personal memory is separate from live planner state**
+* **Google is the first serious external connector at MVP, not the backbone of alpha**
+
+Expo officially supports building Android, iOS, and web apps from one codebase, and Convex is built around a reactive database plus TypeScript backend functions, auth, storage, scheduling, search, and components. Anthropic’s current skills system supports custom `SKILL.md` packages and subagents, while MCP standardizes tools, resources, and prompts for model-facing integrations. ([Expo Documentation][1])
+
+## 1) System intent
+
+The system is really **four systems glued together**:
+
+1. **Product shell**
+   Web + phone app with the same domain model.
+
+2. **Transactional planner core**
+   Tasks, notes, projects, folders, schedules, reminders, accepted AI outputs.
+
+3. **AI control plane**
+   Routing, skills, subagents, grounding, policy checks, output validation.
+
+4. **Memory and retrieval plane**
+   User preference memory for planning, plus larger MVP knowledge retrieval. Convex supports vector search, full-text search, file storage, scheduling, and a dedicated RAG component, which makes it reasonable to keep both structured state and retrieval pipelines under one backend umbrella. ([docs.convex.dev][2])
+
+## 2) The core architectural rule
+
+**The app must not let the LLM, RAG, or skill layer become the planner database.**
+
+Use this hierarchy:
+
+```text
+User input
+  > Trusted external data
+    > Transactional planner state
+      > Retrieval-backed memory
+        > AI suggestion
+```
+
+That keeps the planner reliable even when the assistant is clever.
+
+## 3) Unified repo architecture
+
+This is the repo shape I would treat as the target MVP.
+
+```mermaid
+flowchart TD
+    A[repo/] --> B[apps/mobile]
+    A --> C[apps/web]
+    A --> D[packages/ui]
+    A --> E[packages/domain]
+    A --> F[packages/ai]
+    A --> G[packages/memory]
+    A --> H[packages/templates]
+    A --> I[packages/connectors]
+    A --> J[convex/]
+    A --> K[docs/]
+
+    J --> J1[schema.ts]
+    J --> J2[users.ts]
+    J --> J3[tasks.ts]
+    J --> J4[notes.ts]
+    J --> J5[projects.ts]
+    J --> J6[dailyPlans.ts]
+    J --> J7[memories.ts]
+    J --> J8[rag.ts]
+    J --> J9[skills.ts]
+    J --> J10[routing.ts]
+    J --> J11[reminders.ts]
+    J --> J12[google.ts]
+    J --> J13[cron.ts]
+    J --> J14[files.ts]
+```
+
+### What each area owns
+
+**`apps/mobile`**
+
+* Expo app
+* mobile navigation
+* native UX behaviors
+* offline cache / optimistic UI
+* voice capture later
+
+**`apps/web`**
+
+* desktop-friendly planner UX
+* wider notes/task views
+* admin/debug screens
+* connector settings
+* memory inspection screens
+
+**`packages/ui`**
+
+* shared components
+* design tokens
+* task cards
+* planner blocks
+* note blocks
+* assistant panel
+* settings forms
+
+**`packages/domain`**
+
+* shared types
+* validation
+* state transforms
+* parsing contracts
+* canonical planner objects
+
+**`packages/ai`**
+
+* routing rules
+* prompt builders
+* structured output schemas
+* subagent definitions
+* response validators
+* post-processing
+
+**`packages/memory`**
+
+* embedding helpers
+* retrieval policies
+* memory scoring
+* context assembly
+* conflict resolution between memory and planner state
+
+**`packages/templates`**
+
+* baseline template primitives
+* block registry
+* note layouts
+* daily-plan templates
+* study templates
+* weekly review templates
+
+**`packages/connectors`**
+
+* Google adapter
+* future Microsoft adapter
+* import/export logic
+* external source normalization
+
+**`convex/`**
+
+* real data
+* rules
+* mutations
+* queries
+* actions
+* schedules
+* cron
+* vector search
+* file storage
+* auth integration
+
+Convex’s functions, auth compatibility, file storage, scheduling, cron jobs, vector search, and components make that “single backend, many capabilities” structure realistic rather than aspirational. ([docs.convex.dev][3])
+
+## 4) Runtime architecture
+
+```mermaid
+flowchart LR
+    U[User] --> M[Mobile App]
+    U --> W[Web App]
+
+    M --> UI[Shared UI + Domain Layer]
+    W --> UI
+
+    UI --> CX[Convex Backend]
+
+    CX --> DB[(Transactional Planner DB)]
+    CX --> VS[(Vector Search / RAG)]
+    CX --> FS[(File Storage)]
+    CX --> SCH[(Scheduler / Cron)]
+    CX --> CONN[Connector Actions]
+
+    CX --> AIC[AI Control Plane]
+
+    AIC --> SR[Skill Registry]
+    AIC --> MR[Model Router]
+    AIC --> SUB[Subagents]
+    AIC --> POL[Policy / Validation]
+
+    CONN --> G[Google]
+    CONN --> X[Future External Sources]
+
+    FS --> DOCS[Uploaded files / notes / study docs]
+    VS --> MEM[Preference Memory + KB Retrieval]
+```
+
+## 5) Convex as the system of record
+
+Use Convex for **three different storage modes**, not one:
+
+### A. Transactional planner state
+
+This is the truth for:
+
+* tasks
+* notes metadata
+* projects
+* folders
+* daily plans
+* reminders
+* accepted AI decisions
+* external imported events
+
+### B. Retrieval-backed memory
+
+This is for:
+
+* user preferences
+* routines
+* travel buffers
+* work style
+* ADHD accommodations
+* recent planning context
+* study context
+* long-form uploaded knowledge later
+
+### C. Files and artifacts
+
+This is for:
+
+* uploaded PDFs/images/audio
+* exported plans
+* generated summaries
+* note attachments
+* voice notes later
+
+Convex officially supports all three ingredients: database + functions, vector search/RAG, and file storage. ([docs.convex.dev][4])
+
+## 6) Core data domains
+
+This is the minimum domain split I would compare your MVP against.
+
+```text
+User
+PreferenceMemory
+Task
+TaskChunk
+Note
+NoteBlock
+Project
+Folder
+Tag
+DailyPlan
+PlanBlock
+Reminder
+ExternalEvent
+SkillDefinition
+SkillInvocationLog
+ModelRoute
+RetrievalChunk
+KnowledgeDocument
+UploadAsset
+```
+
+### Suggested ownership boundaries
+
+**User**
+
+* identity
+* timezone
+* planning preferences
+* onboarding state
+
+**PreferenceMemory**
+
+* durable planning preferences
+* confidence score
+* source
+* last-used timestamp
+
+**Task**
+
+* title
+* status
+* priority
+* energy
+* due date
+* scheduled time
+* project/folder relations
+* source
+* ai metadata
+
+**TaskChunk**
+
+* child steps of larger work
+* estimated minutes
+* dependency order
+
+**Note**
+
+* title
+* raw body
+* parsed blocks
+* tags
+* linked task/project references
+
+**DailyPlan**
+
+* date
+* top tasks
+* ordered work blocks
+* assistant summary
+* user overrides
+
+**SkillDefinition**
+
+* id
+* name
+* description
+* trigger conditions
+* input schema
+* output schema
+* guardrails
+* model preferences
+* version
+* enabled flag
+
+**ModelRoute**
+
+* request type
+* recommended model family
+* fallback
+* latency/cost class
+* allowed tool use
+* required grounding level
+
+## 7) Example Convex module layout
+
+```text
+convex/
+  schema.ts
+  auth.ts
+  users.ts
+  preferences.ts
+  tasks.ts
+  notes.ts
+  noteBlocks.ts
+  projects.ts
+  folders.ts
+  dailyPlans.ts
+  reminders.ts
+  recurring.ts
+  externalEvents.ts
+  uploads.ts
+  knowledgeDocs.ts
+  embeddings.ts
+  retrieval.ts
+  skills.ts
+  skillInvocations.ts
+  modelRoutes.ts
+  aiActions.ts
+  google.ts
+  cron.ts
+  admin.ts
+```
+
+## 8) Request lifecycle: ordinary planner action
+
+Example: “I have a meeting tomorrow, need prep time, and also need to study.”
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant Convex
+    participant Memory
+    participant Router
+    participant Skill
+    participant Model
+
+    User->>App: submits messy input
+    App->>Convex: save raw capture
+    Convex->>Memory: fetch relevant preferences/context
+    Convex->>Router: classify request
+    Router->>Skill: select planner skill
+    Skill->>Model: structured prompt + retrieved context
+    Model-->>Skill: proposed tasks/plan/chunks
+    Skill->>Convex: validate and normalize output
+    Convex-->>App: editable structured plan
+    User->>App: accept/edit/reject
+    App->>Convex: commit final planner state
+```
+
+## 9) AI control plane
+
+This is the layer that decides **what the AI should do**, not the layer that stores truth.
+
+### AI control plane responsibilities
+
+* classify intent
+* decide whether a skill is needed
+* decide whether retrieval is needed
+* choose model family
+* enforce output schema
+* reject unsafe or low-confidence outputs
+* send only relevant context
+* log what happened
+
+### AI control plane should not
+
+* directly patch live planner objects without validation
+* invent new domain objects on the fly
+* bypass source-of-truth rules
+* create arbitrary UI structures
+
+## 10) How the AI knows which skills to use
+
+Do **not** let the assistant discover skills by vibes.
+
+Instead, keep an explicit **skill registry** in code and in data.
+
+```mermaid
+flowchart TD
+    A[Incoming request] --> B{Intent classifier}
+    B -->|capture/organize| S1[Inbox parsing skill]
+    B -->|prioritize| S2[Prioritization skill]
+    B -->|break down work| S3[Task chunking skill]
+    B -->|generate daily plan| S4[Daily planner skill]
+    B -->|study help| S5[Study planning skill]
+    B -->|review week| S6[Weekly review skill]
+    B -->|connector sync| S7[External sync tool]
+    B -->|no skill needed| N[Direct deterministic flow]
+```
+
+### Skill registry contract
+
+Each skill should declare:
+
+```yaml
+id: daily-planner
+version: 1.2.0
+purpose: Convert inbox items + due work + user constraints into an editable daily plan
+triggers:
+  - "plan my day"
+  - "organize these tasks"
+  - "make this ADHD-friendly"
+inputs:
+  - inboxItems
+  - existingTasks
+  - retrievedPreferences
+  - optionalExternalEvents
+outputs:
+  - dailyPlan
+  - taskChunks
+  - rationale
+requires_retrieval: true
+allowed_tools:
+  - retrieval.lookupPreferences
+  - retrieval.lookupRecentPlans
+forbidden_actions:
+  - write_external_calendar
+  - delete_tasks
+model_policy:
+  preferred_family: reasoning
+  fallback_family: base
+```
+
+Anthropic’s skills and SDK docs explicitly describe skills as packaged `SKILL.md`-style capabilities that Claude can invoke when relevant, and Anthropic also supports subagents for isolated specialized tasks. MCP separately standardizes the model-facing layer for tools, prompts, and resources. ([Claude][5])
+
+## 11) Suggested MVP skill set
+
+These are the skills I’d expect by MVP:
+
+* `inbox-parse`
+* `task-normalize`
+* `priority-ranker`
+* `task-chunker`
+* `daily-planner`
+* `meeting-prep`
+* `study-session-planner`
+* `weekly-review`
+* `memory-updater`
+* `external-event-normalizer`
+
+### Skills that should stay deterministic instead
+
+* auth
+* permissions
+* object writes
+* recurring task generation
+* reminders scheduling
+* conflict resolution
+* connector sync persistence
+* deletion rules
+
+## 12) Model routing layer
+
+For MVP, the model router should be explicit and boring.
+
+The current official positioning of the model families you mentioned is roughly:
+
+* **Mistral Large 3**: open-weight, multimodal, 256k context, agentic/general-purpose flagship. ([Mistral AI][6])
+* **Qwen3 / Qwen3.5**: latest Qwen family, with Qwen3.5 positioned toward native multimodal agents and Qwen3-Coder-Next toward coding. ([GitHub][7])
+* **DeepSeek-V3.2 / R1**: DeepSeek positions V3.2 as reasoning-first and built for agents, while R1 remains their reasoning line. ([DeepSeek API Docs][8])
+* **Kimi K2.5**: positioned by Moonshot as a strong model for agent, code, visual understanding, with 256k context and tool calling; Kimi also has code-agent tooling. ([platform.moonshot.ai][9])
+
+### My architecture recommendation for routing
+
+This is an **inference**, not an official vendor prescription:
+
+```text
+Base / cheap planner generation:
+  Mistral family
+
+Harder reasoning / conflicting constraints:
+  DeepSeek or Qwen reasoning route
+
+Multimodal / uploaded docs / image-heavy study flow:
+  Kimi or Qwen multimodal route
+
+Dev-time code generation and repo work:
+  Claude Code first, Kimi Code / Devstral-type alternatives optional
+```
+
+### Model router logic
+
+```mermaid
+flowchart TD
+    A[AI Request] --> B{Request class}
+
+    B -->|short formatting / low-risk plan| M1[Base model]
+    B -->|multi-constraint reasoning| M2[Reasoning model]
+    B -->|uploaded image/pdf/doc understanding| M3[Multimodal model]
+    B -->|coding / refactor / repo ops| M4[Dev model]
+    B -->|verification / disagreement| M5[Council optional]
+
+    M1 --> O[Structured output validator]
+    M2 --> O
+    M3 --> O
+    M4 --> O
+    M5 --> O
+```
+
+## 13) Simple model policy rules
+
+```text
+IF request is simple planning + low ambiguity
+THEN use Base model
+
+IF request includes conflicting deadlines, tradeoffs, or sequencing difficulty
+THEN use Reasoning model
+
+IF request includes images, scans, screenshots, PDFs, or complex mixed media
+THEN use Multimodal model
+
+IF request is code/repo/build related
+THEN use Dev model
+
+IF confidence is low and action is important
+THEN run verification step or second-pass model
+
+IF cost budget is exceeded
+THEN downgrade to fallback model unless task is high priority
+```
+
+## 14) Memory and RAG architecture
+
+There are really **two retrieval systems**.
+
+### A. Planner memory
+
+Used all the time.
+Small, curated, high-signal.
+
+Examples:
+
+* “User prefers top 3”
+* “Needs 30 minutes prep before leaving”
+* “Chunk study tasks into 20-minute steps”
+* “Low-energy mode should favor maintenance tasks”
+
+### B. Knowledge RAG
+
+Used selectively.
+Larger documents and uploaded content.
+
+Examples:
+
+* study notes
+* articles
+* recipes
+* course outlines
+* meeting decks
+* future YouTube-derived notes
+
+Convex’s vector search and RAG component are a good fit for both, but they should live in different namespaces and have different retrieval rules. Convex’s RAG component explicitly supports chunking, embeddings, and namespacing, and Convex’s search docs distinguish vector search from full-text search. ([docs.convex.dev][2])
+
+### Retrieval policy
+
+```text
+Planner memory:
+  small chunks
+  high precision
+  recent + high-confidence bias
+  always inspectable/editable by user
+
+Knowledge RAG:
+  larger docs
+  lower frequency
+  query-specific retrieval only
+  never silently override planner state
+```
+
+## 15) Memory ingestion flow
+
+```mermaid
+flowchart TD
+    A[User action / note / preference / upload] --> B{Type?}
+
+    B -->|explicit preference| C[Save as PreferenceMemory]
+    B -->|task/note state| D[Save in transactional tables]
+    B -->|document/upload| E[Store file]
+    E --> F[Chunk + embed]
+    F --> G[Save RetrievalChunks]
+    C --> H[Index for retrieval]
+    D --> I[Index for planner queries]
+    G --> J[Vector search namespace]
+```
+
+## 16) If-then rules for memory writes
+
+```text
+IF user explicitly states a stable preference
+THEN write PreferenceMemory immediately
+
+IF AI infers a preference from repeated behavior
+THEN store as low-confidence inferred memory, not canonical preference
+
+IF a preference conflicts with explicit user input
+THEN explicit user input wins
+
+IF retrieved memory is older, low-confidence, or contradicted by current planner state
+THEN exclude it from final prompt
+
+IF uploaded knowledge is domain-specific and not planner-critical
+THEN store in Knowledge RAG, not in planner memory
+```
+
+## 17) Google and external connector architecture
+
+At MVP, Google is the first real connector because it gives you the highest practical value: auth, events, maybe tasks.
+
+Use a separate normalization layer so the rest of the planner doesn’t care which connector produced the event.
+
+```mermaid
+flowchart LR
+    G[Google APIs] --> N[Connector normalizer]
+    N --> E1[ExternalEvent]
+    N --> E2[ExternalTask]
+    E1 --> P[Planner merge rules]
+    E2 --> P
+    P --> DB[(Convex transactional state)]
+```
+
+### Connector rules
+
+```text
+IF external event is imported
+THEN mark it as external source with immutable provenance
+
+IF user edits imported item locally
+THEN preserve local override separately from raw external source
+
+IF external source changes later
+THEN run merge policy, not blind overwrite
+
+IF conflict exists between external item and user override
+THEN user override wins in UI, raw external remains preserved for reference
+```
+
+Convex auth supports OpenID Connect/JWT-based auth integrations, making a Google-first connector path reasonable, while scheduled functions and cron jobs are the right place for reminders and future sync tasks. ([docs.convex.dev][10])
+
+## 18) Scheduling and reminders architecture
+
+Use Convex scheduling for one-off planner-triggered jobs and cron for recurring checks/reminders.
+
+* `runAfter` / `runAt` for reminder instances
+* cron for recurring daily maintenance or sync jobs
+* reminders should reference planner objects, not store duplicated blobs
+
+Convex’s scheduler distinguishes scheduled mutations, which are retried and guaranteed exactly once, from scheduled actions, which run at most once. That matters for reminder design: reminder creation should be transactional, while side-effectful notification delivery can be action-based. ([docs.convex.dev][11])
+
+## 19) Planner write pipeline
+
+Never let the model write directly to canonical tables.
+
+```mermaid
+flowchart TD
+    A[Model output] --> B[Schema validator]
+    B --> C[Policy validator]
+    C --> D[Conflict resolver]
+    D --> E[Draft object]
+    E --> F{User accepts?}
+    F -->|yes| G[Commit mutation]
+    F -->|no| H[Edit or discard]
+```
+
+### Validation rules
+
+```text
+IF model output violates schema
+THEN reject and retry with stricter prompt
+
+IF model output includes unsupported object types
+THEN drop those fields
+
+IF model invents time/date without evidence
+THEN mark as suggestion only
+
+IF model suggests destructive action
+THEN require explicit user confirmation
+
+IF output changes accepted planner state
+THEN store as draft until user accepts
+```
+
+## 20) MVP subagent layout
+
+Subagents are useful here, but narrowly.
+
+### Suggested subagents
+
+* `planner-subagent`
+* `memory-subagent`
+* `study-subagent`
+* `connector-subagent`
+* `review-subagent`
+
+Anthropic’s Claude Code and Agent SDK docs explicitly support subagents for isolated context and parallel specialized task execution, which fits this decomposition. ([Claude API Docs][12])
+
+### Subagent responsibilities
+
+```text
+planner-subagent:
+  plan generation
+  task ordering
+  chunking
+
+memory-subagent:
+  retrieve preferences
+  suggest memory updates
+  score relevance
+
+study-subagent:
+  summarize uploads
+  turn material into study plans
+
+connector-subagent:
+  normalize imported external events/tasks
+
+review-subagent:
+  weekly review
+  trend summaries
+  stale-task analysis
+```
+
+## 21) Suggested internal planner templates
+
+By MVP, templates should still be primitives, not fully freeform design generation.
+
+```text
+DailyPlanTemplate
+Top3Template
+FocusBlockTemplate
+MeetingPrepTemplate
+StudySessionTemplate
+WeeklyReviewTemplate
+HabitCheckinTemplate
+LowEnergyDayTemplate
+ProjectPlanningTemplate
+ReflectionTemplate
+```
+
+Each template should resolve into a known block schema, for example:
+
+```yaml
+template: DailyPlanTemplate
+blocks:
+  - top3
+  - schedule_overview
+  - focus_block
+  - admin_tasks
+  - study_block
+  - notes
+  - end_of_day_reflection
+```
+
+## 22) What “good MVP” looks like
+
+A good MVP is **not** “maximum AI.” It is:
+
+* one repo
+* one domain model
+* one Convex deployment
+* one shared UI system
+* one explicit skill registry
+* one model router
+* one planner memory layer
+* one knowledge retrieval layer
+* one connector normalization layer
+
+That is enough to scale without becoming a mess.
+
+## 23) The most important anti-patterns
+
+```text
+Do not:
+- store live planner truth only in embeddings
+- let the model invent skills dynamically in production
+- let skills bypass validation
+- use one giant general prompt instead of versioned skills
+- mix planner memory with giant knowledge RAG in one namespace
+- let external connectors overwrite user intent
+- let uploaded docs silently change planner state
+```
+
+## 24) The architecture in one sentence
+
+**Expo/web is the product surface, Convex is the source-of-truth backend, a small AI control plane routes requests to explicit skills and models, planner memory grounds the assistant, larger RAG stays separate, and every model output becomes a draft before it becomes truth.**
+
+## 25) Condensed “if-then” architecture rules
+
+```text
+IF the request changes planner state
+THEN go through validator -> policy -> draft -> user accept -> commit
+
+IF the request is only search/summarize
+THEN retrieval + model output can stay non-transactional
+
+IF context needed is about personal planning behavior
+THEN query Planner Memory namespace
+
+IF context needed is from uploaded docs or study materials
+THEN query Knowledge RAG namespace
+
+IF request is low-risk/simple
+THEN use base model
+
+IF request is complex or conflicting
+THEN use reasoning model
+
+IF request is multimodal
+THEN use multimodal model
+
+IF request involves code/repo generation
+THEN use dev model/subagent
+
+IF external data conflicts with user decision
+THEN user decision wins
+
+IF AI infers a preference but user never confirmed it
+THEN store as tentative memory only
+```
+
+If you send the example image next, I’ll remap this into the same visual style and notation so you can compare your version line-for-line.
+
+[1]: https://docs.expo.dev/tutorial/introduction/?utm_source=chatgpt.com "Tutorial: Using React Native and Expo"
+[2]: https://docs.convex.dev/search/vector-search?utm_source=chatgpt.com "Vector Search | Convex Developer Hub"
+[3]: https://docs.convex.dev/functions?utm_source=chatgpt.com "Functions | Convex Developer Hub"
+[4]: https://docs.convex.dev/understanding/?utm_source=chatgpt.com "Convex Overview | Convex Developer Hub"
+[5]: https://platform.claude.com/docs/en/agent-sdk/skills?utm_source=chatgpt.com "Agent Skills in the SDK - Claude API Docs"
+[6]: https://docs.mistral.ai/models/mistral-large-3-25-12?utm_source=chatgpt.com "Mistral Large 3"
+[7]: https://github.com/QwenLM/Qwen3?utm_source=chatgpt.com "Qwen3 is the large language model series ..."
+[8]: https://api-docs.deepseek.com/news/news251201?utm_source=chatgpt.com "DeepSeek-V3.2 Release"
+[9]: https://platform.moonshot.ai/docs/guide/kimi-k2-5-quickstart?utm_source=chatgpt.com "Kimi K2.5 Large Language Model API Service"
+[10]: https://docs.convex.dev/auth?utm_source=chatgpt.com "Authentication | Convex Developer Hub"
+[11]: https://docs.convex.dev/scheduling/scheduled-functions?utm_source=chatgpt.com "Scheduled Functions | Convex Developer Hub"
+[12]: https://docs.anthropic.com/en/docs/claude-code/sub-agents?utm_source=chatgpt.com "Create custom subagents - Claude Code Docs"
