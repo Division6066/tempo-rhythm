@@ -17,9 +17,11 @@ export default function LoginScreen() {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   async function handleSubmit() {
     if (!email || !password) {
@@ -27,13 +29,27 @@ export default function LoginScreen() {
       return;
     }
 
+    if (isSignUp && !fullName.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
-      await signIn("password", { email, password, flow: "signIn" });
+      await signIn("password", {
+        email,
+        password,
+        flow: isSignUp ? "signUp" : "signIn",
+        ...(isSignUp && fullName ? { name: fullName } : {}),
+      });
     } catch (err: any) {
-      setError(err?.message || "Invalid email or password. Please try again.");
+      if (isSignUp) {
+        setError(err?.message || "Could not create account. Please try again.");
+      } else {
+        setError(err?.message || "Invalid email or password. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -79,6 +95,34 @@ export default function LoginScreen() {
         </View>
 
         <View style={{ gap: 16 }}>
+          {isSignUp && (
+            <View style={{ gap: 6 }}>
+              <Text
+                style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}
+              >
+                Full Name
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  fontSize: 16,
+                  color: colors.foreground,
+                }}
+                placeholder="Your name"
+                placeholderTextColor={colors.muted}
+                value={fullName}
+                onChangeText={setFullName}
+                autoCapitalize="words"
+                autoComplete="name"
+              />
+            </View>
+          )}
+
           <View style={{ gap: 6 }}>
             <Text
               style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}
@@ -126,7 +170,7 @@ export default function LoginScreen() {
                   fontSize: 16,
                   color: colors.foreground,
                 }}
-                placeholder="Enter your password"
+                placeholder={isSignUp ? "Create a password" : "Enter your password"}
                 placeholderTextColor={colors.muted}
                 value={password}
                 onChangeText={setPassword}
@@ -190,16 +234,33 @@ export default function LoginScreen() {
                 <Text
                   style={{ fontSize: 16, fontWeight: "600", color: "#fff" }}
                 >
-                  Signing in...
+                  {isSignUp ? "Creating account..." : "Signing in..."}
                 </Text>
               </>
             ) : (
               <Text
                 style={{ fontSize: 16, fontWeight: "600", color: "#fff" }}
               >
-                Sign in
+                {isSignUp ? "Create account" : "Sign in"}
               </Text>
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setIsSignUp(!isSignUp);
+              setError("");
+            }}
+            style={{ alignItems: "center", paddingVertical: 12 }}
+          >
+            <Text style={{ fontSize: 14, color: colors.muted }}>
+              {isSignUp
+                ? "Already have an account? "
+                : "Don't have an account? "}
+              <Text style={{ color: colors.primary, fontWeight: "600" }}>
+                {isSignUp ? "Sign in" : "Sign up"}
+              </Text>
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

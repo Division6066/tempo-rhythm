@@ -15,10 +15,12 @@ TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily plan
 - `artifacts/tempo-marketing/` — Vite React SPA marketing site (Anthropic-inspired design) with 7 pages: Home, Features, Pricing, About, Sign Up, Log In, Onboarding wizard
 
 ### Convex Backend
-- `tempo-app/convex/` — Convex schema + functions (deployed to `precious-wildcat-890`)
+- `tempo-app/convex/` — Convex schema + functions (deployed to `precious-wildcat-890`, EU West 1)
 
-### Legacy (unused)
-- `tempo-app/` — Previous Next.js + Expo app code (not active; only `convex/` subfolder is used)
+### Mobile App (Expo/React Native)
+- `tempo-app/apps/mobile/` — Expo Router mobile app with 14 screens (Home, Today, Inbox, Chat, More, Task Detail, Plan, Calendar, Projects, Notes, Note Editor, Settings, Filters, Templates)
+- Auth: Convex Auth with email/password (sign-in + sign-up), expo-secure-store for native token storage
+- Env: `EXPO_PUBLIC_CONVEX_URL` in `tempo-app/apps/mobile/.env.local`
 
 ## Stack
 

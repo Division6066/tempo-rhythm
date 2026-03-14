@@ -137,7 +137,7 @@ export default function TaskDetailScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 }}>
-        <Pressable onPress={() => { handleSave(); router.back(); }} hitSlop={12}>
+        <Pressable onPress={async () => { await handleSave(); router.back(); }} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </Pressable>
         <View style={{ flexDirection: "row", gap: 12 }}>

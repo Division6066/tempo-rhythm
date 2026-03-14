@@ -1,11 +1,20 @@
+"use node";
+
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { Scrypt } from "lucia";
+import { randomBytes, pbkdf2Sync } from "crypto";
+
+function hashPassword(password: string): string {
+  const salt = randomBytes(16);
+  const hash = pbkdf2Sync(password, salt, 100000, 32, "sha256");
+  const saltHex = salt.toString("hex");
+  const hashHex = hash.toString("hex");
+  return `pbkdf2:100000:${saltHex}:${hashHex}`;
+}
 
 export const run = internalAction({
   args: {},
   handler: async (ctx) => {
-    const scrypt = new Scrypt();
     const results: string[] = [];
 
     for (let i = 1; i <= 10; i++) {
@@ -28,7 +37,7 @@ export const run = internalAction({
           continue;
         }
 
-        const hashedPassword = await scrypt.hash(password);
+        const hashedPassword = hashPassword(password);
 
         await ctx.runMutation(internal.seedBetaAccounts.createBetaUser, {
           email,

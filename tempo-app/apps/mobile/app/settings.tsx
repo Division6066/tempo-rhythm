@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Switch } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Switch, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +11,7 @@ import { colors } from "../lib/theme";
 export default function SettingsScreen() {
   const prefs = useQuery(api.preferences.get);
   const updatePrefs = useMutation(api.preferences.upsert);
+  const { signOut } = useAuthActions();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
@@ -94,8 +96,21 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Pressable onPress={handleSave} disabled={saving} style={{ backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 16, alignItems: "center", opacity: saving ? 0.7 : 1 }}>
+        <Pressable onPress={handleSave} disabled={saving} style={{ backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 16, alignItems: "center", opacity: saving ? 0.7 : 1, marginBottom: 20 }}>
           <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>{saving ? "Saving..." : "Save Settings"}</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => {
+            Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+              { text: "Cancel" },
+              { text: "Sign Out", style: "destructive", onPress: () => signOut() },
+            ]);
+          }}
+          style={{ backgroundColor: "rgba(255,107,107,0.1)", borderRadius: 14, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: "rgba(255,107,107,0.2)" }}
+        >
+          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+          <Text style={{ color: colors.danger, fontWeight: "700", fontSize: 16 }}>Sign Out</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

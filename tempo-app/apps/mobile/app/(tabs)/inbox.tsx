@@ -29,7 +29,7 @@ export default function InboxScreen() {
 
   const handleQuickAdd = async () => {
     if (!quickTask.trim()) return;
-    await createTask({ title: quickTask, status: "inbox" });
+    await createTask({ title: quickTask, status: "inbox", priority: "medium" });
     setQuickTask("");
   };
 
