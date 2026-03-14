@@ -1,10 +1,16 @@
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Heart, Maximize, Zap } from "lucide-react";
 
 export default function About() {
   return (
     <Layout>
+      <SEO
+        title="About Us — TEMPO"
+        description="TEMPO was built for minds that move differently. Learn about our mission to create ADHD-friendly productivity tools that work with your brain, not against it."
+        path="/about"
+      />
       <div className="bg-background pt-32 pb-24">
         <div className="max-w-4xl mx-auto px-6">
           <motion.div 

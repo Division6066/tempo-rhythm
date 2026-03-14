@@ -2,6 +2,20 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Brain, Clock, Inbox, Sparkles, CheckCircle2 } from "lucide-react";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "TEMPO",
+  "url": "https://tempo.app",
+  "logo": "https://tempo.app/opengraph.jpg",
+  "description": "ADHD-friendly AI planner. Daily planning, smart task management, and focus tools designed for neurodivergent minds.",
+  "sameAs": [
+    "https://twitter.com/tempo",
+    "https://linkedin.com/company/tempo"
+  ]
+};
 
 const container = {
   hidden: { opacity: 0 },
@@ -19,6 +33,12 @@ const item = {
 export default function Home() {
   return (
     <Layout>
+      <SEO
+        title="TEMPO — ADHD-Friendly AI Planner"
+        description="TEMPO uses AI to gracefully organize your chaos. Daily planning, smart task management, and focus tools designed for ADHD and neurodivergent minds."
+        path="/"
+        jsonLd={organizationJsonLd}
+      />
       {/* Hero Section */}
       <section className="relative pt-32 pb-24 overflow-hidden">
         <div className="absolute inset-0 z-0">

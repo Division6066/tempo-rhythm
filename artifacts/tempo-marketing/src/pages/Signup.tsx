@@ -3,6 +3,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -20,6 +21,7 @@ export default function Signup() {
 
   return (
     <Layout hideNavFooter>
+      <SEO title="Sign Up — TEMPO" description="Create your free TEMPO account and start organizing your day with an ADHD-friendly AI planner." path="/signup" robots="noindex,nofollow" />
       <div className="min-h-screen flex flex-col md:flex-row">
         {/* Left Side - Visual */}
         <div className="hidden md:block md:w-1/2 bg-accent relative overflow-hidden order-2 md:order-1">

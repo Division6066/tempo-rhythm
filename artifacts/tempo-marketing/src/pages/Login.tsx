@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Crown, Check } from "lucide-react";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 
 interface UserProfile {
   username: string;
@@ -92,6 +93,7 @@ export default function Login() {
   if (user) {
     return (
       <Layout hideNavFooter>
+        <SEO title="Dashboard — TEMPO" description="Manage your TEMPO account and subscription." path="/login" robots="noindex,nofollow" />
         <div className="min-h-screen flex flex-col md:flex-row">
           <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12">
             <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-fit mb-12">
@@ -185,6 +187,7 @@ export default function Login() {
 
   return (
     <Layout hideNavFooter>
+      <SEO title="Log In — TEMPO" description="Log in to your TEMPO account to access your ADHD-friendly AI planner." path="/login" robots="noindex,nofollow" />
       <div className="min-h-screen flex flex-col md:flex-row">
         <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12">
           <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-fit mb-12">

@@ -1,4 +1,5 @@
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Mic, Calendar, ListTodo, BrainCircuit, Timer, ArrowRight, LayoutDashboard } from "lucide-react";
 import { Link } from "wouter";
@@ -45,6 +46,11 @@ export default function Features() {
 
   return (
     <Layout>
+      <SEO
+        title="Features — TEMPO"
+        description="AI daily planning, smart brain dump, flow state timers, calendar sync, and gentle rescheduling. Discover the ADHD-friendly features that make TEMPO different."
+        path="/features"
+      />
       <div className="bg-background pt-32 pb-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-20">

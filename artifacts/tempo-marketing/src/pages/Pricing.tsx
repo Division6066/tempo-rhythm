@@ -1,8 +1,50 @@
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { Check, X } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+const pricingJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "TEMPO",
+  "description": "ADHD-friendly AI planner with daily planning, smart task management, and focus tools for neurodivergent minds.",
+  "brand": {
+    "@type": "Brand",
+    "name": "TEMPO"
+  },
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free Plan",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Basic daily planning, standard task management, 5 AI suggestions per day, community support.",
+      "availability": "https://schema.org/InStock"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro Plan",
+      "price": "9",
+      "priceCurrency": "USD",
+      "billingIncrement": 1,
+      "unitCode": "MON",
+      "description": "Unlimited AI planning, two-way calendar sync, voice memos, focus timers & analytics, priority support.",
+      "availability": "https://schema.org/InStock"
+    },
+    {
+      "@type": "Offer",
+      "name": "Team Plan",
+      "price": "19",
+      "priceCurrency": "USD",
+      "billingIncrement": 1,
+      "unitCode": "MON",
+      "description": "Shared workspaces, team task delegation, admin controls, dedicated success manager. Per user pricing.",
+      "availability": "https://schema.org/InStock"
+    }
+  ]
+};
 
 export default function Pricing() {
   const tiers = [
@@ -64,6 +106,12 @@ export default function Pricing() {
 
   return (
     <Layout>
+      <SEO
+        title="Pricing — TEMPO"
+        description="Simple, transparent pricing for TEMPO. Free plan available. Pro at $9/mo with unlimited AI planning. Team at $19/mo per user with shared workspaces."
+        path="/pricing"
+        jsonLd={pricingJsonLd}
+      />
       <div className="bg-background pt-32 pb-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-20">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { Check, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ export default function Onboarding() {
 
   return (
     <Layout hideNavFooter>
+      <SEO title="Get Started — TEMPO" description="Set up your TEMPO account and personalize your ADHD-friendly planning experience." path="/onboarding" robots="noindex,nofollow" />
       <div className="min-h-screen bg-background flex flex-col pt-12">
         {/* Progress Bar */}
         <div className="max-w-2xl w-full mx-auto px-6 mb-12">
