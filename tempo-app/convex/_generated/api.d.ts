@@ -21,6 +21,7 @@ import type * as notes from "../notes.js";
 import type * as preferences from "../preferences.js";
 import type * as projects from "../projects.js";
 import type * as savedFilters from "../savedFilters.js";
+import type * as seed from "../seed.js";
 import type * as staging from "../staging.js";
 import type * as tags from "../tags.js";
 import type * as tasks from "../tasks.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   preferences: typeof preferences;
   projects: typeof projects;
   savedFilters: typeof savedFilters;
+  seed: typeof seed;
   staging: typeof staging;
   tags: typeof tags;
   tasks: typeof tasks;

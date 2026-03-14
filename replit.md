@@ -81,6 +81,8 @@ artifacts/
 │       ├── QuickCapture.tsx  # FAB quick capture dialog
 │       ├── TaskCard.tsx      # Task list item
 │       ├── layout/AppLayout.tsx # App shell with bottom nav + command bar
+│       ├── providers/ConvexAuthProvider.tsx # Convex Auth wrapper
+│       ├── auth/AuthGuard.tsx  # Auth redirect guard
 │       └── ui/              # shadcn/ui components
 lib/
 ├── api-spec/openapi.yaml     # OpenAPI 3.0 spec (source of truth)
@@ -153,6 +155,15 @@ cd lib/db && npx drizzle-kit push --force      # Push schema to PostgreSQL
 
 ## Authentication
 
+### Convex Auth (Primary — Web App)
+- Provider: `@convex-dev/auth` with Password provider (PBKDF2 hashing via Web Crypto API)
+- Login page: `/login`, Signup page: `/signup`
+- Auth guard: redirects unauthenticated users to `/login`, authenticated users away from login/signup
+- ConvexAuthProvider wraps the entire app in `App.tsx`
+- 10 beta accounts seeded in Convex with `userType: "paid"`:
+  - `beta1@tempo.app` / `beta1pass` through `beta10@tempo.app` / `beta10pass`
+
+### Express API Auth (Legacy — API Server)
 - Admin account: `admin1234567` / `admin1234567` (Pro plan, admin role)
 - 10 beta testers: `beta1`–`beta10` / `beta1234567` (Pro plan, beta_tester role)
 - Session tokens: `tempo-session-{username}` (simple token-based, no expiry — beta phase only)

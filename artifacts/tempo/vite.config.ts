@@ -50,6 +50,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      "@convex": path.resolve(import.meta.dirname, "..", "..", "tempo-app", "convex"),
     },
     dedupe: ["react", "react-dom"],
   },
@@ -64,6 +65,11 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: true,
+      allow: [
+        path.resolve(import.meta.dirname, ".."),
+        path.resolve(import.meta.dirname, "..", "..", "tempo-app"),
+        path.resolve(import.meta.dirname, "..", "..", "node_modules"),
+      ],
       deny: ["**/.*"],
     },
   },
