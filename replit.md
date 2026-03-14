@@ -34,7 +34,7 @@ TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily plan
 ## Stack
 
 - **Backend**: Express + PostgreSQL + Drizzle ORM
-- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + wouter
+- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + wouter + react-markdown
 - **API layer**: OpenAPI spec → Orval codegen → React Query hooks
 - **Icons**: Lucide React
 - **Date utils**: date-fns
@@ -64,6 +64,12 @@ artifacts/
 │       ├── import.ts         # Lore Pack bulk import (JSON/Markdown/CSV → tasks/notes/memories)
 │       └── transcribe.ts     # Voice transcription proxy (server-side)
 ├── tempo/src/
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── AppLayout.tsx     # Two-column shell: desktop sidebar (≥768px) + mobile bottom nav (<768px)
+│   │   │   └── Sidebar.tsx       # Fixed 220px left sidebar with nav links, search trigger, + New button
+│   │   ├── CommandBar.tsx        # ⌘K command bar with grouped sections (Go to, Notes, Tasks, Projects, Commands)
+│   │   └── QuickCapture.tsx      # Multi-line Markdown capture panel with preview toggle, mic placeholder
 │   ├── pages/
 │   │   ├── Dashboard.tsx     # Home with progress ring + Top 3 focus tasks + quick actions
 │   │   ├── TodayView.tsx     # Today's tasks by priority
