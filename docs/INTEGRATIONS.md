@@ -61,7 +61,7 @@ Reference for technologies and patterns integrated from external repositories.
 
 ### What it does
 - **AI Action Log**: Every AI call logged with model, tokens, cost, latency, status
-- **Memory Decay**: Memories have a `decay` field (0.0–1.0) that degrades over time
+- **Memory Decay**: Memories have a `decay` field (integer 0–100) that degrades over time (step -5 per tick)
 - **Auto-pruning**: Short-term memories with low decay get automatically removed
 - **Memory Stats**: Per-tier statistics (count, average decay, age range)
 - **Filterable**: Query memories by tier and content search

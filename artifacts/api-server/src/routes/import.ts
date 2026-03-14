@@ -19,6 +19,18 @@ interface ImportNote {
   tags?: string[];
 }
 
+const VALID_TIERS = ["hot", "warm", "cold"] as const;
+type ValidTier = typeof VALID_TIERS[number];
+
+function normalizeTier(tier?: string): ValidTier {
+  if (!tier) return "warm";
+  const lower = tier.toLowerCase();
+  if (VALID_TIERS.includes(lower as ValidTier)) return lower as ValidTier;
+  if (lower === "core" || lower === "long" || lower === "permanent") return "hot";
+  if (lower === "short" || lower === "temporary" || lower === "ephemeral") return "cold";
+  return "warm";
+}
+
 interface ImportMemory {
   content: string;
   tier?: string;
@@ -84,7 +96,7 @@ function parseMarkdownToLorePack(markdown: string): LorePack {
     } else if (currentSection === "memories") {
       const memMatch = trimmed.match(/^[-*]\s+(.+)/);
       if (memMatch) {
-        pack.memories!.push({ content: memMatch[1], tier: "core" });
+        pack.memories!.push({ content: memMatch[1], tier: "hot" });
       }
     }
   }
@@ -190,7 +202,7 @@ router.post("/import", async (req, res): Promise<void> => {
     if (pack.memories && pack.memories.length > 0) {
       const memValues = pack.memories.map(m => ({
         content: m.content,
-        tier: m.tier || "core",
+        tier: normalizeTier(m.tier),
         decay: m.decay ?? 100,
       }));
       await db.insert(memoriesTable).values(memValues);
@@ -222,7 +234,7 @@ router.get("/import/template", async (req, res): Promise<void> => {
         { title: "Example note", content: "Note content here", tags: ["ideas"] }
       ],
       memories: [
-        { content: "User prefers morning focus blocks", tier: "core" }
+        { content: "User prefers morning focus blocks", tier: "hot" }
       ]
     });
   } else if (format === "markdown") {
