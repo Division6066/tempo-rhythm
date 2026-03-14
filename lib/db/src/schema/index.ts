@@ -12,3 +12,4 @@ export * from "./noteLinks";
 export * from "./savedFilters";
 export * from "./noteTemplates";
 export * from "./aiActionLog";
+export * from "./searchEmbeddings";
