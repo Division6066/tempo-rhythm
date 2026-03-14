@@ -117,7 +117,7 @@ lib/
 19. **Enhanced Onboarding** — 6-step flow: welcome, ADHD mode, planning style, schedule, energy peaks, summary
 20. **Chat Persistence** — localStorage conversation history with clear, memory panel, quick prompts
 21. **Dashboard Top 3** — Priority-ranked focus tasks on home screen
-22. **Hybrid Search** — PostgreSQL full-text search (tsvector/tsquery) + keyword fallback across notes, tasks, memories
+22. **Hybrid Search** — pgvector (256-dim HNSW) + PostgreSQL full-text + pg_trgm trigram similarity with 60/40 vector/lexical fusion scoring
 23. **Lore Pack Import** — Bulk import tasks/notes/memories from JSON, Markdown, or CSV via Settings page
 24. **Memory Spine** — AI action logging with model/tokens/latency/cost tracking, memory decay, auto-pruning
 25. **Model Health Dashboard** — Runtime model health stats with failure tracking and exponential backoff

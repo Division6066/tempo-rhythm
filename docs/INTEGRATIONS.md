@@ -29,19 +29,28 @@ Reference for technologies and patterns integrated from external repositories.
 
 ## Hybrid Search (from RCE v2)
 
-**Source**: RCE v2's ranked hybrid search combining keyword + full-text  
-**Files**: `artifacts/api-server/src/routes/search.ts`
+**Source**: RCE v2's ranked hybrid search combining vector + keyword  
+**Files**: `artifacts/api-server/src/routes/search.ts`, `artifacts/api-server/src/embeddings.ts`
 
 ### What it does
-- PostgreSQL full-text search with `tsvector`/`tsquery` for ranked relevance
-- Falls back to ILIKE keyword matching if full-text indexing unavailable
-- Searches across notes, tasks, AND memories (expanded from notes+tasks only)
-- Title matches boosted with scoring priority
-- Supports `?mode=keyword` for simple ILIKE-only search
+- **Vector path**: pgvector (HNSW index) with locally-generated 256-dim embeddings using hash-based token/bigram feature extraction
+- **Lexical path**: PostgreSQL full-text search (`tsvector`/`tsquery`) + pg_trgm trigram similarity
+- **Fusion scoring**: Weighted combination (60% vector + 40% lexical) for final ranking
+- Vector-only matches (semantic hits not found by keyword) are included in results
+- Searches across notes, tasks, AND memories
+- Title similarity boosted 3x in lexical scoring
+- Graceful degradation: falls back to keyword-only when embeddings unavailable
+
+### Architecture
+- `search_embeddings` table with pgvector column (vector(256))
+- HNSW index for fast approximate nearest-neighbor search
+- `POST /api/search/index` endpoint to bulk-index content
+- Embeddings auto-detected at query time; fused only when vectors exist
 
 ### API
-- `GET /api/search?q=term` — hybrid ranked search (default)
+- `GET /api/search?q=term` — hybrid ranked search (vector + keyword, default)
 - `GET /api/search?q=term&mode=keyword` — keyword-only fallback
+- `POST /api/search/index` — index all unindexed content for vector search
 
 ---
 
