@@ -124,7 +124,7 @@ Reference for technologies and patterns integrated from external repositories.
 
 ### Convex Auth + Payment (amit-template)
 - Clerk authentication with role-based access
-- Stripe subscription management with plan tiers
+- RevenueCat subscription management with plan tiers (mobile-first payments)
 - Server-side auth middleware pattern
 - Ready to port when Convex backend is connected
 

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { ilike, or, sql } from "drizzle-orm";
 import { db, notesTable, tasksTable, memoriesTable } from "@workspace/db";
 import type { Note, Task, Memory } from "@workspace/db";
-import { vectorSearch, indexAllContent } from "../embeddings";
+import { vectorSearch, indexAllContent, ensureEmbeddingsTable } from "../embeddings";
 
 const router: IRouter = Router();
 
@@ -132,11 +132,12 @@ router.get("/search", async (req, res): Promise<void> => {
 
 router.post("/search/index", async (_req, res): Promise<void> => {
   try {
+    await ensureEmbeddingsTable();
     const result = await indexAllContent();
     res.json(result);
   } catch (err) {
     console.error("Indexing error:", err);
-    res.status(500).json({ error: "Indexing failed" });
+    res.status(500).json({ error: "Indexing failed", details: err instanceof Error ? err.message : String(err) });
   }
 });
 
