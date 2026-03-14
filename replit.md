@@ -46,7 +46,8 @@ artifacts/
 │       ├── noteLinks.ts      # Bi-directional note links
 │       ├── savedFilters.ts   # Saved task filter presets
 │       ├── noteTemplates.ts  # Note templates + seed endpoint
-│       ├── search.ts         # Global search (notes + tasks)
+│       ├── search.ts         # Hybrid search (full-text + keyword, notes + tasks + memories)
+│       ├── import.ts         # Lore Pack bulk import (JSON/Markdown/CSV → tasks/notes/memories)
 │       └── transcribe.ts     # Voice transcription proxy (server-side)
 ├── tempo/src/
 │   ├── pages/
@@ -89,6 +90,7 @@ lib/
     ├── noteLinks.ts          # Bi-directional note links table
     ├── savedFilters.ts       # Saved filter presets table
     ├── noteTemplates.ts      # Note templates table
+    ├── aiActionLog.ts        # AI action log (model, tokens, latency, cost tracking)
     └── index.ts
 ```
 
@@ -115,6 +117,10 @@ lib/
 19. **Enhanced Onboarding** — 6-step flow: welcome, ADHD mode, planning style, schedule, energy peaks, summary
 20. **Chat Persistence** — localStorage conversation history with clear, memory panel, quick prompts
 21. **Dashboard Top 3** — Priority-ranked focus tasks on home screen
+22. **Hybrid Search** — PostgreSQL full-text search (tsvector/tsquery) + keyword fallback across notes, tasks, memories
+23. **Lore Pack Import** — Bulk import tasks/notes/memories from JSON, Markdown, or CSV via Settings page
+24. **Memory Spine** — AI action logging with model/tokens/latency/cost tracking, memory decay, auto-pruning
+25. **Model Health Dashboard** — Runtime model health stats with failure tracking and exponential backoff
 
 ## Design System
 
@@ -156,7 +162,11 @@ cd lib/db && npx drizzle-kit push --force      # Push schema to PostgreSQL
 - Model priority: Default `ministral-3` → Backup `magistral` (auto-fallback)
 - Council mode (6 models queried in parallel, synthesized): `gpt-oss`, `deepseek-v3.1`, `qwen3.5`, `minimax-m2.5`, `kimi-k2.5`, `glm-5`
 - Council used for daily plan generation via `?council=true` query param
-- Exports: `AI_MODEL`, `AI_MODEL_BACKUP`, `COUNCIL_MODELS`, `callWithFallback`, `callCouncil`, `synthesizeCouncil`
+- Model health tracking with exponential backoff for failures
+- Per-call timeout protection (60s single, 45s council)
+- Response quality scoring for council synthesis weighting
+- Exports: `AI_MODEL`, `AI_MODEL_BACKUP`, `COUNCIL_MODELS`, `callWithFallback`, `callWithFallbackDetailed`, `callCouncil`, `synthesizeCouncil`, `getModelHealthStats`
+- AI Action Log: every AI call logged to `ai_action_log` table (model, tokens, latency, status)
 
 ## Environment Variables
 

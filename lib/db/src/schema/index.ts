@@ -11,3 +11,4 @@ export * from "./calendarEvents";
 export * from "./noteLinks";
 export * from "./savedFilters";
 export * from "./noteTemplates";
+export * from "./aiActionLog";

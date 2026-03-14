@@ -18,6 +18,7 @@ import noteTemplatesRouter from "./noteTemplates";
 import searchRouter from "./search";
 import transcribeRouter from "./transcribe";
 import authRouter from "./auth";
+import importRouter from "./import";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use(savedFiltersRouter);
 router.use(noteTemplatesRouter);
 router.use(searchRouter);
 router.use(transcribeRouter);
+router.use(importRouter);
 
 export default router;

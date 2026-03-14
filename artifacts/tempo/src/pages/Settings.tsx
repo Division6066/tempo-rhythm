@@ -10,8 +10,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Settings as SettingsIcon, BrainCircuit, Clock, Moon, Sun, Calendar,
   StickyNote, Filter, LayoutTemplate, FileText, FolderKanban, MessageSquare,
-  ChevronRight, FolderOpen, Tag, Brain, Timer, Zap, Battery, CheckCircle
+  ChevronRight, FolderOpen, Tag, Brain, Timer, Zap, Battery, CheckCircle,
+  Upload, Download, FileJson, FileType, Loader2
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 const NAV_LINKS = [
@@ -223,6 +225,115 @@ export default function Settings() {
       <Button onClick={handleSave} disabled={updatePrefs.isPending} className="w-full h-12 text-lg">
         {updatePrefs.isPending ? "Saving..." : "Save Settings"}
       </Button>
+
+      <LorePackImport />
     </div>
+  );
+}
+
+function LorePackImport() {
+  const [importFormat, setImportFormat] = useState<"json" | "markdown" | "csv">("json");
+  const [importData, setImportData] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ tasks: number; notes: number; memories: number } | null>(null);
+  const { toast } = useToast();
+
+  const handleImport = async () => {
+    if (!importData.trim()) {
+      toast({ variant: "destructive", title: "Paste some data first" });
+      return;
+    }
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${baseUrl}/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("tempo_token")}` },
+        body: JSON.stringify({ format: importFormat, data: importData }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Import failed");
+      setImportResult(result.imported);
+      setImportData("");
+      toast({ title: `Imported ${result.total} items` });
+    } catch (err) {
+      toast({ variant: "destructive", title: err instanceof Error ? err.message : "Import failed" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const loadTemplate = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${baseUrl}/import/template?format=${importFormat}`, {
+        headers: { "Authorization": `Bearer ${localStorage.getItem("tempo_token")}` },
+      });
+      const text = importFormat === "json" ? JSON.stringify(await res.json(), null, 2) : await res.text();
+      setImportData(text);
+    } catch {
+      toast({ variant: "destructive", title: "Failed to load template" });
+    }
+  };
+
+  return (
+    <Card className="glass border-border/50">
+      <CardContent className="p-6 space-y-4">
+        <h2 className="font-semibold text-lg border-b border-border/50 pb-2 flex items-center gap-2">
+          <Upload size={18} className="text-muted-foreground" /> Lore Pack Import
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Import tasks, notes, and memories from JSON, Markdown, or CSV. Use a Lore Pack to quickly set up your workspace.
+        </p>
+
+        <div className="flex gap-2">
+          {(["json", "markdown", "csv"] as const).map(fmt => (
+            <button
+              key={fmt}
+              onClick={() => { setImportFormat(fmt); setImportData(""); setImportResult(null); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                importFormat === fmt ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {fmt === "json" ? <FileJson size={14} /> : <FileType size={14} />}
+              {fmt.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        <Textarea
+          value={importData}
+          onChange={e => setImportData(e.target.value)}
+          placeholder={
+            importFormat === "json" ? '{"tasks": [...], "notes": [...], "memories": [...]}'
+            : importFormat === "markdown" ? "# Tasks\n- Buy groceries [high]\n\n# Notes\n## My Note\nContent here..."
+            : "title,priority,status,notes\n\"Task 1\",high,inbox,\"Details\""
+          }
+          className="min-h-[120px] font-mono text-xs bg-background"
+        />
+
+        <div className="flex gap-2">
+          <Button onClick={loadTemplate} variant="outline" size="sm" className="flex items-center gap-1.5">
+            <Download size={14} /> Load Template
+          </Button>
+          <Button onClick={handleImport} disabled={importing || !importData.trim()} size="sm" className="flex items-center gap-1.5">
+            {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            {importing ? "Importing..." : "Import"}
+          </Button>
+        </div>
+
+        {importResult && (
+          <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-sm">
+            <p className="font-medium text-teal-400">Import complete:</p>
+            <ul className="mt-1 space-y-0.5 text-muted-foreground">
+              {importResult.tasks > 0 && <li>{importResult.tasks} tasks imported</li>}
+              {importResult.notes > 0 && <li>{importResult.notes} notes imported</li>}
+              {importResult.memories > 0 && <li>{importResult.memories} memories imported</li>}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
