@@ -76,7 +76,7 @@ router.post("/memories/decay", async (_req, res): Promise<void> => {
     const pruned = await db.delete(memoriesTable)
       .where(and(
         lte(memoriesTable.decay, 10),
-        eq(memoriesTable.tier, "short")
+        eq(memoriesTable.tier, "cold")
       ))
       .returning();
 

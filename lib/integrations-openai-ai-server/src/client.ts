@@ -192,21 +192,26 @@ export async function callCouncil(
 
   const results = await Promise.allSettled(
     modelsToUse.map(async (model) => {
-      const start = Date.now();
-      const completion = await withTimeout(
-        openai.chat.completions.create({ model, messages }),
-        timeout,
-        `council:${model}`,
-      );
-      const latency = Date.now() - start;
-      const response = completion.choices[0]?.message?.content || "";
-      if (response) recordSuccess(model, latency);
-      return {
-        model,
-        response,
-        latencyMs: latency,
-        tokens: completion.usage?.total_tokens,
-      };
+      try {
+        const start = Date.now();
+        const completion = await withTimeout(
+          openai.chat.completions.create({ model, messages }),
+          timeout,
+          `council:${model}`,
+        );
+        const latency = Date.now() - start;
+        const response = completion.choices[0]?.message?.content || "";
+        if (response) recordSuccess(model, latency);
+        return {
+          model,
+          response,
+          latencyMs: latency,
+          tokens: completion.usage?.total_tokens,
+        };
+      } catch (err) {
+        recordFailure(model);
+        throw err;
+      }
     })
   );
 
@@ -216,10 +221,10 @@ export async function callCouncil(
     )
     .map((r) => r.value);
 
-  const failed = results.filter(r => r.status === "rejected");
-  for (const f of failed) {
-    const reason = (f as PromiseRejectedResult).reason;
-    console.warn("Council model failed:", reason?.message || reason);
+  for (const r of results) {
+    if (r.status === "rejected") {
+      console.warn("Council model failed:", r.reason?.message || r.reason);
+    }
   }
 
   return fulfilled;
