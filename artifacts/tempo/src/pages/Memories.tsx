@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, Plus, Trash2, Sparkles, Info } from "lucide-react";
+import { Brain, Plus, Trash2, Sparkles, Info, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Memories() {
@@ -44,6 +44,7 @@ export default function Memories() {
     return <div className="flex h-[50vh] items-center justify-center"><div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" /></div>;
   }
 
+  const hotMemories = memories?.filter(m => m.tier === "hot") || [];
   const warmMemories = memories?.filter(m => m.tier === "warm") || [];
   const coldMemories = memories?.filter(m => m.tier === "cold") || [];
 
@@ -93,10 +94,31 @@ export default function Memories() {
         </button>
       </div>
 
+      {hotMemories.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold text-violet-400 uppercase tracking-wider flex items-center gap-2">
+            <BookOpen size={12} /> Core Knowledge ({hotMemories.length})
+          </h2>
+          {hotMemories.map(mem => (
+            <Card key={mem.id} className="glass border-border/50 group">
+              <CardContent className="p-4 flex items-start justify-between gap-3">
+                <p className="text-sm text-muted-foreground/80">{mem.content}</p>
+                <button
+                  onClick={() => handleDelete(mem.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive shrink-0"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {warmMemories.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-            <Sparkles size={12} /> Active Preferences
+            <Sparkles size={12} /> Active Preferences ({warmMemories.length})
           </h2>
           {warmMemories.map(mem => (
             <Card key={mem.id} className="glass border-border/50 group">
@@ -116,7 +138,7 @@ export default function Memories() {
 
       {coldMemories.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Background Context</h2>
+          <h2 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Background Context ({coldMemories.length})</h2>
           {coldMemories.map(mem => (
             <Card key={mem.id} className="glass border-border/50 group">
               <CardContent className="p-4 flex items-start justify-between gap-3">
