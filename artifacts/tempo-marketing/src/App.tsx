@@ -2,7 +2,6 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ConvexProvider } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { convex } from "@/lib/convex";
 import NotFound from "@/pages/not-found";
@@ -53,7 +52,7 @@ function AppWithProviders() {
 
 function App() {
   if (!convex) {
-    return <AppWithProviders />;
+    throw new Error("VITE_CONVEX_URL is not set — Convex Auth is required for this app. Check your environment configuration.");
   }
 
   return (
