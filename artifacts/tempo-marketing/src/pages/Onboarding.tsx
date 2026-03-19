@@ -18,21 +18,7 @@ export default function Onboarding() {
     if (step < totalSteps) setStep(step + 1);
   };
 
-  const finish = async () => {
-    const token = localStorage.getItem("tempo-token");
-    if (token) {
-      try {
-        await fetch("/api/auth/onboarding", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ challenge, focusTime, dailyTaskCount }),
-        });
-      } catch {
-      }
-    }
+  const finish = () => {
     window.location.href = MAIN_APP_URL;
   };
 

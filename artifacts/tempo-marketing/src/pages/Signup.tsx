@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
+import { useAuthActions } from "@convex-dev/auth/react";
 
 export default function Signup() {
+  const { signIn } = useAuthActions();
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,23 +21,10 @@ export default function Signup() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        localStorage.setItem("tempo-token", data.token);
-        localStorage.setItem("tempo-user", JSON.stringify(data.user));
-        setLocation("/onboarding");
-      } else {
-        setError(data.error || "Unable to create account");
-      }
-    } catch {
-      setError("Unable to connect to server");
+      await signIn("password", { name, email, password, flow: "signUp" });
+      setLocation("/onboarding");
+    } catch (err: any) {
+      setError(err?.message || "Unable to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }

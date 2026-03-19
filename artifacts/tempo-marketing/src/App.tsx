@@ -2,6 +2,9 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ConvexProvider } from "convex/react";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { convex } from "@/lib/convex";
 import NotFound from "@/pages/not-found";
 
 import Home from "./pages/Home";
@@ -35,7 +38,7 @@ function Router() {
   );
 }
 
-function App() {
+function AppWithProviders() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -45,6 +48,18 @@ function App() {
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
+  );
+}
+
+function App() {
+  if (!convex) {
+    return <AppWithProviders />;
+  }
+
+  return (
+    <ConvexAuthProvider client={convex}>
+      <AppWithProviders />
+    </ConvexAuthProvider>
   );
 }
 
