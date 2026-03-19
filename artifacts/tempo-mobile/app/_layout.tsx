@@ -1,0 +1,92 @@
+import React from "react";
+import { useConvexAuth } from "convex/react";
+import { Redirect, Stack, usePathname } from "expo-router";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { StatusBar } from "expo-status-bar";
+import { ActivityIndicator, View, Text, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { convex, secureStorage } from "../lib/convex";
+import "../global.css";
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1A1A2E", padding: 24 }}>
+          <Ionicons name="warning-outline" size={48} color="#FF6B6B" style={{ marginBottom: 16 }} />
+          <Text style={{ color: "#F0F0FF", fontSize: 18, fontWeight: "700", marginBottom: 8, textAlign: "center" }}>
+            Something went wrong
+          </Text>
+          <Text style={{ color: "#8888AA", fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+            {this.state.error?.message || "An unexpected error occurred."}
+          </Text>
+          <Pressable
+            onPress={() => this.setState({ hasError: false, error: null })}
+            style={{ backgroundColor: "#6C63FF", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>Try Again</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function RootNavigator() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const pathname = usePathname();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1A1A2E" }}>
+        <ActivityIndicator size="large" color="#6C63FF" />
+        <Text style={{ color: "#8888AA", fontSize: 13, marginTop: 16 }}>Connecting...</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/login" />;
+  }
+
+  if (pathname === "/login") {
+    return <Redirect href="/(tabs)/" />;
+  }
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: "#1A1A2E" },
+          animation: "slide_from_right",
+        }}
+      />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ErrorBoundary>
+      <ConvexAuthProvider client={convex} storage={secureStorage}>
+        <RootNavigator />
+      </ConvexAuthProvider>
+    </ErrorBoundary>
+  );
+}
