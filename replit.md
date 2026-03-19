@@ -30,7 +30,7 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **Monorepo Structure:** Organizes the main app, API server, and shared libraries for efficient development and dependency management.
 
 **Feature Specifications:**
-- **Calendar View:** Month/week toggle with event CRUD and task/event indicators.
+- **Calendar View:** Full-featured calendar using `react-big-calendar` with `dateFnsLocalizer`, month/week views, drag-and-drop rescheduling via `withDragAndDrop` addon, click-to-create events, and click-to-edit tasks.
 - **Period Notes:** Auto-generated weekly/monthly/yearly notes.
 - **Bi-directional Note Linking:** Automatically creates and manages links between notes based on `[[Note Title]]` syntax.
 - **Command Bar:** Global Cmd+K for search and navigation.
@@ -52,3 +52,13 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **@uiw/react-md-editor:** Markdown editor with split-pane view and wiki-link support.
 - **Lucide React:** Icon library.
 - **date-fns:** Date utility library.
+- **react-big-calendar:** Full-featured calendar component with drag-and-drop support.
+
+## Polish & UI Features (Stage 6)
+- **Dark Mode:** Full dark theme with CSS variables, toggle persisted to localStorage via ThemeProvider context.
+- **Navbar:** Top navbar with "Tempo Flow" branding, search button, dark/light toggle, and user dropdown menu (preferences, logout).
+- **Mobile Sidebar:** Hamburger menu opens a slide-in sidebar overlay on mobile (<768px) with 44px touch targets.
+- **Error Boundary:** React error boundary wrapping the app with friendly error message and reload button.
+- **Loading States:** Skeleton loaders for task lists, notes grid, and calendar. Spinner with "Saving…" text on mutation buttons.
+- **Empty States:** Inbox, Calendar, and Notes all show friendly empty-state messages with icon, description, and "Create first [item]" CTA button.
+- **Responsive:** Modals go fullscreen on mobile via `max-md:min-h-screen max-md:min-w-full` classes. All touch targets meet 44px minimum.

@@ -78,6 +78,39 @@
   --shadow: 0 0 0 0 rgba(0,0,0,0);
 }
 
+.dark {
+  --background: 235 38% 14%;
+  --foreground: 0 0% 95%;
+  --border: 240 20% 22%;
+  --card: 240 27% 20%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 240 20% 25%;
+  --popover: 240 27% 20%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 240 20% 25%;
+  --primary: 244 99% 69%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 20% 25%;
+  --secondary-foreground: 0 0% 90%;
+  --muted: 240 15% 25%;
+  --muted-foreground: 240 10% 60%;
+  --accent: 240 20% 22%;
+  --accent-foreground: 0 0% 95%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 240 20% 22%;
+  --ring: 244 99% 69%;
+  --chart-1: 244 99% 69%;
+  --chart-2: 168 100% 39%;
+  --chart-3: 33 100% 64%;
+  --chart-4: 0 72% 51%;
+  --chart-5: 270 91% 67%;
+  --sidebar: 240 27% 18%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-border: 240 20% 22%;
+  --shadow: 0 0 0 0 rgba(0,0,0,0);
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -114,4 +147,77 @@
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5;
   }
+}
+
+.tempo-calendar .rbc-toolbar {
+  padding: 12px 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tempo-calendar .rbc-toolbar button {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.tempo-calendar .rbc-toolbar button:hover,
+.tempo-calendar .rbc-toolbar button.rbc-active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+}
+.tempo-calendar .rbc-header {
+  padding: 8px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--border));
+}
+.tempo-calendar .rbc-month-view,
+.tempo-calendar .rbc-time-view {
+  border-color: hsl(var(--border));
+}
+.tempo-calendar .rbc-day-bg {
+  background-color: hsl(var(--background));
+}
+.tempo-calendar .rbc-off-range-bg {
+  background-color: hsl(var(--muted) / 0.3);
+}
+.tempo-calendar .rbc-today {
+  background-color: hsl(var(--primary) / 0.08);
+}
+.tempo-calendar .rbc-month-row + .rbc-month-row {
+  border-color: hsl(var(--border));
+}
+.tempo-calendar .rbc-date-cell {
+  padding: 4px 8px;
+  font-size: 13px;
+  color: hsl(var(--foreground));
+}
+.tempo-calendar .rbc-off-range {
+  color: hsl(var(--muted-foreground) / 0.5);
+}
+.tempo-calendar .rbc-time-slot {
+  border-color: hsl(var(--border) / 0.5);
+}
+.tempo-calendar .rbc-timeslot-group {
+  border-color: hsl(var(--border));
+}
+.tempo-calendar .rbc-time-header-content {
+  border-color: hsl(var(--border));
+}
+.tempo-calendar .rbc-time-content {
+  border-color: hsl(var(--border));
+}
+.tempo-calendar .rbc-day-slot .rbc-time-slot {
+  border-color: hsl(var(--border) / 0.3);
+}
+.tempo-calendar .rbc-current-time-indicator {
+  background-color: hsl(var(--primary));
+}
+.tempo-calendar .rbc-show-more {
+  color: hsl(var(--primary));
+  font-size: 11px;
+  font-weight: 600;
 }

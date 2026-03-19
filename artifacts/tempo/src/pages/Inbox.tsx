@@ -266,10 +266,26 @@ export default function Inbox() {
 
       <div className="space-y-3 mt-8">
         {isLoading ? (
-          <div className="flex justify-center p-8"><div className="w-8 h-8 rounded-full animate-breathe bg-primary/20" /></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card rounded-xl border border-border p-4 space-y-2 animate-pulse">
+                <div className="h-4 w-3/4 bg-primary/10 rounded" />
+                <div className="h-3 w-1/2 bg-primary/10 rounded" />
+              </div>
+            ))}
+          </div>
         ) : tasks?.length === 0 && (!stagedSuggestions || stagedSuggestions.length === 0) ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Inbox is empty.</p>
+          <div className="text-center py-16 space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <InboxIcon className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <p className="text-lg font-medium text-foreground">Inbox is empty</p>
+              <p className="text-sm text-muted-foreground mt-1">Capture your first task above or use the brain dump to extract tasks from your thoughts.</p>
+            </div>
+            <Button onClick={() => document.querySelector<HTMLInputElement>('input[placeholder="Quick capture..."]')?.focus()} className="gap-2 min-h-[44px]">
+              <InboxIcon size={16} /> Create First Task
+            </Button>
           </div>
         ) : (
           tasks?.map(task => (

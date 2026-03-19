@@ -285,9 +285,10 @@ function FolderSection({
 interface SidebarProps {
   onOpenCommandBar: () => void;
   onOpenQuickCapture: () => void;
+  isMobileOverlay?: boolean;
 }
 
-export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture }: SidebarProps) {
+export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture, isMobileOverlay }: SidebarProps) {
   const [location] = useLocation();
   const queryClient = useQueryClient();
   const { data: rawFolders } = useListFolders();
@@ -373,6 +374,76 @@ export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture }: Sideba
     }
   };
 
+  if (isMobileOverlay) {
+    return (
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="px-3 pb-2 flex-shrink-0">
+          <button
+            onClick={onOpenCommandBar}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-muted-foreground text-sm hover:bg-muted transition-colors min-h-[44px]"
+          >
+            <Search size={14} />
+            <span className="flex-1 text-left">Search…</span>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <nav className="px-3 py-1 space-y-0.5">
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link key={item.path} href={item.path}>
+                  <div
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors min-h-[44px] ${
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <item.icon size={16} />
+                    <span>{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="px-3 pt-3 pb-1">
+            <div className="border-t border-border/50 pt-3">
+              {SECONDARY_NAV.map((item) => {
+                const active = isActive(item.path);
+                return (
+                  <Link key={item.path} href={item.path}>
+                    <div
+                      className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors min-h-[44px] ${
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon size={15} />
+                      <span>{item.label}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3 pb-4 pt-2 border-t border-border/50 flex-shrink-0">
+          <button
+            onClick={onOpenQuickCapture}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors cursor-pointer min-h-[44px]"
+          >
+            <Plus size={16} />
+            New
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (collapsed) {
     return (
       <aside className="hidden md:flex flex-col w-12 h-screen bg-card border-r border-border fixed left-0 top-0 z-30 items-center pt-4">
@@ -391,7 +462,7 @@ export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture }: Sideba
     <>
       <aside className="hidden md:flex flex-col w-[220px] min-w-[220px] h-screen bg-card border-r border-border fixed left-0 top-0 z-30 overflow-hidden">
         <div className="px-5 pt-4 pb-2 flex items-center justify-between flex-shrink-0">
-          <h1 className="text-xl font-display font-bold text-foreground tracking-tight">Tempo</h1>
+          <h1 className="text-xl font-display font-bold text-foreground tracking-tight">Tempo Flow</h1>
           <button
             onClick={() => setCollapsed(true)}
             className="p-1 rounded-lg hover:bg-muted cursor-pointer text-muted-foreground hover:text-foreground"

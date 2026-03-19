@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConvexAuthWrapper } from "@/components/providers/ConvexAuthProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
@@ -125,18 +127,22 @@ function Router() {
 
 function App() {
   return (
-    <ConvexAuthWrapper>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <AuthGuard>
-              <Router />
-            </AuthGuard>
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ConvexAuthWrapper>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ConvexAuthWrapper>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <AuthGuard>
+                  <Router />
+                </AuthGuard>
+              </WouterRouter>
+              <Toaster />
+            </TooltipProvider>
+          </QueryClientProvider>
+        </ConvexAuthWrapper>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,10 +1,11 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Sun, Inbox, MoreHorizontal, Plus, Calendar, Search } from "lucide-react";
+import { Home, Sun, Inbox, MoreHorizontal, Plus, Calendar, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QuickCapture } from "../QuickCapture";
 import CommandBar from "../CommandBar";
 import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
 import { useGetPreferences } from "@workspace/api-client-react";
 
 const MORE_PATHS = ["/settings", "/projects", "/notes", "/chat", "/plan", "/period-notes", "/filters", "/templates", "/folders", "/tags", "/memories", "/focus", "/extract", "/preferences"];
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
   const [commandBarOpen, setCommandBarOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { data: preferences } = useGetPreferences();
 
   useEffect(() => {
@@ -20,6 +22,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       setLocation("/onboarding");
     }
   }, [preferences, location, setLocation]);
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location]);
 
   const isMoreActive = MORE_PATHS.some(p => location === p || location.startsWith(p + "/"));
 
@@ -30,8 +36,37 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         onOpenQuickCapture={() => setQuickCaptureOpen(true)}
       />
 
-      <div className="flex-1 md:ml-[220px] pb-20 md:pb-0">
-        <main className="w-full max-w-[900px] mx-auto px-4 md:px-8 py-6">
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <aside className="fixed left-0 top-0 bottom-0 w-[280px] bg-card border-r border-border z-50 overflow-y-auto animate-in slide-in-from-left duration-200">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <span className="text-xl font-display font-bold text-foreground tracking-tight">Tempo Flow</span>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <Sidebar
+              onOpenCommandBar={() => { setMobileSidebarOpen(false); setCommandBarOpen(true); }}
+              onOpenQuickCapture={() => { setMobileSidebarOpen(false); setQuickCaptureOpen(true); }}
+              isMobileOverlay
+            />
+          </aside>
+        </div>
+      )}
+
+      <div className="flex-1 md:ml-[220px] pb-20 md:pb-0 flex flex-col min-h-screen">
+        <Navbar
+          onOpenSearch={() => setCommandBarOpen(true)}
+          onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
+        />
+        <main className="flex-1 w-full max-w-[900px] mx-auto px-4 md:px-8 py-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={location}

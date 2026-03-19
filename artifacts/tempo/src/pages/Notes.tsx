@@ -25,7 +25,25 @@ export default function Notes() {
   }, [notes, searchQuery]);
 
   if (isLoading) {
-    return <div className="flex h-[50vh] items-center justify-center"><div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" /></div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FileText className="text-primary h-8 w-8" />
+            <h1 className="text-3xl font-display font-bold text-foreground">Notes</h1>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="glass p-4 rounded-xl h-32 space-y-3 animate-pulse">
+              <div className="h-5 w-2/3 bg-primary/10 rounded" />
+              <div className="h-3 w-full bg-primary/10 rounded" />
+              <div className="h-3 w-3/4 bg-primary/10 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const pinned = filteredNotes.filter(n => n.isPinned);
@@ -89,10 +107,23 @@ export default function Notes() {
         <div className="space-y-3">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">All Notes</h2>
           {other.length === 0 && pinned.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                {searchQuery ? "No notes match your search." : "You don't have any notes yet."}
-              </p>
+            <div className="text-center py-16 space-y-4">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <FileText className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <p className="text-lg font-medium text-foreground">
+                  {searchQuery ? "No notes match your search" : "No notes yet"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {searchQuery ? "Try a different search term." : "Start capturing your thoughts and ideas."}
+                </p>
+              </div>
+              {!searchQuery && (
+                <Button onClick={() => setLocation("/notes/new")} className="gap-2 min-h-[44px]">
+                  <Plus size={16} /> Create First Note
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

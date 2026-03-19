@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   useListCalendarEvents,
@@ -6,175 +6,205 @@ import {
   useUpdateCalendarEvent,
   useDeleteCalendarEvent,
   useListTasks,
+  useUpdateTask,
+  useCreateTask,
   getListCalendarEventsQueryKey,
+  getListTasksQueryKey,
 } from "@workspace/api-client-react";
+import type { CalendarEvent as ApiCalendarEvent, Task } from "@workspace/api-client-react";
+import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { Calendar as CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, Trash2, LayoutGrid, Rows3, Pencil, Check, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import CalendarComponent, { type CalendarEvent } from "@/components/CalendarComponent";
+import type { View } from "react-big-calendar";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-function getFirstDayOfMonth(year: number, month: number) {
-  return new Date(year, month, 1).getDay();
-}
-function formatDate(y: number, m: number, d: number) {
-  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-function getWeekDates(date: Date) {
-  const day = date.getDay();
-  const start = new Date(date);
-  start.setDate(start.getDate() - day);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
+function mapApiEventToCalendarEvent(e: ApiCalendarEvent): CalendarEvent {
+  const startHour = e.startTime ? parseInt(e.startTime.split(":")[0]) : 9;
+  const startMin = e.startTime ? parseInt(e.startTime.split(":")[1]) : 0;
+  const endHour = e.endTime ? parseInt(e.endTime.split(":")[0]) : startHour + 1;
+  const endMin = e.endTime ? parseInt(e.endTime.split(":")[1]) : startMin;
+
+  const start = new Date(e.date + "T00:00:00");
+  start.setHours(startHour, startMin);
+  const end = new Date(e.date + "T00:00:00");
+  end.setHours(endHour, endMin);
+
+  return { id: e.id, title: e.title, start, end, type: "event" };
 }
 
-const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-type ViewMode = "month" | "week";
-type DayItem = { id: number; title: string; startTime: string | null; endTime?: string | null; type: "event" | "task"; priority?: string };
+function mapTaskToCalendarEvent(t: Task): CalendarEvent | null {
+  if (!t.scheduledDate) return null;
+  const start = new Date(t.scheduledDate + "T09:00:00");
+  const end = new Date(start);
+  end.setHours(end.getHours() + 1);
+  return { id: t.id, title: t.title, start, end, type: "task", priority: t.priority };
+}
 
 export default function Calendar() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const today = new Date();
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState<View>("month");
+
+  const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
+  const [createTaskDate, setCreateTaskDate] = useState<Date | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+
+  const [showAddEventDialog, setShowAddEventDialog] = useState(false);
+  const [selectedSlotDate, setSelectedSlotDate] = useState<Date | null>(null);
   const [newEventTitle, setNewEventTitle] = useState("");
   const [newEventTime, setNewEventTime] = useState("");
   const [newEventEndTime, setNewEventEndTime] = useState("");
-  const [newEventDuration, setNewEventDuration] = useState("60");
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [weekAnchor, setWeekAnchor] = useState(new Date());
 
-  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editStartTime, setEditStartTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
 
-  const startDate = formatDate(currentYear, currentMonth, 1);
-  const endDate = formatDate(currentYear, currentMonth, getDaysInMonth(currentYear, currentMonth));
+  const rangeStart = format(subMonths(startOfMonth(currentDate), 1), "yyyy-MM-dd");
+  const rangeEnd = format(addMonths(endOfMonth(currentDate), 1), "yyyy-MM-dd");
 
-  const { data: events } = useListCalendarEvents({ startDate, endDate });
-  const { data: tasks } = useListTasks({ startDate, endDate });
+  const { data: events, isLoading: eventsLoading } = useListCalendarEvents({ startDate: rangeStart, endDate: rangeEnd });
+  const { data: tasks, isLoading: tasksLoading } = useListTasks({ startDate: rangeStart, endDate: rangeEnd });
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
+  const updateTask = useUpdateTask();
+  const createTask = useCreateTask();
 
-  const todayStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+  const isLoading = eventsLoading || tasksLoading;
 
-  const eventsByDate = useMemo(() => {
-    const map: Record<string, DayItem[]> = {};
-    events?.forEach((e) => {
-      const d = e.date;
-      if (!map[d]) map[d] = [];
-      map[d].push({ id: e.id, title: e.title, startTime: e.startTime ?? null, endTime: e.endTime ?? null, type: "event" });
+  const calendarEvents: CalendarEvent[] = useMemo(() => {
+    const result: CalendarEvent[] = [];
+    events?.forEach((e: ApiCalendarEvent) => {
+      result.push(mapApiEventToCalendarEvent(e));
     });
-    tasks?.forEach((t) => {
-      if (t.scheduledDate) {
-        const d = t.scheduledDate;
-        if (!map[d]) map[d] = [];
-        map[d].push({ id: t.id, title: t.title, startTime: t.startTime ?? null, type: "task", priority: t.priority });
-      }
+    tasks?.forEach((t: Task) => {
+      const mapped = mapTaskToCalendarEvent(t);
+      if (mapped) result.push(mapped);
     });
-    return map;
+    return result;
   }, [events, tasks]);
 
-  const prevPeriod = () => {
-    if (viewMode === "month") {
-      if (currentMonth === 0) { setCurrentYear(currentYear - 1); setCurrentMonth(11); }
-      else setCurrentMonth(currentMonth - 1);
-    } else {
-      const prev = new Date(weekAnchor);
-      prev.setDate(prev.getDate() - 7);
-      setWeekAnchor(prev);
-      setCurrentMonth(prev.getMonth());
-      setCurrentYear(prev.getFullYear());
-    }
-  };
-  const nextPeriod = () => {
-    if (viewMode === "month") {
-      if (currentMonth === 11) { setCurrentYear(currentYear + 1); setCurrentMonth(0); }
-      else setCurrentMonth(currentMonth + 1);
-    } else {
-      const next = new Date(weekAnchor);
-      next.setDate(next.getDate() + 7);
-      setWeekAnchor(next);
-      setCurrentMonth(next.getMonth());
-      setCurrentYear(next.getFullYear());
+  const handleSelectEvent = useCallback(
+    (event: CalendarEvent) => {
+      if (event.type === "task") {
+        setLocation(`/tasks/${event.id}`);
+      } else {
+        setEditingEvent(event);
+        setEditTitle(event.title);
+        setEditStartTime(format(event.start, "HH:mm"));
+        setEditEndTime(format(event.end, "HH:mm"));
+        setShowEditDialog(true);
+      }
+    },
+    [setLocation]
+  );
+
+  const handleSelectSlot = useCallback(
+    (slotInfo: { start: Date; end: Date }) => {
+      setCreateTaskDate(slotInfo.start);
+      setNewTaskTitle("");
+      setShowCreateTaskDialog(true);
+    },
+    []
+  );
+
+  const handleEventDrop = useCallback(
+    async (args: EventInteractionArgs<CalendarEvent>) => {
+      const newDate = format(new Date(args.start), "yyyy-MM-dd");
+      const newStartTime = format(new Date(args.start), "HH:mm");
+
+      try {
+        if (args.event.type === "task") {
+          await updateTask.mutateAsync({
+            id: args.event.id,
+            data: { scheduledDate: newDate, startTime: newStartTime },
+          });
+          queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+        } else {
+          await updateEvent.mutateAsync({
+            id: args.event.id,
+            data: {
+              date: newDate,
+              startTime: newStartTime,
+              endTime: format(new Date(args.end), "HH:mm"),
+            },
+          });
+          queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
+        }
+        toast({ title: "Rescheduled" });
+      } catch {
+        toast({ variant: "destructive", title: "Failed to reschedule" });
+      }
+    },
+    [updateTask, updateEvent, queryClient, toast]
+  );
+
+  const handleCreateTask = async () => {
+    if (!newTaskTitle.trim() || !createTaskDate) return;
+    try {
+      await createTask.mutateAsync({
+        data: {
+          title: newTaskTitle,
+          scheduledDate: format(createTaskDate, "yyyy-MM-dd"),
+          status: "scheduled" as const,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+      setShowCreateTaskDialog(false);
+      setNewTaskTitle("");
+      toast({ title: "Task created" });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to create task" });
     }
   };
 
-  const goToToday = () => {
-    setCurrentYear(today.getFullYear());
-    setCurrentMonth(today.getMonth());
-    setWeekAnchor(new Date());
-    setSelectedDate(todayStr);
+  const openAddEventDialog = () => {
+    setSelectedSlotDate(createTaskDate ?? new Date());
+    setNewEventTitle("");
+    setNewEventTime("");
+    setNewEventEndTime("");
+    setShowCreateTaskDialog(false);
+    setShowAddEventDialog(true);
   };
 
   const handleAddEvent = async () => {
-    if (!newEventTitle || !selectedDate) return;
+    if (!newEventTitle.trim() || !selectedSlotDate) return;
     try {
       await createEvent.mutateAsync({
         data: {
           title: newEventTitle,
-          date: selectedDate,
+          date: format(selectedSlotDate, "yyyy-MM-dd"),
           startTime: newEventTime || null,
           endTime: newEventEndTime || null,
-          duration: parseInt(newEventDuration) || 60,
+          duration: 60,
         },
       });
       queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
+      setShowAddEventDialog(false);
       setNewEventTitle("");
-      setNewEventTime("");
-      setNewEventEndTime("");
-      setNewEventDuration("60");
-      setShowAddDialog(false);
       toast({ title: "Event added" });
     } catch {
       toast({ variant: "destructive", title: "Failed to add event" });
     }
   };
 
-  const handleDeleteEvent = async (id: number) => {
-    try {
-      await deleteEvent.mutateAsync({ id });
-      queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
-    } catch {
-      toast({ variant: "destructive", title: "Failed to delete event" });
-    }
-  };
-
-  const startEditEvent = (item: DayItem) => {
-    setEditingEventId(item.id);
-    setEditTitle(item.title);
-    setEditStartTime(item.startTime || "");
-    setEditEndTime(item.endTime || "");
-  };
-
-  const cancelEditEvent = () => {
-    setEditingEventId(null);
-    setEditTitle("");
-    setEditStartTime("");
-    setEditEndTime("");
-  };
-
-  const saveEditEvent = async () => {
-    if (!editingEventId || !editTitle.trim()) return;
+  const handleUpdateEvent = async () => {
+    if (!editingEvent || !editTitle.trim()) return;
     try {
       await updateEvent.mutateAsync({
-        id: editingEventId,
+        id: editingEvent.id,
         data: {
           title: editTitle,
           startTime: editStartTime || null,
@@ -182,47 +212,25 @@ export default function Calendar() {
         },
       });
       queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
-      cancelEditEvent();
+      setShowEditDialog(false);
+      setEditingEvent(null);
       toast({ title: "Event updated" });
     } catch {
       toast({ variant: "destructive", title: "Failed to update event" });
     }
   };
 
-  const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : [];
-  const weekDates = getWeekDates(weekAnchor);
-
-  const priorityDotColor = (p?: string) => {
-    if (p === "high") return "bg-teal-400";
-    if (p === "medium") return "bg-amber-400";
-    return "bg-muted-foreground";
-  };
-
-  const renderDayCell = (dateStr: string, dayNum: number, isCurrentMonth = true) => {
-    const dayEvents = eventsByDate[dateStr] || [];
-    const isToday = dateStr === todayStr;
-    const isSelected = dateStr === selectedDate;
-    return (
-      <button
-        key={dateStr}
-        onClick={() => setSelectedDate(dateStr)}
-        className={`aspect-square rounded-lg flex flex-col items-center justify-center relative text-sm transition-colors
-          ${!isCurrentMonth ? "opacity-30" : ""}
-          ${isToday ? "bg-primary/20 text-primary font-bold" : ""}
-          ${isSelected ? "ring-2 ring-primary" : ""}
-          ${!isToday && !isSelected ? "hover:bg-muted" : ""}
-        `}
-      >
-        {dayNum}
-        {dayEvents.length > 0 && (
-          <div className="flex gap-0.5 mt-0.5">
-            {dayEvents.slice(0, 3).map((item, j) => (
-              <div key={j} className={`w-1.5 h-1.5 rounded-full ${item.type === "event" ? "bg-primary" : priorityDotColor(item.priority)}`} />
-            ))}
-          </div>
-        )}
-      </button>
-    );
+  const handleDeleteEvent = async () => {
+    if (!editingEvent) return;
+    try {
+      await deleteEvent.mutateAsync({ id: editingEvent.id });
+      queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
+      setShowEditDialog(false);
+      setEditingEvent(null);
+      toast({ title: "Event deleted" });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to delete event" });
+    }
   };
 
   return (
@@ -231,197 +239,200 @@ export default function Calendar() {
         <h1 className="text-2xl font-display font-bold flex items-center gap-2">
           <CalendarIcon size={24} className="text-primary" /> Calendar
         </h1>
-        <div className="flex items-center gap-1">
-          <Button
-            variant={viewMode === "month" ? "secondary" : "ghost"}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setViewMode("month")}
-          >
-            <LayoutGrid size={16} />
-          </Button>
-          <Button
-            variant={viewMode === "week" ? "secondary" : "ghost"}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setViewMode("week")}
-          >
-            <Rows3 size={16} />
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          className="gap-1 min-h-[44px]"
+          onClick={() => {
+            setCreateTaskDate(new Date());
+            setNewTaskTitle("");
+            setShowCreateTaskDialog(true);
+          }}
+        >
+          <Plus size={14} /> Add Task
+        </Button>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-4">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" onClick={prevPeriod}><ChevronLeft size={20} /></Button>
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold">
-              {viewMode === "month"
-                ? `${MONTH_NAMES[currentMonth]} ${currentYear}`
-                : `Week of ${weekDates[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-            </h2>
-            <Button variant="outline" size="sm" className="text-xs h-7" onClick={goToToday}>Today</Button>
-          </div>
-          <Button variant="ghost" size="icon" onClick={nextPeriod}><ChevronRight size={20} /></Button>
+      {isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-[500px] w-full rounded-xl" />
         </div>
-
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {DAY_HEADERS.map((d) => (
-            <div key={d} className="text-center text-xs text-muted-foreground font-medium py-1">{d}</div>
-          ))}
+      ) : calendarEvents.length === 0 ? (
+        <div className="text-center py-16 space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <CalendarIcon className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <p className="text-lg font-medium text-foreground">No events yet</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Click any date on the calendar to create a task for that day.
+            </p>
+          </div>
+          <Button
+            onClick={() => {
+              setCreateTaskDate(new Date());
+              setNewTaskTitle("");
+              setShowCreateTaskDialog(true);
+            }}
+            className="gap-2 min-h-[44px]"
+          >
+            <Plus size={16} /> Create First Task
+          </Button>
+          <div className="mt-8">
+            <CalendarComponent
+              events={[]}
+              defaultView="month"
+              view={currentView}
+              date={currentDate}
+              onNavigate={setCurrentDate}
+              onView={setCurrentView}
+              onSelectSlot={handleSelectSlot}
+            />
+          </div>
         </div>
+      ) : (
+        <CalendarComponent
+          events={calendarEvents}
+          defaultView="month"
+          view={currentView}
+          date={currentDate}
+          onNavigate={setCurrentDate}
+          onView={setCurrentView}
+          onSelectEvent={handleSelectEvent}
+          onSelectSlot={handleSelectSlot}
+          onEventDrop={handleEventDrop}
+        />
+      )}
 
-        {viewMode === "month" ? (
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: getFirstDayOfMonth(currentYear, currentMonth) }).map((_, i) => (
-              <div key={`empty-${i}`} className="aspect-square" />
-            ))}
-            {Array.from({ length: getDaysInMonth(currentYear, currentMonth) }).map((_, i) => {
-              const day = i + 1;
-              const dateStr = formatDate(currentYear, currentMonth, day);
-              return renderDayCell(dateStr, day);
-            })}
+      <Dialog open={showCreateTaskDialog} onOpenChange={setShowCreateTaskDialog}>
+        <DialogContent className="max-md:min-h-screen max-md:min-w-full max-md:rounded-none">
+          <DialogHeader>
+            <DialogTitle>
+              Create Task
+              {createTaskDate && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  {format(createTaskDate, "MMMM d, yyyy")}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Task title"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              className="min-h-[44px]"
+              autoFocus
+            />
+            <Button className="w-full min-h-[44px]" onClick={handleCreateTask} disabled={createTask.isPending || !newTaskTitle.trim()}>
+              {createTask.isPending ? (
+                <>
+                  <Spinner className="mr-2" /> Saving…
+                </>
+              ) : (
+                "Create Task"
+              )}
+            </Button>
+            <Button variant="outline" className="w-full min-h-[44px]" onClick={openAddEventDialog}>
+              Or add a calendar event instead
+            </Button>
           </div>
-        ) : (
-          <div className="grid grid-cols-7 gap-1">
-            {weekDates.map((d) => {
-              const dateStr = formatDate(d.getFullYear(), d.getMonth(), d.getDate());
-              return renderDayCell(dateStr, d.getDate(), d.getMonth() === currentMonth);
-            })}
-          </div>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
 
-      {viewMode === "week" && (
-        <div className="space-y-2">
-          {weekDates.map(d => {
-            const dateStr = formatDate(d.getFullYear(), d.getMonth(), d.getDate());
-            const dayItems = eventsByDate[dateStr] || [];
-            if (dayItems.length === 0) return null;
-            return (
-              <div key={dateStr} className="bg-card rounded-lg border border-border/50 p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                </p>
-                <div className="space-y-1">
-                  {dayItems.map(item => (
-                    <div key={`${item.type}-${item.id}`} className="flex items-center gap-2 text-sm">
-                      <div className={`w-2 h-2 rounded-full ${item.type === "event" ? "bg-primary" : priorityDotColor(item.priority)}`} />
-                      {item.startTime && <span className="text-xs text-muted-foreground font-mono w-12">{item.startTime}</span>}
-                      <span className="truncate">{item.title}</span>
-                    </div>
-                  ))}
-                </div>
+      <Dialog open={showAddEventDialog} onOpenChange={setShowAddEventDialog}>
+        <DialogContent className="max-md:min-h-screen max-md:min-w-full max-md:rounded-none">
+          <DialogHeader>
+            <DialogTitle>
+              Add Event
+              {selectedSlotDate && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  {format(selectedSlotDate, "MMMM d, yyyy")}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Event title"
+              value={newEventTitle}
+              onChange={(e) => setNewEventTitle(e.target.value)}
+              className="min-h-[44px]"
+              autoFocus
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Start Time</label>
+                <Input type="time" value={newEventTime} onChange={(e) => setNewEventTime(e.target.value)} className="min-h-[44px]" />
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {selectedDate && (
-        <div className="bg-card rounded-xl border border-border p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">{new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</h3>
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1"><Plus size={14} /> Add Event</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Add Event</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <Input placeholder="Event title" value={newEventTitle} onChange={(e) => setNewEventTitle(e.target.value)} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground">Start Time</label>
-                      <Input type="time" value={newEventTime} onChange={(e) => setNewEventTime(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">End Time</label>
-                      <Input type="time" value={newEventEndTime} onChange={(e) => setNewEventEndTime(e.target.value)} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Duration (min)</label>
-                    <Input type="number" value={newEventDuration} onChange={(e) => setNewEventDuration(e.target.value)} />
-                  </div>
-                  <Button className="w-full" onClick={handleAddEvent} disabled={createEvent.isPending}>
-                    {createEvent.isPending ? "Adding..." : "Add Event"}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {selectedEvents.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No events or tasks scheduled</p>
-          ) : (
-            <div className="space-y-2">
-              {selectedEvents
-                .sort((a, b) => (a.startTime || "99:99").localeCompare(b.startTime || "99:99"))
-                .map((item) => (
-                <div key={`${item.type}-${item.id}`} className="p-3 bg-muted/50 rounded-lg">
-                  {editingEventId === item.id ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        className="bg-background border-border text-sm h-9"
-                        autoFocus
-                      />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">Start</label>
-                          <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} className="bg-background h-8 text-sm" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">End</label>
-                          <Input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} className="bg-background h-8 text-sm" />
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEditEvent}><X size={14} /></Button>
-                        <Button size="icon" className="h-7 w-7" onClick={saveEditEvent} disabled={updateEvent.isPending}><Check size={14} /></Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-1 h-8 rounded-full ${item.type === "event" ? "bg-primary" : priorityDotColor(item.priority)}`} />
-                        <div>
-                          {item.startTime && (
-                            <span className="text-xs text-muted-foreground font-mono block">{item.startTime}{item.endTime ? ` - ${item.endTime}` : ""}</span>
-                          )}
-                          <p className="text-sm font-medium">{item.title}</p>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.type === "event" ? "bg-primary/20 text-primary" : "bg-amber-500/20 text-amber-600"}`}>
-                            {item.type}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {item.type === "event" && (
-                          <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => startEditEvent(item)}>
-                              <Pencil size={14} />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteEvent(item.id)}>
-                              <Trash2 size={14} />
-                            </Button>
-                          </>
-                        )}
-                        {item.type === "task" && (
-                          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setLocation(`/tasks/${item.id}`)}>
-                            View
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+              <div>
+                <label className="text-xs text-muted-foreground">End Time</label>
+                <Input type="time" value={newEventEndTime} onChange={(e) => setNewEventEndTime(e.target.value)} className="min-h-[44px]" />
+              </div>
             </div>
-          )}
-        </div>
-      )}
+            <Button className="w-full min-h-[44px]" onClick={handleAddEvent} disabled={createEvent.isPending || !newEventTitle.trim()}>
+              {createEvent.isPending ? (
+                <>
+                  <Spinner className="mr-2" /> Saving…
+                </>
+              ) : (
+                "Add Event"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-md:min-h-screen max-md:min-w-full max-md:rounded-none">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Event title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="min-h-[44px]"
+              autoFocus
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Start Time</label>
+                <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} className="min-h-[44px]" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">End Time</label>
+                <Input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} className="min-h-[44px]" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                className="min-h-[44px] gap-1"
+                onClick={handleDeleteEvent}
+                disabled={deleteEvent.isPending}
+              >
+                {deleteEvent.isPending ? <Spinner className="mr-1" /> : <Trash2 size={14} />}
+                Delete
+              </Button>
+              <Button
+                className="flex-1 min-h-[44px]"
+                onClick={handleUpdateEvent}
+                disabled={updateEvent.isPending || !editTitle.trim()}
+              >
+                {updateEvent.isPending ? (
+                  <>
+                    <Spinner className="mr-2" /> Saving…
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
