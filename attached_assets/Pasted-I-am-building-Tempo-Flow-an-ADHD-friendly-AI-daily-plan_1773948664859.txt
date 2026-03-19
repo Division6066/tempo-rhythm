@@ -1,0 +1,138 @@
+I am building Tempo Flow, an ADHD-friendly AI daily planner. This is Stage 6:
+Calendar View + Polish + Deploy.
+
+CONTEXT: Stages 1–5 complete. All core features exist.
+
+TASKS:
+
+1. INSTALL CALENDAR LIBRARY
+   npm install react-big-calendar date-fns
+
+2. CREATE CALENDAR COMPONENT (components/Calendar.tsx)
+```typescript
+   import React from "react";
+   import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+   import { format, parse, startOfWeek, getDay } from "date-fns";
+   import enUS from "date-fns/locale/en-US";
+   import "react-big-calendar/lib/css/react-big-calendar.css";
+
+   const locales = { "en-US": enUS };
+   const localizer = dateFnsLocalizer({
+     format,
+     parse,
+     startOfWeek,
+     getDay,
+     locales,
+   });
+
+   interface CalendarEvent {
+     id: string;
+     title: string;
+     start: Date;
+     end: Date;
+     resourceId?: string;
+     task?: any;
+   }
+
+   interface CalendarProps {
+     events: CalendarEvent[];
+     onSelectEvent: (event: CalendarEvent) => void;
+     onSelectSlot: (slotInfo: { start: Date; end: Date }) => void;
+   }
+
+   export function CalendarComponent({
+     events,
+     onSelectEvent,
+     onSelectSlot,
+   }: CalendarProps) {
+     return (
+       <div className="h-full">
+         <Calendar
+           localizer={localizer}
+           events={events}
+           startAccessor="start"
+           endAccessor="end"
+           style={{ height: 600 }}
+           onSelectEvent={onSelectEvent}
+           onSelectSlot={onSelectSlot}
+           selectable
+         />
+       </div>
+     );
+   }
+```
+
+3. CREATE CALENDAR PAGE (app/(dashboard)/calendar/page.tsx)
+   - Fetch all tasks with scheduledDate
+   - Convert to Calendar events (start = scheduledDate at 9 AM, end = same day at 10 AM)
+   - Show calendar in week or month view
+   - On click event → navigate to task edit
+   - On click empty slot → create new task for that date
+   - Drag-and-drop task between days (update scheduledDate mutation)
+
+4. CREATE RESPONSIVE LAYOUT
+   - Sidebar collapses to hamburger menu on mobile (< 768px)
+   - Main content area fills remaining space
+   - Calendar, Today View, Inbox all responsive
+   - Touch-friendly button sizes (min 44px)
+   - Stack modals on mobile fullscreen
+
+5. CREATE ERROR BOUNDARY (components/ErrorBoundary.tsx)
+   - Catch React errors
+   - Display user-friendly message
+   - Link to report error or reload
+
+6. CREATE LOADING STATES
+   - Skeleton loaders for task lists
+   - Loading spinner for calendar fetch
+   - Disabled buttons during mutations
+   - "Saving..." indicators
+
+7. CREATE EMPTY STATES
+   - Empty inbox: "All caught up! Great work."
+   - Empty calendar: "No tasks scheduled."
+   - Empty notes: "Start taking notes..."
+   - Add "Create first [item]" button to each empty state
+
+8. CREATE THEME TOGGLE (optional, but polish)
+   - Light/dark mode toggle in navbar
+   - Save preference to localStorage
+   - Use Tailwind's dark: class
+
+9. CREATE NAVBAR (components/Navbar.tsx)
+   - Logo/app name "Tempo Flow"
+   - Search button (global search)
+   - User menu (preferences, logout)
+   - Hamburger menu on mobile
+
+10. CLEAN UP TYPESCRIPT ERRORS
+    - Run: npm run build
+    - Fix any TypeScript errors
+    - Ensure no console warnings
+
+11. DEPLOY TO REPLIT
+    - Replit automatically detects Next.js
+    - Click "Deploy" or "Run"
+    - Replit creates a public URL
+    - Test full flow on deployed URL:
+      * Sign up new account
+      * Create tasks, notes, projects
+      * Verify data persists
+      * Test on mobile browser
+
+12. VERIFY PRODUCTION BUILD
+    - No build errors
+    - No console errors in deployed app
+    - All mutations/queries work on deployed URL
+    - Auth session persists
+    - Images/styles load correctly
+
+CRITICAL CHECKLIST:
+- [ ] npm run build passes with no errors
+- [ ] Calendar view renders correctly
+- [ ] Responsive layout works on mobile
+- [ ] Error boundaries catch errors
+- [ ] Loading/empty states display correctly
+- [ ] Deploy button works
+- [ ] Deployed URL is accessible
+- [ ] Full end-to-end flow works on deployed URL

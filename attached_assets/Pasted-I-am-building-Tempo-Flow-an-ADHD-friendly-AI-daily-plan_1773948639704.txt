@@ -1,0 +1,239 @@
+I am building Tempo Flow, an ADHD-friendly AI daily planner. This is Stage 5:
+AI Integration + Search.
+
+CONTEXT: Stages 1–4 complete. All queries and mutations exist.
+
+TASKS:
+
+1. CREATE AI EXTRACTION ACTION (convex/ai.ts)
+   For now, STUB the AI call and return hardcoded tasks. We'll integrate Ollama/OpenRouter later.
+```typescript
+   import { action, mutation } from "./_generated/server";
+   import { v } from "convex/values";
+   import { getAuthUserId } from "@convex-dev/auth/server";
+
+   export const extractTasksFromText = action({
+     args: {
+       text: v.string(),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       // TODO: Call Ollama Cloud or OpenRouter with Qwen3.5
+       // For now, return stub data
+       const stubTasks = [
+         { title: "Task 1", description: "Extracted from text", priority: "medium" },
+         { title: "Task 2", description: "Extracted from text", priority: "low" },
+       ];
+       
+       // Log AI interaction
+       await ctx.db.insert("aiInteractions", {
+         userId,
+         type: "extract-tasks",
+         inputText: args.text,
+         outputJson: JSON.stringify(stubTasks),
+         model: "qwen-3.5-stub",
+         createdAt: Date.now(),
+       });
+       
+       return stubTasks;
+     },
+   });
+
+   export const prioritizeTasksMutation = mutation({
+     args: {
+       taskIds: v.array(v.id("tasks")),
+     },
+     handler: async (ctx, args) => {
+       // TODO: Call AI to suggest priority ordering
+       // For now, return tasks in same order
+       return args.taskIds;
+     },
+   });
+
+   export const generateDailyPlanFromAI = action({
+     args: {
+       date: v.string(),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       // TODO: Call AI to generate daily plan based on:
+       // - User preferences
+       // - Inbox tasks
+       // - Past completion patterns
+       
+       const stubPlan = {
+         topThree: [],
+         blocks: [
+           { id: "morning", title: "Morning Routine", duration: 30 },
+           { id: "focused-work", title: "Focused Work Block", duration: 90 },
+           { id: "lunch", title: "Lunch & Break", duration: 60 },
+         ],
+       };
+       
+       return stubPlan;
+     },
+   });
+```
+
+2. CREATE EXTRACT TASKS PAGE (app/(dashboard)/extract/page.tsx)
+   - Textarea for messy text input
+   - "Extract Tasks" button
+   - On click: calls extractTasksFromText action
+   - Display extracted tasks in a list below
+   - Each task has checkbox to accept/reject
+   - "Create Accepted Tasks" button → create all accepted tasks in inbox
+   - Show raw AI output for debugging
+
+3. CREATE EXTRACT MODAL (components/ExtractModal.tsx)
+   - Modal with textarea
+   - Usable from sidebar or /extract page
+   - Shows extracted tasks with accept/reject for each
+   - Handles creating tasks on accept
+
+4. CREATE AI PREFERENCES PAGE (app/(dashboard)/preferences/page.tsx)
+   - Form to set userPreferences (wake time, sleep time, work style, etc.)
+   - Saves to userPreferences table
+   - Shows 1–10 scale sliders for overwhelm threshold, calm level, etc.
+   - Dropdown selects for work style, planning style, energy pattern
+
+5. ENHANCE SEARCH WITH FILTERS (app/(dashboard)/search/page.tsx)
+   - Add filter controls:
+     * Status filter (inbox, todo, in_progress, done)
+     * Priority filter (high, medium, low)
+     * Date range picker
+     * Project/folder filter
+     * Tags filter
+   - Update searchNotes and searchTasks queries to accept filters
+   - Combine keyword search with filter results
+
+6. CREATE SAVED SEARCHES FEATURE (convex/savedSearches.ts)
+```typescript
+   import { defineTable } from "convex/schema";
+   import { v } from "convex/values";
+
+   // Add to schema:
+   // savedSearches: defineTable({
+   //   userId: v.id("users"),
+   //   name: v.string(),
+   //   query: v.string(),
+   //   filters: v.object({ ... }),
+   //   createdAt: v.number(),
+   // }).index("by_user", ["userId"]),
+   
+   export const createSavedSearch = mutation({
+     args: {
+       name: v.string(),
+       query: v.string(),
+       filters: v.object({}),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       return await ctx.db.insert("savedSearches", {
+         userId,
+         name: args.name,
+         query: args.query,
+         filters: args.filters,
+         createdAt: Date.now(),
+       });
+     },
+   });
+```
+
+7. SEARCH IMPROVEMENTS (convex/search.ts)
+```typescript
+   export const advancedSearch = query({
+     args: {
+       query: v.string(),
+       type: v.optional(v.union(v.literal("tasks"), v.literal("notes"))),
+       status: v.optional(v.string()),
+       priority: v.optional(v.string()),
+       projectId: v.optional(v.id("projects")),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       const lowerQuery = args.query.toLowerCase();
+       
+       const results: any[] = [];
+       
+       if (args.type === "tasks" || !args.type) {
+         const tasks = await ctx.db
+           .query("tasks")
+           .withIndex("by_user", (q) => q.eq("userId", userId))
+           .collect();
+         
+         const filtered = tasks.filter((task) => {
+           const matchesQuery =
+             task.title.toLowerCase().includes(lowerQuery) ||
+             (task.description?.toLowerCase().includes(lowerQuery) ?? false);
+           
+           const matchesStatus = !args.status || task.status === args.status;
+           const matchesPriority = !args.priority || task.priority === args.priority;
+           const matchesProject = !args.projectId || task.projectId === args.projectId;
+           
+           return matchesQuery && matchesStatus && matchesPriority && matchesProject;
+         });
+         
+         results.push(...filtered.map((t) => ({ type: "task", ...t })));
+       }
+       
+       if (args.type === "notes" || !args.type) {
+         const notes = await ctx.db
+           .query("notes")
+           .withIndex("by_user", (q) => q.eq("userId", userId))
+           .collect();
+         
+         const filtered = notes.filter((note) => {
+           const matchesQuery =
+             note.title.toLowerCase().includes(lowerQuery) ||
+             (note.content?.toLowerCase().includes(lowerQuery) ?? false);
+           
+           const matchesProject = !args.projectId || note.projectId === args.projectId;
+           
+           return matchesQuery && matchesProject;
+         });
+         
+         results.push(...filtered.map((n) => ({ type: "note", ...n })));
+       }
+       
+       return results;
+     },
+   });
+```
+
+8. UPDATE SCHEMA IN convex/schema.ts
+   Add these tables if not already present:
+```typescript
+   savedSearches: defineTable({
+     userId: v.id("users"),
+     name: v.string(),
+     query: v.string(),
+     filters: v.object({}),
+     createdAt: v.number(),
+   }).index("by_user", ["userId"]),
+```
+
+9. VERIFY SETUP
+   - Navigate to /extract
+   - Paste text: "Fix bug #123, write docs, call client about project"
+   - Click "Extract Tasks" → 3 tasks appear
+   - Accept 2 tasks → create them
+   - Navigate to /inbox → tasks appear
+   - Visit /search → filter by status, priority, project
+   - Type in search → advanced results appear
+
+CRITICAL CHECKLIST:
+- [ ] extractTasksFromText action works (stub is OK)
+- [ ] Extract page displays extracted tasks
+- [ ] Accept/reject checkboxes work
+- [ ] "Create Accepted Tasks" creates tasks in inbox
+- [ ] Advanced search filters return correct results
+- [ ] Preferences page saves to userPreferences table
+- [ ] No console errors

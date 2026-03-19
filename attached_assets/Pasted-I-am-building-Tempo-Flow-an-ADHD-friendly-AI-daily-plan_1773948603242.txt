@@ -1,0 +1,275 @@
+I am building Tempo Flow, an ADHD-friendly AI daily planner. This is Stage 4:
+Projects, Folders, Sidebar Navigation.
+
+CONTEXT: Stages 1–3 complete.
+
+TASKS:
+
+1. CREATE FOLDER MUTATIONS (convex/folders.ts)
+```typescript
+   import { mutation, query } from "./_generated/server";
+   import { v } from "convex/values";
+   import { getAuthUserId } from "@convex-dev/auth/server";
+
+   export const createFolder = mutation({
+     args: {
+       name: v.string(),
+       icon: v.optional(v.string()),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const maxSort = await ctx.db
+         .query("folders")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .collect()
+         .then((folders) => Math.max(...folders.map((f) => f.sortOrder ?? 0), 0));
+       
+       return await ctx.db.insert("folders", {
+         userId,
+         name: args.name,
+         icon: args.icon || "📁",
+         sortOrder: maxSort + 1,
+         createdAt: Date.now(),
+       });
+     },
+   });
+
+   export const updateFolder = mutation({
+     args: {
+       folderId: v.id("folders"),
+       name: v.optional(v.string()),
+       icon: v.optional(v.string()),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const folder = await ctx.db.get(args.folderId);
+       if (folder?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.patch(args.folderId, {
+         name: args.name ?? folder.name,
+         icon: args.icon ?? folder.icon,
+       });
+     },
+   });
+
+   export const deleteFolder = mutation({
+     args: {
+       folderId: v.id("folders"),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const folder = await ctx.db.get(args.folderId);
+       if (folder?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.delete(args.folderId);
+     },
+   });
+
+   export const reorderFolders = mutation({
+     args: {
+       folderIds: v.array(v.id("folders")),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       for (let i = 0; i < args.folderIds.length; i++) {
+         const folder = await ctx.db.get(args.folderIds[i]);
+         if (folder?.userId !== userId) throw new Error("Unauthorized");
+         await ctx.db.patch(args.folderIds[i], { sortOrder: i });
+       }
+     },
+   });
+```
+
+2. CREATE FOLDER QUERY (convex/folders.ts, append)
+```typescript
+   export const getFolders = query({
+     handler: async (ctx) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("folders")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .order("asc")
+         .collect();
+     },
+   });
+```
+
+3. CREATE PROJECT MUTATIONS (convex/projects.ts)
+```typescript
+   import { mutation, query } from "./_generated/server";
+   import { v } from "convex/values";
+   import { getAuthUserId } from "@convex-dev/auth/server";
+
+   export const createProject = mutation({
+     args: {
+       name: v.string(),
+       description: v.optional(v.string()),
+       folderId: v.optional(v.id("folders")),
+       color: v.optional(v.string()),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       return await ctx.db.insert("projects", {
+         userId,
+         name: args.name,
+         description: args.description,
+         folderId: args.folderId,
+         color: args.color || "#3b82f6",
+         status: "active",
+         sortOrder: 0,
+         createdAt: Date.now(),
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const updateProject = mutation({
+     args: {
+       projectId: v.id("projects"),
+       name: v.optional(v.string()),
+       description: v.optional(v.string()),
+       color: v.optional(v.string()),
+       status: v.optional(v.string()),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const project = await ctx.db.get(args.projectId);
+       if (project?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.patch(args.projectId, {
+         name: args.name ?? project.name,
+         description: args.description ?? project.description,
+         color: args.color ?? project.color,
+         status: args.status ?? project.status,
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const deleteProject = mutation({
+     args: {
+       projectId: v.id("projects"),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const project = await ctx.db.get(args.projectId);
+       if (project?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.delete(args.projectId);
+     },
+   });
+
+   export const reorderProjects = mutation({
+     args: {
+       projectIds: v.array(v.id("projects")),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       for (let i = 0; i < args.projectIds.length; i++) {
+         const project = await ctx.db.get(args.projectIds[i]);
+         if (project?.userId !== userId) throw new Error("Unauthorized");
+         await ctx.db.patch(args.projectIds[i], { sortOrder: i });
+       }
+     },
+   });
+```
+
+4. CREATE PROJECT QUERIES (convex/projects.ts, append)
+```typescript
+   export const getProjectsByFolder = query({
+     args: {
+       folderId: v.id("folders"),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("projects")
+         .withIndex("by_folder", (q) => q.eq("folderId", args.folderId))
+         .order("asc")
+         .collect();
+     },
+   });
+
+   export const getAllProjects = query({
+     handler: async (ctx) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("projects")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .order("asc")
+         .collect();
+     },
+   });
+```
+
+5. CREATE SIDEBAR COMPONENT (components/Sidebar.tsx)
+   - Collapsible sidebar with Tailwind
+   - List folders (use getFolders query)
+   - For each folder, list projects (use getProjectsByFolder query)
+   - Each folder/project is clickable and navigates to filtered view
+   - Drag-and-drop to reorder (use @dnd-kit/core or react-beautiful-dnd)
+   - Folder context menu: rename, delete
+   - Project context menu: rename, delete
+   - "Add Folder" button at bottom
+   - "Add Project" button for each folder
+   - Icons: folder emoji, project color dot
+
+6. CREATE SIDEBAR MODALS (components/FolderModal.tsx, ProjectModal.tsx)
+   - Input for folder/project name
+   - Color picker for projects
+   - Create/update on submit
+
+7. CREATE FOLDER DETAIL PAGE (app/(dashboard)/folders/[id]/page.tsx)
+   - Display folder name
+   - List all projects in folder
+   - List all notes/tasks for projects in this folder
+   - Breadcrumb navigation
+
+8. CREATE PROJECT DETAIL PAGE (app/(dashboard)/projects/[id]/page.tsx)
+   - Display project name, description, color
+   - List all tasks for this project
+   - List all notes for this project
+   - Filter tasks by project ID
+   - Breadcrumb navigation
+
+9. UPDATE LAYOUT (app/(dashboard)/layout.tsx)
+   - Add Sidebar component alongside main content
+   - Grid or flex layout
+   - Sidebar min-width 250px, collapsible on mobile
+
+10. VERIFY SETUP
+    - Sidebar visible on all dashboard pages
+    - Click "Add Folder" → create new folder "Work"
+    - Click "Add Project" under "Work" → create project "Q1 Goals"
+    - Tasks assigned to "Q1 Goals" appear in project detail
+    - Drag project to reorder → sortOrder updates
+    - Navigate to project → page shows filtered tasks/notes
+
+CRITICAL CHECKLIST:
+- [ ] Sidebar renders folders and projects correctly
+- [ ] Add folder/project modals work
+- [ ] Project detail page filters tasks by projectId
+- [ ] Reordering updates sortOrder in Convex
+- [ ] No TypeScript errors
