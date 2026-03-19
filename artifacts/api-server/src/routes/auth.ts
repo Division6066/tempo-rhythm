@@ -1,4 +1,7 @@
 import { Router, type IRouter } from "express";
+import crypto from "crypto";
+import { eq, and, isNull, gt } from "drizzle-orm";
+import { db, passwordResetTokensTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -131,6 +134,80 @@ router.post("/auth/onboarding", (req, res) => {
     success: true,
     preferences: { challenge, focusTime, dailyTaskCount },
   });
+});
+
+router.post("/auth/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  try {
+    const user = BETA_USERS.find((u) => u.email === email);
+    if (user) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      await db.insert(passwordResetTokensTable).values({
+        email,
+        token,
+        expiresAt,
+      });
+
+      console.log(`[Password Reset] Link for ${email}: /reset-password?token=${token}`);
+    }
+  } catch (err) {
+    console.error("[Password Reset] Error creating token:", err);
+  }
+
+  return res.json({ success: true, message: "If an account exists for this email, a reset link has been sent." });
+});
+
+router.post("/auth/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ error: "Token and password are required" });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters" });
+  }
+
+  try {
+    const [resetData] = await db
+      .select()
+      .from(passwordResetTokensTable)
+      .where(
+        and(
+          eq(passwordResetTokensTable.token, token),
+          isNull(passwordResetTokensTable.usedAt),
+          gt(passwordResetTokensTable.expiresAt, new Date())
+        )
+      )
+      .limit(1);
+
+    if (!resetData) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    const user = BETA_USERS.find((u) => u.email === resetData.email);
+    if (user) {
+      user.password = password;
+    }
+
+    await db
+      .update(passwordResetTokensTable)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokensTable.id, resetData.id));
+
+    console.log(`[Password Reset] Password updated for ${resetData.email}`);
+    return res.json({ success: true, message: "Password has been reset successfully" });
+  } catch (err) {
+    console.error("[Password Reset] Error resetting password:", err);
+    return res.status(500).json({ error: "An error occurred. Please try again." });
+  }
 });
 
 router.get("/auth/users", (req, res) => {

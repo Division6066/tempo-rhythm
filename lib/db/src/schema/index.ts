@@ -13,3 +13,4 @@ export * from "./savedFilters";
 export * from "./noteTemplates";
 export * from "./aiActionLog";
 export * from "./searchEmbeddings";
+export * from "./passwordResetTokens";

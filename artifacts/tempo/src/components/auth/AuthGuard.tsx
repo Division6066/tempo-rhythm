@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { convex } from "@/lib/convex";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/published"];
+const PUBLIC_PATHS = ["/login", "/signup", "/published", "/forgot-password", "/reset-password"];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!convex) {
