@@ -27,6 +27,7 @@ import FocusSession from "@/pages/FocusSession";
 import Folders from "@/pages/Folders";
 import Tags from "@/pages/Tags";
 import Memories from "@/pages/Memories";
+import Search from "@/pages/Search";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import NotFound from "@/pages/not-found";
@@ -100,6 +101,9 @@ function Router() {
       </Route>
       <Route path="/memories">
         <AppLayout><Memories /></AppLayout>
+      </Route>
+      <Route path="/search">
+        <AppLayout><Search /></AppLayout>
       </Route>
       
       <Route component={NotFound} />

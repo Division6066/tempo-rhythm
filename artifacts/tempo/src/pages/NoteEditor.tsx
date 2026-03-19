@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { 
   useGetNote, 
@@ -19,11 +19,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VoiceNote } from "@/components/VoiceNote";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 export default function NoteEditor() {
   const [, params] = useRoute("/notes/:id");
@@ -57,9 +55,9 @@ export default function NoteEditor() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isPinned, setIsPinned] = useState(false);
-  const [tab, setTab] = useState("edit");
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [linkSearch, setLinkSearch] = useState("");
+  const isSavingNew = useRef(false);
 
   useEffect(() => {
     if (note && !isNew) {
@@ -117,14 +115,20 @@ export default function NoteEditor() {
 
   const handleSave = async () => {
     if (!title && !content) return;
+    if (isNew && isSavingNew.current) return;
     try {
       if (isNew) {
-        const res = await createNote.mutateAsync({
-          data: { title: title || "Untitled", content, isPinned }
-        });
-        queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
-        await syncWikiLinks(res.id, content);
-        setLocation(`/notes/${res.id}`);
+        isSavingNew.current = true;
+        try {
+          const res = await createNote.mutateAsync({
+            data: { title: title || "Untitled", content, isPinned }
+          });
+          queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+          await syncWikiLinks(res.id, content);
+          setLocation(`/notes/${res.id}`);
+        } finally {
+          isSavingNew.current = false;
+        }
       } else {
         await updateNote.mutateAsync({
           id: noteId,
@@ -204,6 +208,18 @@ export default function NoteEditor() {
     setContent((prev) => prev + `[[${noteTitle}]]`);
   }, []);
 
+  const renderWikiLinks = useCallback((text: string): string => {
+    return text.replace(/\[\[([^\]]+)\]\]/g, (_, linkTitle: string) => {
+      const linkedNote = allNotes?.find(
+        (n) => n.title.toLowerCase() === linkTitle.toLowerCase()
+      );
+      if (linkedNote) {
+        return `[${linkTitle}](#/notes/${linkedNote.id})`;
+      }
+      return `**${linkTitle}**`;
+    });
+  }, [allNotes]);
+
   const linkableNotes = useMemo(() => {
     if (!allNotes) return [];
     const linkedIds = new Set(
@@ -223,18 +239,6 @@ export default function NoteEditor() {
       direction: link.sourceNoteId === noteId ? "outgoing" as const : "incoming" as const,
     }));
   }, [noteLinks, noteId]);
-
-  const renderWikiLinks = useCallback((text: string): string => {
-    return text.replace(/\[\[([^\]]+)\]\]/g, (_, linkTitle: string) => {
-      const linkedNote = allNotes?.find(
-        (n) => n.title.toLowerCase() === linkTitle.toLowerCase()
-      );
-      if (linkedNote) {
-        return `[${linkTitle}](#/notes/${linkedNote.id})`;
-      }
-      return `**${linkTitle}**`;
-    });
-  }, [allNotes]);
 
   const tags = useMemo(() => {
     const matches = content.match(/#[\w-]+/g) || [];
@@ -362,26 +366,20 @@ export default function NoteEditor() {
         </div>
       )}
 
-      <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col">
-        <TabsList className="bg-card w-full justify-start border-b border-border rounded-none h-auto p-0">
-          <TabsTrigger value="edit" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary px-4 py-2">Edit</TabsTrigger>
-          <TabsTrigger value="preview" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary px-4 py-2">Preview</TabsTrigger>
-        </TabsList>
-        <TabsContent value="edit" className="flex-1 mt-4">
-          <Textarea 
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            onBlur={handleSave}
-            placeholder="Start typing (Markdown supported, use #tags @mentions [[wiki links]])..."
-            className="min-h-[300px] h-full bg-card border-border resize-none font-mono text-sm leading-relaxed"
-          />
-        </TabsContent>
-        <TabsContent value="preview" className="flex-1 mt-4 bg-card/50 p-6 rounded-xl border border-border min-h-[300px]">
-          <div className="prose prose-invert max-w-none">
-            <ReactMarkdown>{renderWikiLinks(content) || "*Nothing to preview*"}</ReactMarkdown>
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div
+        className="flex-1"
+        onBlur={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          handleSave();
+        }}
+      >
+        <MarkdownEditor
+          value={content}
+          onChange={setContent}
+          height={500}
+          preprocessValue={renderWikiLinks}
+        />
+      </div>
 
       {backlinks.length > 0 && (
         <div className="space-y-2">

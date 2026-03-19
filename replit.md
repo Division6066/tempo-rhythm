@@ -34,7 +34,7 @@ TEMPO is a calm, minimalist, ADHD-friendly planning app that combines daily plan
 ## Stack
 
 - **Backend**: Express + PostgreSQL + Drizzle ORM
-- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + wouter + react-markdown
+- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + wouter + @uiw/react-md-editor
 - **API layer**: OpenAPI spec → Orval codegen → React Query hooks
 - **Icons**: Lucide React
 - **Date utils**: date-fns
@@ -69,7 +69,8 @@ artifacts/
 │   │   │   ├── AppLayout.tsx     # Two-column shell: desktop sidebar (≥768px) + mobile bottom nav (<768px)
 │   │   │   └── Sidebar.tsx       # Fixed 220px left sidebar with nav links, search trigger, + New button
 │   │   ├── CommandBar.tsx        # ⌘K command bar with grouped sections (Go to, Notes, Tasks, Projects, Commands)
-│   │   └── QuickCapture.tsx      # Multi-line Markdown capture panel with preview toggle, mic placeholder
+│   │   ├── QuickCapture.tsx      # Multi-line Markdown capture panel with preview toggle, mic placeholder
+│   │   └── MarkdownEditor.tsx    # Live split-pane markdown editor (@uiw/react-md-editor, dark mode, wiki-link support)
 │   ├── pages/
 │   │   ├── Dashboard.tsx     # Home with progress ring + Top 3 focus tasks + quick actions
 │   │   ├── TodayView.tsx     # Today's tasks by priority
@@ -78,7 +79,8 @@ artifacts/
 │   │   ├── DailyPlan.tsx     # AI plan generation + accept/edit/reject staging
 │   │   ├── TaskDetail.tsx    # Task editor + AI chunking + time blocking + recurrence
 │   │   ├── Notes.tsx         # Notes list
-│   │   ├── NoteEditor.tsx    # Note editor with backlinks, publish, wiki-links, tags/@mentions
+│   │   ├── NoteEditor.tsx    # Note editor with live split-pane MD editor, backlinks, publish, wiki-links
+│   │   ├── Search.tsx        # Global search (notes + tasks, 300ms debounce, grouped results)
 │   │   ├── Projects.tsx      # Projects list with progress bars + detail navigation
 │   │   ├── ProjectDetail.tsx # Project detail with linked tasks/notes, progress, archive/delete
 │   │   ├── Settings.tsx      # Settings + navigation hub (11 feature links)
