@@ -1,0 +1,171 @@
+I am building Tempo Flow, an ADHD-friendly AI daily planner. This is Stage 3:
+Markdown Editor + Notes System.
+
+CONTEXT: Stages 1–2 complete. Schema and task/note mutations exist.
+
+TASKS:
+
+1. INSTALL MARKDOWN EDITOR LIBRARY
+   npm install @uiw/react-md-editor @uiw/react-markdown-preview
+
+2. CREATE MARKDOWN EDITOR COMPONENT (components/MarkdownEditor.tsx)
+```typescript
+   import React, { useState, useCallback } from "react";
+   import MDEditor from "@uiw/react-md-editor";
+   import "@uiw/react-markdown-preview/markdown.css";
+   import "@uiw/react-markdown-editor/markdown-editor.css";
+
+   interface MarkdownEditorProps {
+     initialContent?: string;
+     onSave: (content: string) => Promise<void>;
+     isLoading?: boolean;
+   }
+
+   export function MarkdownEditor({
+     initialContent = "",
+     onSave,
+     isLoading = false,
+   }: MarkdownEditorProps) {
+     const [content, setContent] = useState(initialContent);
+     const [saved, setSaved] = useState(true);
+
+     const handleSave = useCallback(async () => {
+       try {
+         await onSave(content);
+         setSaved(true);
+       } catch (error) {
+         console.error("Save failed:", error);
+         setSaved(false);
+       }
+     }, [content, onSave]);
+
+     const handleChange = (val: string | undefined) => {
+       setContent(val || "");
+       setSaved(false);
+     };
+
+     return (
+       <div data-color-mode="light" className="flex flex-col gap-4">
+         <div className="flex justify-between items-center">
+           <h3 className="text-lg font-semibold">Note Content</h3>
+           <button
+             onClick={handleSave}
+             disabled={isLoading || saved}
+             className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+           >
+             {saved ? "Saved" : "Save"}
+           </button>
+         </div>
+         <MDEditor
+           value={content}
+           onChange={handleChange}
+           height={400}
+           preview="live"
+           hideToolbar={false}
+         />
+       </div>
+     );
+   }
+```
+
+3. CREATE NOTES PAGE (app/(dashboard)/notes/page.tsx)
+   - List all notes (getNotes query)
+   - New Note button → opens note creation modal
+   - Each note: title, preview (first 100 chars), created date
+   - Click note → edit page
+
+4. CREATE NOTE DETAIL/EDIT PAGE (app/(dashboard)/notes/[id]/page.tsx)
+   - Load note by ID
+   - Display title input
+   - MarkdownEditor component
+   - Delete button (with confirmation)
+   - Pin button
+   - Tags input (comma-separated)
+   - Breadcrumb: Notes > [title]
+
+5. CREATE NEW NOTE MODAL (components/NewNoteModal.tsx)
+   - Modal with title input and create button
+   - Calls createNote mutation
+   - Redirects to /notes/[id] on success
+
+6. UPDATE NOTE MUTATIONS TO SUPPORT INLINE TASK SYNTAX
+   - When saving a note with "- [ ] task text", auto-create a task
+   - Track which tasks were created from this note
+   - For now: store in note.content as markdown, manual parsing
+
+7. CREATE FULL-TEXT SEARCH QUERY (convex/search.ts)
+```typescript
+   import { query } from "./_generated/server";
+   import { v } from "convex/values";
+   import { getAuthUserId } from "@convex-dev/auth/server";
+
+   export const searchNotes = query({
+     args: {
+       query: v.string(),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       const allNotes = await ctx.db
+         .query("notes")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .collect();
+       
+       const lowerQuery = args.query.toLowerCase();
+       return allNotes.filter(
+         (note) =>
+           note.title.toLowerCase().includes(lowerQuery) ||
+           (note.content?.toLowerCase().includes(lowerQuery) ?? false)
+       );
+     },
+   });
+
+   export const searchTasks = query({
+     args: {
+       query: v.string(),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       const allTasks = await ctx.db
+         .query("tasks")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .collect();
+       
+       const lowerQuery = args.query.toLowerCase();
+       return allTasks.filter(
+         (task) =>
+           task.title.toLowerCase().includes(lowerQuery) ||
+           (task.description?.toLowerCase().includes(lowerQuery) ?? false)
+       );
+     },
+   });
+```
+
+8. CREATE SEARCH PAGE (app/(dashboard)/search/page.tsx)
+   - Search input with debounce
+   - Results: notes and tasks mixed
+   - Click result → navigate to detail page
+   - Show count of matches
+
+9. CREATE SEARCH COMPONENT (components/Search.tsx)
+   - Global search accessible from sidebar or header
+   - Use searchNotes and searchTasks queries
+   - Show recent searches
+
+10. VERIFY SETUP
+    - Navigate to /notes
+    - Create new note "My First Note"
+    - Edit note with markdown (headings, bold, lists)
+    - Live preview shows formatted output
+    - Page refresh → content persists
+    - Search for note title → appears in search results
+
+CRITICAL CHECKLIST:
+- [ ] Markdown editor renders and updates
+- [ ] Notes CRUD works fully
+- [ ] Full-text search queries work
+- [ ] Search page returns correct results
+- [ ] No console errors on note pages
