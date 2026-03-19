@@ -1,0 +1,94 @@
+{
+  "name": "ADHD Life Coaching Knowledge Base",
+  "description": "ADHD-specific coaching knowledge covering time blindness, task initiation, body doubling, ADHD tax, hyperfocus, emotional regulation, energy scheduling, dopamine rewards, and thought pattern reframing. Used by the AI assistant to give compassionate, practical ADHD coaching responses.",
+  "memories": [
+    {
+      "tier": "warm",
+      "content": "Time blindness is a neurological ADHD symptom, not laziness. ADHD brains experience time as 'now' and 'not now'. To help: use visual timers (Time Timer app), set alarms 15 minutes before transitions, and always double time estimates since ADHD estimation is reliably too optimistic."
+    },
+    {
+      "tier": "warm",
+      "content": "Task paralysis is caused by executive dysfunction, not avoidance. The ADHD brain requires dopamine to initiate action — without interest, urgency, challenge, or novelty, the brain literally cannot activate. This is a neurological barrier, not a character flaw."
+    },
+    {
+      "tier": "warm",
+      "content": "The 2-minute rule for ADHD: if a task takes 2 minutes or less, do it immediately. Small completions trigger dopamine and create momentum that makes the next task easier to start."
+    },
+    {
+      "tier": "warm",
+      "content": "To break task paralysis, shrink the task to a single physical action. Instead of 'write the report', use 'open the document and type one sentence'. Instead of 'clean the house', use 'put 5 things away'. The goal is to make starting so small it feels almost stupid — then do it."
+    },
+    {
+      "tier": "warm",
+      "content": "Use the 'already started' effect to reduce task initiation barriers. Lay out tools or open the app before sitting down to work. A document already open on screen removes the activation barrier. Preparing the environment does half the work of starting."
+    },
+    {
+      "tier": "warm",
+      "content": "Interest and novelty trigger ADHD task initiation. Work in a new location (cafe, library, different room), use a dedicated 'work playlist' only played during focused tasks, make the task a challenge ('can I do this before the timer goes off?'), or add a social element (tell someone you're starting, or work alongside a friend)."
+    },
+    {
+      "tier": "warm",
+      "content": "Body doubling significantly improves ADHD focus. Working alongside another person — even silently — provides external accountability that helps the ADHD brain stay on task. This works in coffee shops, libraries, virtual co-working sessions (Focusmate), or even a 'study with me' YouTube video playing in the background."
+    },
+    {
+      "tier": "warm",
+      "content": "The ADHD tax is the extra time, money, and energy spent managing ADHD symptom consequences: late fees, re-purchased items, missed appointments, redo work. Reduce it by automating everything possible (auto-pay bills, calendar reminders, recurring alerts), creating physical systems (dedicated spot for keys/wallet/phone), and using pre-mortem thinking before tasks."
+    },
+    {
+      "tier": "warm",
+      "content": "Hyperfocus is the ADHD ability to become intensely absorbed in interesting tasks — it needs management, not elimination. To work with it: schedule hyperfocus in long uninterrupted blocks, align it with peak energy times, use a two-alarm system (warning + hard stop), and place a visual reminder in your line of sight for upcoming commitments."
+    },
+    {
+      "tier": "warm",
+      "content": "ADHD emotional regulation: feelings arrive faster, more intensely, and take longer to settle. Signs of overwhelm include everything feeling equally urgent, physical tightness, switching between tasks without completing any, and racing thoughts. This is neurological dysregulation, not weakness."
+    },
+    {
+      "tier": "warm",
+      "content": "The STOP technique for ADHD overwhelm: (1) Stop what you're doing. (2) Take 3 slow, deep breaths. (3) Observe surroundings — name 5 things you can see. (4) Proceed with one tiny action only, not the whole task. This breaks the overwhelm spiral and restores executive function."
+    },
+    {
+      "tier": "warm",
+      "content": "Brain dump to reduce overwhelm: write everything in your head on paper without organising it. Getting it out of working memory reduces cognitive load. After the dump, pick one item and do only that. A brain dump is not procrastination — it's a necessary reset step."
+    },
+    {
+      "tier": "warm",
+      "content": "Short breaks during overwhelm restore capacity. A 10-minute walk outside is not procrastination — it's a cognitive reset. Pushing through overwhelm usually reduces output quality rather than increasing it. Permission to pause is a valid and effective ADHD strategy."
+    },
+    {
+      "tier": "warm",
+      "content": "Energy-based scheduling: ADHD attention and energy are not consistent throughout the day. Track your energy for one week (1-5 rating every 2 hours) to find your pattern. Most ADHD people have a morning peak, afternoon dip (2-4pm), and sometimes an evening second wind. Match task type to energy level."
+    },
+    {
+      "tier": "warm",
+      "content": "ADHD task-energy matching: high-energy peak → deep creative work, writing, complex problems, important meetings. Medium energy → email, admin, scheduling, learning. Low energy → simple to-dos, filing, repetitive tasks. Protect your peak window for deep work — no meetings, no interruptions."
+    },
+    {
+      "tier": "warm",
+      "content": "ADHD dopamine rewards must be immediate, tangible, and personally meaningful — not vague or future-based. Effective micro-rewards: a specific snack, 5 minutes on a favourite app, a walk, crossing off a checklist item, a sticker on a tracker. Gamification (beating a timer, streaks, challenge mode) also works well."
+    },
+    {
+      "tier": "warm",
+      "content": "Thought pattern reframe — 'I'm lazy': ADHD brains require different activation conditions (interest, urgency, challenge, novelty). When those conditions are present, ADHD people are often among the most driven in the room. Difficulty without those conditions is neurological, not a character flaw. Reframe: 'My brain needs different fuel. Let me find what activates me.'"
+    },
+    {
+      "tier": "warm",
+      "content": "Thought pattern reframe — 'I should be able to do this, it's easy': ADHD makes low-stimulation tasks (filing, short emails, phone calls) genuinely hard, even when they look simple to others. The difficulty is real. Reframe: 'Simple for others isn't simple for my brain. I can find a way to make this easier.'"
+    },
+    {
+      "tier": "warm",
+      "content": "Thought pattern reframe — 'I'll do it when I'm in the right mood': waiting for motivation is an ADHD trap. ADHD brains often can't access motivation on demand, so waiting usually means the task doesn't happen. Action creates momentum; motivation follows action. Reframe: 'I don't need to feel like doing it. I just need to start for 2 minutes.'"
+    },
+    {
+      "tier": "warm",
+      "content": "Thought pattern reframe — 'I work better under pressure': urgency activates the ADHD brain, but chronic last-minute work creates anxiety and lower quality output. Build artificial urgency earlier with timers, commitments to others, or public accountability — get the activation benefit without the crisis."
+    },
+    {
+      "tier": "warm",
+      "content": "Thought pattern reframe — 'I'm too far behind to catch up': overwhelm creates tunnel vision that makes situations seem more catastrophic than they are. Catching up rarely requires doing everything at once. Reframe: 'I don't need to catch up on everything. What is the one thing that matters most right now?'"
+    },
+    {
+      "tier": "warm",
+      "content": "ADHD coaching response guide: 'I can't start this task' → shrink to 2-min action, check activation conditions, suggest body doubling. 'I feel overwhelmed' → STOP technique, brain dump, pick one thing. 'I wasted the whole day' → time blindness reframe, find one thing completed, adjust tomorrow. 'I know what to do but just don't do it' → identify the activation barrier, remove friction from starting."
+    }
+  ]
+}
