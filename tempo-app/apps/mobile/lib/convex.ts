@@ -4,12 +4,14 @@ import { Platform } from "react-native";
 const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL;
 
 if (!CONVEX_URL) {
-  throw new Error(
-    "EXPO_PUBLIC_CONVEX_URL is not set. Please set it in .env.local to your Convex deployment URL."
+  console.warn(
+    "EXPO_PUBLIC_CONVEX_URL is not set. Set it in .env.local to your Convex deployment URL (e.g. https://precious-wildcat-890.eu-west-1.convex.cloud)"
   );
 }
 
-export const convex = new ConvexReactClient(CONVEX_URL);
+export const convex = new ConvexReactClient(
+  CONVEX_URL || "https://precious-wildcat-890.eu-west-1.convex.cloud"
+);
 
 const webStorage = {
   getItem: async (key: string) => {
