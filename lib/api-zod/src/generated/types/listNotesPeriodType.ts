@@ -10,7 +10,9 @@ export type ListNotesPeriodType =
   (typeof ListNotesPeriodType)[keyof typeof ListNotesPeriodType];
 
 export const ListNotesPeriodType = {
+  daily: "daily",
   weekly: "weekly",
   monthly: "monthly",
+  quarterly: "quarterly",
   yearly: "yearly",
 } as const;

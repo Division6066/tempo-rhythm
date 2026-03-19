@@ -11,7 +11,9 @@ export type NotePeriodType =
   | null;
 
 export const NotePeriodType = {
+  daily: "daily",
   weekly: "weekly",
   monthly: "monthly",
+  quarterly: "quarterly",
   yearly: "yearly",
 } as const;

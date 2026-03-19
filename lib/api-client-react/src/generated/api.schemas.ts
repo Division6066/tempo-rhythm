@@ -131,8 +131,10 @@ export type NotePeriodType =
   | null;
 
 export const NotePeriodType = {
+  daily: "daily",
   weekly: "weekly",
   monthly: "monthly",
+  quarterly: "quarterly",
   yearly: "yearly",
 } as const;
 
@@ -158,8 +160,10 @@ export type CreateNoteBodyPeriodType =
   | null;
 
 export const CreateNoteBodyPeriodType = {
+  daily: "daily",
   weekly: "weekly",
   monthly: "monthly",
+  quarterly: "quarterly",
   yearly: "yearly",
 } as const;
 
@@ -650,8 +654,10 @@ export type ListNotesPeriodType =
   (typeof ListNotesPeriodType)[keyof typeof ListNotesPeriodType];
 
 export const ListNotesPeriodType = {
+  daily: "daily",
   weekly: "weekly",
   monthly: "monthly",
+  quarterly: "quarterly",
   yearly: "yearly",
 } as const;
 
