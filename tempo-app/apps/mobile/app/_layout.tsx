@@ -1,6 +1,6 @@
 import React from "react";
 import { useConvexAuth } from "convex/react";
-import { Redirect, Stack } from "expo-router";
+import { Redirect, Stack, usePathname } from "expo-router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View, Text, Pressable } from "react-native";
@@ -48,6 +48,7 @@ class ErrorBoundary extends React.Component<
 
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const pathname = usePathname();
 
   if (isLoading) {
     return (
@@ -60,6 +61,10 @@ function RootNavigator() {
 
   if (!isAuthenticated) {
     return <Redirect href="/login" />;
+  }
+
+  if (pathname === "/login") {
+    return <Redirect href="/(tabs)/" />;
   }
 
   return (

@@ -12,3 +12,9 @@ id = "b0GmK8RB0B8MA-E3pRxyA"
 uri = "file://docs/PERPLEXITY_SETUP_MEGADOC.md"
 type = "text"
 title = "TEMPO — Perplexity Computer Setup Mega-Prompts"
+
+[[outputs]]
+id = "hvTCaWqnmUedcgye-_sF4"
+uri = "file://.local/readiness/MEGA_PROMPTS.md"
+type = "text"
+title = "TEMPO — 20 Build Mega Prompts"

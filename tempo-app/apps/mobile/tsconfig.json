@@ -3,8 +3,15 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@convex/*": ["../../convex/*"]
+      "@convex/*": [
+        "../../convex/*"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "../../convex/**/*.ts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../../convex/**/*.ts",
+    "nativewind-env.d.ts"
+  ]
 }
