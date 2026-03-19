@@ -14,6 +14,7 @@ export interface Project {
   folderId?: number | null;
   color?: string | null;
   status: ProjectStatus;
+  sortOrder?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

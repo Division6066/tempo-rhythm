@@ -201,6 +201,7 @@ export interface Project {
   folderId?: number | null;
   color?: string | null;
   status: ProjectStatus;
+  sortOrder?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -219,6 +220,7 @@ export interface CreateProjectBody {
   folderId?: number | null;
   color?: string | null;
   status?: CreateProjectBodyStatus;
+  sortOrder?: number | null;
 }
 
 export type UpdateProjectBodyStatus =
@@ -235,6 +237,7 @@ export interface UpdateProjectBody {
   folderId?: number | null;
   color?: string | null;
   status?: UpdateProjectBodyStatus;
+  sortOrder?: number | null;
 }
 
 export interface Folder {
@@ -242,6 +245,8 @@ export interface Folder {
   name: string;
   description?: string | null;
   parentFolderId?: number | null;
+  icon?: string | null;
+  sortOrder?: number | null;
   createdAt: string;
 }
 
@@ -249,12 +254,16 @@ export interface CreateFolderBody {
   name: string;
   description?: string | null;
   parentFolderId?: number | null;
+  icon?: string | null;
+  sortOrder?: number | null;
 }
 
 export interface UpdateFolderBody {
   name?: string;
   description?: string | null;
   parentFolderId?: number | null;
+  icon?: string | null;
+  sortOrder?: number | null;
 }
 
 export interface Tag {

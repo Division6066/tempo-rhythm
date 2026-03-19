@@ -9,6 +9,7 @@ export const projectsTable = pgTable("projects", {
   folderId: integer("folder_id"),
   color: text("color"),
   status: text("status").notNull().default("active"),
+  sortOrder: integer("sort_order"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

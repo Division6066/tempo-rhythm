@@ -25,6 +25,7 @@ import NoteTemplates from "@/pages/NoteTemplates";
 import PublishedNote from "@/pages/PublishedNote";
 import FocusSession from "@/pages/FocusSession";
 import Folders from "@/pages/Folders";
+import FolderDetail from "@/pages/FolderDetail";
 import Tags from "@/pages/Tags";
 import Memories from "@/pages/Memories";
 import Search from "@/pages/Search";
@@ -95,6 +96,9 @@ function Router() {
       </Route>
       <Route path="/folders">
         <AppLayout><Folders /></AppLayout>
+      </Route>
+      <Route path="/folders/:id">
+        <AppLayout><FolderDetail /></AppLayout>
       </Route>
       <Route path="/tags">
         <AppLayout><Tags /></AppLayout>

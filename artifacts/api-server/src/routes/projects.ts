@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { db, projectsTable } from "@workspace/db";
 import {
   ListProjectsResponse,
@@ -8,13 +8,50 @@ import {
   UpdateProjectBody,
   UpdateProjectResponse,
   DeleteProjectParams,
+  GetProjectParams,
+  GetProjectResponse,
+  ListProjectsByFolderParams,
+  ListProjectsByFolderResponse,
+  ReorderProjectsBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
 router.get("/projects", async (_req, res): Promise<void> => {
-  const projects = await db.select().from(projectsTable).orderBy(projectsTable.createdAt);
+  const projects = await db.select().from(projectsTable).orderBy(asc(projectsTable.sortOrder), asc(projectsTable.createdAt));
   res.json(ListProjectsResponse.parse(projects));
+});
+
+router.get("/projects/:id", async (req, res): Promise<void> => {
+  const params = GetProjectParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, params.data.id));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  res.json(GetProjectResponse.parse(project));
+});
+
+router.get("/folders/:folderId/projects", async (req, res): Promise<void> => {
+  const params = ListProjectsByFolderParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const projects = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.folderId, params.data.folderId))
+    .orderBy(asc(projectsTable.sortOrder), asc(projectsTable.createdAt));
+
+  res.json(ListProjectsByFolderResponse.parse(projects));
 });
 
 router.post("/projects", async (req, res): Promise<void> => {
@@ -61,6 +98,20 @@ router.delete("/projects/:id", async (req, res): Promise<void> => {
   if (!project) {
     res.status(404).json({ error: "Project not found" });
     return;
+  }
+
+  res.sendStatus(204);
+});
+
+router.post("/projects/reorder", async (req, res): Promise<void> => {
+  const parsed = ReorderProjectsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  for (let i = 0; i < parsed.data.projectIds.length; i++) {
+    await db.update(projectsTable).set({ sortOrder: i }).where(eq(projectsTable.id, parsed.data.projectIds[i]));
   }
 
   res.sendStatus(204);

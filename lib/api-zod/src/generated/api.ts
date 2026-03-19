@@ -321,6 +321,7 @@ export const ListProjectsResponseItem = zod.object({
   folderId: zod.number().nullish(),
   color: zod.string().nullish(),
   status: zod.enum(["active", "archived"]),
+  sortOrder: zod.number().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -339,6 +340,7 @@ export const CreateProjectBody = zod.object({
   status: zod
     .enum(["active", "archived"])
     .default(createProjectBodyStatusDefault),
+  sortOrder: zod.number().nullish(),
 });
 
 /**
@@ -354,6 +356,7 @@ export const UpdateProjectBody = zod.object({
   folderId: zod.number().nullish(),
   color: zod.string().nullish(),
   status: zod.enum(["active", "archived"]).optional(),
+  sortOrder: zod.number().nullish(),
 });
 
 export const UpdateProjectResponse = zod.object({
@@ -363,6 +366,7 @@ export const UpdateProjectResponse = zod.object({
   folderId: zod.number().nullish(),
   color: zod.string().nullish(),
   status: zod.enum(["active", "archived"]),
+  sortOrder: zod.number().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -375,6 +379,41 @@ export const DeleteProjectParams = zod.object({
 });
 
 /**
+ * @summary Get a single project by ID
+ */
+export const GetProjectParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetProjectResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  folderId: zod.number().nullish(),
+  color: zod.string().nullish(),
+  status: zod.enum(["active", "archived"]),
+  sortOrder: zod.number().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary List projects by folder
+ */
+export const ListProjectsByFolderParams = zod.object({
+  folderId: zod.coerce.number(),
+});
+
+export const ListProjectsByFolderResponse = zod.array(ListProjectsResponseItem);
+
+/**
+ * @summary Reorder projects
+ */
+export const ReorderProjectsBody = zod.object({
+  projectIds: zod.array(zod.number()),
+});
+
+/**
  * @summary List all folders
  */
 export const ListFoldersResponseItem = zod.object({
@@ -382,6 +421,8 @@ export const ListFoldersResponseItem = zod.object({
   name: zod.string(),
   description: zod.string().nullish(),
   parentFolderId: zod.number().nullish(),
+  icon: zod.string().nullish(),
+  sortOrder: zod.number().nullish(),
   createdAt: zod.date(),
 });
 export const ListFoldersResponse = zod.array(ListFoldersResponseItem);
@@ -393,6 +434,8 @@ export const CreateFolderBody = zod.object({
   name: zod.string(),
   description: zod.string().nullish(),
   parentFolderId: zod.number().nullish(),
+  icon: zod.string().nullish(),
+  sortOrder: zod.number().nullish(),
 });
 
 /**
@@ -406,6 +449,8 @@ export const UpdateFolderBody = zod.object({
   name: zod.string().optional(),
   description: zod.string().nullish(),
   parentFolderId: zod.number().nullish(),
+  icon: zod.string().nullish(),
+  sortOrder: zod.number().nullish(),
 });
 
 export const UpdateFolderResponse = zod.object({
@@ -413,6 +458,8 @@ export const UpdateFolderResponse = zod.object({
   name: zod.string(),
   description: zod.string().nullish(),
   parentFolderId: zod.number().nullish(),
+  icon: zod.string().nullish(),
+  sortOrder: zod.number().nullish(),
   createdAt: zod.date(),
 });
 
@@ -421,6 +468,30 @@ export const UpdateFolderResponse = zod.object({
  */
 export const DeleteFolderParams = zod.object({
   id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get a single folder by ID
+ */
+export const GetFolderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetFolderResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  parentFolderId: zod.number().nullish(),
+  icon: zod.string().nullish(),
+  sortOrder: zod.number().nullish(),
+  createdAt: zod.date(),
+});
+
+/**
+ * @summary Reorder folders
+ */
+export const ReorderFoldersBody = zod.object({
+  folderIds: zod.array(zod.number()),
 });
 
 /**

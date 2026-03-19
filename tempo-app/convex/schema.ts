@@ -44,7 +44,8 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_scheduledDate", ["scheduledDate"])
     .index("by_user_date", ["userId", "scheduledDate"])
-    .index("by_user_status", ["userId", "status"]),
+    .index("by_user_status", ["userId", "status"])
+    .index("by_projectId", ["projectId"]),
 
   notes: defineTable({
     userId: v.optional(v.string()),
@@ -75,17 +76,21 @@ export default defineSchema({
     folderId: v.optional(v.id("folders")),
     color: v.optional(v.string()),
     status: v.string(),
+    sortOrder: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_status", ["status"])
-    .index("by_userId", ["userId"]),
+    .index("by_userId", ["userId"])
+    .index("by_folderId", ["folderId"]),
 
   folders: defineTable({
     userId: v.optional(v.string()),
     name: v.string(),
     description: v.optional(v.string()),
     parentFolderId: v.optional(v.id("folders")),
+    icon: v.optional(v.string()),
+    sortOrder: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"]),

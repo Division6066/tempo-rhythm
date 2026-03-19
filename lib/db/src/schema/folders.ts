@@ -7,6 +7,8 @@ export const foldersTable = pgTable("folders", {
   name: text("name").notNull(),
   description: text("description"),
   parentFolderId: integer("parent_folder_id"),
+  icon: text("icon"),
+  sortOrder: integer("sort_order"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

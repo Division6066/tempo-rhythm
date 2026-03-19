@@ -23,6 +23,20 @@ export const get = query({
   },
 });
 
+export const listByFolder = query({
+  args: { folderId: v.id("folders") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_folderId", (q) => q.eq("folderId", args.folderId))
+      .collect();
+    return projects
+      .filter((p) => p.userId === userId)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  },
+});
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -30,6 +44,7 @@ export const create = mutation({
     folderId: v.optional(v.id("folders")),
     color: v.optional(v.string()),
     status: v.optional(v.string()),
+    sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -41,6 +56,7 @@ export const create = mutation({
       folderId: args.folderId,
       color: args.color,
       status: args.status ?? "active",
+      sortOrder: args.sortOrder,
       createdAt: now,
       updatedAt: now,
     });
@@ -54,6 +70,8 @@ export const update = mutation({
     description: v.optional(v.string()),
     color: v.optional(v.string()),
     status: v.optional(v.string()),
+    folderId: v.optional(v.id("folders")),
+    sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -68,6 +86,18 @@ export const update = mutation({
   },
 });
 
+export const reorder = mutation({
+  args: { projectIds: v.array(v.id("projects")) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    for (let i = 0; i < args.projectIds.length; i++) {
+      const project = await ctx.db.get(args.projectIds[i]);
+      if (!project || project.userId !== userId) continue;
+      await ctx.db.patch(args.projectIds[i], { sortOrder: i, updatedAt: Date.now() });
+    }
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("projects") },
   handler: async (ctx, args) => {
@@ -75,5 +105,17 @@ export const remove = mutation({
     const project = await ctx.db.get(args.id);
     if (!project || project.userId !== userId) throw new Error("Not found");
     await ctx.db.delete(args.id);
+  },
+});
+
+export const getTaskCount = query({
+  args: { projectId: v.id("projects") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_projectId", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    return tasks.filter((t) => t.userId === userId && t.status !== "done").length;
   },
 });

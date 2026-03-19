@@ -1763,6 +1763,265 @@ export const useDeleteFolder = <
 };
 
 /**
+ * @summary Get a single folder by ID
+ */
+export const getGetFolderUrl = (id: number) => {
+  return `/api/folders/${id}`;
+};
+
+export const getFolder = async (id: number, options?: RequestInit): Promise<Folder> => {
+  return customFetch<Folder>(getGetFolderUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFolderQueryKey = (id: number) => {
+  return [`/api/folders/${id}`] as const;
+};
+
+export const getGetFolderQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFolder>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetFolderQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getFolder>>> = ({ signal }) =>
+    getFolder(id, { signal, ...requestOptions });
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFolder>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export function useGetFolder<
+  TData = Awaited<ReturnType<typeof getFolder>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFolderQueryOptions(id, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Reorder folders
+ */
+export const getReorderFoldersUrl = () => {
+  return `/api/folders/reorder`;
+};
+
+export const reorderFolders = async (
+  body: { folderIds: number[] },
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getReorderFoldersUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(body),
+  });
+};
+
+export const useReorderFolders = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reorderFolders>>,
+    TError,
+    { data: { folderIds: number[] } },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reorderFolders>>,
+  TError,
+  { data: { folderIds: number[] } },
+  TContext
+> => {
+  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reorderFolders>>,
+    { data: { folderIds: number[] } }
+  > = (props) => {
+    const { data } = props ?? {};
+    return reorderFolders(data, requestOptions);
+  };
+  return useMutation({ mutationFn, ...mutationOptions });
+};
+
+/**
+ * @summary List projects by folder
+ */
+export const getListProjectsByFolderUrl = (folderId: number) => {
+  return `/api/folders/${folderId}/projects`;
+};
+
+export const listProjectsByFolder = async (
+  folderId: number,
+  options?: RequestInit,
+): Promise<Project[]> => {
+  return customFetch<Project[]>(getListProjectsByFolderUrl(folderId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListProjectsByFolderQueryKey = (folderId: number) => {
+  return [`/api/folders/${folderId}/projects`] as const;
+};
+
+export const getListProjectsByFolderQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProjectsByFolder>>,
+  TError = ErrorType<unknown>,
+>(
+  folderId: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listProjectsByFolder>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListProjectsByFolderQueryKey(folderId);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectsByFolder>>> = ({ signal }) =>
+    listProjectsByFolder(folderId, { signal, ...requestOptions });
+  return { queryKey, queryFn, enabled: !!folderId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProjectsByFolder>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export function useListProjectsByFolder<
+  TData = Awaited<ReturnType<typeof listProjectsByFolder>>,
+  TError = ErrorType<unknown>,
+>(
+  folderId: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listProjectsByFolder>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProjectsByFolderQueryOptions(folderId, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a single project by ID
+ */
+export const getGetProjectUrl = (id: number) => {
+  return `/api/projects/${id}`;
+};
+
+export const getProject = async (id: number, options?: RequestInit): Promise<Project> => {
+  return customFetch<Project>(getGetProjectUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProjectQueryKey = (id: number) => {
+  return [`/api/projects/${id}`] as const;
+};
+
+export const getGetProjectQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProject>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetProjectQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getProject>>> = ({ signal }) =>
+    getProject(id, { signal, ...requestOptions });
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProject>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export function useGetProject<
+  TData = Awaited<ReturnType<typeof getProject>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProjectQueryOptions(id, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Reorder projects
+ */
+export const getReorderProjectsUrl = () => {
+  return `/api/projects/reorder`;
+};
+
+export const reorderProjects = async (
+  body: { projectIds: number[] },
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getReorderProjectsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(body),
+  });
+};
+
+export const useReorderProjects = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reorderProjects>>,
+    TError,
+    { data: { projectIds: number[] } },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reorderProjects>>,
+  TError,
+  { data: { projectIds: number[] } },
+  TContext
+> => {
+  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reorderProjects>>,
+    { data: { projectIds: number[] } }
+  > = (props) => {
+    const { data } = props ?? {};
+    return reorderProjects(data, requestOptions);
+  };
+  return useMutation({ mutationFn, ...mutationOptions });
+};
+
+/**
  * @summary List all tags
  */
 export const getListTagsUrl = () => {

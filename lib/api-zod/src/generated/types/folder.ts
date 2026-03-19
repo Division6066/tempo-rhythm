@@ -11,5 +11,7 @@ export interface Folder {
   name: string;
   description?: string | null;
   parentFolderId?: number | null;
+  icon?: string | null;
+  sortOrder?: number | null;
   createdAt: Date;
 }

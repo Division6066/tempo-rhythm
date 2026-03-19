@@ -13,4 +13,5 @@ export interface CreateProjectBody {
   folderId?: number | null;
   color?: string | null;
   status?: CreateProjectBodyStatus;
+  sortOrder?: number | null;
 }
