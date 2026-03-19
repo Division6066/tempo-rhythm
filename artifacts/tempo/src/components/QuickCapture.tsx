@@ -8,10 +8,12 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { Sparkles, Eye, EyeOff, Mic, ListChecks, Inbox } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Markdown from "react-markdown";
+import { ExtractModal } from "./ExtractModal";
 
 export function QuickCapture({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const [content, setContent] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [extractModalOpen, setExtractModalOpen] = useState(false);
   const createTask = useCreateTask();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -134,24 +136,18 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean, onOpenChan
           )}
 
           <div className="flex items-center justify-between gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0} className="inline-flex">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="opacity-50 cursor-not-allowed pointer-events-none"
-                    tabIndex={-1}
-                    aria-disabled="true"
-                  >
-                    <ListChecks size={14} className="mr-1.5" />
-                    Extract Tasks with AI
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>AI features coming in Phase 11</TooltipContent>
-            </Tooltip>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onOpenChange(false);
+                setExtractModalOpen(true);
+              }}
+            >
+              <ListChecks size={14} className="mr-1.5" />
+              Extract Tasks with AI
+            </Button>
 
             <div className="flex gap-2">
               <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -175,6 +171,7 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean, onOpenChan
           </p>
         </div>
       </DialogContent>
+      <ExtractModal open={extractModalOpen} onOpenChange={setExtractModalOpen} />
     </Dialog>
   );
 }

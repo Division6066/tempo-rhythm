@@ -29,6 +29,8 @@ import FolderDetail from "@/pages/FolderDetail";
 import Tags from "@/pages/Tags";
 import Memories from "@/pages/Memories";
 import Search from "@/pages/Search";
+import Extract from "@/pages/Extract";
+import Preferences from "@/pages/Preferences";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import NotFound from "@/pages/not-found";
@@ -108,6 +110,12 @@ function Router() {
       </Route>
       <Route path="/search">
         <AppLayout><Search /></AppLayout>
+      </Route>
+      <Route path="/extract">
+        <AppLayout><Extract /></AppLayout>
+      </Route>
+      <Route path="/preferences">
+        <AppLayout><Preferences /></AppLayout>
       </Route>
       
       <Route component={NotFound} />

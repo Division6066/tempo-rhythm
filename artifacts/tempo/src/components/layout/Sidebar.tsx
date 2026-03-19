@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, Link } from "wouter";
 import {
   Home, Sun, Inbox, FileText, Calendar, Sparkles, FolderKanban,
-  FolderOpen, Tag, StickyNote, LayoutTemplate, Puzzle, Settings,
+  FolderOpen, Tag, StickyNote, LayoutTemplate, Puzzle, Settings, Settings2,
   Search, Plus, ChevronDown, ChevronRight, FolderPlus, MoreHorizontal,
   Pencil, Trash2, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
@@ -56,6 +56,8 @@ const SECONDARY_NAV = [
   { label: "Tags", icon: Tag, path: "/tags" },
   { label: "Period Notes", icon: StickyNote, path: "/period-notes" },
   { label: "Templates", icon: LayoutTemplate, path: "/templates" },
+  { label: "AI Extract", icon: Sparkles, path: "/extract" },
+  { label: "Preferences", icon: Settings2, path: "/preferences" },
   { label: "Plugins", icon: Puzzle, path: "/chat" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];

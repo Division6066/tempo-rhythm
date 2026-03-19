@@ -7,7 +7,7 @@ import CommandBar from "../CommandBar";
 import Sidebar from "./Sidebar";
 import { useGetPreferences } from "@workspace/api-client-react";
 
-const MORE_PATHS = ["/settings", "/projects", "/notes", "/chat", "/plan", "/period-notes", "/filters", "/templates", "/folders", "/tags", "/memories", "/focus"];
+const MORE_PATHS = ["/settings", "/projects", "/notes", "/chat", "/plan", "/period-notes", "/filters", "/templates", "/folders", "/tags", "/memories", "/focus", "/extract", "/preferences"];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
