@@ -38,6 +38,7 @@ import Signup from "@/pages/Signup";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/not-found";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -142,6 +143,7 @@ function App() {
                 </AuthGuard>
               </WouterRouter>
               <Toaster />
+              <PWAInstallPrompt />
             </TooltipProvider>
           </QueryClientProvider>
         </ConvexAuthWrapper>
