@@ -4,7 +4,10 @@ import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Brain, Eye, EyeOff } from "lucide-react";
+import { Loader2, Brain, Eye, EyeOff, FlaskConical } from "lucide-react";
+
+const TEST_EMAIL = "beta1@tempo.app";
+const TEST_PASSWORD = "beta1pass";
 
 export default function Login() {
   const { signIn } = useAuthActions();
@@ -15,19 +18,28 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function signInWith(emailVal: string, passwordVal: string) {
     setError("");
     setLoading(true);
-
     try {
-      await signIn("password", { email, password, flow: "signIn" });
+      await signIn("password", { email: emailVal, password: passwordVal, flow: "signIn" });
       setLocation("/");
     } catch (err: any) {
       setError(err?.message || "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await signInWith(email, password);
+  }
+
+  async function handleTestLogin() {
+    setEmail(TEST_EMAIL);
+    setPassword(TEST_PASSWORD);
+    await signInWith(TEST_EMAIL, TEST_PASSWORD);
   }
 
   return (
@@ -99,6 +111,18 @@ export default function Login() {
             )}
           </Button>
         </form>
+
+        <div className="border-t pt-4">
+          <button
+            type="button"
+            onClick={handleTestLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground py-2 px-3 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            <FlaskConical className="h-3.5 w-3.5" />
+            Use test account (beta1@tempo.app)
+          </button>
+        </div>
 
         <p className="text-center text-sm text-muted-foreground">
           Don't have an account?{" "}
