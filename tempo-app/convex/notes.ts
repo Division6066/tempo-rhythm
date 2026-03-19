@@ -146,3 +146,37 @@ export const remove = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+export const pinNote = mutation({
+  args: { id: v.id("notes"), isPinned: v.boolean() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const note = await ctx.db.get(args.id);
+    if (!note || note.userId !== userId) throw new Error("Not found");
+    await ctx.db.patch(args.id, { isPinned: args.isPinned, updatedAt: Date.now() });
+  },
+});
+
+export const getPinnedNotes = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    const pinned = await ctx.db
+      .query("notes")
+      .withIndex("by_isPinned", (q) => q.eq("isPinned", true))
+      .collect();
+    return pinned.filter((n) => n.userId === userId);
+  },
+});
+
+export const getNotesByProject = query({
+  args: { projectId: v.id("projects") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const notes = await ctx.db
+      .query("notes")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    return notes.filter((n) => n.userId === userId);
+  },
+});

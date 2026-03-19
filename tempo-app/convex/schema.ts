@@ -35,13 +35,16 @@ export default defineSchema({
     recurrenceRule: v.optional(v.string()),
     recurrenceEndDate: v.optional(v.string()),
     completedAt: v.optional(v.number()),
+    sortOrder: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_status", ["status"])
     .index("by_priority", ["priority"])
     .index("by_userId", ["userId"])
-    .index("by_scheduledDate", ["scheduledDate"]),
+    .index("by_scheduledDate", ["scheduledDate"])
+    .index("by_user_date", ["userId", "scheduledDate"])
+    .index("by_user_status", ["userId", "status"]),
 
   notes: defineTable({
     userId: v.optional(v.string()),
@@ -62,7 +65,8 @@ export default defineSchema({
     .index("by_isPinned", ["isPinned"])
     .index("by_userId", ["userId"])
     .index("by_publishSlug", ["publishSlug"])
-    .index("by_periodType", ["periodType"]),
+    .index("by_periodType", ["periodType"])
+    .index("by_project", ["projectId"]),
 
   projects: defineTable({
     userId: v.optional(v.string()),
@@ -101,11 +105,15 @@ export default defineSchema({
     energyLevel: v.optional(v.number()),
     aiGenerated: v.boolean(),
     acceptedAt: v.optional(v.number()),
+    topThree: v.optional(v.array(v.string())),
+    reflectionNote: v.optional(v.string()),
+    status: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_date", ["date"])
-    .index("by_userId", ["userId"]),
+    .index("by_userId", ["userId"])
+    .index("by_user_date", ["userId", "date"]),
 
   preferences: defineTable({
     userId: v.optional(v.string()),

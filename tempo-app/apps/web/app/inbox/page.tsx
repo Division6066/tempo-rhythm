@@ -13,8 +13,16 @@ import { Inbox as InboxIcon, Sparkles, CornerDownLeft, Trash2, Check, X, Edit3 }
 
 type StagedTask = { title: string; priority: string; estimatedMinutes?: number; tags?: string[] };
 
+function getTodayDate(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function InboxPage() {
-  const tasks = useQuery(api.tasks.list, { status: "inbox" });
+  const tasks = useQuery(api.tasks.getInboxTasks, {});
   const stagedSuggestions = useQuery(api.staging.listPending, { type: "extractedTasks" });
   const createTask = useMutation(api.tasks.create);
   const updateTask = useMutation(api.tasks.update);
@@ -177,7 +185,7 @@ export default function InboxPage() {
               <div key={task._id} className="relative group">
                 <TaskCard task={task} />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-card/80 backdrop-blur-sm p-1 rounded-lg">
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/20" onClick={() => updateTask({ id: task._id, status: "today" })} title="Move to Today">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/20" onClick={() => updateTask({ id: task._id, status: "scheduled", scheduledDate: getTodayDate() })} title="Move to Today">
                     <CornerDownLeft size={16} />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/20" onClick={() => removeTask({ id: task._id })} title="Delete">

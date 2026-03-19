@@ -21,8 +21,11 @@ export default function TaskCard({ task }: { task: TaskType }) {
   const toggleStatus = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const newStatus = task.status === "done" ? "today" : "done";
-    await updateTask({ id: task._id, status: newStatus });
+    if (task.status === "done") {
+      await updateTask({ id: task._id, status: "scheduled" });
+    } else {
+      await updateTask({ id: task._id, status: "done" });
+    }
   };
 
   const priorityColors: Record<string, string> = {

@@ -74,3 +74,65 @@ export const update = mutation({
     await ctx.db.patch(id, filtered);
   },
 });
+
+export const getDailyPlan = query({
+  args: { date: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const plan = await ctx.db
+      .query("dailyPlans")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", userId).eq("date", args.date)
+      )
+      .first();
+    return plan ?? null;
+  },
+});
+
+export const getOrCreateDailyPlan = mutation({
+  args: { date: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const existing = await ctx.db
+      .query("dailyPlans")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", userId).eq("date", args.date)
+      )
+      .first();
+    if (existing) return existing;
+    const now = Date.now();
+    const id = await ctx.db.insert("dailyPlans", {
+      userId,
+      date: args.date,
+      blocks: [],
+      aiGenerated: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return await ctx.db.get(id);
+  },
+});
+
+export const updateDailyPlan = mutation({
+  args: {
+    id: v.id("dailyPlans"),
+    blocks: v.optional(v.any()),
+    mood: v.optional(v.string()),
+    energyLevel: v.optional(v.number()),
+    acceptedAt: v.optional(v.number()),
+    topThree: v.optional(v.array(v.string())),
+    reflectionNote: v.optional(v.string()),
+    status: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const plan = await ctx.db.get(args.id);
+    if (!plan || plan.userId !== userId) throw new Error("Not found");
+    const { id, ...updates } = args;
+    const filtered: Record<string, unknown> = { updatedAt: Date.now() };
+    for (const [k, val] of Object.entries(updates)) {
+      if (val !== undefined) filtered[k] = val;
+    }
+    await ctx.db.patch(id, filtered);
+  },
+});

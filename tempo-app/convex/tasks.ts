@@ -172,6 +172,70 @@ export const remove = mutation({
   },
 });
 
+export const getTasksByDate = query({
+  args: { date: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", userId).eq("scheduledDate", args.date)
+      )
+      .collect();
+    return tasks.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  },
+});
+
+export const getInboxTasks = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("tasks")
+      .withIndex("by_user_status", (q) =>
+        q.eq("userId", userId).eq("status", "inbox")
+      )
+      .collect();
+  },
+});
+
+export const getTasksByStatus = query({
+  args: { status: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("tasks")
+      .withIndex("by_user_status", (q) =>
+        q.eq("userId", userId).eq("status", args.status)
+      )
+      .collect();
+  },
+});
+
+export const getAllTasks = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    return await ctx.db
+      .query("tasks")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+  },
+});
+
+export const reorderTasks = mutation({
+  args: { taskIds: v.array(v.id("tasks")) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const now = Date.now();
+    for (let i = 0; i < args.taskIds.length; i++) {
+      const task = await ctx.db.get(args.taskIds[i]);
+      if (!task || task.userId !== userId) continue;
+      await ctx.db.patch(args.taskIds[i], { sortOrder: i, updatedAt: now });
+    }
+  },
+});
+
 function getNextOccurrence(currentDate: string, rule: string): string | null {
   const d = new Date(currentDate + "T00:00:00");
   switch (rule) {

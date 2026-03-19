@@ -1,0 +1,22 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/transcribe/route": "/api/transcribe",
+  "/calendar/page": "/calendar",
+  "/chat/page": "/chat",
+  "/filters/page": "/filters",
+  "/login/page": "/login",
+  "/notes/[id]/page": "/notes/[id]",
+  "/notes/page": "/notes",
+  "/inbox/page": "/inbox",
+  "/notes/period/[type]/page": "/notes/period/[type]",
+  "/onboarding/page": "/onboarding",
+  "/plan/page": "/plan",
+  "/page": "/",
+  "/projects/page": "/projects",
+  "/published/[slug]/page": "/published/[slug]",
+  "/settings/page": "/settings",
+  "/signup/page": "/signup",
+  "/templates/page": "/templates",
+  "/tasks/[id]/page": "/tasks/[id]",
+  "/today/page": "/today"
+}
