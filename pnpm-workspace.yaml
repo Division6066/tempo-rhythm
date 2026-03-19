@@ -3,6 +3,8 @@ packages:
   - lib/*
   - lib/integrations/*
   - scripts
+  - tempo-app/apps/*
+  - tempo-app/packages/*
 
 autoInstallPeers: false
 
