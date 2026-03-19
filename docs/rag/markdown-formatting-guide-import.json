@@ -1,0 +1,86 @@
+{
+  "name": "Markdown Formatting Guide",
+  "description": "ADHD-friendly markdown formatting rules and patterns for TEMPO AI assistant. Covers headings, lists, checklists, tables, code blocks, and structured templates for daily plans, brain dumps, and task breakdowns.",
+  "memories": [
+    {
+      "tier": "hot",
+      "content": "When formatting notes or plans, use markdown headings (# H1, ## H2, ### H3) to create scannable structure. Never skip heading levels. The user should be able to understand the whole document from headings alone."
+    },
+    {
+      "tier": "hot",
+      "content": "For daily task lists, use markdown checklists: `- [ ]` for open items and `- [x]` for completed items. Keep each checklist to 5 items or fewer to avoid ADHD overwhelm. Break longer lists into time-blocked sections."
+    },
+    {
+      "tier": "hot",
+      "content": "When creating a daily plan for a user with ADHD, always start with a Top 3 priorities section using a numbered list. Format: `1. **Task name** — Why it matters: [reason]`. No more than 3 top priorities."
+    },
+    {
+      "tier": "hot",
+      "content": "Use a time-blocked table for daily schedules. Format the table with columns: Time | Block | Task | Notes. Add estimated durations to every task. Example: `| 9:00 AM | Deep work | Write report | 90 min |`"
+    },
+    {
+      "tier": "hot",
+      "content": "For brain dumps, first write everything in an unordered list without judging. Then process into categories: Urgent (today), This week, Someday. Use `---` horizontal rules to separate the brain dump from the processed version."
+    },
+    {
+      "tier": "hot",
+      "content": "When breaking down an overwhelming task, create sub-tasks of 15 minutes or less. Format: `- [ ] [Step name] — X min`. Include sections for: Why it matters, Due date, Total estimate, Steps, Possible blockers, and Definition of done."
+    },
+    {
+      "tier": "hot",
+      "content": "Use **bold** for critical information and key terms. Use *italic* for emphasis or titles. Use ~~strikethrough~~ for crossed-off items. Avoid bold italic except for truly urgent highlights — overuse reduces impact."
+    },
+    {
+      "tier": "hot",
+      "content": "Separate major sections with `---` horizontal rules. Use these between: brain dump and structured plan, morning and afternoon schedule blocks, different project areas, and before reflection sections."
+    },
+    {
+      "tier": "hot",
+      "content": "For ADHD-friendly note structure, use blockquotes for callouts. Patterns: `> **Focus:** One task only for the next 25 minutes.` or `> **Brain dump:** Write everything, judge nothing. Organise after.`"
+    },
+    {
+      "tier": "hot",
+      "content": "When creating a weekly review template, include these reflection prompts as H3 sections: What went well?, What was harder than expected?, One thing to do differently next week, Energy patterns I noticed (best time for deep work, best time for admin, what drained me most)."
+    },
+    {
+      "tier": "hot",
+      "content": "For Pomodoro session logs, use a checklist format with 25-minute blocks. Format: `- [x] Pomodoro 1 — [what I worked on]`. Start with a single goal statement: `**Goal:** [what I will finish in this session]`"
+    },
+    {
+      "tier": "hot",
+      "content": "Use nested lists for hierarchical task breakdowns, with a maximum of 3 levels deep. Indent with 2 spaces per level. Top level: project/area, second level: task, third level: subtask. Never go deeper — it creates visual overload."
+    },
+    {
+      "tier": "hot",
+      "content": "When generating a habit tracker or daily schedule table, include an Energy column (High/Medium/Low) alongside the task. ADHD users should front-load high-energy tasks in the morning and schedule low-energy tasks (email, admin) for afternoon dips."
+    },
+    {
+      "tier": "hot",
+      "content": "7 ADHD formatting principles: (1) Chunk it — max 5-7 items per section. (2) Prioritise visually with bold and numbered lists. (3) Time-box everything with minute estimates. (4) Separate capture from processing. (5) One section in view at a time. (6) Use whitespace and `---` dividers. (7) Use `- [ ]` checklists for explicit done states."
+    },
+    {
+      "tier": "hot",
+      "content": "For ordered lists, use numbered format (1. 2. 3.) for steps, ranked priorities, or sequential processes. Use unordered lists (- or *) for collections with no fixed order. Never mix the two within the same semantic group."
+    },
+    {
+      "tier": "hot",
+      "content": "Use fenced code blocks with triple backticks for multi-line code or command sequences. Add a language tag after the opening backticks for syntax highlighting (e.g. ```python, ```bash, ```json). Use inline backticks for single values, commands, or variable names."
+    },
+    {
+      "tier": "hot",
+      "content": "When creating a task breakdown for a large project, always include: total estimated time, individual step times, a 'Definition of done' section (explicit completion criteria), and a 'Possible blockers' section. This prevents ADHD task paralysis."
+    },
+    {
+      "tier": "hot",
+      "content": "For a morning planning note template, structure it as: (1) ## Today's Top 3 with numbered list, (2) ## Schedule with time-blocked table, (3) ## Brain space (anything on your mind), (4) ## End-of-day review (fill in at end of day). Keep it on one screen."
+    },
+    {
+      "tier": "hot",
+      "content": "Use markdown tables for comparing options or decision-making. Format the header row with | Option | Pro | Con | Fit |. Bold the winning option after the table. Add a one-line decision rationale below the table."
+    },
+    {
+      "tier": "hot",
+      "content": "When outputting a daily plan, end with a ## Evening wind-down section with 3-5 checkboxes: `- [ ] Review what was completed`, `- [ ] Note 1 win from today`, `- [ ] Set tomorrow's #1 task`, `- [ ] Close work apps / notifications`. This builds closure routines for ADHD."
+    }
+  ]
+}
