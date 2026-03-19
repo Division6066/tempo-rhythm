@@ -18,7 +18,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { VoiceNote } from "@/components/VoiceNote";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
@@ -57,13 +56,29 @@ export default function NoteEditor() {
   const [isPinned, setIsPinned] = useState(false);
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [linkSearch, setLinkSearch] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const isSavingNew = useRef(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitialized = useRef(false);
+  const titleRef = useRef(title);
+  const contentRef = useRef(content);
+  const isPinnedRef = useRef(isPinned);
+  const debouncedSaveRef = useRef<() => void>(() => {});
+  titleRef.current = title;
+  contentRef.current = content;
+  isPinnedRef.current = isPinned;
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (note && !isNew) {
       setTitle(note.title);
       setContent(note.content);
       setIsPinned(note.isPinned);
+      hasInitialized.current = true;
     }
   }, [note, isNew]);
 
@@ -94,7 +109,6 @@ export default function NoteEditor() {
               data: { sourceNoteId: currentNoteId, targetNoteId: targetNote.id },
             });
           } catch {
-            // link may already exist
           }
         }
       }
@@ -105,7 +119,6 @@ export default function NoteEditor() {
         try {
           await deleteNoteLink.mutateAsync({ id: link.id });
         } catch {
-          // ignore
         }
       }
     }
@@ -113,18 +126,23 @@ export default function NoteEditor() {
     queryClient.invalidateQueries({ queryKey: getListNoteLinksQueryKey() });
   }, [allNotes, noteLinks, createNoteLink, deleteNoteLink, queryClient]);
 
-  const handleSave = async () => {
-    if (!title && !content) return;
+  const handleSave = useCallback(async () => {
+    const currentTitle = titleRef.current;
+    const currentContent = contentRef.current;
+    const currentIsPinned = isPinnedRef.current;
+    if (!currentTitle && !currentContent) return;
     if (isNew && isSavingNew.current) return;
+    setSaveStatus("saving");
     try {
       if (isNew) {
         isSavingNew.current = true;
         try {
           const res = await createNote.mutateAsync({
-            data: { title: title || "Untitled", content, isPinned }
+            data: { title: currentTitle || "Untitled", content: currentContent, isPinned: currentIsPinned }
           });
           queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
-          await syncWikiLinks(res.id, content);
+          await syncWikiLinks(res.id, currentContent);
+          setSaveStatus("saved");
           setLocation(`/notes/${res.id}`);
         } finally {
           isSavingNew.current = false;
@@ -132,16 +150,109 @@ export default function NoteEditor() {
       } else {
         await updateNote.mutateAsync({
           id: noteId,
-          data: { title, content, isPinned }
+          data: { title: currentTitle, content: currentContent, isPinned: currentIsPinned }
         });
         queryClient.invalidateQueries({ queryKey: getGetNoteQueryKey(noteId) });
         queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
-        await syncWikiLinks(noteId, content);
+        await syncWikiLinks(noteId, currentContent);
+        setSaveStatus("saved");
       }
     } catch (e) {
+      setSaveStatus("unsaved");
       toast({ variant: "destructive", title: "Failed to save note" });
     }
-  };
+  }, [isNew, noteId, createNote, updateNote, queryClient, syncWikiLinks, setLocation, toast]);
+
+  const debouncedSave = useCallback(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    setSaveStatus("unsaved");
+    debounceTimer.current = setTimeout(() => {
+      handleSave();
+    }, 1500);
+  }, [handleSave]);
+  debouncedSaveRef.current = debouncedSave;
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        const t = titleRef.current;
+        const c = contentRef.current;
+        if (t || c) {
+          handleSave();
+        }
+      }
+    };
+  }, [handleSave]);
+
+  const handleContentChange = useCallback((newContent: string) => {
+    setContent(newContent);
+    if (hasInitialized.current || isNew) {
+      debouncedSave();
+    }
+  }, [debouncedSave, isNew]);
+
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setTitle(newTitle);
+    if (hasInitialized.current || isNew) {
+      debouncedSave();
+    }
+  }, [debouncedSave, isNew]);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        setIsTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append("file", audioBlob, "recording.webm");
+          const baseUrl = import.meta.env.BASE_URL || "/";
+          const res = await fetch(`${baseUrl}api/transcribe`, {
+            method: "POST",
+            body: formData,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.text || "";
+            setContent((prev) => {
+              const newContent = prev ? prev + "\n" + text : text;
+              contentRef.current = newContent;
+              return newContent;
+            });
+            debouncedSaveRef.current();
+          }
+        } catch {
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch {
+      console.error("Microphone access denied");
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }, [isRecording]);
 
   const handleDelete = async () => {
     if (isNew) {
@@ -203,10 +314,6 @@ export default function NoteEditor() {
       toast({ variant: "destructive", title: "Failed to remove link" });
     }
   };
-
-  const insertWikiLink = useCallback((noteTitle: string) => {
-    setContent((prev) => prev + `[[${noteTitle}]]`);
-  }, []);
 
   const renderWikiLinks = useCallback((text: string): string => {
     return text.replace(/\[\[([^\]]+)\]\]/g, (_, linkTitle: string) => {
@@ -283,7 +390,6 @@ export default function NoteEditor() {
               </Button>
             </>
           )}
-          <VoiceNote onTranscription={(text) => setContent((prev) => prev ? prev + "\n" + text : text)} />
           <Button variant="ghost" size="icon" onClick={togglePin} className={isPinned ? "text-primary" : "text-muted-foreground"}>
             <Pin size={20} className={isPinned ? "fill-current" : ""} />
           </Button>
@@ -337,8 +443,7 @@ export default function NoteEditor() {
 
       <Input 
         value={title}
-        onChange={e => setTitle(e.target.value)}
-        onBlur={handleSave}
+        onChange={e => handleTitleChange(e.target.value)}
         placeholder="Note Title"
         className="text-2xl font-display font-bold border-none bg-transparent px-0 focus-visible:ring-0"
       />
@@ -366,18 +471,19 @@ export default function NoteEditor() {
         </div>
       )}
 
-      <div
-        className="flex-1"
-        onBlur={(e) => {
-          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-          handleSave();
-        }}
-      >
+      <div className="flex-1 min-h-0">
         <MarkdownEditor
           value={content}
-          onChange={setContent}
+          onChange={handleContentChange}
           height={500}
           preprocessValue={renderWikiLinks}
+          saveStatus={saveStatus}
+          voiceProps={{
+            isRecording,
+            isTranscribing,
+            onStartRecording: startRecording,
+            onStopRecording: stopRecording,
+          }}
         />
       </div>
 
