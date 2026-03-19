@@ -1,0 +1,55 @@
+
+## ❌ NOT DONE (Attempted but blocked — needs your input or prerequisites)
+
+**Phase 2: Set Environment Variables** — Not completed.
+I navigated to the Environment Variables page and was ready to add the three variables, but I asked you for the **JWT_PRIVATE_KEY** and **JWKS** values (which come from running `npx @convex-dev/auth` locally). You never provided them, so nothing was saved. The **SITE_URL** value (`https://tempo-web.vercel.app`) was known but I didn't add it alone since all three should be set together.
+
+**What's needed from you:** Run `npx @convex-dev/auth` in your Replit environment and paste me the JWT_PRIVATE_KEY and JWKS values. Then I can add all three variables immediately.
+
+**Phase 3: Verify Auth Tables After First Deploy** — Checked, but tables don't exist yet.
+I went to the Data tab and confirmed **zero tables** exist and **zero functions** are deployed. This is expected because no code has been pushed to the deployment yet. I verified this twice.
+
+**What's needed:** Code needs to be deployed first (see "What to build in Replit" below).
+
+**Phase 4: Test Auth Flow** — Failed / blocked.
+I navigated to `https://tempo-web.vercel.app` and found it's **not a working web app** — the root URL returns `{"message":"hello"}` (a bare JSON response), `/signup` and `/login` return 404 errors, and `localhost:3000` isn't running. There's no frontend UI to test signup against.
+
+**What's needed:** The actual web app needs to be built and deployed (see below).
+
+**Phase 5: Add AI API Key** — Not done (acknowledged as a future step). No action needed yet.
+
+---
+
+## 🔨 WHAT YOU NEED TO BUILD IN REPLIT
+
+Since you've connected Replit, here's what needs to happen there before I can continue with the remaining phases:
+
+**1. Build the Convex backend (schema + functions)**
+Your `schema.ts` needs to define all the tables: `users`, `sessions`, `authAccounts`, `authSessions`, `authVerificationCodes`, `authRateLimits`, `userPreferences`, `tasks`, `notes`, `projects`, `folders`, `dailyPlans`, `aiInteractions`, `templates`. You also need your Convex functions (queries, mutations, actions).
+
+**2. Set up Convex Auth**
+Run `npx @convex-dev/auth` in Replit to generate the JWT_PRIVATE_KEY and JWKS values. Give me those values and I'll add them (plus SITE_URL) to the dashboard.
+
+**3. Deploy the Convex backend**
+Run `npx convex dev` or `npx convex deploy` pointed at `ceaseless-dog-617` to push your schema and functions. This is what creates the tables and makes functions available.
+
+**4. Build the web frontend**
+The Next.js (or whatever framework) web app needs to be built with a login/signup page, Convex client connection, and the main app UI. Right now `tempo-web.vercel.app` is essentially a stub returning JSON.
+
+**5. Deploy the frontend to Vercel**
+Once the web app is built, deploy it to Vercel with the `NEXT_PUBLIC_CONVEX_URL` env var pointing to `https://ceaseless-dog-617.eu-west-1.convex.cloud`.
+
+---
+
+## Summary
+
+| Phase | Status | Blocker |
+|---|---|---|
+| Phase 1: Verify Deployment | ✅ Complete | — |
+| Phase 2: Environment Variables | ❌ Waiting | Need JWT_PRIVATE_KEY & JWKS values from you |
+| Phase 3: Verify Auth Tables | ❌ Blocked | Need Convex code deployed from Replit first |
+| Phase 4: Test Auth Flow | ❌ Blocked | Need web app frontend built & deployed |
+| Phase 5: AI API Key | ⏸️ Later | Not needed yet |
+
+Once you have the Convex backend code and frontend ready in Replit, let me know and I can immediately handle Phase 2 (adding env vars) and then verify Phases 3 and 4!
+

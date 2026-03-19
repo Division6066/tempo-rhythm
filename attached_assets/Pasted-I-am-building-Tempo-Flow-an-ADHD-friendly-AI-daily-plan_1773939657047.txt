@@ -1,0 +1,165 @@
+I am building Tempo Flow, an ADHD-friendly AI daily planner as a Next.js 16 web app 
+on Replit. This is Stage 1: Scaffold + Auth + Database Connection.
+
+CRITICAL CONSTRAINTS:
+- Next.js 16 with App Router
+- Tailwind CSS pinned to 3.3.2 (NOT latest)
+- Convex deployment: ceaseless-dog-617 (eu-west-1)
+- Auth: @convex-dev/auth with Password provider
+- Complete setup in ONE pass (Replit Agent has zero context from prior stages)
+
+TASKS:
+
+1. CREATE NEXT.JS 16 APP
+   - Use: npx create-next-app@16 tempo-flow --typescript --tailwind --eslint --app
+   - Choose: App Router, TypeScript, Tailwind, ESLint
+   - Install: convex @convex-dev/auth @auth/core
+
+2. PIN TAILWIND TO 3.3.2
+   - Edit package.json: change "tailwindcss": "3.3.2" (exact version)
+   - Run: npm install
+
+3. CREATE CONVEX SCHEMA (convex/schema.ts)
+   Define tables with full schema below. Use 'v' from convex/server for validators:
+```typescript
+   import { v } from "convex/values";
+   import { defineSchema, defineTable } from "convex/schema";
+   import { authTables } from "@convex-dev/auth/server";
+
+   export default defineSchema({
+     ...authTables,
+     
+     userPreferences: defineTable({
+       userId: v.id("users"),
+       wakeTime: v.optional(v.string()), // "06:00"
+       sleepTime: v.optional(v.string()), // "23:00"
+       workStyle: v.optional(v.string()), // "deep-work" | "context-switch" | "mixed"
+       planningStyle: v.optional(v.string()), // "time-blocking" | "priority-based" | "time-boxing"
+       chunkDuration: v.optional(v.number()), // minutes, e.g. 25 for Pomodoro
+       travelBuffer: v.optional(v.number()), // minutes between tasks
+       overwhelmThreshold: v.optional(v.number()), // 1-10 scale
+       energyPattern: v.optional(v.string()), // "morning-person" | "night-owl" | "bimodal"
+       activationStyle: v.optional(v.string()), // "visual" | "auditory" | "kinesthetic"
+       learningStyle: v.optional(v.string()), // "visual" | "auditory" | "reading" | "kinesthetic"
+       calmLevel: v.optional(v.number()), // 1-10 scale
+       onboardingComplete: v.boolean(),
+       updatedAt: v.number(),
+     }).index("by_user", ["userId"]),
+
+     tasks: defineTable({
+       userId: v.id("users"),
+       title: v.string(),
+       description: v.optional(v.string()),
+       status: v.union(
+         v.literal("inbox"),
+         v.literal("todo"),
+         v.literal("in_progress"),
+         v.literal("done"),
+         v.literal("cancelled")
+       ),
+       priority: v.optional(v.union(v.literal("high"), v.literal("medium"), v.literal("low"))),
+       energyLevel: v.optional(v.union(v.literal("high"), v.literal("medium"), v.literal("low"))),
+       estimatedMinutes: v.optional(v.number()),
+       projectId: v.optional(v.id("projects")),
+       folderId: v.optional(v.id("folders")),
+       parentTaskId: v.optional(v.id("tasks")),
+       dueDate: v.optional(v.string()), // "YYYY-MM-DD"
+       scheduledDate: v.optional(v.string()), // "YYYY-MM-DD" for Today View
+       sortOrder: v.optional(v.number()),
+       tags: v.optional(v.array(v.string())),
+       aiGenerated: v.optional(v.boolean()),
+       aiAccepted: v.optional(v.boolean()),
+       completedAt: v.optional(v.number()),
+       createdAt: v.number(),
+       updatedAt: v.number(),
+     }).index("by_user", ["userId"])
+       .index("by_user_status", ["userId", "status"])
+       .index("by_user_date", ["userId", "scheduledDate"])
+       .index("by_project", ["projectId"])
+       .index("by_parent", ["parentTaskId"]),
+
+     notes: defineTable({
+       userId: v.id("users"),
+       title: v.string(),
+       content: v.optional(v.string()), // Markdown
+       projectId: v.optional(v.id("projects")),
+       folderId: v.optional(v.id("folders")),
+       tags: v.optional(v.array(v.string())),
+       isPinned: v.optional(v.boolean()),
+       createdAt: v.number(),
+       updatedAt: v.number(),
+     }).index("by_user", ["userId"])
+       .index("by_project", ["projectId"]),
+
+     projects: defineTable({
+       userId: v.id("users"),
+       name: v.string(),
+       description: v.optional(v.string()),
+       folderId: v.optional(v.id("folders")),
+       color: v.optional(v.string()), // hex or tailwind color name
+       status: v.union(
+         v.literal("active"),
+         v.literal("paused"),
+         v.literal("completed"),
+         v.literal("archived")
+       ),
+       sortOrder: v.optional(v.number()),
+       createdAt: v.number(),
+       updatedAt: v.number(),
+     }).index("by_user", ["userId"])
+       .index("by_folder", ["folderId"]),
+
+     folders: defineTable({
+       userId: v.id("users"),
+       name: v.string(),
+       icon: v.optional(v.string()), // emoji or icon name
+       sortOrder: v.optional(v.number()),
+       createdAt: v.number(),
+     }).index("by_user", ["userId"]),
+
+     dailyPlans: defineTable({
+       userId: v.id("users"),
+       date: v.string(), // "YYYY-MM-DD"
+       status: v.union(v.literal("draft"), v.literal("active"), v.literal("reviewed"), v.literal("completed")),
+       topThree: v.optional(v.array(v.id("tasks"))),
+       templateId: v.optional(v.id("templates")),
+       templateBlocks: v.optional(v.array(v.object({ id: v.string(), title: v.string() }))),
+       aiSuggestionRaw: v.optional(v.string()), // Raw AI output before review
+       reflectionNote: v.optional(v.string()),
+       createdAt: v.number(),
+       updatedAt: v.number(),
+     }).index("by_user_date", ["userId", "date"]),
+
+     aiInteractions: defineTable({
+       userId: v.id("users"),
+       type: v.string(), // "extract-tasks" | "prioritize" | "daily-plan"
+       inputText: v.string(),
+       outputJson: v.optional(v.string()),
+       model: v.string(), // "qwen-3.5" | "gpt-4"
+       accepted: v.optional(v.boolean()),
+       createdAt: v.number(),
+     }).index("by_user", ["userId"]),
+
+     templates: defineTable({
+       name: v.string(),
+       description: v.optional(v.string()),
+       category: v.optional(v.string()),
+       blocks: v.optional(v.array(v.object({ title: v.string(), description: v.optional(v.string()) }))),
+       isDefault: v.optional(v.boolean()),
+       createdAt: v.number(),
+     }),
+   });
+```
+
+4. CREATE CONVEX AUTH (convex/auth.ts)
+```typescript
+   import { Password } from "@convex-dev/auth/providers";
+   import { defineAuth } from "@convex-dev/auth/server";
+
+   export const { auth, signout } = defineAuth({
+     providers: [Password],
+   });
+```
+
+5. SET UP ENV VARS
+   Create .env.local:

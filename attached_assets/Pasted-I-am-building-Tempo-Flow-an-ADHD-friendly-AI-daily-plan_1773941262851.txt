@@ -1,0 +1,432 @@
+I am building Tempo Flow, an ADHD-friendly AI daily planner. This is Stage 2: 
+Task System + Daily Notes + Quick Capture.
+
+CONTEXT: Stage 1 (auth + database) is complete. Schema is in convex/schema.ts 
+with tasks, notes, dailyPlans, and all supporting tables.
+
+TASKS:
+
+1. CREATE TASK MUTATIONS (convex/tasks.ts)
+```typescript
+   import { mutation, query } from "./_generated/server";
+   import { v } from "convex/values";
+   import { getAuthUserId } from "@convex-dev/auth/server";
+
+   export const createTask = mutation({
+     args: {
+       title: v.string(),
+       description: v.optional(v.string()),
+       status: v.optional(v.union(v.literal("inbox"), v.literal("todo"), v.literal("in_progress"), v.literal("done"), v.literal("cancelled"))),
+       priority: v.optional(v.union(v.literal("high"), v.literal("medium"), v.literal("low"))),
+       energyLevel: v.optional(v.union(v.literal("high"), v.literal("medium"), v.literal("low"))),
+       estimatedMinutes: v.optional(v.number()),
+       projectId: v.optional(v.id("projects")),
+       dueDate: v.optional(v.string()),
+       scheduledDate: v.optional(v.string()),
+       tags: v.optional(v.array(v.string())),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       return await ctx.db.insert("tasks", {
+         userId,
+         title: args.title,
+         description: args.description,
+         status: args.status || "inbox",
+         priority: args.priority,
+         energyLevel: args.energyLevel,
+         estimatedMinutes: args.estimatedMinutes,
+         projectId: args.projectId,
+         dueDate: args.dueDate,
+         scheduledDate: args.scheduledDate,
+         tags: args.tags || [],
+         createdAt: Date.now(),
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const updateTask = mutation({
+     args: {
+       taskId: v.id("tasks"),
+       title: v.optional(v.string()),
+       status: v.optional(v.string()),
+       priority: v.optional(v.string()),
+       scheduledDate: v.optional(v.string()),
+       completedAt: v.optional(v.number()),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const task = await ctx.db.get(args.taskId);
+       if (task?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.patch(args.taskId, {
+         title: args.title ?? task.title,
+         status: args.status ?? task.status,
+         priority: args.priority ?? task.priority,
+         scheduledDate: args.scheduledDate ?? task.scheduledDate,
+         completedAt: args.completedAt,
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const completeTask = mutation({
+     args: {
+       taskId: v.id("tasks"),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const task = await ctx.db.get(args.taskId);
+       if (task?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.patch(args.taskId, {
+         status: "done",
+         completedAt: Date.now(),
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const deleteTask = mutation({
+     args: {
+       taskId: v.id("tasks"),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const task = await ctx.db.get(args.taskId);
+       if (task?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.delete(args.taskId);
+     },
+   });
+
+   export const reorderTasks = mutation({
+     args: {
+       taskIds: v.array(v.id("tasks")),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       for (let i = 0; i < args.taskIds.length; i++) {
+         const task = await ctx.db.get(args.taskIds[i]);
+         if (task?.userId !== userId) throw new Error("Unauthorized");
+         await ctx.db.patch(args.taskIds[i], { sortOrder: i });
+       }
+     },
+   });
+```
+
+2. CREATE TASK QUERIES (convex/tasks.ts, append to file)
+```typescript
+   export const getTasksByDate = query({
+     args: {
+       date: v.string(), // "YYYY-MM-DD"
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("tasks")
+         .withIndex("by_user_date", (q) => q.eq("userId", userId).eq("scheduledDate", args.date))
+         .order("asc")
+         .collect();
+     },
+   });
+
+   export const getInboxTasks = query({
+     handler: async (ctx) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("tasks")
+         .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "inbox"))
+         .order("asc")
+         .collect();
+     },
+   });
+
+   export const getTasksByStatus = query({
+     args: {
+       status: v.string(),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("tasks")
+         .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", args.status))
+         .order("asc")
+         .collect();
+     },
+   });
+
+   export const getAllTasks = query({
+     handler: async (ctx) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("tasks")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .order("desc")
+         .collect();
+     },
+   });
+```
+
+3. CREATE NOTES MUTATIONS (convex/notes.ts)
+```typescript
+   import { mutation, query } from "./_generated/server";
+   import { v } from "convex/values";
+   import { getAuthUserId } from "@convex-dev/auth/server";
+
+   export const createNote = mutation({
+     args: {
+       title: v.string(),
+       content: v.optional(v.string()),
+       projectId: v.optional(v.id("projects")),
+       tags: v.optional(v.array(v.string())),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       return await ctx.db.insert("notes", {
+         userId,
+         title: args.title,
+         content: args.content || "",
+         projectId: args.projectId,
+         tags: args.tags || [],
+         isPinned: false,
+         createdAt: Date.now(),
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const updateNote = mutation({
+     args: {
+       noteId: v.id("notes"),
+       title: v.optional(v.string()),
+       content: v.optional(v.string()),
+       tags: v.optional(v.array(v.string())),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const note = await ctx.db.get(args.noteId);
+       if (note?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.patch(args.noteId, {
+         title: args.title ?? note.title,
+         content: args.content ?? note.content,
+         tags: args.tags ?? note.tags,
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const deleteNote = mutation({
+     args: {
+       noteId: v.id("notes"),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const note = await ctx.db.get(args.noteId);
+       if (note?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.delete(args.noteId);
+     },
+   });
+
+   export const pinNote = mutation({
+     args: {
+       noteId: v.id("notes"),
+       isPinned: v.boolean(),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const note = await ctx.db.get(args.noteId);
+       if (note?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.patch(args.noteId, { isPinned: args.isPinned });
+     },
+   });
+```
+
+4. CREATE NOTES QUERIES (convex/notes.ts, append)
+```typescript
+   export const getNotesByProject = query({
+     args: {
+       projectId: v.id("projects"),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("notes")
+         .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+         .order("desc")
+         .collect();
+     },
+   });
+
+   export const getAllNotes = query({
+     handler: async (ctx) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       return await ctx.db
+         .query("notes")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .order("desc")
+         .collect();
+     },
+   });
+
+   export const getPinnedNotes = query({
+     handler: async (ctx) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return [];
+       
+       const allNotes = await ctx.db
+         .query("notes")
+         .withIndex("by_user", (q) => q.eq("userId", userId))
+         .collect();
+       
+       return allNotes.filter((n) => n.isPinned);
+     },
+   });
+```
+
+5. CREATE DAILY PLAN MUTATION (convex/dailyPlans.ts)
+```typescript
+   import { mutation, query } from "./_generated/server";
+   import { v } from "convex/values";
+   import { getAuthUserId } from "@convex-dev/auth/server";
+
+   export const getOrCreateDailyPlan = mutation({
+     args: {
+       date: v.string(), // "YYYY-MM-DD"
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       // Check if daily plan exists
+       const existing = await ctx.db
+         .query("dailyPlans")
+         .withIndex("by_user_date", (q) => q.eq("userId", userId).eq("date", args.date))
+         .first();
+       
+       if (existing) return existing;
+       
+       // Create new daily plan
+       return await ctx.db.insert("dailyPlans", {
+         userId,
+         date: args.date,
+         status: "draft",
+         createdAt: Date.now(),
+         updatedAt: Date.now(),
+       });
+     },
+   });
+
+   export const updateDailyPlan = mutation({
+     args: {
+       planId: v.id("dailyPlans"),
+       status: v.optional(v.string()),
+       topThree: v.optional(v.array(v.id("tasks"))),
+       reflectionNote: v.optional(v.string()),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) throw new Error("Not authenticated");
+       
+       const plan = await ctx.db.get(args.planId);
+       if (plan?.userId !== userId) throw new Error("Unauthorized");
+       
+       await ctx.db.patch(args.planId, {
+         status: args.status ?? plan.status,
+         topThree: args.topThree ?? plan.topThree,
+         reflectionNote: args.reflectionNote ?? plan.reflectionNote,
+         updatedAt: Date.now(),
+       });
+     },
+   });
+```
+
+6. CREATE DAILY PLAN QUERY (convex/dailyPlans.ts, append)
+```typescript
+   export const getDailyPlan = query({
+     args: {
+       date: v.string(),
+     },
+     handler: async (ctx, args) => {
+       const userId = await getAuthUserId(ctx);
+       if (!userId) return null;
+       
+       return await ctx.db
+         .query("dailyPlans")
+         .withIndex("by_user_date", (q) => q.eq("userId", userId).eq("date", args.date))
+         .first();
+     },
+   });
+```
+
+7. CREATE TODAY VIEW PAGE (app/(dashboard)/today/page.tsx)
+   - Display daily plan for today's date (YYYY-MM-DD)
+   - List all tasks with scheduledDate === today
+   - Checkbox to mark tasks done (calls completeTask mutation)
+   - Drag-to-reorder (for now, use sortOrder field)
+   - Quick Capture input at top to create new tasks in inbox
+   - Display top-three highlights from daily plan if set
+
+8. CREATE INBOX PAGE (app/(dashboard)/inbox/page.tsx)
+   - Display all tasks with status === "inbox"
+   - Schedule button to move task to Today View (set scheduledDate to today)
+   - Delete button
+   - Priority and energy level indicators
+   - Sort by creation date descending
+
+9. CREATE QUICK CAPTURE COMPONENT (components/QuickCapture.tsx)
+   - Single text input
+   - On Enter: calls createTask with title, status: "inbox"
+   - Clears input on success
+   - Shows error toast if fails
+   - Use toast library (react-hot-toast or similar)
+
+10. VERIFY SETUP
+    - Run: npm run dev
+    - Navigate to /today
+    - Use Quick Capture to create a task "Buy groceries"
+    - Task appears in inbox
+    - Click "Schedule" → task appears in Today View
+    - Click checkbox → task status changes to "done"
+    - Refresh page → changes persist
+
+CRITICAL CHECKLIST:
+- [ ] All mutations compile without error
+- [ ] All queries return correct data
+- [ ] Quick Capture creates tasks in inbox
+- [ ] Tasks can be scheduled to today
+- [ ] Checking off task marks it done
+- [ ] Page refresh persists changes
