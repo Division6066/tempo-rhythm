@@ -52,6 +52,8 @@ import {
   Mic,
   Smartphone,
   Share,
+  Search,
+  Volume2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -185,18 +187,19 @@ function SelectControl({
 }
 
 function ThemeSelector() {
-  const { theme, setTheme } = useTheme();
+  const { mode, setMode } = useTheme();
 
   return (
     <div className="space-y-2">
       <Label>Theme</Label>
       <SegmentedControl
         options={[
-          { value: "dark", label: "Dark" },
           { value: "light", label: "Light" },
+          { value: "dark", label: "Dark" },
+          { value: "system", label: "System" },
         ]}
-        value={theme}
-        onChange={(v) => setTheme(v as "dark" | "light")}
+        value={mode}
+        onChange={(v) => setMode(v as "light" | "dark" | "system")}
       />
     </div>
   );
@@ -858,11 +861,10 @@ function DataPrivacySection() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
-      const res = await fetch(`${baseUrl}/export`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("tempo_token")}`,
-        },
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const token = localStorage.getItem("tempo_token");
+      const res = await fetch(`${baseUrl}/api/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error("Export failed");
       const data = await res.json();
@@ -925,6 +927,10 @@ function DataPrivacySection() {
               {exporting ? "Exporting..." : "Export"}
             </Button>
           </div>
+
+          <DataImportSection />
+
+          <RebuildSearchIndexButton />
 
           <div className="border-t border-border/50 pt-4">
             <div className="flex items-center justify-between">
@@ -1124,28 +1130,165 @@ function InstallAppSection() {
   );
 }
 
+function DataImportSection() {
+  const { toast } = useToast();
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ tasks: number; notes: number; memories: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileImport = async (file: File) => {
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const text = await file.text();
+      let format: "json" | "markdown" | "csv" = "json";
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext === "md" || ext === "markdown") format = "markdown";
+      else if (ext === "csv") format = "csv";
+      else if (ext === "json") format = "json";
+
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const res = await fetch(`${baseUrl}/api/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format, data: text }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Import failed");
+      setImportResult(result.imported);
+      toast({ title: `Imported ${result.total} items` });
+    } catch (err) {
+      toast({ variant: "destructive", title: err instanceof Error ? err.message : "Import failed" });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="border-t border-border/50 pt-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label className="text-base flex items-center gap-2">
+            <Upload size={16} /> Import Data
+          </Label>
+          <p className="text-sm text-muted-foreground">Import from CSV, JSON, or Markdown files.</p>
+        </div>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.csv,.md,.markdown"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileImport(file);
+            }}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+          >
+            {importing ? <Loader2 size={14} className="animate-spin mr-1" /> : <Upload size={14} className="mr-1" />}
+            {importing ? "Importing..." : "Choose File"}
+          </Button>
+        </div>
+      </div>
+      {importResult && (
+        <div className="mt-3 p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-sm">
+          <p className="font-medium text-teal-400">Import complete:</p>
+          <ul className="mt-1 space-y-0.5 text-muted-foreground">
+            {importResult.tasks > 0 && <li>{importResult.tasks} tasks imported</li>}
+            {importResult.notes > 0 && <li>{importResult.notes} notes imported</li>}
+            {importResult.memories > 0 && <li>{importResult.memories} memories imported</li>}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RebuildSearchIndexButton() {
+  const { toast } = useToast();
+  const [rebuilding, setRebuilding] = useState(false);
+
+  const handleRebuild = async () => {
+    setRebuilding(true);
+    try {
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const res = await fetch(`${baseUrl}/api/search/index`, { method: "POST" });
+      if (!res.ok) throw new Error("Rebuild failed");
+      const result = await res.json();
+      toast({ title: "Search index rebuilt", description: `Indexed ${result.indexed ?? 0} items.` });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to rebuild search index" });
+    } finally {
+      setRebuilding(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-border/50 pt-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label className="text-base flex items-center gap-2">
+            <Search size={16} /> Rebuild Search Index
+          </Label>
+          <p className="text-sm text-muted-foreground">Re-index all content for better search results.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleRebuild} disabled={rebuilding}>
+          {rebuilding ? <Loader2 size={14} className="animate-spin mr-1" /> : <Search size={14} className="mr-1" />}
+          {rebuilding ? "Rebuilding..." : "Rebuild"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function LorePackImport() {
   const [importFormat, setImportFormat] = useState<"json" | "markdown" | "csv">("json");
   const [importData, setImportData] = useState("");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ tasks: number; notes: number; memories: number } | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateData = (data: string, format: string): string | null => {
+    if (!data.trim()) return "No data provided";
+    if (format === "json") {
+      try {
+        const parsed = JSON.parse(data);
+        if (typeof parsed !== "object" || parsed === null) return "Invalid JSON: must be an object";
+        if (!parsed.tasks && !parsed.notes && !parsed.memories) return "JSON must contain at least one of: tasks, notes, memories";
+      } catch {
+        return "Invalid JSON syntax";
+      }
+    }
+    if (format === "csv") {
+      const lines = data.trim().split("\n");
+      if (lines.length < 2) return "CSV must have a header row and at least one data row";
+    }
+    return null;
+  };
 
   const handleImport = async () => {
-    if (!importData.trim()) {
-      toast({ variant: "destructive", title: "Paste some data first" });
+    const error = validateData(importData, importFormat);
+    if (error) {
+      setValidationError(error);
+      toast({ variant: "destructive", title: error });
       return;
     }
+    setValidationError(null);
     setImporting(true);
     setImportResult(null);
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
-      const res = await fetch(`${baseUrl}/import`, {
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const res = await fetch(`${baseUrl}/api/import`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("tempo_token")}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format: importFormat, data: importData }),
       });
       const result = await res.json();
@@ -1160,14 +1303,24 @@ function LorePackImport() {
     }
   };
 
+  const handleFileUpload = async (file: File) => {
+    const text = await file.text();
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext === "md" || ext === "markdown") setImportFormat("markdown");
+    else if (ext === "csv") setImportFormat("csv");
+    else setImportFormat("json");
+    setImportData(text);
+    setImportResult(null);
+    setValidationError(null);
+  };
+
   const loadTemplate = async () => {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
-      const res = await fetch(`${baseUrl}/import/template?format=${importFormat}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("tempo_token")}` },
-      });
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const res = await fetch(`${baseUrl}/api/import/template?format=${importFormat}`);
       const text = importFormat === "json" ? JSON.stringify(await res.json(), null, 2) : await res.text();
       setImportData(text);
+      setValidationError(null);
     } catch {
       toast({ variant: "destructive", title: "Failed to load template" });
     }
@@ -1192,6 +1345,7 @@ function LorePackImport() {
                 setImportFormat(fmt);
                 setImportData("");
                 setImportResult(null);
+                setValidationError(null);
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 importFormat === fmt
@@ -1205,9 +1359,34 @@ function LorePackImport() {
           ))}
         </div>
 
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.csv,.md,.markdown"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 w-full justify-center border-dashed"
+          >
+            <Upload size={14} /> Upload File
+          </Button>
+        </div>
+
         <Textarea
           value={importData}
-          onChange={(e) => setImportData(e.target.value)}
+          onChange={(e) => {
+            setImportData(e.target.value);
+            setValidationError(null);
+          }}
           placeholder={
             importFormat === "json"
               ? '{"tasks": [...], "notes": [...], "memories": [...]}'
@@ -1215,8 +1394,13 @@ function LorePackImport() {
                 ? "# Tasks\n- Buy groceries [high]\n\n# Notes\n## My Note\nContent here..."
                 : 'title,priority,status,notes\n"Task 1",high,inbox,"Details"'
           }
-          className="min-h-[120px] font-mono text-xs bg-background"
+          className={`min-h-[120px] font-mono text-xs bg-background ${validationError ? "border-destructive" : ""}`}
         />
+        {validationError && (
+          <p className="text-xs text-destructive flex items-center gap-1">
+            <AlertTriangle size={12} /> {validationError}
+          </p>
+        )}
 
         <div className="flex gap-2">
           <Button onClick={loadTemplate} variant="outline" size="sm" className="flex items-center gap-1.5">
@@ -1235,7 +1419,9 @@ function LorePackImport() {
 
         {importResult && (
           <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-sm">
-            <p className="font-medium text-teal-400">Import complete:</p>
+            <p className="font-medium text-teal-400 flex items-center gap-1">
+              <CheckCircle size={14} /> Import complete:
+            </p>
             <ul className="mt-1 space-y-0.5 text-muted-foreground">
               {importResult.tasks > 0 && <li>{importResult.tasks} tasks imported</li>}
               {importResult.notes > 0 && <li>{importResult.notes} notes imported</li>}

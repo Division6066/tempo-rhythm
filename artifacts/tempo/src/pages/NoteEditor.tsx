@@ -26,7 +26,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight, MoreVertical, Archive, Save } from "lucide-react";
+import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight, MoreVertical, Archive, Save, Paperclip, FileIcon, Loader2 } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import MilkdownEditorComponent from "@/components/MilkdownEditor";
 import type { AiAction } from "@/components/MarkdownToolbar";
@@ -125,6 +125,64 @@ export default function NoteEditor() {
   const [editorMode, setEditorMode] = useState<"classic" | "milkdown">(() => {
     return (localStorage.getItem("tempo-editor-mode") as "classic" | "milkdown") || "classic";
   });
+
+  const [attachments, setAttachments] = useState<Array<{ filename: string; originalName: string; mimeType: string; size: number; path: string; uploadedAt: string }>>([]);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isNew && noteId) {
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      fetch(`${baseUrl}/api/notes/${noteId}/attachments`)
+        .then(res => res.ok ? res.json() : { attachments: [] })
+        .then(data => setAttachments(data.attachments || []))
+        .catch(() => {});
+    }
+  }, [isNew, noteId]);
+
+  const handleUploadAttachment = async (file: File) => {
+    if (isNew || !noteId) return;
+    setUploadingAttachment(true);
+    try {
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${baseUrl}/api/notes/${noteId}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setAttachments(prev => [...prev, data.attachment]);
+      toast({ title: "File attached" });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to upload attachment" });
+    } finally {
+      setUploadingAttachment(false);
+      if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteAttachment = async (filename: string) => {
+    if (isNew || !noteId) return;
+    try {
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const res = await fetch(`${baseUrl}/api/notes/${noteId}/attachments?filename=${encodeURIComponent(filename)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      setAttachments(prev => prev.filter(a => a.filename !== filename));
+      toast({ title: "Attachment removed" });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to remove attachment" });
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
+  };
 
   useEffect(() => {
     if (note && !isNew) {
@@ -296,8 +354,8 @@ export default function NoteEditor() {
         try {
           const formData = new FormData();
           formData.append("file", audioBlob, "recording.webm");
-          const baseUrl = import.meta.env.BASE_URL || "/";
-          const res = await fetch(`${baseUrl}api/transcribe`, {
+          const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+          const res = await fetch(`${baseUrl}/api/transcribe`, {
             method: "POST",
             body: formData,
           });
@@ -493,9 +551,9 @@ export default function NoteEditor() {
 
   const handleApplyCategorization = useCallback(async () => {
     if (!categorizeSuggestion) return;
-    const baseUrl = import.meta.env.BASE_URL || "/";
+    const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
     try {
-      await fetch(`${baseUrl}api/memories`, {
+      await fetch(`${baseUrl}/api/memories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -855,6 +913,63 @@ export default function NoteEditor() {
           />
         )}
       </div>
+
+      {!isNew && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+              <Paperclip size={12} /> Attachments
+              {attachments.length > 0 && (
+                <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded-full text-[10px] ml-1">
+                  {attachments.length}
+                </span>
+              )}
+            </span>
+            <div>
+              <input
+                ref={attachmentInputRef}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadAttachment(file);
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => attachmentInputRef.current?.click()}
+                disabled={uploadingAttachment}
+              >
+                {uploadingAttachment ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
+                Attach
+              </Button>
+            </div>
+          </div>
+          {attachments.length > 0 && (
+            <div className="space-y-1">
+              {attachments.map((att) => (
+                <div key={att.filename} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 group">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileIcon size={14} className="text-muted-foreground shrink-0" />
+                    <span className="text-sm truncate">{att.originalName}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{formatFileSize(att.size)}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    onClick={() => handleDeleteAttachment(att.filename)}
+                  >
+                    <X size={12} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {backlinks.length > 0 && (
         <div className="space-y-2">

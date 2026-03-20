@@ -23,6 +23,7 @@ import exportRouter from "./export";
 import accountRouter from "./account";
 import attachmentsRouter from "./attachments";
 import libStatusRouter from "./libStatus";
+import ttsRouter from "./tts";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(exportRouter);
 router.use(accountRouter);
 router.use(attachmentsRouter);
 router.use(libStatusRouter);
+router.use(ttsRouter);
 
 export default router;

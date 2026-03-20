@@ -113,3 +113,41 @@ export async function speechToText(
   });
   return response.text;
 }
+
+interface AudioChatCompletionRequest {
+  model: string;
+  modalities: string[];
+  audio: { voice: string; format: string };
+  messages: Array<{ role: string; content: string }>;
+}
+
+interface AudioMessageData {
+  audio?: { data?: string };
+}
+
+export async function textToSpeech(text: string): Promise<{ audio: string; contentType: string }> {
+  const requestBody: AudioChatCompletionRequest = {
+    model: "gpt-audio",
+    modalities: ["text", "audio"],
+    audio: { voice: "alloy", format: "wav" },
+    messages: [
+      {
+        role: "system",
+        content: "You are a text-to-speech assistant. Read the following text aloud exactly as written. Do not add, remove, or modify any content. Do not add commentary.",
+      },
+      { role: "user", content: text },
+    ],
+  };
+
+  const response = await openai.chat.completions.create(
+    requestBody as OpenAI.ChatCompletionCreateParamsNonStreaming,
+  );
+
+  const message = response.choices[0]?.message as unknown as AudioMessageData;
+  const audioData = message?.audio?.data;
+  if (!audioData || typeof audioData !== "string") {
+    throw new Error("No audio data in response");
+  }
+
+  return { audio: audioData, contentType: "audio/wav" };
+}

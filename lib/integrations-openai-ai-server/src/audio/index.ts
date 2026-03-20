@@ -5,4 +5,5 @@ export {
   ensureCompatibleFormat,
   type AudioFormat,
   speechToText,
+  textToSpeech,
 } from "./client";

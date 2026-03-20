@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, Bot, User, Brain, Trash2, Calendar, ListTodo, Zap } from "lucide-react";
+import { Sparkles, Send, Bot, User, Brain, Trash2, Calendar, ListTodo, Zap, Volume2, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 type Message = { role: "user" | "assistant"; content: string; suggestions?: string[]; timestamp?: number };
@@ -96,6 +96,72 @@ export default function Chat() {
       handleSend(action);
     }
   };
+
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
+  const [loadingTtsIdx, setLoadingTtsIdx] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleReadAloud = async (text: string, idx: number) => {
+    if (speakingIdx === idx) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      setSpeakingIdx(null);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+
+    setLoadingTtsIdx(idx);
+    try {
+      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const cleanText = text.replace(/[#*_`~\[\]()>]/g, "");
+      const token = localStorage.getItem("tempo_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${baseUrl}/api/tts`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ text: cleanText }),
+      });
+      if (!res.ok) throw new Error("TTS request failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        setSpeakingIdx(null);
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        setSpeakingIdx(null);
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+      };
+      audioRef.current = audio;
+      setSpeakingIdx(idx);
+      await audio.play();
+    } catch {
+      setSpeakingIdx(null);
+    } finally {
+      setLoadingTtsIdx(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const clearHistory = () => {
     const fresh: Message[] = [{ role: "assistant", content: "Chat history cleared. What would you like to work on?", timestamp: Date.now() }];
@@ -188,6 +254,23 @@ export default function Chat() {
                 <div className={`p-4 rounded-2xl ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border rounded-tl-sm text-foreground prose prose-neutral prose-p:leading-snug prose-p:my-1"}`}>
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
+                {msg.role === "assistant" && (
+                  <button
+                    onClick={() => handleReadAloud(msg.content, i)}
+                    disabled={loadingTtsIdx === i}
+                    className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-full transition-colors ${
+                      speakingIdx === i
+                        ? "bg-primary/20 text-primary"
+                        : loadingTtsIdx === i
+                          ? "text-muted-foreground cursor-wait"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                    title={speakingIdx === i ? "Stop reading" : "Read aloud"}
+                  >
+                    {loadingTtsIdx === i ? <Loader2 size={12} className="animate-spin" /> : <Volume2 size={12} />}
+                    {loadingTtsIdx === i ? "Loading..." : speakingIdx === i ? "Stop" : "Read aloud"}
+                  </button>
+                )}
                 {msg.suggestions && msg.suggestions.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-1">
                     {msg.suggestions.map((s, idx) => (

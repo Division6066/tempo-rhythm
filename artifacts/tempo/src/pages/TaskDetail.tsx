@@ -259,7 +259,7 @@ export default function TaskDetail() {
 
   const handleApplyCategorization = useCallback(async () => {
     if (!categorizeSuggestion || !task) return;
-    const baseUrl = import.meta.env.BASE_URL || "/";
+    const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
     const newTags = [...(task.tags || []), ...categorizeSuggestion.tags.filter(t => !(task.tags || []).includes(t))];
     try {
       await updateTask.mutateAsync({
@@ -269,7 +269,7 @@ export default function TaskDetail() {
       invalidateAll();
     } catch {}
     try {
-      await fetch(`${baseUrl}api/memories`, {
+      await fetch(`${baseUrl}/api/memories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

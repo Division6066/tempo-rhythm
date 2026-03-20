@@ -21,8 +21,6 @@ import {
   GetPreferencesResponse,
   UpdatePreferencesBody,
   UpdatePreferencesResponse,
-  CompleteOnboardingBody,
-  CompleteOnboardingResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -82,26 +80,6 @@ router.patch("/preferences", async (req, res): Promise<void> => {
     .returning();
 
   res.json(UpdatePreferencesResponse.parse(updated));
-});
-
-router.post("/onboarding", async (req, res): Promise<void> => {
-  const parsed = CompleteOnboardingBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const existing = await getOrCreatePreferences();
-  const [updated] = await db
-    .update(preferencesTable)
-    .set({
-      ...parsed.data,
-      onboardingComplete: true,
-    })
-    .where(eq(preferencesTable.id, existing.id))
-    .returning();
-
-  res.json(CompleteOnboardingResponse.parse(updated));
 });
 
 router.get("/export", requireAuth, async (_req, res): Promise<void> => {
