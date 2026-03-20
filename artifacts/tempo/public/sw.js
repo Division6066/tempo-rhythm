@@ -43,22 +43,12 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET') return;
 
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/api')) {
-    return;
-  }
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
-    );
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/api') ||
+    url.hostname.includes('convex') ||
+    url.pathname.includes('convex')
+  ) {
     return;
   }
 

@@ -73,7 +73,8 @@ function extractTextFromChildren(children: React.ReactNode): string {
   if (typeof children === "number") return String(children);
   if (Array.isArray(children)) return children.map(extractTextFromChildren).join("");
   if (children && typeof children === "object" && "props" in children) {
-    return extractTextFromChildren((children as React.ReactElement).props.children);
+    const el = children as React.ReactElement<{ children?: React.ReactNode }>;
+    return extractTextFromChildren(el.props.children);
   }
   return String(children ?? "");
 }
@@ -599,13 +600,13 @@ function CollapsiblePreview({
   const resultMarkdown = outputLines.join("\n");
 
   function makeHeadingComponent(level: number) {
-    const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+    const Tag = `h${level}` as React.ElementType;
     return function HeadingComponent({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
       const text = extractTextFromChildren(children);
       const id = makeHeadingId(level, text);
       const isCollapsed = collapsedHeadings.has(id);
       return (
-        <Tag {...props} onClick={() => onToggleHeading(id)} style={{ cursor: "pointer", position: "relative" }}>
+        <Tag {...(props as Record<string, unknown>)} onClick={() => onToggleHeading(id)} style={{ cursor: "pointer", position: "relative" }}>
           <span style={{ opacity: 0.5, marginRight: "0.4em", fontSize: "0.75em" }}>
             {isCollapsed ? "▶" : "▼"}
           </span>

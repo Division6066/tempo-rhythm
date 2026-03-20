@@ -20,6 +20,7 @@ import {
   CreateTaskBodyStatus,
   CreateTaskBodyPriority,
   useAiAutoCategorize,
+  Task,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -92,12 +93,12 @@ export default function TaskDetail() {
       setNotes(task.notes || "");
       setStatus(task.status);
       setPriority(task.priority);
-      setEnergyLevel(task.energyLevel?.toString() || "");
+      setEnergyLevel((task as Task & { energyLevel?: number }).energyLevel?.toString() || "");
       setEstimatedMinutes(task.estimatedMinutes?.toString() || "");
       setScheduledDate(task.scheduledDate || "");
       setStartTime(task.startTime || "");
-      setDuration(task.duration?.toString() || "");
-      const rule = task.recurrenceRule || "";
+      setDuration((task as Task & { duration?: number }).duration?.toString() || "");
+      const rule = (task as Task & { recurrenceRule?: string }).recurrenceRule || "";
       const presets = ["daily", "weekdays", "weekly", "biweekly", "monthly", "yearly"];
       if (rule && !presets.includes(rule)) {
         setRecurrenceRule("custom");
@@ -124,7 +125,6 @@ export default function TaskDetail() {
           notes,
           status: status as UpdateTaskBodyStatus,
           priority: priority as UpdateTaskBodyPriority,
-          energyLevel: energyLevel ? parseInt(energyLevel, 10) : null,
           estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
           scheduledDate: scheduledDate || null,
           startTime: startTime || null,
@@ -142,7 +142,12 @@ export default function TaskDetail() {
             data: { title, content: notes || title, type: "task" },
           });
           if (catResult.confidence > 60) {
-            setCategorizeSuggestion(catResult);
+            setCategorizeSuggestion({
+              folder: catResult.folder ?? null,
+              project: catResult.project ?? null,
+              tags: catResult.tags,
+              confidence: catResult.confidence,
+            });
           }
         } catch {}
       }

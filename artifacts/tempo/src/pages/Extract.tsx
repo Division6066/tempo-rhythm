@@ -31,8 +31,8 @@ export default function Extract() {
       setExtractedTasks(
         result.tasks.map((t: { title: string; priority: string; estimatedMinutes?: number | null; tags?: string[] }) => ({
           title: t.title,
-          priority: t.priority,
-          estimatedMinutes: t.estimatedMinutes,
+          priority: t.priority as "high" | "medium" | "low",
+          estimatedMinutes: t.estimatedMinutes ?? undefined,
           tags: t.tags,
           accepted: true,
         }))

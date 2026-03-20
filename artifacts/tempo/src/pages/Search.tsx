@@ -80,17 +80,17 @@ export default function Search() {
 
   const { data: globalResults, isLoading: globalLoading } = useGlobalSearch(
     { q: debouncedQuery },
-    { query: { enabled: debouncedQuery.length >= 1 && !hasFilters } }
+    { query: { enabled: debouncedQuery.length >= 1 && !hasFilters, queryKey: ["globalSearch", debouncedQuery] } }
   );
 
   const { data: allTasks, isLoading: tasksLoading } = useListTasks(
     {},
-    { query: { enabled: isActive && hasFilters } }
+    { query: { enabled: isActive && hasFilters, queryKey: ["listTasks", "filtered"] } }
   );
 
   const { data: allNotes, isLoading: notesLoading } = useListNotes(
     undefined,
-    { query: { enabled: hasFilters && typeFilter !== "tasks" } }
+    { query: { enabled: hasFilters && typeFilter !== "tasks", queryKey: ["listNotes", "filtered"] } }
   );
 
   const { data: projects } = useListProjects();

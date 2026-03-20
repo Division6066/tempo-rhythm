@@ -68,7 +68,7 @@ export const upsertBetaUser = internalMutation({
         email,
         emailVerificationTime: Date.now(),
       } as any);
-      user = await ctx.db.get(userId);
+      user = await ctx.db.get(userId) ?? undefined;
     }
 
     if (!user) throw new Error("Failed to create user");

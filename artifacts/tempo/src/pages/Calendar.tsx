@@ -257,8 +257,11 @@ export default function Calendar() {
     [updateTask, queryClient, toast]
   );
 
-  const dragFromOutsideItem = useCallback(() => {
-    if (!draggedTaskRef.current) return null;
+  const dragFromOutsideItem = useCallback((): CalendarEvent => {
+    if (!draggedTaskRef.current) {
+      const now = new Date();
+      return { id: 0, title: "", start: now, end: now, type: "task" };
+    }
     const t = draggedTaskRef.current;
     const now = new Date();
     const end = new Date(now.getTime() + (t.estimatedMinutes || 30) * 60 * 1000);

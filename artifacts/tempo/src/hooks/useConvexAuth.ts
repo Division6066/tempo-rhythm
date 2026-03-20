@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../tempo-app/convex/_generated/api";
+// @ts-expect-error Convex generated API path resolution
+import { api } from "../../../tempo-app/convex/_generated/api.js";
 
 export function useCurrentUser() {
   return useQuery(api.users.getCurrentUser);

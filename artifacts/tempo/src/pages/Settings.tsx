@@ -276,7 +276,7 @@ export default function Settings() {
   const persistPreferences = useCallback(
     async (data: typeof formData) => {
       try {
-        await updatePrefs.mutateAsync({ data });
+        await updatePrefs.mutateAsync({ data: data as unknown as import("@workspace/api-client-react").UpdatePreferencesBody });
         queryClient.invalidateQueries({ queryKey: getGetPreferencesQueryKey() });
         toast({ title: "Settings saved" });
       } catch {

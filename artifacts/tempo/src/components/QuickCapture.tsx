@@ -44,7 +44,7 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean, onOpenChan
           title: firstNonEmpty.trim().slice(0, 100),
           status: "inbox",
           priority: "medium",
-          description: content,
+          notes: content,
         }
       });
       setContent("");

@@ -101,7 +101,7 @@ export default function TaskCard({ task, sortable = false, aiScore }: TaskCardPr
     low: "bg-muted text-muted-foreground",
   };
 
-  const energyInfo = task.energyLevel ? ENERGY_ICONS[task.energyLevel] : null;
+  const energyInfo = (task as Task & { energyLevel?: number }).energyLevel ? ENERGY_ICONS[(task as Task & { energyLevel?: number }).energyLevel!] : null;
 
   const isOverdue =
     task.dueDate &&

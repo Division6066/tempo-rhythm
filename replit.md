@@ -56,6 +56,11 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **date-fns:** Date utility library.
 - **react-big-calendar:** Full-featured calendar component with drag-and-drop support.
 
+## Performance Optimizations
+- **Code Splitting:** All page components in `artifacts/tempo/src/App.tsx` use `React.lazy()` with a shared `Suspense`/`PageLoader` fallback for route-based code splitting.
+- **Service Worker:** PWA service worker (`artifacts/tempo/public/sw.js`) caches static assets with stale-while-revalidate strategy, excludes `/api/` and Convex WebSocket requests from caching, and provides offline fallback to `index.html` for navigation requests.
+- **PWA Manifest:** Full PWA manifest with 192x192 and 512x512 icons, standalone display mode, and dark theme colors.
+
 ## Polish & UI Features (Stage 6)
 - **Dark Mode:** Full dark theme with CSS variables, toggle persisted to localStorage via ThemeProvider context.
 - **Navbar:** Top navbar with "Tempo Flow" branding, search button, dark/light toggle, and user dropdown menu (preferences, logout).

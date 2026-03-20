@@ -35,7 +35,7 @@ interface CalendarComponentProps {
   onEventDrop?: (args: EventInteractionArgs<CalendarEvent>) => void;
   onEventResize?: (args: EventInteractionArgs<CalendarEvent>) => void;
   onDropFromOutside?: (args: { start: string | Date; end: string | Date; allDay?: boolean }) => void;
-  dragFromOutsideItem?: () => CalendarEvent | null;
+  dragFromOutsideItem?: () => CalendarEvent;
   date?: Date;
   onNavigate?: (date: Date) => void;
   onView?: (view: View) => void;

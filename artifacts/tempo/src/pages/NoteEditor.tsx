@@ -55,7 +55,7 @@ export default function NoteEditor() {
 
   const { data: noteLinks } = useListNoteLinks(
     { noteId },
-    { query: { enabled: !isNew && !!noteId } }
+    { query: { enabled: !isNew && !!noteId, queryKey: ["listNoteLinks", noteId] } }
   );
   const createNoteLink = useCreateNoteLink();
   const deleteNoteLink = useDeleteNoteLink();
@@ -220,7 +220,12 @@ export default function NoteEditor() {
               data: { title: currentTitle, content: currentContent, type: "note" },
             });
             if (catResult.confidence > 60) {
-              setCategorizeSuggestion(catResult);
+              setCategorizeSuggestion({
+                folder: catResult.folder ?? null,
+                project: catResult.project ?? null,
+                tags: catResult.tags,
+                confidence: catResult.confidence,
+              });
             }
           } catch {}
         }

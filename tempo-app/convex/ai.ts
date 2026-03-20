@@ -130,17 +130,17 @@ export const prioritize = action({
 
 export const generatePlan = action({
   args: { date: v.string(), taskIds: v.optional(v.array(v.string())) },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ blocks: Array<Record<string, unknown>>; reasoning: string }> => {
     const prefs = await ctx.runQuery(api.preferences.get);
     const mems = await ctx.runQuery(api.memories.list);
-    const allTasks = await ctx.runQuery(api.tasks.list, {});
+    const allTasks: Array<{ _id: string; title: string; status: string; priority: string; estimatedMinutes?: number }> = await ctx.runQuery(api.tasks.list, {});
     const contextStr = prefs
       ? `Wake: ${prefs.wakeTime}, Sleep: ${prefs.sleepTime}, Planning: ${prefs.planningStyle}, ADHD: ${prefs.adhdMode}, Focus: ${prefs.focusSessionMinutes}min, Break: ${prefs.breakMinutes}min`
       : "";
     const memStr = mems.map((m: { tier: string; content: string }) => `[${m.tier}] ${m.content}`).join("\n");
-    const taskList = allTasks
-      .filter((t: { status: string }) => t.status === "today" || t.status === "inbox")
-      .map((t: { _id: string; title: string; priority: string; estimatedMinutes?: number }) => ({
+    const taskList: Array<{ id: string; title: string; priority: string; estimatedMinutes?: number }> = allTasks
+      .filter((t) => t.status === "today" || t.status === "inbox")
+      .map((t) => ({
         id: t._id,
         title: t.title,
         priority: t.priority,

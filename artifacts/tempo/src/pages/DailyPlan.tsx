@@ -306,6 +306,7 @@ export default function DailyPlan() {
       }, 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [showMoodModal]);
 
   const handleRejectPlan = async (suggestionId: number) => {

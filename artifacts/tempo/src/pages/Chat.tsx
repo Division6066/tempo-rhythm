@@ -48,7 +48,7 @@ export default function Chat() {
 
   const chatMutation = useAiChat();
   const createTaskMutation = useCreateTask();
-  const { data: memories } = useListMemories(undefined, { query: { enabled: showMemory } });
+  const { data: memories } = useListMemories({ query: { enabled: showMemory, queryKey: ["listMemories"] } });
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
 

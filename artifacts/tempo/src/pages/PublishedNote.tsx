@@ -8,7 +8,7 @@ export default function PublishedNote() {
   const slug = params?.slug || "";
 
   const { data: note, isLoading, isError } = useGetPublishedNote(slug, {
-    query: { enabled: !!slug },
+    query: { enabled: !!slug, queryKey: ["publishedNote", slug] },
   });
 
   if (isLoading) {

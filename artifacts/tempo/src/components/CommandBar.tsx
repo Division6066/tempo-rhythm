@@ -52,17 +52,16 @@ export default function CommandBar({ open: controlledOpen, onOpenChange: control
 
   const { data: searchResults } = useGlobalSearch(
     { q: query },
-    { query: { enabled: query.length >= 2 } }
+    { query: { enabled: query.length >= 2, queryKey: ["globalSearch", query] } }
   );
 
   const { data: recentNotes } = useListNotes(
     undefined,
-    { query: { enabled: open && query.length < 2 } }
+    { query: { enabled: open && query.length < 2, queryKey: ["listNotes", "recent"] } }
   );
 
   const { data: allProjects } = useListProjects(
-    undefined,
-    { query: { enabled: open } }
+    { query: { enabled: open, queryKey: ["listProjects", "commandBar"] } }
   );
 
   const recentNotesList = (recentNotes || [])
