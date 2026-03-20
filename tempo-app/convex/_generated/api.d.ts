@@ -14,6 +14,7 @@ import type * as auth from "../auth.js";
 import type * as calendarEvents from "../calendarEvents.js";
 import type * as chatMessages from "../chatMessages.js";
 import type * as dailyPlans from "../dailyPlans.js";
+import type * as dataExport from "../dataExport.js";
 import type * as folders from "../folders.js";
 import type * as http from "../http.js";
 import type * as memories from "../memories.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   calendarEvents: typeof calendarEvents;
   chatMessages: typeof chatMessages;
   dailyPlans: typeof dailyPlans;
+  dataExport: typeof dataExport;
   folders: typeof folders;
   http: typeof http;
   memories: typeof memories;

@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "buildCommand": "pnpm --filter tempo-web build",
+  "framework": null,
+  "buildCommand": "cd artifacts/tempo && PORT=3000 BASE_PATH=\"/\" pnpm run build",
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "outputDirectory": "tempo-app/apps/web/.next"
+  "outputDirectory": "artifacts/tempo/dist/public"
 }
