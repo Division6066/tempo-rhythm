@@ -1,0 +1,929 @@
+# TEMPO — Replit Mega Prompt Pack
+## Deliverable 2: Staged Build Prompts
+### Run these IN ORDER. Each prompt builds on the previous. Do not skip the diagnostic.
+
+---
+
+## GITHUB REPOS TO REFERENCE
+### Paste this block at the top of EVERY Replit prompt session
+
+```
+External repos this project references — read their READMEs when relevant:
+
+EDITOR / MARKDOWN:
+- https://github.com/Milkdown/milkdown (widget-aware Markdown editor)
+- https://github.com/TypeCellOS/BlockNote (Notion-style block editor, fallback)
+- https://github.com/codemirror/codemirror (live preview Markdown editing)
+- https://github.com/remarkjs/remark (Markdown processing pipeline)
+- https://github.com/rehypejs/rehype (HTML transformation for widget rendering)
+- https://github.com/steven-tey/novel (AI slash commands reference)
+
+DRAG AND DROP:
+- https://github.com/clauderic/dnd-kit (already in use — @dnd-kit/core, @dnd-kit/sortable)
+
+AI / RAG:
+- https://github.com/run-llama/llama_index (RAG pipeline, Node.js SDK)
+- https://github.com/assafelovic/gpt-researcher (deep research pipeline)
+- https://github.com/instructor-ai/instructor-js (structured extraction)
+- https://github.com/langchain-ai/langchainjs (document transform chains)
+
+BACKGROUND JOBS:
+- https://github.com/triggerdotdev/trigger.dev (cron jobs and background tasks)
+- https://github.com/taskforcesh/bullmq (Redis-backed job queue)
+
+REACT NATIVE:
+- https://github.com/expo/expo (React Native + Expo)
+- https://github.com/marklawlor/nativewind (Tailwind for React Native)
+- https://github.com/expo/router (Expo Router for navigation)
+
+MONOREPO:
+- https://github.com/vercel/turbo (Turborepo monorepo orchestration)
+```
+
+---
+
+## PROMPT 0 — DIAGNOSTIC (RUN FIRST, BEFORE ANYTHING ELSE)
+
+```
+You are working on TEMPO, an ADHD-friendly AI daily planner.
+This is a diagnostic prompt. Do NOT make any code changes.
+Your job is to audit the current state of the codebase and produce a written report.
+
+READ the following before writing your report:
+- artifacts/tempo/ (the PWA frontend)
+- artifacts/api-server/ (the Express backend)
+- lib/db/src/schema/ (Drizzle schema)
+- convex/ (if it exists)
+- package.json files at all levels
+- vercel.json or .vercel/ config if present
+- .env.example or any env var references
+
+REPORT A: CODEBASE DIAGNOSTIC
+Produce a structured report covering:
+
+1. CONVEX STATUS
+   - Is Convex configured? (convex/ directory, convex.json)
+   - Is ConvexAuthWrapper present and properly imported?
+   - What Convex functions exist (queries, mutations, actions)?
+   - Is CONVEX_DEPLOYMENT set in any .env files?
+   - Is the Convex client initialized correctly in main.tsx?
+   - Any obvious misconfigurations?
+
+2. VERCEL STATUS
+   - Is vercel.json present? What does it contain?
+   - What is the configured framework and root directory?
+   - What build command is specified?
+   - Are there any redirects, rewrites, or headers configured?
+   - What environment variables are referenced in the code 
+     but NOT present in vercel.json or .env.example?
+   - Is the output directory correct for a Vite build (dist/)?
+
+3. EXPO / REACT NATIVE STATUS
+   - Is there any React Native or Expo configuration present?
+   - Is app.json or app.config.ts present?
+   - Is the mobile app started or is this a fresh start?
+
+4. PACKAGE DEPENDENCY AUDIT
+   - List any packages imported in code but missing from package.json
+   - List any packages in package.json not used anywhere
+   - Are @dnd-kit/core and @dnd-kit/sortable installed?
+   - Is pgvector or a vector store client installed?
+   - Is any LLM client library installed (openai, fireworks, etc.)?
+
+5. BUILD BLOCKERS
+   - List every issue that would cause a Vercel build to fail
+   - Severity: CRITICAL (build fails) | WARNING (degrades functionality) | INFO
+
+6. MISSING FEATURES CHECKLIST
+Compare what exists against this expected feature list and mark each:
+   ✅ EXISTS | ⚠️ PARTIAL | ❌ MISSING
+
+   PWA:
+   [ ] manifest.json with correct fields
+   [ ] service worker (sw.js) registered
+   [ ] PWAInstallPrompt component
+   [ ] Push notification infrastructure
+   
+   AUTH:
+   [ ] Login page
+   [ ] Signup page
+   [ ] Forgot password flow
+   [ ] Reset password flow
+   
+   CORE PAGES:
+   [ ] Dashboard with AI top-3, streak, progress ring
+   [ ] Today view with drag reorder
+   [ ] Note editor with split pane
+   [ ] Inbox page
+   [ ] Calendar page
+   [ ] Settings page
+   [ ] /plan route (AI planning flow)
+   [ ] Onboarding flow
+   
+   AI FEATURES:
+   [ ] Any LLM integration
+   [ ] Voice input (STT)
+   [ ] Voice output (TTS)
+   [ ] Coaching chat UI
+   [ ] Search / command palette (⌘K)
+   
+   INFRASTRUCTURE:
+   [ ] Conversation storage schema
+   [ ] pgvector / RAG setup
+   [ ] CronJob infrastructure
+   [ ] Theme system (light/dark/system)
+
+Output this report in full. Do not truncate.
+Label it: === REPORT A: REPLIT CODEBASE DIAGNOSTIC ===
+Save it to: /docs/diagnostic/REPORT_A_REPLIT.md
+```
+
+---
+
+## PROMPT 1 — MONOREPO FOUNDATION
+
+```
+You are working on TEMPO, an ADHD-friendly AI daily planner.
+The goal is a monorepo where ONE Convex + Vercel backend serves BOTH
+a PWA (apps/web) and a React Native app (apps/mobile).
+
+Current state: the PWA lives at artifacts/tempo/. 
+The Express API lives at artifacts/api-server/.
+Convex is the primary backend.
+
+Do all of the following:
+
+1. RESTRUCTURE INTO MONOREPO
+Create the following directory structure (move existing files, do not delete):
+
+  tempo-monorepo/
+  ├── apps/
+  │   ├── web/          ← move artifacts/tempo/ contents here
+  │   └── mobile/       ← create empty, scaffold only
+  ├── packages/
+  │   ├── api-client/   ← move existing @workspace/api-client-react here
+  │   ├── types/        ← create: shared TypeScript types
+  │   ├── ai/           ← create: empty, AI package stub
+  │   ├── ui-web/       ← create: empty, web-only components stub
+  │   └── ui-mobile/    ← create: empty, RN-only components stub
+  ├── convex/           ← move existing convex/ here if present, or create stub
+  ├── artifacts/
+  │   └── api-server/   ← keep in place
+  └── turbo.json        ← create Turborepo config
+
+2. TURBOREPO CONFIG
+Create turbo.json at root:
+  - Pipeline: build depends on ^build (upstream packages first)
+  - Pipeline: dev runs all apps in parallel
+  - Pipeline: lint runs on all packages
+  - Cache inputs: src/**, *.ts, *.tsx, package.json
+  - Output: dist/, .next/, build/
+
+3. ROOT PACKAGE.JSON
+Create root package.json:
+  - name: "tempo-monorepo"
+  - private: true
+  - workspaces: ["apps/*", "packages/*"]
+  - scripts: build, dev, lint (all using turbo)
+  - devDependencies: turbo, typescript
+
+4. APPS/WEB SETUP
+In apps/web/package.json:
+  - name: "@tempo/web"
+  - Add dependency on all packages/* as workspace:*
+  - Keep all existing dependencies
+
+5. APPS/MOBILE SCAFFOLD
+Create apps/mobile/ with:
+  - package.json: name "@tempo/mobile", expo dependencies
+  - app.json: basic Expo config (name: TEMPO, slug: tempo, version: 1.0.0)
+  - app/(tabs)/index.tsx: placeholder "TEMPO Mobile — Coming Soon" screen
+  - babel.config.js: Expo preset + Nativewind
+  - tsconfig.json: extends @tempo/types
+  - NOTE: Do not build features yet — this is scaffold only
+
+6. PACKAGES/TYPES
+Create packages/types/src/index.ts with shared types:
+  - Task (id, title, status, priority, energyLevel, dueDate, userId, sortOrder)
+  - Note (id, title, content, userId, folderId, tags, createdAt, updatedAt)
+  - DailyPlan (id, userId, date, morningCheckin, eveningCheckin, acceptedAt)
+  - CoachingSession (sessionId, userId, mode, technique, turnHistory, contextSnapshot)
+  - ConversationDocument (full schema from the conversation storage design)
+  - ModelRoutingPath: 'voice' | 'write' | 'plan' | 'admin'
+  - CoachingTechnique: all 10 technique IDs as union type
+
+7. VERCEL CONFIG
+Update/create vercel.json at root:
+  {
+    "buildCommand": "turbo build --filter=@tempo/web",
+    "outputDirectory": "apps/web/dist",
+    "installCommand": "npm install",
+    "framework": null,
+    "rewrites": [
+      { "source": "/api/(.*)", "destination": "/api/$1" }
+    ]
+  }
+
+Also create apps/web/vercel.json:
+  {
+    "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  }
+
+8. VERIFY BUILD
+Run: npm install && turbo build --filter=@tempo/web
+If it fails, fix the errors before proceeding.
+Report what changed and what the build output was.
+```
+
+---
+
+## PROMPT 2 — FIREWORKS AI PROVIDER + CONVERSATION SCHEMA
+
+```
+You are working on TEMPO. The monorepo structure from Prompt 1 is in place.
+Reference GitHub: https://github.com/run-llama/llama_index
+
+Do all of the following:
+
+1. CREATE PACKAGES/AI PACKAGE
+Create packages/ai/ with:
+  - package.json: name "@tempo/ai"
+  - src/provider.ts: ModelProvider class
+  - src/router.ts: route() function
+  - src/conversation.ts: ConversationManager class
+  - src/coaching/engine.ts: runCoachingTurn() function
+  - src/coaching/prompts/: one file per technique (10 files)
+
+2. MODELPROVIDER CLASS (packages/ai/src/provider.ts)
+  class ModelProvider {
+    constructor(config: { provider: 'fireworks' | 'openrouter', apiKey: string })
+    
+    async chat(params: {
+      model: string
+      messages: Message[]
+      tools?: Tool[]
+      thinking?: boolean
+      maxTokens?: number
+      temperature?: number
+      stream?: boolean
+    }): Promise<ChatResponse | AsyncIterable<ChatChunk>>
+    
+    async embed(text: string): Promise<number[]>
+  }
+
+  Fireworks base URL: https://api.fireworks.ai/inference/v1
+  OpenRouter base URL: https://openrouter.ai/api/v1
+  Switch via: process.env.INFERENCE_PROVIDER ('fireworks' | 'openrouter')
+
+  Model string map — export as MODEL_MAP constant:
+  {
+    voice: 'accounts/fireworks/models/mistral-small-3-1-24b-instruct',
+    planning: 'accounts/fireworks/models/llama4-maverick-instruct-basic',
+    longContext: 'accounts/fireworks/models/llama4-scout-instruct-basic',
+    coaching: 'accounts/fireworks/models/gemma3-27b-it',
+    protocol: 'accounts/fireworks/models/mistral-large-2411',
+    classify: 'accounts/fireworks/models/granite-3-3-8b-instruct',
+    cron: 'accounts/fireworks/models/granite-3-1-2b-instruct',
+    councilAnalyst: 'accounts/fireworks/models/llama4-maverick-instruct-basic',
+    councilChallenger: 'accounts/fireworks/models/mistral-large-2411',
+    councilAdvocate: 'accounts/fireworks/models/gemma3-27b-it',
+  }
+
+3. MODEL ROUTER (packages/ai/src/router.ts)
+  function route(input: string, sessionContext: SessionContext): RoutingDecision {
+    // Returns: { path, model, useThinking, toolManifest, maxTokens }
+    // Voice path: sessionContext.modality === 'voice'
+    // Thinking trigger: check against THINKING_TRIGGERS list
+    // Default: write path, no thinking
+  }
+
+  VOICE_TOOLS = ['create_task', 'complete_task', 'check_today_tasks', 
+                 'set_reminder', 'read_note_title', 'start_body_double']
+  
+  PLANNING_TOOLS = [...VOICE_TOOLS, 'search_notes_semantic', 
+                   'generate_weekly_plan', 'retrieve_memory_chunks',
+                   'web_search', 'create_note']
+  
+  THINKING_TRIGGERS = ['weekly_plan_generation', 'template_creation',
+                       'council_synthesis', 'document_transform', 
+                       'cbt_thought_record', 'plan my week', 'generate',
+                       'create a template', 'think through', 'analyze']
+
+4. CONVERSATION MANAGER (packages/ai/src/conversation.ts)
+
+  class ConversationManager {
+    async createConversation(userId: string, sessionType: string): Promise<string>
+    async addTurn(convId: string, turn: Turn, userKey: CryptoKey): Promise<void>
+    async getContext(convId: string, userKey: CryptoKey): Promise<AssembledContext>
+    async compressIfNeeded(convId: string, userKey: CryptoKey): Promise<void>
+    async resolveReferences(convId: string): Promise<ResolvedRefs>
+  }
+
+  Implement field-level encryption:
+  - encrypt(content: string, key: CryptoKey): AES-256-GCM
+  - decrypt(ciphertext: string, key: CryptoKey): string
+  - deriveUserKey(userId: string): PBKDF2 from userId + KEY_DERIVATION_SECRET
+  - Only encrypt: content, tool call args
+  - Never encrypt: metadata, tags, timestamps, reference IDs, token counts
+
+  Context assembly order:
+  1. System prompt (~800 tokens)
+  2. Resolved reference summaries (explicit refs first, semantic fallback)
+  3. Last 4000 verbatim tokens from current conversation
+  4. Current user message
+
+  Compression trigger: active context > 4000 tokens
+  Compression model: MODEL_MAP.classify (Granite — cheap, fast)
+  Compression target: under 400 tokens
+  After compression: store summary in compression.summary_encrypted, 
+                     embed summary in pgvector
+
+5. ADD DRIZZLE SCHEMA
+Add to lib/db/src/schema/conversations.ts:
+  (full schema as defined in the architecture document — 
+   conversations table + conversation_embeddings table with pgvector)
+
+Run: npx drizzle-kit push (do not break existing tables)
+
+6. ADD API ROUTES
+In artifacts/api-server/src/routes/conversations.ts:
+  POST /api/conversations — create new conversation
+  POST /api/conversations/:id/turn — add turn (encrypts before storing)
+  GET  /api/conversations/:id/context — assemble and return context
+  POST /api/conversations/:id/compress — trigger compression manually
+  GET  /api/conversations/search — semantic search across summaries
+
+Register in main server file.
+
+7. COST LOGGING
+Add lib/db/src/schema/llm_costs.ts:
+  - id, userId, model, inputTokens, outputTokens, latencyMs, path, createdAt
+
+Log every LLM call in ModelProvider.chat() after receiving response.
+```
+
+---
+
+## PROMPT 3 — VOICE PIPELINE (STT → LLM → TTS)
+
+```
+You are working on TEMPO. Packages/ai is in place from Prompt 2.
+
+Do all of the following:
+
+1. INSTALL DEPENDENCIES
+In packages/ai/package.json add:
+  - groq-sdk (for Whisper STT)
+  - (TTS will use fetch directly — Cartesia has no official SDK)
+
+2. STT SERVICE (packages/ai/src/voice/stt.ts)
+  class SpeechToText {
+    // Groq Whisper Large v3 Turbo
+    async transcribe(audioBlob: Blob, language?: string): Promise<TranscribeResult>
+    // language default: detect automatically (supports Hebrew)
+    // Returns: { text, language, duration_ms, segments? }
+    // Model: whisper-large-v3-turbo
+    // Groq endpoint: https://api.groq.com/openai/v1/audio/transcriptions
+  }
+
+3. TTS SERVICE (packages/ai/src/voice/tts.ts)
+  class TextToSpeech {
+    // Cartesia Sonic for voice chat (lowest latency)
+    // OpenAI TTS-1 for notifications/summaries (cheaper)
+    
+    async speak(text: string, options: {
+      provider: 'cartesia' | 'openai'
+      voice?: string
+      speed?: number
+      stream?: boolean  // Cartesia supports streaming audio
+    }): Promise<AudioBuffer | AsyncIterable<AudioChunk>>
+    
+    // Cartesia endpoint: https://api.cartesia.ai/tts/bytes
+    // OpenAI endpoint: https://api.openai.com/v1/audio/speech
+    // Default voice chat: Cartesia (provider: 'cartesia')
+    // Default summaries/notifications: OpenAI TTS-1 (provider: 'openai')
+  }
+
+4. VOICE PIPELINE (packages/ai/src/voice/pipeline.ts)
+  async function processVoiceTurn(
+    audioBlob: Blob,
+    conversationId: string,
+    userId: string
+  ): Promise<VoiceResponse> {
+    // Step 1: STT — transcribe audio via Groq Whisper
+    // Step 2: Route — classify as voice path
+    // Step 3: Context — assemble from ConversationManager
+    // Step 4: LLM — call Mistral Small 3.1 with voice tools, stream response
+    // Step 5: TTS — pipe LLM stream to Cartesia stream (start TTS before full response)
+    // Step 6: Store — save turn to ConversationManager
+    // Step 7: Return — { text: string, audioStream: AsyncIterable<AudioChunk> }
+    
+    // CRITICAL: TTS starts streaming as soon as first sentence is complete
+    // Detect sentence boundary: ends with . ? ! or after 20 words
+    // This gives sub-500ms voice response perception
+  }
+
+5. VOICE API ROUTES
+In artifacts/api-server/src/routes/voice.ts:
+  POST /api/voice/transcribe — accepts audio/webm blob, returns { text }
+  POST /api/voice/turn — full voice pipeline, SSE stream response + audio
+  GET  /api/voice/tts — text → speech, streams audio bytes
+
+Register in main server file.
+
+6. VOICE CHAT UI COMPONENT
+Create apps/web/src/components/VoiceChat.tsx:
+  - Floating mic button (bottom right, pulse animation when recording)
+  - Hold to record using MediaRecorder API (audio/webm)
+  - Release to send: POST to /api/voice/turn
+  - Plays back streamed audio response using Web Audio API
+  - Shows transcribed text as user message bubble during processing
+  - Shows assistant response text as it streams
+  - Voice activity detection: auto-stop recording after 2s silence
+  - Error state: "Voice unavailable — switching to text mode"
+  - Only renders if navigator.mediaDevices is available
+
+7. ENV VARS REQUIRED
+Add to .env.example:
+  GROQ_API_KEY=
+  CARTESIA_API_KEY=
+  CARTESIA_VOICE_ID=  (get from Cartesia dashboard)
+  OPENAI_API_KEY=     (for TTS-1 fallback + embeddings)
+```
+
+---
+
+## PROMPT 4 — AI PLANNING FLOW (/plan ROUTE)
+
+```
+You are working on TEMPO. Voice pipeline from Prompt 3 is in place.
+
+This is the core product feature: the AI daily planning session.
+The streak system depends on this — streaks are counted by accepted plans.
+
+Do all of the following:
+
+1. PLANNING SESSION FLOW
+The /plan route is a guided session:
+  Step 1: Morning context check
+    "Good morning. You have [X] tasks today, [Y] overdue. 
+     Energy check — how are you feeling? (1-5)"
+  Step 2: Priority negotiation  
+    AI shows top 5 tasks by algorithm, asks user to confirm/reorder top 3
+  Step 3: Time boxing
+    For each of the top 3: "How long do you think this will take?"
+    AI challenges unrealistic estimates gently
+  Step 4: Obstacle check
+    "Is there anything that might get in the way today?"
+  Step 5: Plan acceptance
+    Shows the full plan. User hits "Accept Plan" → sets acceptedAt on DailyPlan
+    This is what counts for streak.
+
+2. PLANNING AI (packages/ai/src/planning/engine.ts)
+  async function generateDailyPlan(context: PlanningContext): Promise<DailyPlan>
+  
+  PlanningContext includes:
+  - today's tasks (from DB)
+  - overdue tasks
+  - calendar events today
+  - user's energy level (from morning checkin)
+  - streak history
+  - recent conversation memory chunks
+  
+  Model: MODEL_MAP.planning (Llama 4 Maverick)
+  Thinking: ENABLED (this is a thinking trigger task)
+  
+  Sorting algorithm:
+  1. Tasks with dueDate = today first
+  2. Then by priority: now > soon > later
+  3. Then by energyLevel descending
+  4. Then by sortOrder
+  Top 3 = the plan.
+
+3. CREATE /plan PAGE
+apps/web/src/pages/PlanningSession.tsx:
+  - Protected route (requires auth)
+  - Conversational UI (not a form)
+  - Shows one question at a time, waits for response
+  - Progress indicator: 5 steps
+  - Voice mode available on each step
+  - "Accept Plan" button at step 5 → calls useUpdateDailyPlan({ acceptedAt: new Date() })
+  - On accept: confetti animation, navigate to /today
+  - If plan already accepted today: show "You've already planned today 🎯" + summary
+  - If accessed in evening: show abbreviated version (tomorrow planning)
+
+4. PLANNING API ROUTES
+In artifacts/api-server/src/routes/planning.ts:
+  POST /api/planning/generate — runs planning AI, returns suggested plan
+  POST /api/planning/accept — sets acceptedAt on DailyPlan record
+  GET  /api/planning/today — returns today's plan if exists
+  GET  /api/planning/history — returns last 30 days of plans (for streak calc)
+
+5. STREAK COMPUTATION
+Update Dashboard.tsx streak calculation:
+  - Fetch useListDailyPlans({ limit: 60 })
+  - Current streak: count consecutive days ending today/yesterday with acceptedAt != null
+  - Best streak: max consecutive run in the history
+  - If no plan today AND it's before 2pm: show "Plan your day to continue your streak →"
+  - If no plan today AND it's after 2pm: show "Still time to plan tomorrow →"
+
+Register routes in main server file.
+```
+
+---
+
+## PROMPT 5 — PUSH NOTIFICATIONS + CRONJOBS
+
+```
+You are working on TEMPO. Planning flow from Prompt 4 is in place.
+Reference: https://github.com/triggerdotdev/trigger.dev
+
+Do all of the following:
+
+1. INSTALL DEPENDENCIES
+In artifacts/api-server/package.json:
+  - web-push (VAPID push notifications)
+  - node-cron (for MVP — Trigger.dev can replace later)
+
+In apps/web/package.json: no changes needed (SW handles push on client)
+
+2. PUSH NOTIFICATION SERVICE (artifacts/api-server/src/services/push.ts)
+  class PushNotificationService {
+    async subscribe(userId: string, subscription: PushSubscription): Promise<void>
+    async send(userId: string, payload: NotificationPayload): Promise<void>
+    async sendToAll(payload: NotificationPayload): Promise<void>
+  }
+
+  NotificationPayload: { title, body, icon, badge, url, data }
+  Store subscriptions in push_subscriptions table (userId, endpoint, keys, createdAt)
+  VAPID keys from env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
+
+3. UPDATE SERVICE WORKER
+In apps/web/public/sw.js, add:
+  self.addEventListener('push', event => {
+    const data = event.data.json()
+    event.waitUntil(
+      self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/badge-72.png',
+        data: { url: data.url }
+      })
+    )
+  })
+  
+  self.addEventListener('notificationclick', event => {
+    event.notification.close()
+    event.waitUntil(clients.openWindow(event.notification.data.url))
+  })
+
+4. PUSH PERMISSION UI
+Create apps/web/src/components/PushPermissionBanner.tsx:
+  - Shows after user accepts their first plan
+  - "Get reminders to keep your streak going? Enable notifications"
+  - "Enable" → calls Notification.requestPermission(), sends subscription to API
+  - "Not now" → dismisses to localStorage, re-shows after 3 days
+  - Shows once per session max
+
+5. CRONJOBS (artifacts/api-server/src/cron/jobs.ts)
+Create these scheduled jobs using node-cron:
+
+  MORNING BRIEFING — runs at user's wake_time (default 8am, per user pref)
+  Job name: morning_briefing
+  Action: Generate AI daily briefing for each user who hasn't planned today
+  Push notification: "Good morning [name]. You have [X] tasks today. Ready to plan?"
+  URL: /plan
+
+  STREAK GUARDIAN — runs at 9pm daily
+  Job name: streak_guardian  
+  Action: Find users with streak > 0 who haven't accepted a plan today
+  Push notification: "Don't break your [X]-day streak! Quick plan check-in →"
+  URL: /plan
+
+  OVERDUE ESCALATOR — runs every 6 hours
+  Job name: overdue_escalator
+  Action: Find tasks overdue > 24h, bump priority to 'now' if not already
+  No push notification — just DB update
+
+  WEEKLY REVIEW — runs Sunday at 7pm
+  Job name: weekly_review
+  Action: Use Llama 4 Maverick to generate week summary per user
+  Creates a note in user's notes: "Week of [date] — Review"
+  Push notification: "Your week review is ready 📊"
+  URL: /notes/[new_note_id]
+
+  INBOX NUDGE — runs at 10am if user has > 5 inbox items
+  Job name: inbox_nudge
+  Action: Count inbox tasks
+  Push notification: "You have [X] items waiting in your inbox"
+  URL: /inbox
+
+Register all jobs in main server file.
+Start jobs on server startup.
+
+6. API ROUTES FOR PUSH
+In artifacts/api-server/src/routes/push.ts:
+  POST /api/push/subscribe — store push subscription
+  POST /api/push/unsubscribe — remove subscription
+  GET  /api/push/vapid-key — return public VAPID key
+
+Register in main server file.
+```
+
+---
+
+## PROMPT 6 — COACHING ENGINE + CHAT UI
+
+```
+You are working on TEMPO. Push notifications from Prompt 5 are in place.
+The @tempo/ai package coaching structure was scaffolded in Prompt 2.
+
+Do all of the following:
+
+1. IMPLEMENT COACHING SYSTEM PROMPTS
+Create one file per technique in packages/ai/src/coaching/prompts/:
+  free_chat.ts, cbt_thought_record.ts, dbt_tipp.ts, dbt_dear_man.ts,
+  dbt_stop_skill.ts, adhd_body_double.ts, adhd_time_boxing.ts,
+  motivational_interview.ts, daily_checkin.ts, crisis_grounding.ts
+
+Each file exports: { systemPrompt: string, model: string, thinkingEnabled: boolean }
+
+Full system prompt content per technique (as specified in the coaching system prompts
+from the previous architecture document — include all steps, example phrases,
+ADHD adaptations, and voice mode adaptations).
+
+Model assignments:
+  free_chat: MODEL_MAP.coaching (Gemma 3 27B)
+  cbt_thought_record: MODEL_MAP.protocol (Mistral Large — thinking: true)
+  dbt_tipp: MODEL_MAP.coaching
+  dbt_dear_man: MODEL_MAP.protocol
+  dbt_stop_skill: MODEL_MAP.protocol
+  adhd_body_double: MODEL_MAP.coaching
+  adhd_time_boxing: MODEL_MAP.planning (Llama 4 Maverick)
+  motivational_interview: MODEL_MAP.coaching
+  daily_checkin: MODEL_MAP.coaching
+  crisis_grounding: MODEL_MAP.protocol (Mistral Large — most predictable)
+
+2. IMPLEMENT COACHING ENGINE
+Complete packages/ai/src/coaching/engine.ts:
+
+  async function runCoachingTurn(
+    session: CoachingSession,
+    userMessage: string
+  ): Promise<CoachingResponse> {
+    // 1. Load technique prompt
+    // 2. Inject context snapshot into system prompt preamble:
+    //    "[X] tasks today, [X] overdue, [X]-day streak, energy: [level]"
+    // 3. Build message history from session.turnHistory
+    // 4. Call ModelProvider with appropriate model + thinking setting
+    // 5. Stream response
+    // 6. Parse response for:
+    //    [CREATE_TASK: "title"] → add to createTasks array
+    //    [SWITCH: technique_id] → add to suggestTechniqueSwitch
+    // 7. Return { response, createTasks?, suggestTechniqueSwitch? }
+  }
+
+3. COACHING API ROUTE
+In artifacts/api-server/src/routes/coaching.ts:
+  POST /api/coaching/turn (SSE stream)
+    Body: { sessionId, message, technique, contextSnapshot }
+    Store session in Redis or in-memory Map (userId → CoachingSession)
+    Stream response tokens as SSE
+    After full response: if createTasks, call tasks API
+    Returns SSE stream: { type: 'token', data: string } | { type: 'done', data: CoachingResponse }
+
+Register in main server file.
+
+4. COACH CHAT UI
+Create apps/web/src/components/CoachChat.tsx:
+  - Floating action button (bottom right, brain/lotus icon, indigo)
+  - Opens slide-up drawer on mobile, side panel (380px) on desktop
+  - Technique selector: horizontal pill chips, scrollable
+    (Free Chat | CBT | DBT TIPP | DBT DEAR MAN | Stop Skill | 
+     Body Double | Time Boxing | MI | Daily Check-in | Grounding)
+  - Message list: user right-aligned indigo, coach left-aligned soft purple
+  - System/technique changes: centered italic muted text
+  - Voice input: mic button, hold to record, Groq STT
+  - TTS toggle: "🔊 Read aloud" in header
+  - Context awareness: auto-reads today's task count, streak, energy from app state
+  - Body double mode: persistent session timer + "End session" button
+  - Technique switch suggestion: shows a pill "The coach suggests: [technique] →"
+    clicking it switches technique
+  - Crisis mode: if technique is crisis_grounding, show 
+    "If you need immediate support: dial [local crisis line]" 
+    permanently at top of session
+  - Keyboard shortcut: ⌘J opens/closes CoachChat
+
+Mount <CoachChat /> in App.tsx alongside <Toaster />.
+```
+
+---
+
+## PROMPT 7 — SEARCH + ONBOARDING + SETTINGS + OFFLINE UI
+
+```
+You are working on TEMPO. All previous prompts are complete.
+These are the final features needed for PWA-publishable state.
+
+Do all of the following:
+
+1. SEARCH — COMMAND PALETTE (⌘K)
+Create apps/web/src/components/CommandPalette.tsx:
+  - Opens on ⌘K (Mac) or Ctrl+K (Windows/Linux)
+  - Full-screen modal overlay, dark/light themed
+  - Search input at top (auto-focused)
+  - Searches simultaneously:
+    * Tasks: title match (client-side, from cache)
+    * Notes: title + tag match (client-side)
+    * Notes: semantic content search (POST /api/search/semantic after 500ms debounce)
+  - Results sections: Tasks | Notes | Quick Actions
+  - Quick actions: "Add task", "New note", "Plan today", "Open coach"
+  - Keyboard: ↑↓ navigate, Enter select, Escape close
+  - Each result: icon + title + muted subtitle (project/tag/date)
+  - Recent searches: stored in localStorage, shown when input is empty
+
+Add POST /api/search/semantic in api-server:
+  - Accepts { query, userId, topK: 5 }
+  - Embeds query using OpenAI text-embedding-3-small
+  - Searches pgvector conversation_embeddings + a future notes_embeddings table
+  - Returns ranked results with title + excerpt
+
+2. ONBOARDING FLOW
+Create apps/web/src/pages/Onboarding.tsx:
+  4-step flow, shown once after signup (stored in user.onboardingCompletedAt):
+  
+  Step 1: Wake time + planning time
+    "What time do you usually wake up?" (time picker)
+    "When do you want to do your daily planning?" (time picker, default: wake + 30min)
+  
+  Step 2: Default energy pattern
+    "When's your best focus time?" (Morning / Midday / Afternoon / Evening / Variable)
+    This sets a default energy_profile on the user record
+  
+  Step 3: First task
+    "What's one thing on your mind right now?"
+    Text input → creates first task with priority 'now', status 'today'
+  
+  Step 4: Enable notifications
+    Shows PushPermissionBanner inline (same component from Prompt 5)
+    Skip button available
+  
+  On complete: set user.onboardingCompletedAt, navigate to /plan
+
+Add onboardingCompletedAt and wakeTime and planningTime and energyProfile
+to the users table schema. Run drizzle-kit push.
+
+3. SETTINGS PAGE
+Create/complete apps/web/src/pages/Settings.tsx:
+  Sections:
+
+  PROFILE
+    Display name (editable inline)
+    Email (display only)
+    
+  PLANNING
+    Wake time (time picker)
+    Planning time (time picker)  
+    Default energy pattern (select)
+    
+  APPEARANCE
+    Theme: Light | Dark | System (segmented control from Prompt 3 architecture)
+    
+  NOTIFICATIONS
+    Morning briefing: toggle + time
+    Streak guardian: toggle
+    Overdue escalator: toggle
+    Weekly review: toggle
+    
+  COACHING
+    Default technique (select from all 10)
+    Voice mode for coaching: toggle
+    Read responses aloud: toggle
+    
+  DATA
+    Export my data (JSON download of all tasks + notes + plans)
+    Delete my account (with confirmation modal)
+    
+  ABOUT
+    Version, open source licenses link
+
+4. OFFLINE UI
+Create apps/web/src/components/OfflineBanner.tsx:
+  - Listens to window online/offline events
+  - When offline: shows a subtle amber banner at top of screen:
+    "You're offline — changes will sync when you reconnect"
+  - When back online: banner changes to green "Back online ✓" for 3 seconds then fades
+  - During offline: disable AI features (coaching, planning, search) with 
+    tooltip "Requires connection"
+  - Queue failed API writes to localStorage, retry on reconnect
+
+Mount <OfflineBanner /> in App.tsx.
+
+5. INBOX PAGE
+Create apps/web/src/pages/Inbox.tsx:
+  - Lists all tasks with status: 'inbox'
+  - Group by: no grouping (flat list, newest first)
+  - Each task: title + priority badge + "Process" actions
+  - Process actions: Schedule Today | Set Priority + Move to Later | Delete
+  - "Schedule Today" sets status: 'today', dueDate: today
+  - Bulk select: checkbox on each task, bulk process selected
+  - Empty state: "Your inbox is clear 🎉" with confetti
+  - Quick add at top (same inline form pattern from Today view)
+  - Badge count on sidebar icon (real-time via React Query)
+```
+
+---
+
+## PROMPT 8 — REACT NATIVE MOBILE APP
+
+```
+You are working on TEMPO. The PWA is complete. 
+The apps/mobile/ scaffold from Prompt 1 is in place.
+Reference: 
+  https://github.com/expo/expo
+  https://github.com/marklawlor/nativewind
+  https://github.com/expo/router
+
+The SAME Convex backend and Express API serve both web and mobile.
+Do NOT duplicate any backend logic. Import from packages/* only.
+
+Do all of the following:
+
+1. EXPO SETUP
+In apps/mobile/:
+  Install: expo, expo-router, nativewind, expo-av, expo-notifications,
+           expo-haptics, expo-secure-store, expo-constants
+  
+  Configure app.json:
+    name: "TEMPO"
+    slug: "tempo-adhd-planner"  
+    version: "1.0.0"
+    orientation: portrait
+    icon: ./assets/icon.png
+    scheme: tempo
+    plugins: ["expo-router", "expo-notifications", "expo-av"]
+    ios.bundleIdentifier: com.tempoapp.planner
+    android.package: com.tempoapp.planner
+    extra.convexUrl: process.env.EXPO_PUBLIC_CONVEX_URL
+
+2. NAVIGATION (expo-router)
+Create apps/mobile/app/:
+  _layout.tsx: root layout with ConvexAuthWrapper + ThemeProvider
+  (auth)/login.tsx: mobile login screen
+  (auth)/signup.tsx: mobile signup screen  
+  (tabs)/_layout.tsx: tab bar (Today, Inbox, Notes, Plan, Coach)
+  (tabs)/today.tsx: Today view
+  (tabs)/inbox.tsx: Inbox
+  (tabs)/notes/index.tsx: Notes list
+  (tabs)/notes/[id].tsx: Note editor (simplified — no split pane)
+  (tabs)/plan.tsx: Daily planning session
+  (tabs)/coach.tsx: Coaching (full-screen on mobile)
+  settings.tsx: Settings
+
+3. SHARED API CLIENT
+In apps/mobile/src/api.ts:
+  Import all hooks from @tempo/api-client (same hooks as web)
+  Set base URL from EXPO_PUBLIC_API_URL env var
+  This is the ONLY place the API URL is configured for mobile
+
+4. TODAY VIEW (MOBILE)
+apps/mobile/app/(tabs)/today.tsx:
+  - Same data as web (useListTasks, useUpdateTask from @tempo/api-client)
+  - No drag-and-drop (use swipe gestures instead via react-native-gesture-handler)
+  - Swipe right on task: complete (green checkmark)
+  - Swipe left on task: move to later (amber)
+  - Long press: context menu (Edit, Move to Inbox, Delete)
+  - Haptic feedback on complete (expo-haptics)
+  - Pull to refresh
+  - Priority sections: same Now / Soon / Later / Overdue structure
+
+5. VOICE CHAT (MOBILE)
+apps/mobile/src/components/VoiceChat.native.tsx:
+  - Uses expo-av for audio recording (not Web Audio API)
+  - Same API endpoints as web (/api/voice/turn)
+  - Plays audio response using expo-av Audio
+  - Floating button same position as web
+
+6. PUSH NOTIFICATIONS (MOBILE)
+apps/mobile/src/notifications.ts:
+  - Uses expo-notifications (different from web push)
+  - On app start: request permission, get Expo push token
+  - Register token at POST /api/push/subscribe-expo
+  - Add route to api-server that sends via Expo Push API
+
+Add POST /api/push/subscribe-expo to api-server:
+  Stores Expo push token separately from web push subscriptions
+  Sends notifications via https://exp.host/--/api/v2/push/send
+
+7. THEME + STYLING
+Use Nativewind for all styling (same class names as Tailwind web where possible).
+Dark theme by default.
+Import ThemeProvider from packages/ui-shared if possible, 
+otherwise implement a minimal RN version.
+
+8. OFFLINE SUPPORT
+Use expo-secure-store for auth tokens (replaces localStorage).
+Implement optimistic updates for task complete/reorder using 
+the same pattern as web — update local state, sync to API.
+Show a small "Syncing..." indicator when offline writes are queued.
+```

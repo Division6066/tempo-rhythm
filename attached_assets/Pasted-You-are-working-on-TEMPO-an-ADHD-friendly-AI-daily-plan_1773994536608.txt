@@ -1,0 +1,91 @@
+You are working on TEMPO, an ADHD-friendly AI daily planner.
+This is a diagnostic prompt. Do NOT make any code changes.
+Your job is to audit the current state of the codebase and produce a written report.
+
+READ the following before writing your report:
+- artifacts/tempo/ (the PWA frontend)
+- artifacts/api-server/ (the Express backend)
+- lib/db/src/schema/ (Drizzle schema)
+- convex/ (if it exists)
+- package.json files at all levels
+- vercel.json or .vercel/ config if present
+- .env.example or any env var references
+
+REPORT A: CODEBASE DIAGNOSTIC
+Produce a structured report covering:
+
+1. CONVEX STATUS
+   - Is Convex configured? (convex/ directory, convex.json)
+   - Is ConvexAuthWrapper present and properly imported?
+   - What Convex functions exist (queries, mutations, actions)?
+   - Is CONVEX_DEPLOYMENT set in any .env files?
+   - Is the Convex client initialized correctly in main.tsx?
+   - Any obvious misconfigurations?
+
+2. VERCEL STATUS
+   - Is vercel.json present? What does it contain?
+   - What is the configured framework and root directory?
+   - What build command is specified?
+   - Are there any redirects, rewrites, or headers configured?
+   - What environment variables are referenced in the code 
+     but NOT present in vercel.json or .env.example?
+   - Is the output directory correct for a Vite build (dist/)?
+
+3. EXPO / REACT NATIVE STATUS
+   - Is there any React Native or Expo configuration present?
+   - Is app.json or app.config.ts present?
+   - Is the mobile app started or is this a fresh start?
+
+4. PACKAGE DEPENDENCY AUDIT
+   - List any packages imported in code but missing from package.json
+   - List any packages in package.json not used anywhere
+   - Are @dnd-kit/core and @dnd-kit/sortable installed?
+   - Is pgvector or a vector store client installed?
+   - Is any LLM client library installed (openai, fireworks, etc.)?
+
+5. BUILD BLOCKERS
+   - List every issue that would cause a Vercel build to fail
+   - Severity: CRITICAL (build fails) | WARNING (degrades functionality) | INFO
+
+6. MISSING FEATURES CHECKLIST
+Compare what exists against this expected feature list and mark each:
+   ✅ EXISTS | ⚠️ PARTIAL | ❌ MISSING
+
+   PWA:
+   [ ] manifest.json with correct fields
+   [ ] service worker (sw.js) registered
+   [ ] PWAInstallPrompt component
+   [ ] Push notification infrastructure
+   
+   AUTH:
+   [ ] Login page
+   [ ] Signup page
+   [ ] Forgot password flow
+   [ ] Reset password flow
+   
+   CORE PAGES:
+   [ ] Dashboard with AI top-3, streak, progress ring
+   [ ] Today view with drag reorder
+   [ ] Note editor with split pane
+   [ ] Inbox page
+   [ ] Calendar page
+   [ ] Settings page
+   [ ] /plan route (AI planning flow)
+   [ ] Onboarding flow
+   
+   AI FEATURES:
+   [ ] Any LLM integration
+   [ ] Voice input (STT)
+   [ ] Voice output (TTS)
+   [ ] Coaching chat UI
+   [ ] Search / command palette (⌘K)
+   
+   INFRASTRUCTURE:
+   [ ] Conversation storage schema
+   [ ] pgvector / RAG setup
+   [ ] CronJob infrastructure
+   [ ] Theme system (light/dark/system)
+
+Output this report in full. Do not truncate.
+Label it: === REPORT A: REPLIT CODEBASE DIAGNOSTIC ===
+Save it to: /docs/diagnostic/REPORT_A_REPLIT.md
