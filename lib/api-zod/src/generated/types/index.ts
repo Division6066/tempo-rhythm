@@ -82,6 +82,8 @@ export * from "./preferenceMemoryTimeFormat";
 export * from "./project";
 export * from "./projectStatus";
 export * from "./publishNoteBody";
+export * from "./renameNote200";
+export * from "./renameNoteBody";
 export * from "./reorderFoldersBody";
 export * from "./reorderProjectsBody";
 export * from "./resetMemories200";

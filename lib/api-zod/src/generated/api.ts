@@ -1347,6 +1347,22 @@ export const PublishNoteResponse = zod.object({
 });
 
 /**
+ * @summary Rename a note and update all wiki-link references
+ */
+export const RenameNoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RenameNoteBody = zod.object({
+  oldTitle: zod.string(),
+  newTitle: zod.string(),
+});
+
+export const RenameNoteResponse = zod.object({
+  updatedCount: zod.number(),
+});
+
+/**
  * @summary Get a published note by slug (public, no auth)
  */
 export const GetPublishedNoteParams = zod.object({

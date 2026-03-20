@@ -63,6 +63,8 @@ import type {
   PreferenceMemory,
   Project,
   PublishNoteBody,
+  RenameNote200,
+  RenameNoteBody,
   ReorderFoldersBody,
   ReorderProjectsBody,
   ResetMemories200,
@@ -6088,6 +6090,93 @@ export const usePublishNote = <
   TContext
 > => {
   return useMutation(getPublishNoteMutationOptions(options));
+};
+
+/**
+ * @summary Rename a note and update all wiki-link references
+ */
+export const getRenameNoteUrl = (id: number) => {
+  return `/api/notes/${id}/rename`;
+};
+
+export const renameNote = async (
+  id: number,
+  renameNoteBody: RenameNoteBody,
+  options?: RequestInit,
+): Promise<RenameNote200> => {
+  return customFetch<RenameNote200>(getRenameNoteUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(renameNoteBody),
+  });
+};
+
+export const getRenameNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renameNote>>,
+    TError,
+    { id: number; data: BodyType<RenameNoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof renameNote>>,
+  TError,
+  { id: number; data: BodyType<RenameNoteBody> },
+  TContext
+> => {
+  const mutationKey = ["renameNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof renameNote>>,
+    { id: number; data: BodyType<RenameNoteBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return renameNote(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RenameNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof renameNote>>
+>;
+export type RenameNoteMutationBody = BodyType<RenameNoteBody>;
+export type RenameNoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Rename a note and update all wiki-link references
+ */
+export const useRenameNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renameNote>>,
+    TError,
+    { id: number; data: BodyType<RenameNoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof renameNote>>,
+  TError,
+  { id: number; data: BodyType<RenameNoteBody> },
+  TContext
+> => {
+  return useMutation(getRenameNoteMutationOptions(options));
 };
 
 /**

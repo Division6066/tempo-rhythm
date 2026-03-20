@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { db, notesTable } from "@workspace/db";
 import {
   ListNotesQueryParams,
@@ -12,6 +12,8 @@ import {
   UpdateNoteResponse,
   DeleteNoteParams,
   PublishNoteParams,
+  RenameNoteParams,
+  RenameNoteBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -137,6 +139,61 @@ router.post("/notes/:id/publish", async (req, res): Promise<void> => {
     .returning();
 
   res.json(GetNoteResponse.parse(note));
+});
+
+router.post("/notes/:id/rename", async (req, res): Promise<void> => {
+  const params = RenameNoteParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const body = RenameNoteBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+
+  const { newTitle } = body.data;
+
+  const [existing] = await db.select().from(notesTable).where(eq(notesTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Note not found" });
+    return;
+  }
+
+  const authorativeOldTitle = existing.title;
+
+  await db
+    .update(notesTable)
+    .set({ title: newTitle })
+    .where(eq(notesTable.id, params.data.id));
+
+  const allOtherNotes = await db
+    .select()
+    .from(notesTable)
+    .where(ne(notesTable.id, params.data.id));
+
+  let updatedCount = 0;
+  const oldPattern = new RegExp(
+    `\\[\\[${authorativeOldTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\]\\]`,
+    "gi"
+  );
+  const newReplacement = `[[${newTitle}]]`;
+
+  for (const otherNote of allOtherNotes) {
+    if (oldPattern.test(otherNote.content)) {
+      oldPattern.lastIndex = 0;
+      const updatedContent = otherNote.content.replace(oldPattern, newReplacement);
+      await db
+        .update(notesTable)
+        .set({ content: updatedContent })
+        .where(eq(notesTable.id, otherNote.id));
+      updatedCount++;
+    }
+  }
+
+  res.json({ updatedCount });
 });
 
 router.get("/published/:slug", async (req, res): Promise<void> => {

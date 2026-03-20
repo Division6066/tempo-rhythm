@@ -868,6 +868,15 @@ export type PublishNoteBody = {
   isPublished: boolean;
 };
 
+export type RenameNoteBody = {
+  oldTitle: string;
+  newTitle: string;
+};
+
+export type RenameNote200 = {
+  updatedCount: number;
+};
+
 export type GlobalSearchParams = {
   q: string;
 };

@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose, Columns, Check, Loader2, AlertCircle } from "lucide-react";
 import MarkdownToolbar from "./MarkdownToolbar";
+import WikiLinkAutocomplete from "./WikiLinkAutocomplete";
+import TagAutocomplete from "./TagAutocomplete";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 
 interface MarkdownEditorProps {
@@ -20,9 +22,59 @@ interface MarkdownEditorProps {
     onStartRecording: () => void;
     onStopRecording: () => void;
   };
+  allNotes?: Array<{ id: number; title: string }>;
+  allTags?: string[];
+  onCreateNote?: (title: string) => void;
+}
+
+function getCaretCoordinates(textarea: HTMLTextAreaElement): { top: number; left: number } {
+  const div = document.createElement("div");
+  const style = window.getComputedStyle(textarea);
+  const props = [
+    "fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing",
+    "wordSpacing", "textIndent", "paddingTop", "paddingLeft", "paddingRight",
+    "borderTopWidth", "borderLeftWidth", "boxSizing", "whiteSpace", "wordWrap", "overflowWrap",
+  ];
+  props.forEach((p) => {
+    div.style.setProperty(p, style.getPropertyValue(p));
+  });
+  div.style.position = "absolute";
+  div.style.visibility = "hidden";
+  div.style.whiteSpace = "pre-wrap";
+  div.style.width = style.width;
+  div.style.height = "auto";
+  div.style.overflow = "hidden";
+
+  const text = textarea.value.substring(0, textarea.selectionStart);
+  div.textContent = text;
+  const span = document.createElement("span");
+  span.textContent = "|";
+  div.appendChild(span);
+  document.body.appendChild(div);
+
+  const rect = textarea.getBoundingClientRect();
+  const top = rect.top + span.offsetTop - textarea.scrollTop + parseInt(style.lineHeight || "20");
+  const left = rect.left + span.offsetLeft - textarea.scrollLeft;
+
+  document.body.removeChild(div);
+  return { top: Math.min(top, rect.bottom - 50), left: Math.min(left, rect.right - 250) };
 }
 
 const SPLIT_POS_KEY = "tempo-editor-split";
+
+function makeHeadingId(level: number, text: string): string {
+  return `h-${level}-${text.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}`;
+}
+
+function extractTextFromChildren(children: React.ReactNode): string {
+  if (typeof children === "string") return children;
+  if (typeof children === "number") return String(children);
+  if (Array.isArray(children)) return children.map(extractTextFromChildren).join("");
+  if (children && typeof children === "object" && "props" in children) {
+    return extractTextFromChildren((children as React.ReactElement).props.children);
+  }
+  return String(children ?? "");
+}
 
 export default function MarkdownEditor({
   value,
@@ -32,6 +84,9 @@ export default function MarkdownEditor({
   preprocessValue,
   saveStatus,
   voiceProps,
+  allNotes,
+  allTags,
+  onCreateNote,
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
@@ -39,12 +94,114 @@ export default function MarkdownEditor({
   const [isMobile, setIsMobile] = useState(false);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
   const [viewMode, setViewMode] = useState<"split" | "editor" | "preview">("split");
+  const [collapsedHeadings, setCollapsedHeadings] = useState<Set<string>>(new Set());
+
+  const [wikiLinkState, setWikiLinkState] = useState<{
+    active: boolean;
+    query: string;
+    position: { top: number; left: number };
+  }>({ active: false, query: "", position: { top: 0, left: 0 } });
+
+  const [tagState, setTagState] = useState<{
+    active: boolean;
+    query: string;
+    position: { top: number; left: number };
+  }>({ active: false, query: "", position: { top: 0, left: 0 } });
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const checkAutocomplete = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+
+    const pos = ta.selectionStart;
+    const textBefore = ta.value.substring(0, pos);
+
+    const wikiMatch = textBefore.match(/\[\[([^\]]*)$/);
+    if (wikiMatch && allNotes) {
+      const coords = getCaretCoordinates(ta);
+      setWikiLinkState({ active: true, query: wikiMatch[1], position: coords });
+      setTagState((prev) => ({ ...prev, active: false }));
+      return;
+    }
+
+    const tagMatch = textBefore.match(/(?:^|\s)#([\w-]*)$/);
+    if (tagMatch && allTags && allTags.length > 0) {
+      const coords = getCaretCoordinates(ta);
+      setTagState({ active: true, query: tagMatch[1], position: coords });
+      setWikiLinkState((prev) => ({ ...prev, active: false }));
+      return;
+    }
+
+    setWikiLinkState((prev) => ({ ...prev, active: false }));
+    setTagState((prev) => ({ ...prev, active: false }));
+  }, [allNotes, allTags]);
+
+  const handleWikiSelect = useCallback(
+    (title: string) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      const pos = ta.selectionStart;
+      const textBefore = ta.value.substring(0, pos);
+      const match = textBefore.match(/\[\[([^\]]*)$/);
+      if (!match) return;
+      const start = pos - match[1].length;
+      const newValue = ta.value.substring(0, start) + title + "]]" + ta.value.substring(pos);
+      onChange(newValue);
+      setWikiLinkState((prev) => ({ ...prev, active: false }));
+      setTimeout(() => {
+        const newPos = start + title.length + 2;
+        ta.focus();
+        ta.setSelectionRange(newPos, newPos);
+      }, 0);
+    },
+    [onChange]
+  );
+
+  const handleWikiCreate = useCallback(
+    (title: string) => {
+      handleWikiSelect(title);
+      onCreateNote?.(title);
+    },
+    [handleWikiSelect, onCreateNote]
+  );
+
+  const handleTagSelect = useCallback(
+    (tag: string) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      const pos = ta.selectionStart;
+      const textBefore = ta.value.substring(0, pos);
+      const match = textBefore.match(/(?:^|\s)#([\w-]*)$/);
+      if (!match) return;
+      const start = pos - match[1].length;
+      const newValue = ta.value.substring(0, start) + tag + ta.value.substring(pos);
+      onChange(newValue);
+      setTagState((prev) => ({ ...prev, active: false }));
+      setTimeout(() => {
+        const newPos = start + tag.length;
+        ta.focus();
+        ta.setSelectionRange(newPos, newPos);
+      }, 0);
+    },
+    [onChange]
+  );
+
+  const toggleHeading = useCallback((headingId: string) => {
+    setCollapsedHeadings((prev) => {
+      const next = new Set(prev);
+      if (next.has(headingId)) {
+        next.delete(headingId);
+      } else {
+        next.add(headingId);
+      }
+      return next;
+    });
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -200,11 +357,11 @@ export default function MarkdownEditor({
   );
 
   const previewContent = (
-    <div className="prose prose-invert prose-sm max-w-none p-4 overflow-y-auto h-full">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {processedValue}
-      </ReactMarkdown>
-    </div>
+    <CollapsiblePreview
+      source={processedValue}
+      collapsedHeadings={collapsedHeadings}
+      onToggleHeading={toggleHeading}
+    />
   );
 
   const editorContent = (
@@ -213,11 +370,37 @@ export default function MarkdownEditor({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={handleKeyDown}
+      onKeyUp={checkAutocomplete}
+      onClick={checkAutocomplete}
       disabled={disabled}
       placeholder="Start typing (Markdown supported, use #tags @mentions [[wiki links]])..."
       className="w-full h-full resize-none bg-transparent text-foreground font-mono text-sm p-4 outline-none placeholder:text-muted-foreground/50"
       spellCheck={false}
     />
+  );
+
+  const autocompleteOverlays = (
+    <>
+      {wikiLinkState.active && allNotes && (
+        <WikiLinkAutocomplete
+          notes={allNotes}
+          query={wikiLinkState.query}
+          position={wikiLinkState.position}
+          onSelect={handleWikiSelect}
+          onCreate={handleWikiCreate}
+          onClose={() => setWikiLinkState((prev) => ({ ...prev, active: false }))}
+        />
+      )}
+      {tagState.active && allTags && (
+        <TagAutocomplete
+          tags={allTags}
+          query={tagState.query}
+          position={tagState.position}
+          onSelect={handleTagSelect}
+          onClose={() => setTagState((prev) => ({ ...prev, active: false }))}
+        />
+      )}
+    </>
   );
 
   if (isMobile) {
@@ -262,6 +445,7 @@ export default function MarkdownEditor({
         <div className="flex items-center justify-end px-3 py-1 border-t border-border bg-card/30 text-xs text-muted-foreground">
           {wordCount} words · {readingTime} min read
         </div>
+        {autocompleteOverlays}
       </div>
     );
   }
@@ -344,6 +528,103 @@ export default function MarkdownEditor({
       <div className="flex items-center justify-end px-3 py-1 border-t border-border bg-card/30 text-xs text-muted-foreground">
         {wordCount} words · {readingTime} min read
       </div>
+      {autocompleteOverlays}
+    </div>
+  );
+}
+
+function CollapsiblePreview({
+  source,
+  collapsedHeadings,
+  onToggleHeading,
+}: {
+  source: string;
+  collapsedHeadings: Set<string>;
+  onToggleHeading: (id: string) => void;
+}) {
+  const lines = source.split("\n");
+
+  interface Section {
+    level: number;
+    id: string;
+    headingLine: string;
+    contentLines: string[];
+  }
+
+  const sections: Section[] = [];
+  let currentSection: Section | null = null;
+  const preambleLines: string[] = [];
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      if (currentSection) sections.push(currentSection);
+      const level = headingMatch[1].length;
+      const text = headingMatch[2];
+      currentSection = { level, id: makeHeadingId(level, text), headingLine: line, contentLines: [] };
+    } else if (currentSection) {
+      currentSection.contentLines.push(line);
+    } else {
+      preambleLines.push(line);
+    }
+  }
+  if (currentSection) sections.push(currentSection);
+
+  const outputLines: string[] = [...preambleLines];
+  const collapsedStack: number[] = [];
+
+  for (const section of sections) {
+    while (collapsedStack.length > 0 && collapsedStack[collapsedStack.length - 1] >= section.level) {
+      collapsedStack.pop();
+    }
+
+    if (collapsedStack.length > 0) {
+      continue;
+    }
+
+    outputLines.push(section.headingLine);
+
+    if (collapsedHeadings.has(section.id)) {
+      collapsedStack.push(section.level);
+    } else {
+      outputLines.push(...section.contentLines);
+    }
+  }
+
+  const resultMarkdown = outputLines.join("\n");
+
+  function makeHeadingComponent(level: number) {
+    const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+    return function HeadingComponent({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+      const text = extractTextFromChildren(children);
+      const id = makeHeadingId(level, text);
+      const isCollapsed = collapsedHeadings.has(id);
+      return (
+        <Tag {...props} onClick={() => onToggleHeading(id)} style={{ cursor: "pointer", position: "relative" }}>
+          <span style={{ opacity: 0.5, marginRight: "0.4em", fontSize: "0.75em" }}>
+            {isCollapsed ? "▶" : "▼"}
+          </span>
+          {children}
+        </Tag>
+      );
+    };
+  }
+
+  return (
+    <div className="prose prose-invert prose-sm max-w-none p-4 overflow-y-auto h-full collapsible-preview">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: makeHeadingComponent(1),
+          h2: makeHeadingComponent(2),
+          h3: makeHeadingComponent(3),
+          h4: makeHeadingComponent(4),
+          h5: makeHeadingComponent(5),
+          h6: makeHeadingComponent(6),
+        }}
+      >
+        {resultMarkdown.trim()}
+      </ReactMarkdown>
     </div>
   );
 }

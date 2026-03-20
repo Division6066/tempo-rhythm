@@ -1395,6 +1395,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/Note"
 
+  /notes/{id}/rename:
+    post:
+      operationId: renameNote
+      tags: [notes]
+      summary: Rename a note and update all wiki-link references
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldTitle:
+                  type: string
+                newTitle:
+                  type: string
+              required:
+                - oldTitle
+                - newTitle
+      responses:
+        "200":
+          description: Rename result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedCount:
+                    type: integer
+                required:
+                  - updatedCount
+
   /published/{slug}:
     get:
       operationId: getPublishedNote

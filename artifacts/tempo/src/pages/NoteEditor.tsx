@@ -10,6 +10,8 @@ import {
   useDeleteNoteLink,
   usePublishNote,
   useListNotes,
+  useRenameNote,
+  useListTags,
   getListNotesQueryKey,
   getGetNoteQueryKey,
   getListNoteLinksQueryKey,
@@ -20,7 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X } from "lucide-react";
+import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import AiSuggestionBanner from "@/components/AiSuggestionBanner";
 
@@ -43,6 +45,7 @@ export default function NoteEditor() {
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
   const publishNote = usePublishNote();
+  const renameNote = useRenameNote();
 
   const { data: noteLinks } = useListNoteLinks(
     { noteId },
@@ -52,6 +55,7 @@ export default function NoteEditor() {
   const deleteNoteLink = useDeleteNoteLink();
 
   const { data: allNotes } = useListNotes();
+  const { data: tagsData } = useListTags();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -59,9 +63,11 @@ export default function NoteEditor() {
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [linkSearch, setLinkSearch] = useState("");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
+  const [backlinksExpanded, setBacklinksExpanded] = useState(true);
   const isSavingNew = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialized = useRef(false);
+  const originalTitle = useRef("");
   const titleRef = useRef(title);
   const contentRef = useRef(content);
   const isPinnedRef = useRef(isPinned);
@@ -90,8 +96,14 @@ export default function NoteEditor() {
       setContent(note.content);
       setIsPinned(note.isPinned);
       hasInitialized.current = true;
+      originalTitle.current = note.title;
     }
   }, [note, isNew]);
+
+  const allTagNames = useMemo(() => {
+    if (!tagsData) return [];
+    return tagsData.map((t: { name: string }) => t.name);
+  }, [tagsData]);
 
   const syncWikiLinks = useCallback(async (currentNoteId: number, currentContent: string) => {
     if (!allNotes) return;
@@ -278,6 +290,31 @@ export default function NoteEditor() {
     }
   }, [isRecording]);
 
+  const handleTitleBlur = async () => {
+    const oldTitle = originalTitle.current;
+    const newTitle = title.trim();
+
+    if (!isNew && oldTitle && newTitle && oldTitle !== newTitle) {
+      try {
+        const result = await renameNote.mutateAsync({
+          id: noteId,
+          data: { oldTitle, newTitle },
+        });
+        originalTitle.current = newTitle;
+        queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetNoteQueryKey(noteId) });
+        if (result.updatedCount > 0) {
+          toast({
+            title: `Updated [[references]] in ${result.updatedCount} note${result.updatedCount !== 1 ? "s" : ""}`,
+          });
+        }
+        await handleSave();
+      } catch {
+        toast({ variant: "destructive", title: "Failed to rename note" });
+      }
+    }
+  };
+
   const handleDelete = async () => {
     if (isNew) {
       setLocation("/notes");
@@ -339,6 +376,18 @@ export default function NoteEditor() {
     }
   };
 
+  const handleCreateNoteFromWikiLink = useCallback(async (noteTitle: string) => {
+    try {
+      await createNote.mutateAsync({
+        data: { title: noteTitle, content: "", isPinned: false }
+      });
+      queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+      toast({ title: `Created note "${noteTitle}"` });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to create note" });
+    }
+  }, [createNote, queryClient, toast]);
+
   const renderWikiLinks = useCallback((text: string): string => {
     return text.replace(/\[\[([^\]]+)\]\]/g, (_, linkTitle: string) => {
       const linkedNote = allNotes?.find(
@@ -362,14 +411,34 @@ export default function NoteEditor() {
   }, [allNotes, noteId, noteLinks, linkSearch]);
 
   const backlinks = useMemo(() => {
-    if (!noteLinks) return [];
-    return (noteLinks as NoteLink[]).map((link: NoteLink) => ({
-      id: link.id,
-      noteId: link.sourceNoteId === noteId ? link.targetNoteId : link.sourceNoteId,
-      noteTitle: link.sourceNoteId === noteId ? link.targetNoteTitle : link.sourceNoteTitle,
-      direction: link.sourceNoteId === noteId ? "outgoing" as const : "incoming" as const,
-    }));
-  }, [noteLinks, noteId]);
+    if (!noteLinks || !allNotes) return [];
+    return (noteLinks as NoteLink[]).map((link: NoteLink) => {
+      const isOutgoing = link.sourceNoteId === noteId;
+      const linkedNoteId = isOutgoing ? link.targetNoteId : link.sourceNoteId;
+      const linkedNoteTitle = isOutgoing ? link.targetNoteTitle : link.sourceNoteTitle;
+      const linkedNote = allNotes.find((n) => n.id === linkedNoteId);
+      let contextSnippet = "";
+      if (linkedNote && title) {
+        const lines = linkedNote.content.split("\n");
+        const mentionLine = lines.find((line) =>
+          line.toLowerCase().includes(`[[${title.toLowerCase()}]]`)
+        );
+        if (mentionLine) {
+          contextSnippet = mentionLine.trim();
+          if (contextSnippet.length > 120) {
+            contextSnippet = contextSnippet.substring(0, 117) + "...";
+          }
+        }
+      }
+      return {
+        id: link.id,
+        noteId: linkedNoteId,
+        noteTitle: linkedNoteTitle,
+        direction: isOutgoing ? "outgoing" as const : "incoming" as const,
+        contextSnippet,
+      };
+    });
+  }, [noteLinks, noteId, allNotes, title]);
 
   const tags = useMemo(() => {
     const matches = content.match(/#[\w-]+/g) || [];
@@ -397,6 +466,13 @@ export default function NoteEditor() {
     setCategorizeSuggestion(null);
     toast({ title: "Categorization applied" });
   }, [categorizeSuggestion, toast]);
+
+  const editorNotes = useMemo(() => {
+    if (!allNotes) return [];
+    return allNotes
+      .filter((n) => n.id !== noteId)
+      .map((n) => ({ id: n.id, title: n.title }));
+  }, [allNotes, noteId]);
 
   if (isLoading && !isNew) {
     return <div className="flex h-[50vh] items-center justify-center"><div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" /></div>;
@@ -496,6 +572,7 @@ export default function NoteEditor() {
       <Input 
         value={title}
         onChange={e => handleTitleChange(e.target.value)}
+        onBlur={handleTitleBlur}
         placeholder="Note Title"
         className="text-2xl font-display font-bold border-none bg-transparent px-0 focus-visible:ring-0"
       />
@@ -536,32 +613,51 @@ export default function NoteEditor() {
             onStartRecording: startRecording,
             onStopRecording: stopRecording,
           }}
+          allNotes={editorNotes}
+          allTags={allTagNames}
+          onCreateNote={handleCreateNoteFromWikiLink}
         />
       </div>
 
       {backlinks.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-            <Link2 size={12} /> Linked Notes ({backlinks.length})
-          </h3>
-          <div className="space-y-1">
-            {backlinks.map((link) => (
-              <div key={link.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
-                <button
-                  onClick={() => setLocation(`/notes/${link.noteId}`)}
-                  className="text-sm text-primary hover:underline truncate"
-                >
-                  {link.noteTitle}
-                </button>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground">{link.direction}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveLink(link.id)}>
-                    <X size={12} />
-                  </Button>
+          <button
+            onClick={() => setBacklinksExpanded(!backlinksExpanded)}
+            className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            {backlinksExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            <Link2 size={12} /> Linked Notes
+            <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded-full text-[10px] ml-1">
+              {backlinks.length}
+            </span>
+          </button>
+          {backlinksExpanded && (
+            <div className="space-y-1">
+              {backlinks.map((link) => (
+                <div key={link.id} className="bg-muted/50 rounded-lg px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setLocation(`/notes/${link.noteId}`)}
+                      className="text-sm text-primary hover:underline truncate"
+                    >
+                      {link.noteTitle}
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">{link.direction}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveLink(link.id)}>
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  </div>
+                  {link.contextSnippet && (
+                    <p className="text-xs text-muted-foreground mt-1 truncate italic">
+                      {link.contextSnippet}
+                    </p>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
