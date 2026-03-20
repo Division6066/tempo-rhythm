@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListProjects, useCreateProject, useListTasks, useUpdateProject, useReorderProjects, getListProjectsQueryKey } from "@workspace/api-client-react";
@@ -14,11 +14,25 @@ import { DataTable, type DataTableColumn } from "@/components/DataTable";
 import { KanbanBoard, type KanbanColumn } from "@/components/KanbanBoard";
 import { useViewPreference } from "@/hooks/useViewPreference";
 import type { Project } from "@workspace/api-client-react";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-function SortableProjectCard({ project, onClick, children }: { project: Project; onClick: () => void; children: React.ReactNode }) {
+function SortableProjectCard({ project, getTaskCounts, onClick }: { project: Project; getTaskCounts: (id: number) => { total: number; done: number }; onClick: () => void }) {
+  const counts = getTaskCounts(project.id);
+  const progress = counts.total > 0 ? (counts.done / counts.total) * 100 : 0;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(project.id) });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -30,14 +44,32 @@ function SortableProjectCard({ project, onClick, children }: { project: Project;
     <div ref={setNodeRef} style={style}>
       <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
         <CardContent className="p-5">
-          <div className="flex items-center gap-2">
-            <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground shrink-0 touch-none" onClick={e => e.stopPropagation()}>
-              <GripVertical size={16} />
-            </button>
-            <div className="flex-1 min-w-0" onClick={onClick}>
-              {children}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 -ml-2 touch-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <GripVertical size={16} />
+              </button>
+              <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: project.color || "#6C63FF" }} onClick={onClick} />
+              <div onClick={onClick}>
+                <h3 className="font-semibold text-lg">{project.name}</h3>
+                {project.description && <p className="text-sm text-muted-foreground mt-0.5">{project.description}</p>}
+              </div>
             </div>
+            <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" onClick={onClick} />
           </div>
+          {counts.total > 0 && (
+            <div className="mt-3 flex items-center gap-3" onClick={onClick}>
+              <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
+              </div>
+              <span className="text-xs text-muted-foreground">{counts.done}/{counts.total}</span>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -79,28 +111,39 @@ export default function Projects() {
     }
   };
 
-  const getTaskCounts = (projectId: number) => {
+  const getTaskCounts = useCallback((projectId: number) => {
     const projectTasks = tasks?.filter(t => t.projectId === projectId) || [];
     const done = projectTasks.filter(t => t.status === "done").length;
     return { total: projectTasks.length, done };
-  };
+  }, [tasks]);
 
   const allProjects = projects || [];
   const active = allProjects.filter(p => p.status === "active");
   const archived = allProjects.filter(p => p.status === "archived");
 
   const kanbanColumns: KanbanColumn<Project>[] = useMemo(() => [
-    {
-      id: "active",
-      title: "Active",
-      items: active,
-    },
-    {
-      id: "archived",
-      title: "Archived",
-      items: archived,
-    },
+    { id: "active", title: "Active", items: active },
+    { id: "archived", title: "Archived", items: archived },
   ], [active, archived]);
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active: dragActive, over } = event;
+    if (!over || dragActive.id === over.id) return;
+
+    const oldIndex = active.findIndex(p => String(p.id) === String(dragActive.id));
+    const newIndex = active.findIndex(p => String(p.id) === String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(active, oldIndex, newIndex);
+    try {
+      await reorderProjects.mutateAsync({
+        data: { projectIds: newOrder.map(p => p.id) },
+      });
+      queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to reorder projects" });
+    }
+  }, [active, reorderProjects, queryClient, toast]);
 
   if (isLoading) {
     return (
@@ -136,19 +179,7 @@ export default function Projects() {
 
   const colors = ["#C96442", "#6B9E7D", "#C9A54E", "#B85450", "#9D7E6C", "#5B8A9A", "#B07398", "#5A8F6E"];
 
-  const handleProjectListDragEnd = async (event: DragEndEvent) => {
-    const { active: dragActive, over } = event;
-    if (!over || dragActive.id === over.id) return;
-    const items = [...(active || [])];
-    const oldIndex = items.findIndex(p => String(p.id) === String(dragActive.id));
-    const newIndex = items.findIndex(p => String(p.id) === String(over.id));
-    if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = arrayMove(items, oldIndex, newIndex);
-    try {
-      await reorderProjects.mutateAsync({ data: { projectIds: reordered.map(p => p.id) } });
-      queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-    } catch {}
-  };
+  const handleProjectListDragEnd = handleDragEnd;
 
   const handleKanbanDragEnd = async (itemId: string, _from: string, to: string) => {
     const projectId = parseInt(itemId, 10);
@@ -292,35 +323,17 @@ export default function Projects() {
           ) : (
             <>
               {active.length > 0 && (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleProjectListDragEnd}>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={active.map(p => String(p.id))} strategy={verticalListSortingStrategy}>
                     <div className="space-y-3">
-                      {active.map(project => {
-                        const counts = getTaskCounts(project.id);
-                        const progress = counts.total > 0 ? (counts.done / counts.total) * 100 : 0;
-                        return (
-                          <SortableProjectCard key={project.id} project={project} onClick={() => setLocation(`/projects/${project.id}`)}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: project.color || "#C96442" }} />
-                                <div>
-                                  <h3 className="font-semibold text-lg">{project.name}</h3>
-                                  {project.description && <p className="text-sm text-muted-foreground mt-0.5">{project.description}</p>}
-                                </div>
-                              </div>
-                              <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                            </div>
-                            {counts.total > 0 && (
-                              <div className="mt-3 flex items-center gap-3">
-                                <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
-                                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-                                </div>
-                                <span className="text-xs text-muted-foreground">{counts.done}/{counts.total}</span>
-                              </div>
-                            )}
-                          </SortableProjectCard>
-                        );
-                      })}
+                      {active.map(project => (
+                        <SortableProjectCard
+                          key={project.id}
+                          project={project}
+                          getTaskCounts={getTaskCounts}
+                          onClick={() => setLocation(`/projects/${project.id}`)}
+                        />
+                      ))}
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -374,22 +387,3 @@ export default function Projects() {
                   </div>
                 )}
               </div>
-            );
-          }}
-          getItemId={(p) => String(p.id)}
-          onDragEnd={handleKanbanDragEnd}
-        />
-      )}
-
-      {viewMode === "table" && (
-        <DataTable
-          columns={tableColumns}
-          data={allProjects}
-          getRowId={(p) => p.id}
-          onRowClick={(p) => setLocation(`/projects/${p.id}`)}
-          emptyMessage="No projects yet."
-        />
-      )}
-    </div>
-  );
-}

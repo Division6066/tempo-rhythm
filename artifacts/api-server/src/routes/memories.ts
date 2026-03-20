@@ -65,6 +65,23 @@ router.delete("/memories/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
+router.post("/memories/reset", (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace("Bearer ", "");
+  if (!token || !token.startsWith("tempo-session-")) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+}, async (_req, res): Promise<void> => {
+  try {
+    const result = await db.delete(memoriesTable);
+    res.json({ deleted: result.rowCount ?? 0 });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to reset memories" });
+  }
+});
+
 router.post("/memories/decay", async (_req, res): Promise<void> => {
   try {
     await db.execute(sql`

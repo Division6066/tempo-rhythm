@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import {
   db,
   tasksTable,
@@ -25,7 +25,17 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/export", async (_req, res): Promise<void> => {
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace("Bearer ", "");
+  if (!token || !token.startsWith("tempo-session-")) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+}
+
+router.get("/export", requireAuth, async (_req, res): Promise<void> => {
   const [
     tasks,
     taskSubItems,

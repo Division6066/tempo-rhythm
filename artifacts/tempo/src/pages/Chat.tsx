@@ -35,6 +35,52 @@ function saveMessages(messages: Message[]) {
   } catch {}
 }
 
+function TtsButton({ text }: { text: string }) {
+  const [playing, setPlaying] = useState(false);
+
+  const handlePlay = async () => {
+    if (playing) return;
+    setPlaying(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${apiUrl}/voice/tts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("tempo_token")}`,
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        setPlaying(false);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setPlaying(false);
+        URL.revokeObjectURL(url);
+      };
+      await audio.play();
+    } catch {
+      setPlaying(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handlePlay}
+      disabled={playing}
+      className="text-muted-foreground hover:text-primary transition-colors p-1 rounded"
+      title="Read aloud"
+    >
+      {playing ? <Loader2 size={14} className="animate-spin" /> : <Volume2 size={14} />}
+    </button>
+  );
+}
+
 export default function Chat() {
   const [, setLocation] = useLocation();
   const stored = loadMessages();
@@ -253,6 +299,11 @@ export default function Chat() {
               <div className={`flex flex-col gap-2 max-w-[80%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
                 <div className={`p-4 rounded-2xl ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border rounded-tl-sm text-foreground prose prose-neutral prose-p:leading-snug prose-p:my-1"}`}>
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  {msg.role === "assistant" && (
+                    <div className="mt-2 flex justify-end border-t border-border/30 pt-1">
+                      <TtsButton text={msg.content} />
+                    </div>
+                  )}
                 </div>
                 {msg.role === "assistant" && (
                   <button

@@ -26,7 +26,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight, MoreVertical, Archive, Save, Paperclip, FileIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight, MoreVertical, Archive, Save, Paperclip, Upload, FileIcon, Loader2 } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import MilkdownEditorComponent from "@/components/MilkdownEditor";
 import type { AiAction } from "@/components/MarkdownToolbar";
@@ -127,62 +127,61 @@ export default function NoteEditor() {
   });
 
   const [attachments, setAttachments] = useState<Array<{ filename: string; originalName: string; mimeType: string; size: number; path: string; uploadedAt: string }>>([]);
-  const [uploadingAttachment, setUploadingAttachment] = useState(false);
-  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isNew && noteId) {
-      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-      fetch(`${baseUrl}/api/notes/${noteId}/attachments`)
-        .then(res => res.ok ? res.json() : { attachments: [] })
-        .then(data => setAttachments(data.attachments || []))
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      fetch(`${apiUrl}/notes/${noteId}/attachments`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("tempo_token")}` },
+      })
+        .then((r) => r.json())
+        .then((d) => setAttachments(d.attachments || []))
         .catch(() => {});
     }
   }, [isNew, noteId]);
 
-  const handleUploadAttachment = async (file: File) => {
-    if (isNew || !noteId) return;
-    setUploadingAttachment(true);
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || isNew || !noteId) return;
+    setAttachmentUploading(true);
     try {
-      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch(`${baseUrl}/api/notes/${noteId}/attachments`, {
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${apiUrl}/notes/${noteId}/attachments`, {
         method: "POST",
-        body: formData,
+        headers: { Authorization: `Bearer ${localStorage.getItem("tempo_token")}` },
+        body: fd,
       });
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
-      setAttachments(prev => [...prev, data.attachment]);
+      setAttachments((prev) => [...prev, data.attachment]);
       toast({ title: "File attached" });
     } catch {
-      toast({ variant: "destructive", title: "Failed to upload attachment" });
+      toast({ variant: "destructive", title: "Failed to upload file" });
     } finally {
-      setUploadingAttachment(false);
-      if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+      setAttachmentUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  };
+  }, [isNew, noteId, toast]);
 
-  const handleDeleteAttachment = async (filename: string) => {
-    if (isNew || !noteId) return;
+  const handleDeleteAttachment = useCallback(async (filename: string) => {
+    if (!noteId) return;
     try {
-      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-      const res = await fetch(`${baseUrl}/api/notes/${noteId}/attachments?filename=${encodeURIComponent(filename)}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${apiUrl}/notes/${noteId}/attachments?filename=${encodeURIComponent(filename)}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("tempo_token")}` },
       });
       if (!res.ok) throw new Error("Delete failed");
-      setAttachments(prev => prev.filter(a => a.filename !== filename));
+      setAttachments((prev) => prev.filter((a) => a.filename !== filename));
       toast({ title: "Attachment removed" });
     } catch {
       toast({ variant: "destructive", title: "Failed to remove attachment" });
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1048576).toFixed(1)} MB`;
-  };
+  }, [noteId, toast]);
 
   useEffect(() => {
     if (note && !isNew) {
@@ -354,8 +353,8 @@ export default function NoteEditor() {
         try {
           const formData = new FormData();
           formData.append("file", audioBlob, "recording.webm");
-          const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-          const res = await fetch(`${baseUrl}/api/transcribe`, {
+          const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+          const res = await fetch(`${apiUrl}/transcribe`, {
             method: "POST",
             body: formData,
           });
@@ -551,9 +550,9 @@ export default function NoteEditor() {
 
   const handleApplyCategorization = useCallback(async () => {
     if (!categorizeSuggestion) return;
-    const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+    const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
     try {
-      await fetch(`${baseUrl}/api/memories`, {
+      await fetch(`${apiUrl}/memories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -927,39 +926,38 @@ export default function NoteEditor() {
             </span>
             <div>
               <input
-                ref={attachmentInputRef}
+                ref={fileInputRef}
                 type="file"
+                onChange={handleFileUpload}
                 className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleUploadAttachment(file);
-                }}
               />
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={() => attachmentInputRef.current?.click()}
-                disabled={uploadingAttachment}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={attachmentUploading}
+                className="text-xs gap-1"
               >
-                {uploadingAttachment ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
-                Attach
+                {attachmentUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                {attachmentUploading ? "Uploading..." : "Attach file"}
               </Button>
             </div>
           </div>
           {attachments.length > 0 && (
             <div className="space-y-1">
               {attachments.map((att) => (
-                <div key={att.filename} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 group">
+                <div key={att.filename} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <FileIcon size={14} className="text-muted-foreground shrink-0" />
                     <span className="text-sm truncate">{att.originalName}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{formatFileSize(att.size)}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {att.size < 1024 ? `${att.size} B` : att.size < 1048576 ? `${(att.size / 1024).toFixed(1)} KB` : `${(att.size / 1048576).toFixed(1)} MB`}
+                    </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    className="h-6 w-6 text-destructive shrink-0"
                     onClick={() => handleDeleteAttachment(att.filename)}
                   >
                     <X size={12} />

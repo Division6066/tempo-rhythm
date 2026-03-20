@@ -1,18 +1,30 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useListFolders, useCreateFolder, useDeleteFolder, useReorderFolders, getListFoldersQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderOpen, Plus, Trash2, Briefcase, GraduationCap, Heart, Home, Code, GripVertical, type LucideIcon } from "lucide-react";
+import { FolderOpen, Plus, Trash2, Briefcase, GraduationCap, Heart, Home, Code, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Folder } from "@workspace/api-zod";
 
-const AREA_ICONS: Record<string, LucideIcon> = {
+const AREA_ICONS: Record<string, any> = {
   Work: Briefcase,
   Personal: Heart,
   Study: GraduationCap,
@@ -21,20 +33,25 @@ const AREA_ICONS: Record<string, LucideIcon> = {
 };
 
 function SortableFolderCard({ folder, onDelete }: { folder: Folder; onDelete: (id: number) => void }) {
+  const IconComponent = AREA_ICONS[folder.name] || FolderOpen;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(folder.id) });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
-  const IconComponent = AREA_ICONS[folder.name] || FolderOpen;
 
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="glass border-border/50 hover:border-primary/30 transition-colors group">
         <CardContent className="p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground shrink-0 touch-none" onClick={e => e.stopPropagation()}>
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 -ml-2 touch-none"
+            >
               <GripVertical size={16} />
             </button>
             <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
@@ -66,7 +83,9 @@ export default function Folders() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -95,19 +114,24 @@ export default function Folders() {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id || !folders) return;
-    const items = [...folders];
-    const oldIndex = items.findIndex(f => String(f.id) === String(active.id));
-    const newIndex = items.findIndex(f => String(f.id) === String(over.id));
+    if (!over || !folders || active.id === over.id) return;
+
+    const oldIndex = folders.findIndex(f => String(f.id) === String(active.id));
+    const newIndex = folders.findIndex(f => String(f.id) === String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = arrayMove(items, oldIndex, newIndex);
+
+    const newOrder = arrayMove(folders, oldIndex, newIndex);
     try {
-      await reorderFolders.mutateAsync({ data: { folderIds: reordered.map(f => f.id) } });
+      await reorderFolders.mutateAsync({
+        data: { folderIds: newOrder.map(f => f.id) },
+      });
       queryClient.invalidateQueries({ queryKey: getListFoldersQueryKey() });
-    } catch {}
-  };
+    } catch {
+      toast({ variant: "destructive", title: "Failed to reorder areas" });
+    }
+  }, [folders, reorderFolders, queryClient, toast]);
 
   if (isLoading) {
     return <div className="flex h-[50vh] items-center justify-center"><div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" /></div>;
@@ -154,9 +178,9 @@ export default function Folders() {
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={folders.map((f: Folder) => String(f.id))} strategy={rectSortingStrategy}>
+          <SortableContext items={folders.map(f => String(f.id))} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {folders.map((folder: Folder) => (
+              {folders.map(folder => (
                 <SortableFolderCard key={folder.id} folder={folder} onDelete={handleDelete} />
               ))}
             </div>

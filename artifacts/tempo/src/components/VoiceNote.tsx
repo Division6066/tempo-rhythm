@@ -51,8 +51,8 @@ export function VoiceNote({ onTranscription }: VoiceNoteProps) {
       const formData = new FormData();
       formData.append("file", audioBlob, "recording.webm");
 
-      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-      const res = await fetch(`${baseUrl}/api/transcribe`, {
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${apiUrl}/transcribe`, {
         method: "POST",
         body: formData,
       });

@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
 import {
@@ -29,7 +29,17 @@ const UPLOADS_DIR = path.resolve("uploads");
 
 const router: IRouter = Router();
 
-router.delete("/account", async (req, res): Promise<void> => {
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace("Bearer ", "");
+  if (!token || !token.startsWith("tempo-session-")) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+}
+
+router.delete("/account", requireAuth, async (req, res): Promise<void> => {
   const { confirm } = req.body ?? {};
   if (confirm !== "DELETE") {
     res.status(400).json({ error: "Must send { confirm: 'DELETE' } to confirm account deletion" });

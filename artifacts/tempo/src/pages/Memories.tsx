@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, Plus, Trash2, Sparkles, Info, BookOpen, BarChart3, Loader2, Recycle } from "lucide-react";
+import { Brain, Plus, Trash2, Sparkles, Info, BookOpen, BarChart3, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MemoryStatRow {
@@ -25,20 +25,22 @@ export default function Memories() {
   const [newMemory, setNewMemory] = useState("");
   const [tier, setTier] = useState<"warm" | "cold">("warm");
   const [stats, setStats] = useState<MemoryStatRow[]>([]);
-  const [loadingStats, setLoadingStats] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [decaying, setDecaying] = useState(false);
 
   const fetchStats = async () => {
-    setLoadingStats(true);
+    setStatsLoading(true);
     try {
-      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-      const res = await fetch(`${baseUrl}/api/memories/stats`);
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${apiUrl}/memories/stats`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("tempo_token")}` },
+      });
       if (res.ok) {
         const data = await res.json();
         setStats(data);
       }
     } catch {} finally {
-      setLoadingStats(false);
+      setStatsLoading(false);
     }
   };
 
@@ -49,16 +51,19 @@ export default function Memories() {
   const handleDecay = async () => {
     setDecaying(true);
     try {
-      const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-      const res = await fetch(`${baseUrl}/api/memories/decay`, { method: "POST" });
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${apiUrl}/memories/decay`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("tempo_token")}` },
+      });
       if (!res.ok) throw new Error("Decay failed");
-      const result = await res.json();
+      const data = await res.json();
       queryClient.invalidateQueries({ queryKey: getListMemoriesQueryKey() });
-      await fetchStats();
       toast({
         title: "Memory cleanup complete",
-        description: result.pruned > 0 ? `Removed ${result.pruned} faded memories.` : "Decay applied, no memories removed yet.",
+        description: data.pruned > 0 ? `Removed ${data.pruned} faded memories` : "All memories refreshed",
       });
+      fetchStats();
     } catch {
       toast({ variant: "destructive", title: "Failed to run memory cleanup" });
     } finally {
@@ -96,7 +101,7 @@ export default function Memories() {
   const hotMemories = memories?.filter(m => m.tier === "hot") || [];
   const warmMemories = memories?.filter(m => m.tier === "warm") || [];
   const coldMemories = memories?.filter(m => m.tier === "cold") || [];
-  const totalMemories = (memories || []).length;
+  const totalMemories = (memories?.length || 0);
 
   return (
     <div className="space-y-6 pb-12">
@@ -108,78 +113,52 @@ export default function Memories() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {totalMemories > 0 && (
         <Card className="glass border-border/50">
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-foreground">{totalMemories}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total</p>
-          </CardContent>
-        </Card>
-        <Card className="glass border-border/50">
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-violet-400">{hotMemories.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Core</p>
-          </CardContent>
-        </Card>
-        <Card className="glass border-border/50">
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-amber-400">{warmMemories.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Active</p>
-          </CardContent>
-        </Card>
-        <Card className="glass border-border/50">
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-blue-400">{coldMemories.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Background</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {stats.length > 0 && (
-        <Card className="glass border-border/50">
-          <CardContent className="p-4 space-y-2">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <BarChart3 size={12} /> Memory Health
-            </h3>
-            <div className="space-y-2">
-              {stats.map(s => {
-                const avgDecay = parseFloat(s.avg_decay) || 0;
-                return (
-                  <div key={s.tier} className="flex items-center gap-3">
-                    <span className={`text-xs font-medium w-16 capitalize ${
-                      s.tier === "hot" ? "text-violet-400" : s.tier === "warm" ? "text-amber-400" : "text-blue-400"
-                    }`}>{s.tier}</span>
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          s.tier === "hot" ? "bg-violet-400" : s.tier === "warm" ? "bg-amber-400" : "bg-blue-400"
-                        }`}
-                        style={{ width: `${Math.min(avgDecay, 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground w-20 text-right">
-                      {s.count} · {Math.round(avgDecay)}% fresh
-                    </span>
-                  </div>
-                );
-              })}
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-muted-foreground">
+                <BarChart3 size={14} /> Memory Stats
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDecay}
+                disabled={decaying}
+                className="text-xs gap-1.5"
+              >
+                {decaying ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                {decaying ? "Cleaning..." : "Clean up old memories"}
+              </Button>
             </div>
+            {statsLoading ? (
+              <div className="flex justify-center py-2"><Loader2 size={16} className="animate-spin text-muted-foreground" /></div>
+            ) : stats.length > 0 ? (
+              <div className="grid grid-cols-3 gap-3">
+                {stats.map((s) => {
+                  const tierColors: Record<string, string> = {
+                    hot: "text-violet-400 bg-violet-500/10 border-violet-500/20",
+                    warm: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                    cold: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                  };
+                  const cls = tierColors[s.tier] || "text-muted-foreground bg-muted border-border";
+                  return (
+                    <div key={s.tier} className={`rounded-lg border p-3 ${cls}`}>
+                      <div className="text-xs font-semibold uppercase">{s.tier}</div>
+                      <div className="text-2xl font-bold mt-1">{s.count}</div>
+                      <div className="text-[10px] mt-1 opacity-80">
+                        Avg decay: {Number(s.avg_decay).toFixed(0)}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No stats available</p>
+            )}
           </CardContent>
         </Card>
       )}
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDecay}
-          disabled={decaying || totalMemories === 0}
-          className="gap-1.5"
-        >
-          {decaying ? <Loader2 size={14} className="animate-spin" /> : <Recycle size={14} />}
-          {decaying ? "Cleaning up..." : "Clean up old memories"}
-        </Button>
-      </div>
 
       <Card className="glass border-primary/20 bg-primary/5">
         <CardContent className="p-4 flex items-start gap-3">

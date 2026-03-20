@@ -4,7 +4,6 @@ import {
   useGetPreferences,
   useUpdatePreferences,
   useListNoteTemplates,
-  useDeleteAccount,
   useResetMemories,
   getGetPreferencesQueryKey,
 } from "@workspace/api-client-react";
@@ -187,7 +186,7 @@ function SelectControl({
 }
 
 function ThemeSelector() {
-  const { mode, setMode } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="space-y-2">
@@ -198,8 +197,8 @@ function ThemeSelector() {
           { value: "dark", label: "Dark" },
           { value: "system", label: "System" },
         ]}
-        value={mode}
-        onChange={(v) => setMode(v as "light" | "dark" | "system")}
+        value={theme}
+        onChange={(v) => setTheme(v as "light" | "dark" | "system")}
       />
     </div>
   );
@@ -852,11 +851,64 @@ function TemplatesSection({
 function DataPrivacySection() {
   const { toast } = useToast();
   const resetMemories = useResetMemories();
-  const deleteAccount = useDeleteAccount();
+  const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importFormat, setImportFormat] = useState<"json" | "csv">("json");
+  const [importType, setImportType] = useState<"tasks" | "notes">("tasks");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ tasks: number; notes: number; memories: number } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  const handleRebuildIndex = async () => {
+    setRebuilding(true);
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${baseUrl}/search/index`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("tempo_token")}` },
+      });
+      if (!res.ok) throw new Error("Rebuild failed");
+      const data = await res.json();
+      toast({ title: "Search index rebuilt", description: `Indexed ${data.indexed ?? 0} items` });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to rebuild search index" });
+    } finally {
+      setRebuilding(false);
+    }
+  };
+
+  const handleDataImport = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const text = await importFile.text();
+      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const res = await fetch(`${baseUrl}/import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("tempo_token")}`,
+        },
+        body: JSON.stringify({ format: importFormat, data: text, type: importType }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Import failed");
+      setImportResult(result.imported);
+      setImportFile(null);
+      if (importFileRef.current) importFileRef.current.value = "";
+      toast({ title: `Imported ${result.total} items` });
+    } catch (err) {
+      toast({ variant: "destructive", title: err instanceof Error ? err.message : "Import failed" });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -897,13 +949,23 @@ function DataPrivacySection() {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== "DELETE") return;
+    setDeleting(true);
     try {
-      await deleteAccount.mutateAsync();
+      const baseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const token = localStorage.getItem("tempo_token");
+      const resp = await fetch(`${baseUrl}/account`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ confirm: "DELETE" }),
+      });
+      if (!resp.ok) throw new Error("Failed");
       setShowDeleteDialog(false);
       toast({ title: "Account deleted" });
       window.location.reload();
     } catch {
       toast({ variant: "destructive", title: "Failed to delete account" });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -931,6 +993,80 @@ function DataPrivacySection() {
           <DataImportSection />
 
           <RebuildSearchIndexButton />
+
+          <div className="border-t border-border/50 pt-4">
+            <div className="space-y-3">
+              <div className="space-y-0.5">
+                <Label className="text-base flex items-center gap-2">
+                  <Upload size={16} /> Import Data
+                </Label>
+                <p className="text-sm text-muted-foreground">Upload a CSV or JSON file to import tasks or notes.</p>
+              </div>
+              <div className="flex gap-2 items-center">
+                <SegmentedControl
+                  options={[
+                    { value: "json", label: "JSON" },
+                    { value: "csv", label: "CSV" },
+                  ]}
+                  value={importFormat}
+                  onChange={(v) => setImportFormat(v as "json" | "csv")}
+                />
+                {importFormat === "csv" && (
+                  <SegmentedControl
+                    options={[
+                      { value: "tasks", label: "Tasks" },
+                      { value: "notes", label: "Notes" },
+                    ]}
+                    value={importType}
+                    onChange={(v) => setImportType(v as "tasks" | "notes")}
+                  />
+                )}
+              </div>
+              <div className="flex gap-2 items-center">
+                <input
+                  ref={importFileRef}
+                  type="file"
+                  accept={importFormat === "json" ? ".json" : ".csv"}
+                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                  className="text-sm text-muted-foreground file:mr-2 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-primary/20"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDataImport}
+                  disabled={!importFile || importing}
+                >
+                  {importing ? <Loader2 size={14} className="animate-spin mr-1" /> : <Upload size={14} className="mr-1" />}
+                  {importing ? "Importing..." : "Import"}
+                </Button>
+              </div>
+              {importResult && (
+                <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-sm">
+                  <p className="font-medium text-teal-400">Import complete:</p>
+                  <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                    {importResult.tasks > 0 && <li>{importResult.tasks} tasks imported</li>}
+                    {importResult.notes > 0 && <li>{importResult.notes} notes imported</li>}
+                    {importResult.memories > 0 && <li>{importResult.memories} memories imported</li>}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-border/50 pt-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base flex items-center gap-2">
+                  <DatabaseBackup size={16} /> Rebuild Search Index
+                </Label>
+                <p className="text-sm text-muted-foreground">Re-index all content for search. Use if search results seem stale.</p>
+              </div>
+              <Button variant="outline" onClick={handleRebuildIndex} disabled={rebuilding} size="sm">
+                {rebuilding ? <Loader2 size={14} className="animate-spin mr-1" /> : <DatabaseBackup size={14} className="mr-1" />}
+                {rebuilding ? "Rebuilding..." : "Rebuild"}
+              </Button>
+            </div>
+          </div>
 
           <div className="border-t border-border/50 pt-4">
             <div className="flex items-center justify-between">
@@ -1024,9 +1160,9 @@ function DataPrivacySection() {
                     size="sm"
                     variant="destructive"
                     onClick={handleDeleteAccount}
-                    disabled={deleteConfirm !== "DELETE" || deleteAccount.isPending}
+                    disabled={deleteConfirm !== "DELETE" || deleting}
                   >
-                    {deleteAccount.isPending ? "Deleting..." : "Delete Everything"}
+                    {deleting ? "Deleting..." : "Delete Everything"}
                   </Button>
                 </div>
               </div>
@@ -1254,31 +1390,28 @@ function LorePackImport() {
   const [importResult, setImportResult] = useState<{ tasks: number; notes: number; memories: number } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const loreFileRef = useRef<HTMLInputElement>(null);
 
-  const validateData = (data: string, format: string): string | null => {
-    if (!data.trim()) return "No data provided";
-    if (format === "json") {
-      try {
-        const parsed = JSON.parse(data);
-        if (typeof parsed !== "object" || parsed === null) return "Invalid JSON: must be an object";
-        if (!parsed.tasks && !parsed.notes && !parsed.memories) return "JSON must contain at least one of: tasks, notes, memories";
-      } catch {
-        return "Invalid JSON syntax";
-      }
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setImportData(text);
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext === "json") setImportFormat("json");
+      else if (ext === "md" || ext === "markdown") setImportFormat("markdown");
+      else if (ext === "csv") setImportFormat("csv");
+      toast({ title: `Loaded "${file.name}"` });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to read file" });
     }
-    if (format === "csv") {
-      const lines = data.trim().split("\n");
-      if (lines.length < 2) return "CSV must have a header row and at least one data row";
-    }
-    return null;
+    if (loreFileRef.current) loreFileRef.current.value = "";
   };
 
   const handleImport = async () => {
-    const error = validateData(importData, importFormat);
-    if (error) {
-      setValidationError(error);
-      toast({ variant: "destructive", title: error });
+    if (!importData.trim()) {
+      toast({ variant: "destructive", title: "Paste some data or upload a file first" });
       return;
     }
     setValidationError(null);
@@ -1402,7 +1535,19 @@ function LorePackImport() {
           </p>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <div>
+            <input
+              ref={loreFileRef}
+              type="file"
+              accept=".json,.md,.markdown,.csv"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button onClick={() => loreFileRef.current?.click()} variant="outline" size="sm" className="flex items-center gap-1.5">
+              <Upload size={14} /> Upload File
+            </Button>
+          </div>
           <Button onClick={loadTemplate} variant="outline" size="sm" className="flex items-center gap-1.5">
             <Download size={14} /> Load Template
           </Button>

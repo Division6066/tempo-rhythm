@@ -22,7 +22,7 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-router.post("/api/transcribe", upload.single("file"), async (req: Request, res: Response) => {
+router.post("/transcribe", upload.single("file"), async (req: Request, res: Response) => {
   try {
     const clientIp = req.ip || req.socket.remoteAddress || "unknown";
     if (!checkRateLimit(clientIp)) {

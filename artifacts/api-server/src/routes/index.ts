@@ -22,6 +22,7 @@ import importRouter from "./import";
 import exportRouter from "./export";
 import accountRouter from "./account";
 import attachmentsRouter from "./attachments";
+import voiceRouter from "./voice";
 import libStatusRouter from "./libStatus";
 import ttsRouter from "./tts";
 
@@ -50,6 +51,7 @@ router.use(importRouter);
 router.use(exportRouter);
 router.use(accountRouter);
 router.use(attachmentsRouter);
+router.use(voiceRouter);
 router.use(libStatusRouter);
 router.use(ttsRouter);
 

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useCompleteOnboarding } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,7 @@ const ENERGY_OPTIONS = [
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [, setLocation] = useLocation();
-  const completeMutation = useCompleteOnboarding();
+  const [completing, setCompleting] = useState(false);
 
   const [formData, setFormData] = useState({
     adhdMode: true,
@@ -45,11 +44,24 @@ export default function Onboarding() {
   };
 
   const handleComplete = async () => {
+    setCompleting(true);
     try {
-      await completeMutation.mutateAsync({ data: formData });
+      const apiUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+      const token = localStorage.getItem("tempo_token");
+      const res = await fetch(`${apiUrl}/auth/onboarding`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Onboarding failed");
       setLocation("/");
     } catch (e) {
       console.error("Failed to complete onboarding", e);
+    } finally {
+      setCompleting(false);
     }
   };
 
@@ -249,10 +261,10 @@ export default function Onboarding() {
       </div>
       <Button 
         onClick={handleComplete} 
-        disabled={completeMutation.isPending}
+        disabled={completing}
         className="mt-4 w-full max-w-xs h-14 text-lg bg-success hover:bg-success text-white rounded-2xl shadow-lg shadow-success/20"
       >
-        {completeMutation.isPending ? "Saving..." : "Go to Dashboard"}
+        {completing ? "Saving..." : "Go to Dashboard"}
       </Button>
     </div>
   ];
