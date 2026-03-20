@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { markdownProcessor } from "@/lib/markdown-processing";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose, Columns, Check, Loader2, AlertCircle } from "lucide-react";
@@ -597,7 +598,15 @@ function CollapsiblePreview({
     }
   }
 
-  const resultMarkdown = outputLines.join("\n");
+  const rawMarkdown = outputLines.join("\n");
+  const resultMarkdown = useMemo(() => {
+    try {
+      const processed = markdownProcessor.processSync(rawMarkdown);
+      return String(processed);
+    } catch {
+      return rawMarkdown;
+    }
+  }, [rawMarkdown]);
 
   function makeHeadingComponent(level: number) {
     const Tag = `h${level}` as React.ElementType;

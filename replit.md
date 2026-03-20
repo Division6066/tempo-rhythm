@@ -52,6 +52,14 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **Tailwind CSS:** Utility-first CSS framework for styling.
 - **shadcn/ui:** UI component library.
 - **@uiw/react-md-editor:** Markdown editor with split-pane view and wiki-link support.
+- **Milkdown:** Rich Markdown editor (WYSIWYG) with GFM support, Nord theme. Component at `artifacts/tempo/src/components/MilkdownEditor.tsx`.
+- **CodeMirror:** Low-level editor packages (`@codemirror/view`, `@codemirror/state`, `@codemirror/lang-markdown`) available for standalone code editing surfaces.
+- **unified/remark/rehype:** Markdown processing pipeline at `artifacts/tempo/src/lib/markdown-processing.ts`.
+- **LlamaIndex:** Document ingestion and RAG pipeline SDK. Init module at `artifacts/api-server/src/lib/llamaindex.ts`.
+- **LangChain.js:** Document transform chains and text splitting. Utility at `artifacts/api-server/src/lib/langchain.ts`.
+- **instructor-js:** Structured AI extraction with Zod schemas. Utility at `artifacts/api-server/src/lib/instructor.ts`.
+- **BullMQ:** Background job queue with Redis. Queue/worker setup at `artifacts/api-server/src/lib/bullmq.ts`.
+- **Turborepo:** Monorepo build orchestration. Config at `turbo.json`. Root scripts `build` and `typecheck` use `turbo run`.
 - **Lucide React:** Icon library.
 - **date-fns:** Date utility library.
 - **react-big-calendar:** Full-featured calendar component with drag-and-drop support.

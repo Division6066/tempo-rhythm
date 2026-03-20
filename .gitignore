@@ -53,6 +53,9 @@ Thumbs.db
 attached_assets/Pasted-Replit-Secrets-*
 .convex-tmp/
 
+# Turborepo
+.turbo/
+
 # Replit
 .cache/
 .local/

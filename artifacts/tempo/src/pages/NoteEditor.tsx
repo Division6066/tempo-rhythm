@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight, MoreVertical, Archive, Save } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import MilkdownEditorComponent from "@/components/MilkdownEditor";
 import type { AiAction } from "@/components/MarkdownToolbar";
 import AiSuggestionBanner from "@/components/AiSuggestionBanner";
 import AiPreviewPanel from "@/components/AiPreviewPanel";
@@ -121,6 +122,9 @@ export default function NoteEditor() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateCategory, setTemplateCategory] = useState("general");
+  const [editorMode, setEditorMode] = useState<"classic" | "milkdown">(() => {
+    return (localStorage.getItem("tempo-editor-mode") as "classic" | "milkdown") || "classic";
+  });
 
   useEffect(() => {
     if (note && !isNew) {
@@ -805,24 +809,51 @@ export default function NoteEditor() {
         </div>
       )}
 
+      <div className="flex items-center gap-2 mb-1">
+        <button
+          onClick={() => { setEditorMode("classic"); localStorage.setItem("tempo-editor-mode", "classic"); }}
+          className={`text-xs px-2 py-1 rounded ${editorMode === "classic" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Classic
+        </button>
+        <button
+          onClick={() => { setEditorMode("milkdown"); localStorage.setItem("tempo-editor-mode", "milkdown"); }}
+          className={`text-xs px-2 py-1 rounded ${editorMode === "milkdown" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Rich Editor
+        </button>
+      </div>
       <div className="flex-1 min-h-0">
-        <MarkdownEditor
-          value={content}
-          onChange={handleContentChange}
-          height={500}
-          preprocessValue={renderWikiLinks}
-          saveStatus={saveStatus}
-          voiceProps={{
-            isRecording,
-            isTranscribing,
-            onStartRecording: startRecording,
-            onStopRecording: stopRecording,
-          }}
-          allNotes={editorNotes}
-          allTags={allTagNames}
-          onCreateNote={handleCreateNoteFromWikiLink}
-          onAiAction={handleAiAction}
-        />
+        {editorMode === "milkdown" ? (
+          <div className="border border-border rounded-lg overflow-hidden" style={{ height: 500 }}>
+            <div className="h-full overflow-y-auto">
+              <MilkdownEditorComponent
+                key={isNew ? "new" : noteId}
+                defaultValue={content}
+                onChange={handleContentChange}
+                className="min-h-full"
+              />
+            </div>
+          </div>
+        ) : (
+          <MarkdownEditor
+            value={content}
+            onChange={handleContentChange}
+            height={500}
+            preprocessValue={renderWikiLinks}
+            saveStatus={saveStatus}
+            voiceProps={{
+              isRecording,
+              isTranscribing,
+              onStartRecording: startRecording,
+              onStopRecording: stopRecording,
+            }}
+            allNotes={editorNotes}
+            allTags={allTagNames}
+            onCreateNote={handleCreateNoteFromWikiLink}
+            onAiAction={handleAiAction}
+          />
+        )}
       </div>
 
       {backlinks.length > 0 && (

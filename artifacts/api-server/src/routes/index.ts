@@ -22,6 +22,7 @@ import importRouter from "./import";
 import exportRouter from "./export";
 import accountRouter from "./account";
 import attachmentsRouter from "./attachments";
+import libStatusRouter from "./libStatus";
 
 const router: IRouter = Router();
 
@@ -48,5 +49,6 @@ router.use(importRouter);
 router.use(exportRouter);
 router.use(accountRouter);
 router.use(attachmentsRouter);
+router.use(libStatusRouter);
 
 export default router;
