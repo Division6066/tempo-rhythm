@@ -12,6 +12,7 @@ import { useNetwork } from "../../lib/NetworkContext";
 import { cacheInboxTasks, getCachedInboxTasks } from "../../lib/offlineCache";
 import { addToQueue } from "../../lib/offlineQueue";
 import SwipeableTaskRow from "../../components/SwipeableTaskRow";
+import { hapticSuccess } from "../../lib/haptics";
 
 type StagedTask = { title: string; priority: string; estimatedMinutes?: number };
 
@@ -23,6 +24,7 @@ export default function InboxScreen() {
   const createTask = useMutation(api.tasks.create);
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
+  const completeTask = useMutation(api.tasks.complete);
   const extractTasks = useAction(api.ai.extractTasks);
   const createStaged = useMutation(api.staging.create);
   const acceptStaged = useMutation(api.staging.accept);
@@ -57,6 +59,12 @@ export default function InboxScreen() {
     setQuickTask("");
   };
 
+  const normalizePriority = (p: string): string => {
+    const lower = p.toLowerCase();
+    if (lower === "high" || lower === "medium" || lower === "low") return lower;
+    return "medium";
+  };
+
   const handleExtract = async () => {
     if (!brainDump.trim()) return;
     if (!isConnected) {
@@ -84,7 +92,7 @@ export default function InboxScreen() {
     for (const t of extractedTasks) {
       await createTask({
         title: t.title,
-        priority: t.priority,
+        priority: normalizePriority(t.priority),
         estimatedMinutes: t.estimatedMinutes ?? undefined,
         status: "inbox",
         aiGenerated: true,
@@ -94,7 +102,8 @@ export default function InboxScreen() {
   };
 
   const handleComplete = async (id: Id<"tasks">) => {
-    await updateTask({ id, status: "done" });
+    hapticSuccess();
+    await completeTask({ id });
   };
 
   const handleDefer = async (id: Id<"tasks">) => {
@@ -106,7 +115,10 @@ export default function InboxScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
           <Ionicons name="file-tray" size={28} color={colors.primary} />
-          <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800" }}>Inbox</Text>
+          <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800", flex: 1 }}>Inbox</Text>
+          <Pressable onPress={() => router.push("/extract" as never)} style={{ backgroundColor: "rgba(157,78,221,0.15)", borderRadius: 10, width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="sparkles" size={18} color="#9D4EDD" />
+          </Pressable>
         </View>
 
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
@@ -158,7 +170,7 @@ export default function InboxScreen() {
               }
               setShowDump(true);
             }}
-            style={{ borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: !isConnected ? colors.border : colors.border, borderStyle: "dashed", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, opacity: !isConnected ? 0.5 : 1 }}
+            style={{ borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border, borderStyle: "dashed", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, opacity: !isConnected ? 0.5 : 1 }}
           >
             <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={16} color={colors.muted} />
             <Text style={{ color: colors.muted, fontWeight: "600" }}>{!isConnected ? "Brain Dump (Offline)" : "Brain Dump (AI Extract)"}</Text>
@@ -207,6 +219,7 @@ export default function InboxScreen() {
             onPress={() => router.push(`/task/${task._id}` as never)}
           />
         ))}
+
         {effectiveTasks && effectiveTasks.length === 0 && !stagedSuggestions?.length && (
           <View style={{ padding: 40, alignItems: "center" }}>
             <Text style={{ color: colors.muted, fontSize: 14 }}>Inbox is empty.</Text>

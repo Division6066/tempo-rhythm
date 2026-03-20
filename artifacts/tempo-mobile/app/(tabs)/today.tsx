@@ -73,6 +73,24 @@ export default function TodayScreen() {
     setRefreshing(false);
   }, []);
 
+  const renderSection = (label: string, labelColor: string, items: typeof todayTasks) => {
+    if (items.length === 0) return null;
+    return (
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ color: labelColor, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>{label}</Text>
+        {items.map((t) => (
+          <SwipeableTaskRow
+            key={t._id}
+            task={t}
+            onComplete={() => toggleTask(t._id, t.status)}
+            onDefer={() => deferTask(t._id)}
+            onPress={() => router.push(`/task/${t._id}` as never)}
+          />
+        ))}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
@@ -95,48 +113,10 @@ export default function TodayScreen() {
           </View>
         </View>
 
-        {highPriority.length > 0 && (
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.success, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>High Priority</Text>
-            {highPriority.map((t) => (
-              <SwipeableTaskRow
-                key={t._id}
-                task={t}
-                onComplete={() => toggleTask(t._id, t.status)}
-                onDefer={() => deferTask(t._id)}
-                onPress={() => router.push(`/task/${t._id}` as never)}
-              />
-            ))}
-          </View>
-        )}
-        {mediumPriority.length > 0 && (
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.warning, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Medium Priority</Text>
-            {mediumPriority.map((t) => (
-              <SwipeableTaskRow
-                key={t._id}
-                task={t}
-                onComplete={() => toggleTask(t._id, t.status)}
-                onDefer={() => deferTask(t._id)}
-                onPress={() => router.push(`/task/${t._id}` as never)}
-              />
-            ))}
-          </View>
-        )}
-        {lowPriority.length > 0 && (
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Low Priority</Text>
-            {lowPriority.map((t) => (
-              <SwipeableTaskRow
-                key={t._id}
-                task={t}
-                onComplete={() => toggleTask(t._id, t.status)}
-                onDefer={() => deferTask(t._id)}
-                onPress={() => router.push(`/task/${t._id}` as never)}
-              />
-            ))}
-          </View>
-        )}
+        {renderSection("High Priority", colors.success, highPriority)}
+        {renderSection("Medium Priority", colors.warning, mediumPriority)}
+        {renderSection("Low Priority", colors.muted, lowPriority)}
+
         {completed.length > 0 && (
           <View style={{ marginBottom: 20, opacity: 0.6, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
             <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Completed</Text>
@@ -151,6 +131,7 @@ export default function TodayScreen() {
             ))}
           </View>
         )}
+
         {todayTasks.length === 0 && (
           <View style={{ padding: 40, alignItems: "center" }}>
             <Text style={{ color: colors.muted, fontSize: 14 }}>Nothing planned for today yet.</Text>

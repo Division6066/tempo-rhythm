@@ -86,6 +86,14 @@ The design follows an Anthropic-inspired warm, earth-tone palette across all thr
   - Inbox Nudge (10am if >5 inbox items)
 - **Required Env Vars:** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` (all set in shared environment).
 
+## Mobile App Core Features
+- **Tab Navigation:** Home, Today, Inbox, AI Chat, More
+- **Screens:** Onboarding (4-step), Search, Focus/Pomodoro Timer, Tags Management, Folders/Areas, AI Memories Viewer, Extract/Brain-dump, Settings, Projects, Calendar, Notes, Templates, Filters, Daily Plan
+- **Swipe Gestures:** SwipeableTaskRow component using react-native-gesture-handler Swipeable for swipe-to-complete (right) and swipe-to-defer (left) with haptic feedback
+- **FAB (Floating Action Button):** Quick-action menu on Home screen for Add Task, New Note, Plan Day, Chat
+- **Onboarding Flow:** 4 screens (wake time, energy pattern, first task, notifications) shown once after signup, sets `onboardingComplete` preference
+- **Focus/Extract shortcuts:** Quick-access buttons on Home screen for Focus Timer and Extract/Brain-dump
+
 ## Performance Optimizations
 - **Code Splitting:** All page components in `artifacts/tempo/src/App.tsx` use `React.lazy()` with a shared `Suspense`/`PageLoader` fallback for route-based code splitting.
 - **Service Worker:** PWA service worker (`artifacts/tempo/public/sw.js`) caches static assets with stale-while-revalidate strategy, excludes `/api/` and Convex WebSocket requests from caching, and provides offline fallback to `index.html` for navigation requests.

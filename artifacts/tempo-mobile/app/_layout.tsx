@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { StatusBar } from "expo-status-bar";
@@ -18,6 +18,7 @@ import {
   addNotificationReceivedListener,
 } from "../lib/notifications";
 import type * as Notifications from "expo-notifications";
+import { api } from "../../../tempo-app/convex/_generated/api";
 import "../global.css";
 
 function ErrorUI({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
@@ -82,18 +83,16 @@ function OfflineBannerWrapper() {
   );
 }
 
-function RootNavigator() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+function AuthenticatedNavigator() {
   const pathname = usePathname();
   const colors = useThemeColors();
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const prefs = useQuery(api.preferences.get);
   const notificationListener = useRef<ReturnType<typeof addNotificationReceivedListener>>();
   const responseListener = useRef<ReturnType<typeof addNotificationResponseListener>>();
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-
     registerForPushNotificationsAsync().then(async (token) => {
       if (token) {
         const apiUrl = process.env.EXPO_PUBLIC_DOMAIN
@@ -131,23 +130,14 @@ function RootNavigator() {
       notificationListener.current?.remove();
       responseListener.current?.remove();
     };
-  }, [isAuthenticated, router]);
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.muted, fontSize: 13, marginTop: 16 }}>Connecting...</Text>
-      </View>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Redirect href="/login" />;
-  }
+  }, [router]);
 
   if (pathname === "/login") {
-    return <Redirect href="/(tabs)/" />;
+    return <Redirect href="/(tabs)" as any />;
+  }
+
+  if (prefs !== undefined && !prefs?.onboardingComplete && pathname !== "/onboarding") {
+    return <Redirect href="/onboarding" />;
   }
 
   return (
@@ -163,6 +153,26 @@ function RootNavigator() {
       />
     </>
   );
+}
+
+function RootNavigator() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const colors = useThemeColors();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.muted, fontSize: 13, marginTop: 16 }}>Connecting...</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/login" />;
+  }
+
+  return <AuthenticatedNavigator />;
 }
 
 export default function RootLayout() {

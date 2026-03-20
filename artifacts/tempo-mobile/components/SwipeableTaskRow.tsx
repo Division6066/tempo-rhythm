@@ -2,9 +2,9 @@ import { useRef } from "react";
 import { View, Text, Pressable, Animated as RNAnimated } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeOut, Layout as LayoutAnimation } from "react-native-reanimated";
 import { colors } from "../lib/theme";
+import { hapticSuccess, hapticLight } from "../lib/haptics";
 import type { Id } from "../../../tempo-app/convex/_generated/dataModel";
 
 type Task = {
@@ -76,13 +76,13 @@ export default function SwipeableTaskRow({ task, onComplete, onDefer, onPress, s
   const priorityColor = task.priority === "high" ? colors.teal : task.priority === "medium" ? colors.amber : colors.muted;
 
   const handleSwipeLeft = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hapticLight();
     onDefer();
     swipeableRef.current?.close();
   };
 
   const handleSwipeRight = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hapticSuccess();
     onComplete();
     swipeableRef.current?.close();
   };
@@ -115,7 +115,7 @@ export default function SwipeableTaskRow({ task, onComplete, onDefer, onPress, s
             borderColor: colors.border,
           }}
         >
-          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onComplete(); }} hitSlop={12}>
+          <Pressable onPress={() => { hapticSuccess(); onComplete(); }} hitSlop={12}>
             <Ionicons name={isDone ? "checkmark-circle" : "ellipse-outline"} size={22} color={isDone ? colors.primary : colors.muted} />
           </Pressable>
           <View style={{ flex: 1 }}>
@@ -134,9 +134,7 @@ export default function SwipeableTaskRow({ task, onComplete, onDefer, onPress, s
                 <View style={{ backgroundColor: `${priorityColor}33`, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
                   <Text style={{ color: priorityColor, fontSize: 10, fontWeight: "600" }}>{task.priority}</Text>
                 </View>
-                {task.estimatedMinutes != null && task.estimatedMinutes > 0 && (
-                  <Text style={{ color: colors.muted, fontSize: 10 }}>{task.estimatedMinutes}m</Text>
-                )}
+                {task.estimatedMinutes && <Text style={{ color: colors.muted, fontSize: 10 }}>{task.estimatedMinutes}m</Text>}
                 {task.aiGenerated && (
                   <View style={{ backgroundColor: "rgba(108,99,255,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
                     <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "600" }}>AI</Text>

@@ -174,9 +174,14 @@ export default function HomeScreen() {
         }
       >
         <Animated.View entering={FadeInDown.duration(400)}>
-          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
-            {format(new Date(), "EEEE, MMM do")}
-          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase" }}>
+              {format(new Date(), "EEEE, MMM do")}
+            </Text>
+            <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} style={{ padding: 4 }}>
+              <Ionicons name="search" size={22} color={colors.muted} />
+            </Pressable>
+          </View>
           <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800", marginBottom: 24 }}>
             {getGreeting()}
           </Text>
@@ -208,6 +213,27 @@ export default function HomeScreen() {
           <AnimatedStatCard label="Today" value={totalToday} icon="sunny" color={colors.warning} delay={200} />
           <AnimatedStatCard label="Inbox" value={inboxTasks.length} icon="file-tray" color={colors.info} delay={300} />
           <AnimatedStatCard label="Projects" value={projects?.filter((p: any) => p.status === "active").length || 0} icon="folder" color={colors.success} delay={400} />
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
+          <Pressable
+            onPress={() => router.push("/focus" as never)}
+            style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: colors.border }}
+          >
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,107,107,0.15)", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="timer" size={18} color="#FF6B6B" />
+            </View>
+            <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>Focus</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/extract" as never)}
+            style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: colors.border }}
+          >
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(157,78,221,0.15)", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="sparkles" size={18} color="#9D4EDD" />
+            </View>
+            <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>Extract</Text>
+          </Pressable>
         </View>
 
         <Animated.View entering={FadeInDown.delay(500).duration(400)}>
