@@ -6,7 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { convex, secureStorage } from "../lib/convex";
-import { ThemeContext, getThemeColors } from "../lib/theme";
+import { ThemeContext, getThemeColors, useTheme } from "../lib/theme";
 import type { ThemeMode } from "../lib/theme";
 import "../global.css";
 
@@ -51,12 +51,13 @@ class ErrorBoundary extends React.Component<
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const pathname = usePathname();
+  const { mode, colors } = useTheme();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1A1A2E" }}>
-        <ActivityIndicator size="large" color="#6C63FF" />
-        <Text style={{ color: "#8888AA", fontSize: 13, marginTop: 16 }}>Connecting...</Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.muted, fontSize: 13, marginTop: 16 }}>Connecting...</Text>
       </View>
     );
   }
@@ -71,11 +72,11 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: "#1A1A2E" },
+          contentStyle: { backgroundColor: colors.background },
           animation: "slide_from_right",
         }}
       />

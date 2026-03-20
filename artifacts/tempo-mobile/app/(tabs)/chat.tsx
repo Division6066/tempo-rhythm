@@ -4,14 +4,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../lib/theme";
+import { useTheme } from "../../lib/theme";
 
 type Message = { role: "user" | "assistant"; content: string; suggestions?: string[] };
 
 export default function ChatScreen() {
+  const { colors } = useTheme();
   const memories = useQuery(api.memories.list);
   const persistedMessages = useQuery(api.chatMessages.list, { limit: 50 });
   const saveMessage = useMutation(api.chatMessages.create);
+  const clearMessages = useMutation(api.chatMessages.clear);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -67,6 +69,13 @@ export default function ChatScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
+  const handleClearHistory = async () => {
+    setMessages([
+      { role: "assistant", content: "Hi! I'm TEMPO. I can help you plan your day, break down overwhelming tasks, or just act as a sounding board. What's on your mind?" },
+    ]);
+    await clearMessages();
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={90}>
@@ -78,6 +87,9 @@ export default function ChatScreen() {
             <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800" }}>TEMPO Assistant</Text>
             <Text style={{ color: colors.muted, fontSize: 11 }}>Always here to help you focus.</Text>
           </View>
+          <Pressable onPress={handleClearHistory} hitSlop={12}>
+            <Ionicons name="refresh-outline" size={20} color={colors.muted} />
+          </Pressable>
         </View>
 
         {memoryCount > 0 && (

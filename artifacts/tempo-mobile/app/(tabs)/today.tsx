@@ -9,7 +9,7 @@ import { colors, useTheme } from "../../lib/theme";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { hapticSuccess, hapticMedium } from "../../lib/haptics";
 
-function TaskRow({ task, onToggle, onPress }: { task: { _id: Id<"tasks">; title: string; status: string; priority: string; estimatedMinutes?: number }; onToggle: () => void; onPress: () => void }) {
+function TaskRow({ task, onToggle, onPress, colors }: { task: { _id: Id<"tasks">; title: string; status: string; priority: string; estimatedMinutes?: number }; onToggle: () => void; onPress: () => void; colors: import("../../lib/theme").ThemeColors }) {
   const isDone = task.status === "done";
   const priorityColor = task.priority === "high" ? colors.teal : task.priority === "medium" ? colors.amber : colors.muted;
 
@@ -32,6 +32,7 @@ function TaskRow({ task, onToggle, onPress }: { task: { _id: Id<"tasks">; title:
 }
 
 export default function TodayScreen() {
+  const { colors } = useTheme();
   const allTasks = useQuery(api.tasks.list, {});
   const updateTask = useMutation(api.tasks.update);
   const completeTask = useMutation(api.tasks.complete);
@@ -90,25 +91,25 @@ export default function TodayScreen() {
         {highPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
             <Text style={{ color: colors.teal, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>High Priority</Text>
-            {highPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} />)}
+            {highPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
           </View>
         )}
         {mediumPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
             <Text style={{ color: colors.amber, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Medium Priority</Text>
-            {mediumPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} />)}
+            {mediumPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
           </View>
         )}
         {lowPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
             <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Low Priority</Text>
-            {lowPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} />)}
+            {lowPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
           </View>
         )}
         {completed.length > 0 && (
           <View style={{ marginBottom: 20, opacity: 0.6, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
             <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Completed</Text>
-            {completed.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} />)}
+            {completed.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
           </View>
         )}
         {todayTasks.length === 0 && (

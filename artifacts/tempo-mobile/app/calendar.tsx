@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Modal } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../tempo-app/convex/_generated/api";
+import type { Id } from "../../../tempo-app/convex/_generated/dataModel";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../lib/theme";
@@ -45,20 +46,23 @@ export default function CalendarScreen() {
 
   const rangeStart = viewMode === "week" ? weekStart : monthStart;
   const rangeEnd = viewMode === "week" ? weekEnd : monthEnd;
+
   const startDate = format(rangeStart, "yyyy-MM-dd");
   const endDate = format(rangeEnd, "yyyy-MM-dd");
 
   const tasks = useQuery(api.tasks.listByDateRange, { startDate, endDate });
   const events = useQuery(api.calendarEvents.list, { startDate, endDate });
   const createEvent = useMutation(api.calendarEvents.create);
+  const updateEvent = useMutation(api.calendarEvents.update);
+  const deleteEvent = useMutation(api.calendarEvents.remove);
 
   const days = useMemo(() => {
     if (viewMode === "week") {
       return eachDayOfInterval({ start: weekStart, end: weekEnd });
     }
-    const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-    return eachDayOfInterval({ start: calStart, end: calEnd });
+    const firstDay = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const lastDay = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start: firstDay, end: lastDay });
   }, [viewMode, currentDate]);
 
   const handleCreateEvent = async () => {

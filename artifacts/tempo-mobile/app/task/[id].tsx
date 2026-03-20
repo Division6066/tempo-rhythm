@@ -398,15 +398,8 @@ export default function TaskDetailScreen() {
             {RECURRENCE_OPTIONS.map((opt) => (
               <Pressable
                 key={opt.value}
-                onPress={() => { setRecurrenceRule(opt.value); setTimeout(handleSave, 0); }}
-                style={{
-                  backgroundColor: recurrenceRule === opt.value ? colors.primary : colors.surface,
-                  borderRadius: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderWidth: 1,
-                  borderColor: recurrenceRule === opt.value ? colors.primary : colors.border,
-                }}
+                onPress={() => { setRecurrenceRule(opt.value); setTimeout(() => updateTask({ id: taskId, recurrenceRule: opt.value || null }), 0); }}
+                style={{ backgroundColor: recurrenceRule === opt.value ? colors.primary : colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: recurrenceRule === opt.value ? colors.primary : colors.border }}
               >
                 <Text style={{ color: recurrenceRule === opt.value ? "#fff" : colors.foreground, fontSize: 12, fontWeight: "600" }}>{opt.label}</Text>
               </Pressable>
@@ -414,60 +407,57 @@ export default function TaskDetailScreen() {
           </View>
         </View>
 
-        {task.status !== "done" && (
-          <Pressable
-            onPress={handleComplete}
-            style={{ backgroundColor: colors.teal, borderRadius: 14, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 20 }}
-          >
-            <Ionicons name="checkmark" size={20} color="#fff" />
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>
-              {task.recurrenceRule ? "Complete & Create Next" : "Mark Complete"}
-            </Text>
-          </Pressable>
-        )}
-
-        {thisTaskStaged.length > 0 && thisTaskStaged.map((suggestion) => {
-          const data = suggestion.data as { subtasks: Subtask[]; reasoning: string };
-          return (
-            <View key={suggestion._id} style={{ backgroundColor: "rgba(108,99,255,0.08)", borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)" }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <Ionicons name="sparkles" size={14} color={colors.primary} />
-                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>AI Subtasks</Text>
-              </View>
-              <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 10 }}>{data.reasoning}</Text>
-              {data.subtasks.map((s, i) => (
-                <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: colors.border }}>
-                  <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{s.title}</Text>
-                  <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }}>{s.estimatedMinutes}m - {s.priority}</Text>
-                </View>
-              ))}
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
-                <Pressable onPress={() => rejectStaged({ id: suggestion._id })} style={{ flexDirection: "row", alignItems: "center", gap: 4, padding: 10 }}>
-                  <Ionicons name="close" size={16} color={colors.danger} />
-                  <Text style={{ color: colors.danger, fontWeight: "600", fontSize: 13 }}>Reject</Text>
-                </Pressable>
-                <Pressable onPress={() => handleAcceptChunks(suggestion._id, data.subtasks)} style={{ backgroundColor: colors.teal, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="checkmark" size={16} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Accept</Text>
-                </Pressable>
-              </View>
-            </View>
-          );
-        })}
-
-        <View>
+        <View style={{ marginBottom: 20 }}>
           <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Notes</Text>
           <TextInput
             value={notes}
             onChangeText={setNotes}
             onBlur={handleSave}
-            placeholder="Add some details..."
-            placeholderTextColor={colors.muted}
             multiline
-            textAlignVertical="top"
-            style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, color: colors.foreground, fontSize: 14, lineHeight: 22, minHeight: 200, borderWidth: 1, borderColor: colors.border }}
+            placeholder="Add details..."
+            placeholderTextColor={colors.muted}
+            style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, color: colors.foreground, borderWidth: 1, borderColor: colors.border, minHeight: 100, textAlignVertical: "top" }}
           />
         </View>
+
+        {thisTaskStaged.map((s) => (
+          <View key={s._id} style={{ backgroundColor: "rgba(108,99,255,0.05)", borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "rgba(108,99,255,0.2)" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Ionicons name="sparkles" size={18} color={colors.primary} />
+              <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "800" }}>AI Chunking Suggestion</Text>
+            </View>
+            <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 16, fontStyle: "italic" }}>{s.reasoning}</Text>
+            <View style={{ gap: 8, marginBottom: 16 }}>
+              {(s.data as any).subtasks.map((sub: any, idx: number) => (
+                <View key={idx} style={{ backgroundColor: colors.background, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{sub.title}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 11 }}>{sub.estimatedMinutes} min • {sub.priority} priority</Text>
+                </View>
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Pressable
+                onPress={() => handleAcceptChunks(s._id, (s.data as any).subtasks)}
+                style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 12, alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Accept All</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => rejectStaged({ id: s._id })}
+                style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: colors.border }}
+              >
+                <Text style={{ color: colors.muted, fontWeight: "700" }}>Reject</Text>
+              </Pressable>
+            </View>
+          </View>
+        ))}
+
+        <Pressable
+          onPress={handleComplete}
+          style={{ backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 18, alignItems: "center", shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>Complete Task</Text>
+        </Pressable>
       </ScrollView>
 
       <Modal visible={showProjectPicker} transparent animationType="fade">
@@ -479,10 +469,10 @@ export default function TaskDetailScreen() {
                 onPress={() => handleSetProject(null)}
                 style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: !task.projectId ? `${colors.primary}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
               >
-                <Ionicons name="remove-circle-outline" size={18} color={colors.muted} />
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.muted }} />
                 <Text style={{ color: !task.projectId ? colors.primary : colors.foreground, fontSize: 15, fontWeight: "600" }}>No project</Text>
               </Pressable>
-              {(projects || []).filter((p) => p.status === "active").map((project) => (
+              {(projects || []).map((project) => (
                 <Pressable
                   key={project._id}
                   onPress={() => handleSetProject(project._id)}
@@ -517,6 +507,32 @@ export default function TaskDetailScreen() {
                 >
                   <Ionicons name="folder" size={18} color={task.folderId === folder._id ? colors.teal : colors.muted} />
                   <Text style={{ color: task.folderId === folder._id ? colors.teal : colors.foreground, fontSize: 15, fontWeight: "600" }}>{folder.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showFolderPicker} transparent animationType="fade">
+        <Pressable onPress={() => setShowFolderPicker(false)} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 24 }}>
+          <Pressable onPress={() => {}} style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.border, maxHeight: 400 }}>
+            <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800", marginBottom: 16 }}>Assign Folder</Text>
+            <ScrollView>
+              <Pressable
+                onPress={() => handleSetFolder(null)}
+                style={{ padding: 14, borderRadius: 10, marginBottom: 4, backgroundColor: !task.folderId ? `${colors.primary}20` : "transparent" }}
+              >
+                <Text style={{ color: !task.folderId ? colors.primary : colors.foreground, fontSize: 14, fontWeight: "600" }}>No folder</Text>
+              </Pressable>
+              {(folders || []).map((folder) => (
+                <Pressable
+                  key={folder._id}
+                  onPress={() => handleSetFolder(folder._id)}
+                  style={{ padding: 14, borderRadius: 10, marginBottom: 4, backgroundColor: task.folderId === folder._id ? `${colors.primary}20` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
+                >
+                  <Ionicons name={(folder.icon || "folder") as React.ComponentProps<typeof Ionicons>["name"]} size={16} color={task.folderId === folder._id ? colors.primary : colors.teal} />
+                  <Text style={{ color: task.folderId === folder._id ? colors.primary : colors.foreground, fontSize: 14, fontWeight: "600" }}>{folder.name}</Text>
                 </Pressable>
               ))}
             </ScrollView>

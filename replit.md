@@ -77,3 +77,13 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **Loading States:** Skeleton loaders for task lists, notes grid, and calendar. Spinner with "Saving…" text on mutation buttons.
 - **Empty States:** Inbox, Calendar, and Notes all show friendly empty-state messages with icon, description, and "Create first [item]" CTA button.
 - **Responsive:** Modals go fullscreen on mobile via `max-md:min-h-screen max-md:min-w-full` classes. All touch targets meet 44px minimum.
+
+## Mobile App (Expo)
+- **Theme System:** `lib/theme.ts` exports `ThemeContext` with dark/light color sets. `ThemeProvider` persists mode to AsyncStorage. Screens use `useThemeColors()` hook for dynamic colors. Static `colors` export remains for backward compatibility.
+- **Settings:** Theme toggle, ADHD mode, notification preference toggles (persisted to AsyncStorage), profile display name editing (AsyncStorage), data export via Share sheet, sign-out with haptic confirmation.
+- **Note Editor:** Tab-based Edit/Preview mode with `SimpleMarkdown` renderer supporting headers, bold, italic, lists, blockquotes, inline code.
+- **Task Detail:** Subtasks section (list, add inline, toggle completion), tag assignment picker from existing tags, project reassignment via modal picker. Tasks update mutation supports `projectId` and `folderId` args.
+- **Calendar:** Week/Month view toggle. Month view shows compact day grid with dots for items. Event detail modal supports editing and deleting events.
+- **AI Chat:** Conversation history persisted to Convex `chatMessages` table (loaded on mount, max 50 messages). Memories indicator shows count from Convex memories table. Clear history button clears both local state and Convex records.
+- **Project Detail:** `app/project/[id].tsx` shows project tasks, notes, and progress stats (active/done/total with progress bar). Linked from projects list.
+- **Haptic Feedback:** `expo-haptics` — impact on task completion toggles, notification on destructive actions (delete/sign-out), selection on pull-to-refresh.

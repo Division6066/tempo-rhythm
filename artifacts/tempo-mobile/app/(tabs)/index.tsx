@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { hapticMedium } from "../../lib/haptics";
 
 export default function HomeScreen() {
+  const { colors } = useTheme();
   const tasks = useQuery(api.tasks.list, {});
   const projects = useQuery(api.projects.list);
   const router = useRouter();
@@ -132,7 +133,7 @@ export default function HomeScreen() {
               </Pressable>
             ))}
           {todayTasks.filter((t) => t.status !== "done").length === 0 && (
-            <View style={{ padding: 32, alignItems: "center", backgroundColor: "rgba(38,38,64,0.3)", borderRadius: 14, borderWidth: 1, borderColor: colors.border, borderStyle: "dashed" }}>
+            <View style={{ padding: 32, alignItems: "center", backgroundColor: `${colors.surface}80`, borderRadius: 14, borderWidth: 1, borderColor: colors.border, borderStyle: "dashed" }}>
               <Ionicons name="sunny-outline" size={28} color={colors.muted} style={{ marginBottom: 8, opacity: 0.5 }} />
               <Text style={{ color: colors.muted, fontSize: 13 }}>No upcoming tasks today.</Text>
             </View>

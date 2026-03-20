@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, Switch, Alert, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
@@ -126,7 +126,10 @@ export default function SettingsScreen() {
                 style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 12, color: colors.foreground, borderWidth: 1, borderColor: colors.border }}
               />
               <Pressable
-                onPress={() => { setEditingName(false); hapticSuccess(); }}
+                onPress={() => {
+                  setEditingName(false);
+                  hapticSuccess();
+                }}
                 style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Save</Text>
