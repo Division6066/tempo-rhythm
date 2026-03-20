@@ -15,6 +15,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/not-found";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import PushPermissionBanner from "@/components/PushPermissionBanner";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const TodayView = lazy(() => import("@/pages/TodayView"));
@@ -156,6 +157,7 @@ function App() {
               </WouterRouter>
               <Toaster />
               <PWAInstallPrompt />
+              <PushPermissionBanner />
             </TooltipProvider>
           </QueryClientProvider>
         </ConvexAuthWrapper>

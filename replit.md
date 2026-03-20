@@ -72,6 +72,20 @@ The design follows an Anthropic-inspired warm, earth-tone palette across all thr
 - **AI Feature Gating:** Chat, brain dump extraction, and plan generation show "Requires Connection" disabled states when offline
 - **Global Sync:** `NetworkProvider` in root layout handles queue replay on reconnect regardless of active screen
 
+## Push Notifications & Cron Jobs
+- **Web Push:** VAPID-based browser push notifications via `web-push`. Service worker handles push events and notification click navigation.
+- **Mobile Push:** Expo push notifications via `expo-notifications`. Token registration with API server, notification tap navigates to correct screen.
+- **PushPermissionBanner:** Appears after first daily plan acceptance. Shows "Enable" / "Not now" (re-shows after 3 days if dismissed).
+- **Push Subscriptions Table:** `push_subscriptions` (userId, platform, endpoint, keys, expoToken, createdAt) stores both web VAPID and Expo push tokens.
+- **PushNotificationService:** `artifacts/api-server/src/services/pushNotification.ts` — subscribe, unsubscribe, send to web (VAPID) and mobile (Expo Push API).
+- **Cron Jobs:** Five `node-cron` scheduled jobs in `artifacts/api-server/src/services/cronJobs.ts`:
+  - Morning Briefing (8am) — "Ready to plan?" → /plan
+  - Streak Guardian (9pm) — nudge if no plan today
+  - Overdue Escalator (every 6h) — bump overdue tasks to 'today' with high priority
+  - Weekly Review (Sunday 7pm) — generate summary note, push notification
+  - Inbox Nudge (10am if >5 inbox items)
+- **Required Env Vars:** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` (all set in shared environment).
+
 ## Performance Optimizations
 - **Code Splitting:** All page components in `artifacts/tempo/src/App.tsx` use `React.lazy()` with a shared `Suspense`/`PageLoader` fallback for route-based code splitting.
 - **Service Worker:** PWA service worker (`artifacts/tempo/public/sw.js`) caches static assets with stale-while-revalidate strategy, excludes `/api/` and Convex WebSocket requests from caching, and provides offline fallback to `index.html` for navigation requests.

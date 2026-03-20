@@ -17,3 +17,4 @@ export * from "./passwordResetTokens";
 export * from "./plugins";
 export * from "./conversations";
 export * from "./messages";
+export * from "./pushSubscriptions";

@@ -1,6 +1,8 @@
 import app from "./app";
 import { ensureEmbeddingsTable } from "./embeddings";
 import { createAiJobWorker } from "./lib/bullmq";
+import { startCronJobs } from "./services/cronJobs";
+import { ensurePushSubscriptionsTable } from "./services/ensurePushTable";
 
 const rawPort = process.env["PORT"] ?? "8080";
 const port = Number(rawPort);
@@ -33,6 +35,8 @@ async function initBullMQ() {
 app.listen(port, async () => {
   console.log(`Server listening on port ${port}`);
   await ensureEmbeddingsTable();
+  await ensurePushSubscriptionsTable();
   await initBullMQ();
+  startCronJobs();
   console.log("[Libraries] LlamaIndex, LangChain, instructor-js, BullMQ modules available");
 });

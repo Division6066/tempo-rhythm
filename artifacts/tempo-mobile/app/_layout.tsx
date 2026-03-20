@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useConvexAuth } from "convex/react";
-import { Redirect, Stack, usePathname } from "expo-router";
+import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, View, Text, Pressable, useColorScheme } from "react-native";
+import { ActivityIndicator, View, Text, Pressable, useColorScheme, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { convex, secureStorage } from "../lib/convex";
@@ -11,6 +11,13 @@ import { useThemeColors } from "../lib/theme";
 import { NetworkProvider } from "../lib/NetworkContext";
 import { OfflineBanner } from "../components/OfflineBanner";
 import { useNetwork } from "../lib/NetworkContext";
+import {
+  registerForPushNotificationsAsync,
+  sendTokenToServer,
+  addNotificationResponseListener,
+  addNotificationReceivedListener,
+} from "../lib/notifications";
+import type * as Notifications from "expo-notifications";
 import "../global.css";
 
 function ErrorUI({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
@@ -80,6 +87,51 @@ function RootNavigator() {
   const pathname = usePathname();
   const colors = useThemeColors();
   const colorScheme = useColorScheme();
+  const router = useRouter();
+  const notificationListener = useRef<ReturnType<typeof addNotificationReceivedListener>>();
+  const responseListener = useRef<ReturnType<typeof addNotificationResponseListener>>();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    registerForPushNotificationsAsync().then(async (token) => {
+      if (token) {
+        const apiUrl = process.env.EXPO_PUBLIC_DOMAIN
+          ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
+          : "";
+        let authToken = "";
+        try {
+          authToken = await secureStorage.getItem("tempo-auth-token") || "tempo-session-mobile";
+        } catch {
+          authToken = "tempo-session-mobile";
+        }
+        sendTokenToServer(token, authToken, apiUrl);
+      }
+    });
+
+    notificationListener.current = addNotificationReceivedListener((notification) => {
+      console.log("[Notifications] Received:", notification.request.content.title);
+    });
+
+    responseListener.current = addNotificationResponseListener((response) => {
+      const url = response.notification.request.content.data?.url as string | undefined;
+      if (url) {
+        const routeMap: Record<string, string> = {
+          "/plan": "/(tabs)/plan",
+          "/inbox": "/(tabs)/inbox",
+          "/notes": "/(tabs)/notes",
+          "/": "/(tabs)/",
+        };
+        const route = routeMap[url] || "/(tabs)/";
+        router.push(route as never);
+      }
+    });
+
+    return () => {
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
+    };
+  }, [isAuthenticated, router]);
 
   if (isLoading) {
     return (

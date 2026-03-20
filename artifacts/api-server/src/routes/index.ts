@@ -25,6 +25,7 @@ import attachmentsRouter from "./attachments";
 import voiceRouter from "./voice";
 import libStatusRouter from "./libStatus";
 import ttsRouter from "./tts";
+import pushRouter from "./push";
 
 const router: IRouter = Router();
 
@@ -54,5 +55,6 @@ router.use(attachmentsRouter);
 router.use(voiceRouter);
 router.use(libStatusRouter);
 router.use(ttsRouter);
+router.use(pushRouter);
 
 export default router;

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, type ReactNode } from "react";
+import { markPlanAccepted } from "@/components/PushPermissionBanner";
 import { useAiGeneratePlan, useListTasks, useListDailyPlans, useCreateDailyPlan, useUpdateDailyPlan, getListDailyPlansQueryKey, useListStagedSuggestions, useCreateStagedSuggestion, useAcceptStagedSuggestion, useRejectStagedSuggestion, useUpdateStagedSuggestionData, getListStagedSuggestionsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -284,6 +285,7 @@ export default function DailyPlan() {
     invalidateAll();
     setAcceptedPlanId(result.id);
     setShowMoodModal(true);
+    markPlanAccepted();
   };
 
   const handleMoodSelect = async (emoji: string) => {
