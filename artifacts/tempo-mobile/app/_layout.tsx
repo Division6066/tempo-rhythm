@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View, Text, Pressable, useColorScheme, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from "expo-notifications";
 import { convex, secureStorage } from "../lib/convex";
 import { useThemeColors } from "../lib/theme";
 import { NetworkProvider } from "../lib/NetworkContext";
@@ -17,7 +18,6 @@ import {
   addNotificationResponseListener,
   addNotificationReceivedListener,
 } from "../lib/notifications";
-import type * as Notifications from "expo-notifications";
 import { api } from "../../../tempo-app/convex/_generated/api";
 import "../global.css";
 

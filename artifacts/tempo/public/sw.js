@@ -50,12 +50,11 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/icon-192x192.png',
+    icon: data.icon || '/icon-192x192.png',
     badge: '/icon-192x192.png',
     tag: data.tag || 'tempo-notification',
     data: { url: data.url || '/' },
     vibrate: [100, 50, 100],
-    actions: [],
   };
 
   event.waitUntil(

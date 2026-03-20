@@ -78,6 +78,7 @@ The design follows an Anthropic-inspired warm, earth-tone palette across all thr
 - **PushPermissionBanner:** Appears after first daily plan acceptance. Shows "Enable" / "Not now" (re-shows after 3 days if dismissed).
 - **Push Subscriptions Table:** `push_subscriptions` (userId, platform, endpoint, keys, expoToken, createdAt) stores both web VAPID and Expo push tokens.
 - **PushNotificationService:** `artifacts/api-server/src/services/pushNotification.ts` — subscribe, unsubscribe, send to web (VAPID) and mobile (Expo Push API).
+- **API Routes:** `GET /api/push/vapid-key`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe`, `POST /api/push/subscribe-expo`.
 - **Cron Jobs:** Five `node-cron` scheduled jobs in `artifacts/api-server/src/services/cronJobs.ts`:
   - Morning Briefing (8am) — "Ready to plan?" → /plan
   - Streak Guardian (9pm) — nudge if no plan today
