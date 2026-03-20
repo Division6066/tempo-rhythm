@@ -244,6 +244,10 @@ export interface UpdateProjectBody {
   sortOrder?: number | null;
 }
 
+export interface ReorderProjectsBody {
+  projectIds: number[];
+}
+
 export interface Folder {
   id: number;
   name: string;
@@ -268,6 +272,10 @@ export interface UpdateFolderBody {
   parentFolderId?: number | null;
   icon?: string | null;
   sortOrder?: number | null;
+}
+
+export interface ReorderFoldersBody {
+  folderIds: number[];
 }
 
 export interface Tag {
@@ -323,6 +331,42 @@ export const PreferenceMemoryPlanningStyle = {
   evening: "evening",
 } as const;
 
+export type PreferenceMemoryCalendarLayout =
+  (typeof PreferenceMemoryCalendarLayout)[keyof typeof PreferenceMemoryCalendarLayout];
+
+export const PreferenceMemoryCalendarLayout = {
+  separate: "separate",
+  unified: "unified",
+  hybrid: "hybrid",
+} as const;
+
+export type PreferenceMemoryDefaultCalendarView =
+  (typeof PreferenceMemoryDefaultCalendarView)[keyof typeof PreferenceMemoryDefaultCalendarView];
+
+export const PreferenceMemoryDefaultCalendarView = {
+  day: "day",
+  week: "week",
+  month: "month",
+} as const;
+
+export type PreferenceMemoryFirstDayOfWeek =
+  (typeof PreferenceMemoryFirstDayOfWeek)[keyof typeof PreferenceMemoryFirstDayOfWeek];
+
+export const PreferenceMemoryFirstDayOfWeek = {
+  sunday: "sunday",
+  monday: "monday",
+} as const;
+
+export type PreferenceMemoryTimeFormat =
+  (typeof PreferenceMemoryTimeFormat)[keyof typeof PreferenceMemoryTimeFormat];
+
+export const PreferenceMemoryTimeFormat = {
+  "12h": "12h",
+  "24h": "24h",
+} as const;
+
+export type PreferenceMemoryDefaultTemplates = { [key: string]: unknown };
+
 export interface PreferenceMemory {
   id: number;
   wakeTime: string;
@@ -334,6 +378,24 @@ export interface PreferenceMemory {
   focusSessionMinutes: number;
   breakMinutes: number;
   onboardingComplete: boolean;
+  calendarLayout: PreferenceMemoryCalendarLayout;
+  defaultCalendarView: PreferenceMemoryDefaultCalendarView;
+  timeSlotSnapMinutes: number;
+  workingHoursStart: string;
+  workingHoursEnd: string;
+  showWeekends: boolean;
+  firstDayOfWeek: PreferenceMemoryFirstDayOfWeek;
+  dateFormat: string;
+  timeFormat: PreferenceMemoryTimeFormat;
+  notificationsEnabled: boolean;
+  notificationLeadMinutes: number;
+  dailyPlanReminderTime: string;
+  aiAutoCategorize: boolean;
+  aiModel: string;
+  deepThinkDefault: boolean;
+  memoryAutoUpdate: boolean;
+  voiceTranscriptionPrompt: string;
+  defaultTemplates: PreferenceMemoryDefaultTemplates;
   updatedAt: string;
 }
 
@@ -346,6 +408,42 @@ export const UpdatePreferencesBodyPlanningStyle = {
   evening: "evening",
 } as const;
 
+export type UpdatePreferencesBodyCalendarLayout =
+  (typeof UpdatePreferencesBodyCalendarLayout)[keyof typeof UpdatePreferencesBodyCalendarLayout];
+
+export const UpdatePreferencesBodyCalendarLayout = {
+  separate: "separate",
+  unified: "unified",
+  hybrid: "hybrid",
+} as const;
+
+export type UpdatePreferencesBodyDefaultCalendarView =
+  (typeof UpdatePreferencesBodyDefaultCalendarView)[keyof typeof UpdatePreferencesBodyDefaultCalendarView];
+
+export const UpdatePreferencesBodyDefaultCalendarView = {
+  day: "day",
+  week: "week",
+  month: "month",
+} as const;
+
+export type UpdatePreferencesBodyFirstDayOfWeek =
+  (typeof UpdatePreferencesBodyFirstDayOfWeek)[keyof typeof UpdatePreferencesBodyFirstDayOfWeek];
+
+export const UpdatePreferencesBodyFirstDayOfWeek = {
+  sunday: "sunday",
+  monday: "monday",
+} as const;
+
+export type UpdatePreferencesBodyTimeFormat =
+  (typeof UpdatePreferencesBodyTimeFormat)[keyof typeof UpdatePreferencesBodyTimeFormat];
+
+export const UpdatePreferencesBodyTimeFormat = {
+  "12h": "12h",
+  "24h": "24h",
+} as const;
+
+export type UpdatePreferencesBodyDefaultTemplates = { [key: string]: unknown };
+
 export interface UpdatePreferencesBody {
   wakeTime?: string;
   sleepTime?: string;
@@ -356,6 +454,24 @@ export interface UpdatePreferencesBody {
   focusSessionMinutes?: number;
   breakMinutes?: number;
   onboardingComplete?: boolean;
+  calendarLayout?: UpdatePreferencesBodyCalendarLayout;
+  defaultCalendarView?: UpdatePreferencesBodyDefaultCalendarView;
+  timeSlotSnapMinutes?: number;
+  workingHoursStart?: string;
+  workingHoursEnd?: string;
+  showWeekends?: boolean;
+  firstDayOfWeek?: UpdatePreferencesBodyFirstDayOfWeek;
+  dateFormat?: string;
+  timeFormat?: UpdatePreferencesBodyTimeFormat;
+  notificationsEnabled?: boolean;
+  notificationLeadMinutes?: number;
+  dailyPlanReminderTime?: string;
+  aiAutoCategorize?: boolean;
+  aiModel?: string;
+  deepThinkDefault?: boolean;
+  memoryAutoUpdate?: boolean;
+  voiceTranscriptionPrompt?: string;
+  defaultTemplates?: UpdatePreferencesBodyDefaultTemplates;
 }
 
 export type MemoryItemTier =
@@ -701,16 +817,18 @@ export const ListNotesPeriodType = {
   yearly: "yearly",
 } as const;
 
-export type ReorderProjectsBody = {
-  projectIds: number[];
-};
-
-export type ReorderFoldersBody = {
-  folderIds: number[];
-};
-
 export type ListDailyPlansParams = {
   date?: string;
+};
+
+export type ExportAllData200 = { [key: string]: unknown };
+
+export type DeleteAccount200 = {
+  success: boolean;
+};
+
+export type ResetMemories200 = {
+  deleted: number;
 };
 
 export type ListStagedSuggestionsParams = {

@@ -44,6 +44,8 @@ import type {
   CreateTagBody,
   CreateTaskBody,
   DailyPlan,
+  DeleteAccount200,
+  ExportAllData200,
   Folder,
   GlobalSearchParams,
   HealthStatus,
@@ -63,6 +65,7 @@ import type {
   PublishNoteBody,
   ReorderFoldersBody,
   ReorderProjectsBody,
+  ResetMemories200,
   SavedFilter,
   SearchResults,
   SeedNoteTemplates200,
@@ -2947,6 +2950,329 @@ export const useUpdatePreferences = <
   TContext
 > => {
   return useMutation(getUpdatePreferencesMutationOptions(options));
+};
+
+/**
+ * @summary Partially update user preferences
+ */
+export const getPatchPreferencesUrl = () => {
+  return `/api/preferences`;
+};
+
+export const patchPreferences = async (
+  updatePreferencesBody: UpdatePreferencesBody,
+  options?: RequestInit,
+): Promise<PreferenceMemory> => {
+  return customFetch<PreferenceMemory>(getPatchPreferencesUrl(), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updatePreferencesBody),
+  });
+};
+
+export const getPatchPreferencesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof patchPreferences>>,
+    TError,
+    { data: BodyType<UpdatePreferencesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof patchPreferences>>,
+  TError,
+  { data: BodyType<UpdatePreferencesBody> },
+  TContext
+> => {
+  const mutationKey = ["patchPreferences"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof patchPreferences>>,
+    { data: BodyType<UpdatePreferencesBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return patchPreferences(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PatchPreferencesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof patchPreferences>>
+>;
+export type PatchPreferencesMutationBody = BodyType<UpdatePreferencesBody>;
+export type PatchPreferencesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Partially update user preferences
+ */
+export const usePatchPreferences = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof patchPreferences>>,
+    TError,
+    { data: BodyType<UpdatePreferencesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof patchPreferences>>,
+  TError,
+  { data: BodyType<UpdatePreferencesBody> },
+  TContext
+> => {
+  return useMutation(getPatchPreferencesMutationOptions(options));
+};
+
+/**
+ * @summary Export all user data as JSON
+ */
+export const getExportAllDataUrl = () => {
+  return `/api/export`;
+};
+
+export const exportAllData = async (
+  options?: RequestInit,
+): Promise<ExportAllData200> => {
+  return customFetch<ExportAllData200>(getExportAllDataUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportAllDataQueryKey = () => {
+  return [`/api/export`] as const;
+};
+
+export const getExportAllDataQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportAllData>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportAllData>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportAllDataQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAllData>>> = ({
+    signal,
+  }) => exportAllData({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportAllData>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportAllDataQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportAllData>>
+>;
+export type ExportAllDataQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export all user data as JSON
+ */
+
+export function useExportAllData<
+  TData = Awaited<ReturnType<typeof exportAllData>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportAllData>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportAllDataQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete user account and all data
+ */
+export const getDeleteAccountUrl = () => {
+  return `/api/account`;
+};
+
+export const deleteAccount = async (
+  options?: RequestInit,
+): Promise<DeleteAccount200> => {
+  return customFetch<DeleteAccount200>(getDeleteAccountUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteAccountMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAccount>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteAccount>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["deleteAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteAccount>>,
+    void
+  > = () => {
+    return deleteAccount(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteAccount>>
+>;
+
+export type DeleteAccountMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete user account and all data
+ */
+export const useDeleteAccount = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAccount>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteAccount>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getDeleteAccountMutationOptions(options));
+};
+
+/**
+ * @summary Delete all memory items
+ */
+export const getResetMemoriesUrl = () => {
+  return `/api/memories/reset`;
+};
+
+export const resetMemories = async (
+  options?: RequestInit,
+): Promise<ResetMemories200> => {
+  return customFetch<ResetMemories200>(getResetMemoriesUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getResetMemoriesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetMemories>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resetMemories>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["resetMemories"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resetMemories>>,
+    void
+  > = () => {
+    return resetMemories(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResetMemoriesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resetMemories>>
+>;
+
+export type ResetMemoriesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete all memory items
+ */
+export const useResetMemories = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetMemories>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resetMemories>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getResetMemoriesMutationOptions(options));
 };
 
 /**

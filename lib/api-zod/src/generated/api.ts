@@ -634,6 +634,24 @@ export const GetPreferencesResponse = zod.object({
   focusSessionMinutes: zod.number(),
   breakMinutes: zod.number(),
   onboardingComplete: zod.boolean(),
+  calendarLayout: zod.enum(["separate", "unified", "hybrid"]),
+  defaultCalendarView: zod.enum(["day", "week", "month"]),
+  timeSlotSnapMinutes: zod.number(),
+  workingHoursStart: zod.string(),
+  workingHoursEnd: zod.string(),
+  showWeekends: zod.boolean(),
+  firstDayOfWeek: zod.enum(["sunday", "monday"]),
+  dateFormat: zod.string(),
+  timeFormat: zod.enum(["12h", "24h"]),
+  notificationsEnabled: zod.boolean(),
+  notificationLeadMinutes: zod.number(),
+  dailyPlanReminderTime: zod.string(),
+  aiAutoCategorize: zod.boolean(),
+  aiModel: zod.string(),
+  deepThinkDefault: zod.boolean(),
+  memoryAutoUpdate: zod.boolean(),
+  voiceTranscriptionPrompt: zod.string(),
+  defaultTemplates: zod.record(zod.string(), zod.unknown()),
   updatedAt: zod.date(),
 });
 
@@ -650,6 +668,24 @@ export const UpdatePreferencesBody = zod.object({
   focusSessionMinutes: zod.number().optional(),
   breakMinutes: zod.number().optional(),
   onboardingComplete: zod.boolean().optional(),
+  calendarLayout: zod.enum(["separate", "unified", "hybrid"]).optional(),
+  defaultCalendarView: zod.enum(["day", "week", "month"]).optional(),
+  timeSlotSnapMinutes: zod.number().optional(),
+  workingHoursStart: zod.string().optional(),
+  workingHoursEnd: zod.string().optional(),
+  showWeekends: zod.boolean().optional(),
+  firstDayOfWeek: zod.enum(["sunday", "monday"]).optional(),
+  dateFormat: zod.string().optional(),
+  timeFormat: zod.enum(["12h", "24h"]).optional(),
+  notificationsEnabled: zod.boolean().optional(),
+  notificationLeadMinutes: zod.number().optional(),
+  dailyPlanReminderTime: zod.string().optional(),
+  aiAutoCategorize: zod.boolean().optional(),
+  aiModel: zod.string().optional(),
+  deepThinkDefault: zod.boolean().optional(),
+  memoryAutoUpdate: zod.boolean().optional(),
+  voiceTranscriptionPrompt: zod.string().optional(),
+  defaultTemplates: zod.record(zod.string(), zod.unknown()).optional(),
 });
 
 export const UpdatePreferencesResponse = zod.object({
@@ -663,7 +699,109 @@ export const UpdatePreferencesResponse = zod.object({
   focusSessionMinutes: zod.number(),
   breakMinutes: zod.number(),
   onboardingComplete: zod.boolean(),
+  calendarLayout: zod.enum(["separate", "unified", "hybrid"]),
+  defaultCalendarView: zod.enum(["day", "week", "month"]),
+  timeSlotSnapMinutes: zod.number(),
+  workingHoursStart: zod.string(),
+  workingHoursEnd: zod.string(),
+  showWeekends: zod.boolean(),
+  firstDayOfWeek: zod.enum(["sunday", "monday"]),
+  dateFormat: zod.string(),
+  timeFormat: zod.enum(["12h", "24h"]),
+  notificationsEnabled: zod.boolean(),
+  notificationLeadMinutes: zod.number(),
+  dailyPlanReminderTime: zod.string(),
+  aiAutoCategorize: zod.boolean(),
+  aiModel: zod.string(),
+  deepThinkDefault: zod.boolean(),
+  memoryAutoUpdate: zod.boolean(),
+  voiceTranscriptionPrompt: zod.string(),
+  defaultTemplates: zod.record(zod.string(), zod.unknown()),
   updatedAt: zod.date(),
+});
+
+/**
+ * @summary Partially update user preferences
+ */
+export const PatchPreferencesBody = zod.object({
+  wakeTime: zod.string().optional(),
+  sleepTime: zod.string().optional(),
+  energyPeaks: zod.array(zod.string()).optional(),
+  prepBufferMinutes: zod.number().optional(),
+  planningStyle: zod.enum(["morning", "reactive", "evening"]).optional(),
+  adhdMode: zod.boolean().optional(),
+  focusSessionMinutes: zod.number().optional(),
+  breakMinutes: zod.number().optional(),
+  onboardingComplete: zod.boolean().optional(),
+  calendarLayout: zod.enum(["separate", "unified", "hybrid"]).optional(),
+  defaultCalendarView: zod.enum(["day", "week", "month"]).optional(),
+  timeSlotSnapMinutes: zod.number().optional(),
+  workingHoursStart: zod.string().optional(),
+  workingHoursEnd: zod.string().optional(),
+  showWeekends: zod.boolean().optional(),
+  firstDayOfWeek: zod.enum(["sunday", "monday"]).optional(),
+  dateFormat: zod.string().optional(),
+  timeFormat: zod.enum(["12h", "24h"]).optional(),
+  notificationsEnabled: zod.boolean().optional(),
+  notificationLeadMinutes: zod.number().optional(),
+  dailyPlanReminderTime: zod.string().optional(),
+  aiAutoCategorize: zod.boolean().optional(),
+  aiModel: zod.string().optional(),
+  deepThinkDefault: zod.boolean().optional(),
+  memoryAutoUpdate: zod.boolean().optional(),
+  voiceTranscriptionPrompt: zod.string().optional(),
+  defaultTemplates: zod.record(zod.string(), zod.unknown()).optional(),
+});
+
+export const PatchPreferencesResponse = zod.object({
+  id: zod.number(),
+  wakeTime: zod.string(),
+  sleepTime: zod.string(),
+  energyPeaks: zod.array(zod.string()),
+  prepBufferMinutes: zod.number(),
+  planningStyle: zod.enum(["morning", "reactive", "evening"]),
+  adhdMode: zod.boolean(),
+  focusSessionMinutes: zod.number(),
+  breakMinutes: zod.number(),
+  onboardingComplete: zod.boolean(),
+  calendarLayout: zod.enum(["separate", "unified", "hybrid"]),
+  defaultCalendarView: zod.enum(["day", "week", "month"]),
+  timeSlotSnapMinutes: zod.number(),
+  workingHoursStart: zod.string(),
+  workingHoursEnd: zod.string(),
+  showWeekends: zod.boolean(),
+  firstDayOfWeek: zod.enum(["sunday", "monday"]),
+  dateFormat: zod.string(),
+  timeFormat: zod.enum(["12h", "24h"]),
+  notificationsEnabled: zod.boolean(),
+  notificationLeadMinutes: zod.number(),
+  dailyPlanReminderTime: zod.string(),
+  aiAutoCategorize: zod.boolean(),
+  aiModel: zod.string(),
+  deepThinkDefault: zod.boolean(),
+  memoryAutoUpdate: zod.boolean(),
+  voiceTranscriptionPrompt: zod.string(),
+  defaultTemplates: zod.record(zod.string(), zod.unknown()),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Export all user data as JSON
+ */
+export const ExportAllDataResponse = zod.record(zod.string(), zod.unknown());
+
+/**
+ * @summary Delete user account and all data
+ */
+export const DeleteAccountResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Delete all memory items
+ */
+export const ResetMemoriesResponse = zod.object({
+  deleted: zod.number(),
 });
 
 /**
@@ -833,6 +971,24 @@ export const CompleteOnboardingResponse = zod.object({
   focusSessionMinutes: zod.number(),
   breakMinutes: zod.number(),
   onboardingComplete: zod.boolean(),
+  calendarLayout: zod.enum(["separate", "unified", "hybrid"]),
+  defaultCalendarView: zod.enum(["day", "week", "month"]),
+  timeSlotSnapMinutes: zod.number(),
+  workingHoursStart: zod.string(),
+  workingHoursEnd: zod.string(),
+  showWeekends: zod.boolean(),
+  firstDayOfWeek: zod.enum(["sunday", "monday"]),
+  dateFormat: zod.string(),
+  timeFormat: zod.enum(["12h", "24h"]),
+  notificationsEnabled: zod.boolean(),
+  notificationLeadMinutes: zod.number(),
+  dailyPlanReminderTime: zod.string(),
+  aiAutoCategorize: zod.boolean(),
+  aiModel: zod.string(),
+  deepThinkDefault: zod.boolean(),
+  memoryAutoUpdate: zod.boolean(),
+  voiceTranscriptionPrompt: zod.string(),
+  defaultTemplates: zod.record(zod.string(), zod.unknown()),
   updatedAt: zod.date(),
 });
 

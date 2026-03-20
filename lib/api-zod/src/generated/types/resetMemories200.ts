@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ReorderFoldersBody {
-  folderIds: number[];
-}
+export type ResetMemories200 = {
+  deleted: number;
+};

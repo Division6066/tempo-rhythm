@@ -5,7 +5,12 @@
  * TEMPO ADHD-friendly AI daily planner API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdatePreferencesBodyCalendarLayout } from "./updatePreferencesBodyCalendarLayout";
+import type { UpdatePreferencesBodyDefaultCalendarView } from "./updatePreferencesBodyDefaultCalendarView";
+import type { UpdatePreferencesBodyDefaultTemplates } from "./updatePreferencesBodyDefaultTemplates";
+import type { UpdatePreferencesBodyFirstDayOfWeek } from "./updatePreferencesBodyFirstDayOfWeek";
 import type { UpdatePreferencesBodyPlanningStyle } from "./updatePreferencesBodyPlanningStyle";
+import type { UpdatePreferencesBodyTimeFormat } from "./updatePreferencesBodyTimeFormat";
 
 export interface UpdatePreferencesBody {
   wakeTime?: string;
@@ -17,4 +22,22 @@ export interface UpdatePreferencesBody {
   focusSessionMinutes?: number;
   breakMinutes?: number;
   onboardingComplete?: boolean;
+  calendarLayout?: UpdatePreferencesBodyCalendarLayout;
+  defaultCalendarView?: UpdatePreferencesBodyDefaultCalendarView;
+  timeSlotSnapMinutes?: number;
+  workingHoursStart?: string;
+  workingHoursEnd?: string;
+  showWeekends?: boolean;
+  firstDayOfWeek?: UpdatePreferencesBodyFirstDayOfWeek;
+  dateFormat?: string;
+  timeFormat?: UpdatePreferencesBodyTimeFormat;
+  notificationsEnabled?: boolean;
+  notificationLeadMinutes?: number;
+  dailyPlanReminderTime?: string;
+  aiAutoCategorize?: boolean;
+  aiModel?: string;
+  deepThinkDefault?: boolean;
+  memoryAutoUpdate?: boolean;
+  voiceTranscriptionPrompt?: string;
+  defaultTemplates?: UpdatePreferencesBodyDefaultTemplates;
 }

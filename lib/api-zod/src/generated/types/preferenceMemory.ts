@@ -5,7 +5,12 @@
  * TEMPO ADHD-friendly AI daily planner API
  * OpenAPI spec version: 0.1.0
  */
+import type { PreferenceMemoryCalendarLayout } from "./preferenceMemoryCalendarLayout";
+import type { PreferenceMemoryDefaultCalendarView } from "./preferenceMemoryDefaultCalendarView";
+import type { PreferenceMemoryDefaultTemplates } from "./preferenceMemoryDefaultTemplates";
+import type { PreferenceMemoryFirstDayOfWeek } from "./preferenceMemoryFirstDayOfWeek";
 import type { PreferenceMemoryPlanningStyle } from "./preferenceMemoryPlanningStyle";
+import type { PreferenceMemoryTimeFormat } from "./preferenceMemoryTimeFormat";
 
 export interface PreferenceMemory {
   id: number;
@@ -18,5 +23,23 @@ export interface PreferenceMemory {
   focusSessionMinutes: number;
   breakMinutes: number;
   onboardingComplete: boolean;
+  calendarLayout: PreferenceMemoryCalendarLayout;
+  defaultCalendarView: PreferenceMemoryDefaultCalendarView;
+  timeSlotSnapMinutes: number;
+  workingHoursStart: string;
+  workingHoursEnd: string;
+  showWeekends: boolean;
+  firstDayOfWeek: PreferenceMemoryFirstDayOfWeek;
+  dateFormat: string;
+  timeFormat: PreferenceMemoryTimeFormat;
+  notificationsEnabled: boolean;
+  notificationLeadMinutes: number;
+  dailyPlanReminderTime: string;
+  aiAutoCategorize: boolean;
+  aiModel: string;
+  deepThinkDefault: boolean;
+  memoryAutoUpdate: boolean;
+  voiceTranscriptionPrompt: string;
+  defaultTemplates: PreferenceMemoryDefaultTemplates;
   updatedAt: Date;
 }

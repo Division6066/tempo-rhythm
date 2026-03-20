@@ -41,6 +41,7 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **AI Daily Plan:** Pre-generation energy input (Low/Medium/High), per-block rationale from AI, drag-to-reorder blocks before accepting, inline edit (time, task, remove), and mood log (emoji picker) after accepting.
 - **AI Memory:** A tiered memory system (warm/cold) for personalized AI interactions.
 - **Onboarding:** A 6-step setup process for personalized configuration based on user preferences and ADHD considerations.
+- **Settings:** Full settings page with sections: Profile & Navigation, Appearance (ADHD mode, theme, date/time format), Planning & Schedule (wake/sleep, focus, energy peaks), Calendar (layout, view, snap interval, working hours, weekends, first day), Notifications (master toggle with browser permission, lead time, daily reminder), AI (auto-categorize, model, deep think, memory auto-update, voice prompt), Templates (default per period type), Data & Privacy (export JSON, reset memories, delete account), and Lore Pack Import. Desktop has left sidebar nav; mobile uses chip navigation.
 
 ## External Dependencies
 - **PostgreSQL:** Primary database for persistent storage.

@@ -402,14 +402,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                projectIds:
-                  type: array
-                  items:
-                    type: integer
-              required:
-                - projectIds
+              $ref: "#/components/schemas/ReorderProjectsBody"
       responses:
         "204":
           description: Reordered
@@ -538,14 +531,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                folderIds:
-                  type: array
-                  items:
-                    type: integer
-              required:
-                - folderIds
+              $ref: "#/components/schemas/ReorderFoldersBody"
       responses:
         "204":
           description: Reordered
@@ -712,6 +698,73 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PreferenceMemory"
+    patch:
+      operationId: patchPreferences
+      tags: [preferences]
+      summary: Partially update user preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreferencesBody"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceMemory"
+
+  /export:
+    get:
+      operationId: exportAllData
+      tags: [preferences]
+      summary: Export all user data as JSON
+      responses:
+        "200":
+          description: All user data
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /account:
+    delete:
+      operationId: deleteAccount
+      tags: [preferences]
+      summary: Delete user account and all data
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+
+  /memories/reset:
+    post:
+      operationId: resetMemories
+      tags: [preferences]
+      summary: Delete all memory items
+      responses:
+        "200":
+          description: Memories reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: integer
+                required:
+                  - deleted
 
   /memories:
     get:
@@ -1754,6 +1807,16 @@ components:
           type: integer
           nullable: true
 
+    ReorderProjectsBody:
+      type: object
+      properties:
+        projectIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - projectIds
+
     Folder:
       type: object
       properties:
@@ -1818,6 +1881,16 @@ components:
         sortOrder:
           type: integer
           nullable: true
+
+    ReorderFoldersBody:
+      type: object
+      properties:
+        folderIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - folderIds
 
     Tag:
       type: object
@@ -1950,6 +2023,47 @@ components:
           type: integer
         onboardingComplete:
           type: boolean
+        calendarLayout:
+          type: string
+          enum: [separate, unified, hybrid]
+        defaultCalendarView:
+          type: string
+          enum: [day, week, month]
+        timeSlotSnapMinutes:
+          type: integer
+        workingHoursStart:
+          type: string
+        workingHoursEnd:
+          type: string
+        showWeekends:
+          type: boolean
+        firstDayOfWeek:
+          type: string
+          enum: [sunday, monday]
+        dateFormat:
+          type: string
+        timeFormat:
+          type: string
+          enum: ["12h", "24h"]
+        notificationsEnabled:
+          type: boolean
+        notificationLeadMinutes:
+          type: integer
+        dailyPlanReminderTime:
+          type: string
+        aiAutoCategorize:
+          type: boolean
+        aiModel:
+          type: string
+        deepThinkDefault:
+          type: boolean
+        memoryAutoUpdate:
+          type: boolean
+        voiceTranscriptionPrompt:
+          type: string
+        defaultTemplates:
+          type: object
+          additionalProperties: true
         updatedAt:
           type: string
           format: date-time
@@ -1964,6 +2078,24 @@ components:
         - focusSessionMinutes
         - breakMinutes
         - onboardingComplete
+        - calendarLayout
+        - defaultCalendarView
+        - timeSlotSnapMinutes
+        - workingHoursStart
+        - workingHoursEnd
+        - showWeekends
+        - firstDayOfWeek
+        - dateFormat
+        - timeFormat
+        - notificationsEnabled
+        - notificationLeadMinutes
+        - dailyPlanReminderTime
+        - aiAutoCategorize
+        - aiModel
+        - deepThinkDefault
+        - memoryAutoUpdate
+        - voiceTranscriptionPrompt
+        - defaultTemplates
         - updatedAt
 
     UpdatePreferencesBody:
@@ -1990,6 +2122,47 @@ components:
           type: integer
         onboardingComplete:
           type: boolean
+        calendarLayout:
+          type: string
+          enum: [separate, unified, hybrid]
+        defaultCalendarView:
+          type: string
+          enum: [day, week, month]
+        timeSlotSnapMinutes:
+          type: integer
+        workingHoursStart:
+          type: string
+        workingHoursEnd:
+          type: string
+        showWeekends:
+          type: boolean
+        firstDayOfWeek:
+          type: string
+          enum: [sunday, monday]
+        dateFormat:
+          type: string
+        timeFormat:
+          type: string
+          enum: ["12h", "24h"]
+        notificationsEnabled:
+          type: boolean
+        notificationLeadMinutes:
+          type: integer
+        dailyPlanReminderTime:
+          type: string
+        aiAutoCategorize:
+          type: boolean
+        aiModel:
+          type: string
+        deepThinkDefault:
+          type: boolean
+        memoryAutoUpdate:
+          type: boolean
+        voiceTranscriptionPrompt:
+          type: string
+        defaultTemplates:
+          type: object
+          additionalProperties: true
 
     MemoryItem:
       type: object
