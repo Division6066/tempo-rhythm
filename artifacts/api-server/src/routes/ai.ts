@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, tasksTable, preferencesTable, memoriesTable, aiActionLogTable } from "@workspace/db";
+import { db, tasksTable, preferencesTable, memoriesTable, aiActionLogTable, calendarEventsTable } from "@workspace/db";
 import { eq, inArray, desc } from "drizzle-orm";
 import {
   AiChatBody,
@@ -289,25 +289,46 @@ router.post("/ai/generate-plan", async (req, res): Promise<void> => {
   try {
     const ctx = await getContext();
 
-    let taskList: Array<{ id: number; title: string; priority: string; estimatedMinutes: number | null }> = [];
+    const allTasks = await db.select().from(tasksTable);
+    const inboxAndTodayTasks = allTasks
+      .filter((t) => t.status === "today" || t.status === "inbox")
+      .map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes, status: t.status }));
+
+    let taskList: Array<{ id: number; title: string; priority: string; estimatedMinutes: number | null; status: string }>;
     if (parsed.data.taskIds && parsed.data.taskIds.length > 0) {
-      const tasks = await db
-        .select()
-        .from(tasksTable)
-        .where(inArray(tasksTable.id, parsed.data.taskIds));
-      taskList = tasks.map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes }));
+      const requestedTasks = allTasks
+        .filter((t) => parsed.data.taskIds!.includes(t.id))
+        .map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes, status: t.status }));
+      const requestedIds = new Set(parsed.data.taskIds);
+      const additionalInbox = inboxAndTodayTasks.filter((t) => !requestedIds.has(t.id));
+      taskList = [...requestedTasks, ...additionalInbox];
     } else {
-      const todayTasks = await db.select().from(tasksTable);
-      taskList = todayTasks
-        .filter((t) => t.status === "today" || t.status === "inbox")
-        .map((t) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMinutes: t.estimatedMinutes }));
+      taskList = inboxAndTodayTasks;
     }
 
+    const overdueTasks = allTasks
+      .filter((t) => t.status !== "done" && t.dueDate && t.dueDate < parsed.data.date)
+      .map((t) => ({ id: t.id, title: t.title, priority: t.priority, dueDate: t.dueDate }));
+
+    const todayEvents = (await db.select().from(calendarEventsTable))
+      .filter((e) => e.date === parsed.data.date)
+      .map((e) => ({ title: e.title, startTime: e.startTime, endTime: e.endTime, duration: e.duration }));
+
+    const energyLevel = parsed.data.energyLevel || "medium";
+    const userContext = parsed.data.context || "";
+
+    const warmMemories = (await db.select().from(memoriesTable))
+      .filter((m) => m.tier === "warm")
+      .map((m) => m.content)
+      .join("\n");
+
     const useCouncil = req.query.council === "true";
-    const prompt = `Date: ${parsed.data.date}\nTasks: ${JSON.stringify(taskList)}`;
-    const systemContent = `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nMemories:\n${ctx.memories}\n\nCreate a realistic, ADHD-friendly daily plan using these template blocks: top3, focusBlock, taskSection, reflection.
-The plan should be achievable and include breaks. Return valid JSON only, no markdown.
-Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."]}, {"type": "focusBlock", "title": "...", "startTime": "HH:MM", "duration": 90, "task": "..."}, {"type": "taskSection", "title": "Quick Wins", "tasks": ["..."]}, {"type": "reflection", "prompt": "..."}], "reasoning": "..."}`;
+    const prompt = `Date: ${parsed.data.date}\nEnergy Level: ${energyLevel}\n${userContext ? `User Context: ${userContext}\n` : ""}Tasks: ${JSON.stringify(taskList)}\nOverdue Tasks: ${JSON.stringify(overdueTasks)}\nToday's Events: ${JSON.stringify(todayEvents)}`;
+    const systemContent = `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nWarm Memories (prioritized):\n${warmMemories || "None"}\n\nAll Memories:\n${ctx.memories}\n\nCreate a realistic, ADHD-friendly daily plan using these template blocks: top3, focusBlock, taskSection, reflection.
+The plan should be achievable and include breaks. Consider the user's energy level (${energyLevel}) when scheduling — place demanding tasks during high energy, easier tasks during low energy.
+Each block MUST include a "rationale" field explaining why it was scheduled at that position (e.g. "Scheduled first because it's due today and your energy is high").
+Return valid JSON only, no markdown.
+Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."], "rationale": "..."}, {"type": "focusBlock", "title": "...", "startTime": "HH:MM", "duration": 90, "task": "...", "rationale": "..."}, {"type": "taskSection", "title": "Quick Wins", "tasks": ["..."], "rationale": "..."}, {"type": "reflection", "prompt": "...", "rationale": "..."}], "reasoning": "..."}`;
 
     let content: string;
 
@@ -337,10 +358,10 @@ Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."]}, {"type": "
     res.json(
       AiGeneratePlanResponse.parse({
         blocks: [
-          { type: "top3", items: taskList.slice(0, 3).map((t) => t.title) },
-          { type: "focusBlock", title: "Deep Work", startTime: "09:00", duration: 90, task: taskList[0]?.title || "Focus time" },
-          { type: "taskSection", title: "Quick Wins", tasks: taskList.slice(3).map((t) => t.title) },
-          { type: "reflection", prompt: "What's the ONE thing that would make today a win?" },
+          { type: "top3", items: taskList.slice(0, 3).map((t) => t.title), rationale: "Your top priorities for today" },
+          { type: "focusBlock", title: "Deep Work", startTime: "09:00", duration: 90, task: taskList[0]?.title || "Focus time", rationale: "Morning deep work when focus is typically best" },
+          { type: "taskSection", title: "Quick Wins", tasks: taskList.slice(3).map((t) => t.title), rationale: "Quick wins to build momentum" },
+          { type: "reflection", prompt: "What's the ONE thing that would make today a win?", rationale: "End-of-day reflection helps with closure" },
         ],
         reasoning: "Generated a balanced plan with top priorities, deep work, and quick wins.",
       })

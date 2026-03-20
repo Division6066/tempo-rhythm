@@ -344,6 +344,25 @@ export const CreateProjectBody = zod.object({
 });
 
 /**
+ * @summary Get a single project by ID
+ */
+export const GetProjectParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetProjectResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  folderId: zod.number().nullish(),
+  color: zod.string().nullish(),
+  status: zod.enum(["active", "archived"]),
+  sortOrder: zod.number().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
  * @summary Update a project
  */
 export const UpdateProjectParams = zod.object({
@@ -379,13 +398,20 @@ export const DeleteProjectParams = zod.object({
 });
 
 /**
- * @summary Get a single project by ID
+ * @summary Reorder projects
  */
-export const GetProjectParams = zod.object({
-  id: zod.coerce.number(),
+export const ReorderProjectsBody = zod.object({
+  projectIds: zod.array(zod.number()),
 });
 
-export const GetProjectResponse = zod.object({
+/**
+ * @summary List projects by folder
+ */
+export const ListProjectsByFolderParams = zod.object({
+  folderId: zod.coerce.number(),
+});
+
+export const ListProjectsByFolderResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   description: zod.string().nullish(),
@@ -396,22 +422,9 @@ export const GetProjectResponse = zod.object({
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
-
-/**
- * @summary List projects by folder
- */
-export const ListProjectsByFolderParams = zod.object({
-  folderId: zod.coerce.number(),
-});
-
-export const ListProjectsByFolderResponse = zod.array(ListProjectsResponseItem);
-
-/**
- * @summary Reorder projects
- */
-export const ReorderProjectsBody = zod.object({
-  projectIds: zod.array(zod.number()),
-});
+export const ListProjectsByFolderResponse = zod.array(
+  ListProjectsByFolderResponseItem,
+);
 
 /**
  * @summary List all folders
@@ -436,6 +449,23 @@ export const CreateFolderBody = zod.object({
   parentFolderId: zod.number().nullish(),
   icon: zod.string().nullish(),
   sortOrder: zod.number().nullish(),
+});
+
+/**
+ * @summary Get a single folder by ID
+ */
+export const GetFolderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetFolderResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  parentFolderId: zod.number().nullish(),
+  icon: zod.string().nullish(),
+  sortOrder: zod.number().nullish(),
+  createdAt: zod.date(),
 });
 
 /**
@@ -468,23 +498,6 @@ export const UpdateFolderResponse = zod.object({
  */
 export const DeleteFolderParams = zod.object({
   id: zod.coerce.number(),
-});
-
-/**
- * @summary Get a single folder by ID
- */
-export const GetFolderParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const GetFolderResponse = zod.object({
-  id: zod.number(),
-  name: zod.string(),
-  description: zod.string().nullish(),
-  parentFolderId: zod.number().nullish(),
-  icon: zod.string().nullish(),
-  sortOrder: zod.number().nullish(),
-  createdAt: zod.date(),
 });
 
 /**
@@ -746,9 +759,13 @@ export const AiPrioritizeResponse = zod.object({
 /**
  * @summary Generate a daily plan from tasks and preferences
  */
+export const aiGeneratePlanBodyContextMax = 200;
+
 export const AiGeneratePlanBody = zod.object({
   date: zod.string(),
   taskIds: zod.array(zod.number()).optional(),
+  energyLevel: zod.enum(["low", "medium", "high"]).optional(),
+  context: zod.string().max(aiGeneratePlanBodyContextMax).optional(),
 });
 
 export const AiGeneratePlanResponse = zod.object({

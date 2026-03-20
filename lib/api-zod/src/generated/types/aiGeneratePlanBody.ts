@@ -5,8 +5,12 @@
  * TEMPO ADHD-friendly AI daily planner API
  * OpenAPI spec version: 0.1.0
  */
+import type { AiGeneratePlanBodyEnergyLevel } from "./aiGeneratePlanBodyEnergyLevel";
 
 export interface AiGeneratePlanBody {
   date: string;
   taskIds?: number[];
+  energyLevel?: AiGeneratePlanBodyEnergyLevel;
+  /** @maxLength 200 */
+  context?: string;
 }

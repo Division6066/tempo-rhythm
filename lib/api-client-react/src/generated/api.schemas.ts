@@ -452,9 +452,21 @@ export interface AiPrioritizeResponse {
   reasoning: string;
 }
 
+export type AiGeneratePlanBodyEnergyLevel =
+  (typeof AiGeneratePlanBodyEnergyLevel)[keyof typeof AiGeneratePlanBodyEnergyLevel];
+
+export const AiGeneratePlanBodyEnergyLevel = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+} as const;
+
 export interface AiGeneratePlanBody {
   date: string;
   taskIds?: number[];
+  energyLevel?: AiGeneratePlanBodyEnergyLevel;
+  /** @maxLength 200 */
+  context?: string;
 }
 
 export type AiGeneratePlanResponseBlocksItem = { [key: string]: unknown };
@@ -660,6 +672,14 @@ export const ListNotesPeriodType = {
   quarterly: "quarterly",
   yearly: "yearly",
 } as const;
+
+export type ReorderProjectsBody = {
+  projectIds: number[];
+};
+
+export type ReorderFoldersBody = {
+  folderIds: number[];
+};
 
 export type ListDailyPlansParams = {
   date?: string;

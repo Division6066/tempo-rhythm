@@ -332,6 +332,25 @@ paths:
                 $ref: "#/components/schemas/Project"
 
   /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a single project by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
     patch:
       operationId: updateProject
       tags: [projects]
@@ -373,6 +392,49 @@ paths:
         "404":
           description: Not found
 
+  /projects/reorder:
+    post:
+      operationId: reorderProjects
+      tags: [projects]
+      summary: Reorder projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectIds:
+                  type: array
+                  items:
+                    type: integer
+              required:
+                - projectIds
+      responses:
+        "204":
+          description: Reordered
+
+  /folders/{folderId}/projects:
+    get:
+      operationId: listProjectsByFolder
+      tags: [projects]
+      summary: List projects by folder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of projects in folder
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+
   /folders:
     get:
       operationId: listFolders
@@ -406,6 +468,25 @@ paths:
                 $ref: "#/components/schemas/Folder"
 
   /folders/{id}:
+    get:
+      operationId: getFolder
+      tags: [folders]
+      summary: Get a single folder by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Folder details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+        "404":
+          description: Not found
     patch:
       operationId: updateFolder
       tags: [folders]
@@ -446,6 +527,28 @@ paths:
           description: Deleted
         "404":
           description: Not found
+
+  /folders/reorder:
+    post:
+      operationId: reorderFolders
+      tags: [folders]
+      summary: Reorder folders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folderIds:
+                  type: array
+                  items:
+                    type: integer
+              required:
+                - folderIds
+      responses:
+        "204":
+          description: Reordered
 
   /tags:
     get:
@@ -1571,6 +1674,9 @@ components:
         status:
           type: string
           enum: [active, archived]
+        sortOrder:
+          type: integer
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -1602,6 +1708,9 @@ components:
           type: string
           enum: [active, archived]
           default: active
+        sortOrder:
+          type: integer
+          nullable: true
       required:
         - name
 
@@ -1622,6 +1731,9 @@ components:
         status:
           type: string
           enum: [active, archived]
+        sortOrder:
+          type: integer
+          nullable: true
 
     Folder:
       type: object
@@ -1634,6 +1746,12 @@ components:
           type: string
           nullable: true
         parentFolderId:
+          type: integer
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        sortOrder:
           type: integer
           nullable: true
         createdAt:
@@ -1655,6 +1773,12 @@ components:
         parentFolderId:
           type: integer
           nullable: true
+        icon:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+          nullable: true
       required:
         - name
 
@@ -1667,6 +1791,12 @@ components:
           type: string
           nullable: true
         parentFolderId:
+          type: integer
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        sortOrder:
           type: integer
           nullable: true
 
@@ -2010,6 +2140,15 @@ components:
           type: array
           items:
             type: integer
+        energyLevel:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        context:
+          type: string
+          maxLength: 200
       required:
         - date
 

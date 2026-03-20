@@ -37,7 +37,8 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **Time Blocking & Recurring Tasks:** Scheduling tasks with duration and automated recurrence.
 - **Advanced Task Filters:** Customizable and savable filter presets.
 - **Templates:** Built-in and custom note templates with variable substitution.
-- **AI Staging Pattern:** A workflow for accepting, editing, or rejecting AI-generated suggestions.
+- **AI Staging Pattern:** A workflow for accepting, editing, or rejecting AI-generated suggestions. Includes drag-to-reorder with @dnd-kit.
+- **AI Daily Plan:** Pre-generation energy input (Low/Medium/High), per-block rationale from AI, drag-to-reorder blocks before accepting, inline edit (time, task, remove), and mood log (emoji picker) after accepting.
 - **AI Memory:** A tiered memory system (warm/cold) for personalized AI interactions.
 - **Onboarding:** A 6-step setup process for personalized configuration based on user preferences and ADHD considerations.
 
