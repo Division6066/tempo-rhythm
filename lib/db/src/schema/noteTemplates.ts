@@ -9,6 +9,7 @@ export const noteTemplatesTable = pgTable("note_templates", {
   content: text("content").notNull().default(""),
   category: text("category"),
   isBuiltIn: boolean("is_built_in").notNull().default(false),
+  periodType: text("period_type"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

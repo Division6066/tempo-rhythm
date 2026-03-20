@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, notesTable } from "@workspace/db";
 import {
   ListNotesQueryParams,
@@ -169,10 +169,9 @@ router.post("/notes/:id/rename", async (req, res): Promise<void> => {
     .set({ title: newTitle })
     .where(eq(notesTable.id, params.data.id));
 
-  const allOtherNotes = await db
+  const allNotes = await db
     .select()
-    .from(notesTable)
-    .where(ne(notesTable.id, params.data.id));
+    .from(notesTable);
 
   let updatedCount = 0;
   const oldPattern = new RegExp(
@@ -181,7 +180,7 @@ router.post("/notes/:id/rename", async (req, res): Promise<void> => {
   );
   const newReplacement = `[[${newTitle}]]`;
 
-  for (const otherNote of allOtherNotes) {
+  for (const otherNote of allNotes) {
     if (oldPattern.test(otherNote.content)) {
       oldPattern.lastIndex = 0;
       const updatedContent = otherNote.content.replace(oldPattern, newReplacement);

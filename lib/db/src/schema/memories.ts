@@ -7,6 +7,7 @@ export const memoriesTable = pgTable("memories", {
   tier: text("tier").notNull().default("warm"),
   content: text("content").notNull(),
   decay: integer("decay").notNull().default(100),
+  source: text("source"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -19,6 +19,9 @@ import searchRouter from "./search";
 import transcribeRouter from "./transcribe";
 import authRouter from "./auth";
 import importRouter from "./import";
+import exportRouter from "./export";
+import accountRouter from "./account";
+import attachmentsRouter from "./attachments";
 
 const router: IRouter = Router();
 
@@ -42,5 +45,8 @@ router.use(noteTemplatesRouter);
 router.use(searchRouter);
 router.use(transcribeRouter);
 router.use(importRouter);
+router.use(exportRouter);
+router.use(accountRouter);
+router.use(attachmentsRouter);
 
 export default router;
