@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./aiAutoCategorizeBody";
+export * from "./aiAutoCategorizeBodyType";
+export * from "./aiAutoCategorizeResponse";
 export * from "./aiChatBody";
 export * from "./aiChatBodyContext";
 export * from "./aiChatResponse";
@@ -20,6 +23,7 @@ export * from "./aiGeneratePlanResponseBlocksItem";
 export * from "./aiPrioritizeBody";
 export * from "./aiPrioritizeBodyTasksItem";
 export * from "./aiPrioritizeResponse";
+export * from "./aiPrioritizeResponseScoresItem";
 export * from "./calendarEvent";
 export * from "./completeTaskResponse";
 export * from "./createCalendarEventBody";

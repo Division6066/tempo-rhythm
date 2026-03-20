@@ -24,12 +24,19 @@ const ENERGY_ICONS: Record<number, { icon: typeof Battery; label: string; color:
   3: { icon: Battery, label: "High energy", color: "text-red-500" },
 };
 
+function getScoreBadgeClasses(score: number): string {
+  if (score >= 80) return "bg-red-500/20 text-red-500 border-red-500/30";
+  if (score >= 60) return "bg-amber-500/20 text-amber-500 border-amber-500/30";
+  return "bg-muted text-muted-foreground border-border";
+}
+
 interface TaskCardProps {
   task: Task;
   sortable?: boolean;
+  aiScore?: { score: number; reason: string } | null;
 }
 
-export default function TaskCard({ task, sortable = false }: TaskCardProps) {
+export default function TaskCard({ task, sortable = false, aiScore }: TaskCardProps) {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const queryClient = useQueryClient();
@@ -110,7 +117,7 @@ export default function TaskCard({ task, sortable = false }: TaskCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link href={`/tasks/${task.id}`}>
-        <div className={`glass p-4 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-muted/50 transition-all border ${isOverdue ? "border-red-500/50 bg-red-500/5" : "border-border/50 hover:border-primary/30"}`}>
+        <div className={`glass p-4 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-muted/50 transition-all border relative ${isOverdue ? "border-red-500/50 bg-red-500/5" : "border-border/50 hover:border-primary/30"}`}>
           {sortable && (
             <button
               className={`mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-opacity ${isHovered ? "opacity-100" : "opacity-0"}`}
@@ -201,6 +208,14 @@ export default function TaskCard({ task, sortable = false }: TaskCardProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        {aiScore && (
+          <div
+            className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border ${getScoreBadgeClasses(aiScore.score)}`}
+            title={aiScore.reason}
+          >
+            {aiScore.score}
+          </div>
+        )}
       </Link>
     </div>
   );

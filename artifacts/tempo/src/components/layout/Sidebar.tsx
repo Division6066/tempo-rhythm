@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import {
   Home, Sun, Inbox, FileText, Calendar, Sparkles, FolderKanban,
@@ -8,36 +8,16 @@ import {
 } from "lucide-react";
 import {
   useListFolders,
-  useListProjectsByFolder,
+  useListProjects,
   useUpdateFolder,
   useDeleteFolder,
   useUpdateProject,
   useDeleteProject,
-  useReorderFolders,
-  useReorderProjects,
   getListFoldersQueryKey,
-  getListProjectsByFolderQueryKey,
   getListProjectsQueryKey,
 } from "@workspace/api-client-react";
 import type { Folder, Project } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import FolderModal from "../FolderModal";
 import ProjectModal from "../ProjectModal";
 
@@ -114,34 +94,19 @@ function ProjectItem({
   const [location] = useLocation();
   const isActive = location === `/projects/${project.id}`;
   const [menuOpen, setMenuOpen] = useState(false);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: project.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
+    <div className="relative group">
       <Link href={`/projects/${project.id}`}>
         <div
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer ${
             isActive ? "bg-primary/15 text-primary" : "hover:bg-muted/60 text-muted-foreground hover:text-foreground"
           }`}
         >
-          <span
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing flex items-center"
-            aria-label="Drag to reorder"
-          >
-            <div
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: project.color ?? "#6C63FF" }}
-            />
-          </span>
+          <div
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: project.color ?? "#6C63FF" }}
+          />
           <span className="flex-1 truncate text-xs">{project.name}</span>
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen((v) => !v); }}
@@ -164,6 +129,7 @@ function ProjectItem({
 
 function FolderSection({
   folder,
+  allProjects,
   onAddProject,
   onRenameFolder,
   onDeleteFolder,
@@ -171,6 +137,7 @@ function FolderSection({
   onDeleteProject,
 }: {
   folder: Folder;
+  allProjects: Project[];
   onAddProject: (folderId: number) => void;
   onRenameFolder: (f: Folder) => void;
   onDeleteFolder: (id: number) => void;
@@ -178,44 +145,13 @@ function FolderSection({
   onDeleteProject: (id: number) => void;
 }) {
   const [location] = useLocation();
-  const queryClient = useQueryClient();
-  const { data: rawProjects } = useListProjectsByFolder(folder.id);
-  const reorderProjects = useReorderProjects();
   const [expanded, setExpanded] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [localProjects, setLocalProjects] = useState<Project[]>([]);
   const isActive = location === `/folders/${folder.id}`;
 
-  useEffect(() => {
-    if (rawProjects) {
-      setLocalProjects([...rawProjects].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
-    }
-  }, [rawProjects]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setLocalProjects((prev) => {
-      const oldIdx = prev.findIndex((p) => p.id === active.id);
-      const newIdx = prev.findIndex((p) => p.id === over.id);
-      const reordered = arrayMove(prev, oldIdx, newIdx);
-      reorderProjects.mutate(
-        { data: { projectIds: reordered.map((p) => p.id) } },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListProjectsByFolderQueryKey(folder.id) });
-            queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-          },
-        }
-      );
-      return reordered;
-    });
-  }, [reorderProjects, queryClient, folder.id]);
+  const localProjects = allProjects
+    .filter(p => p.folderId === folder.id)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   return (
     <div className="relative group/folder">
@@ -261,18 +197,14 @@ function FolderSection({
       )}
       {expanded && (
         <div className="ml-3 mt-0.5 space-y-0.5">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={localProjects.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-              {localProjects.map((project) => (
-                <ProjectItem
-                  key={project.id}
-                  project={project}
-                  onRename={onRenameProject}
-                  onDelete={onDeleteProject}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {localProjects.map((project) => (
+            <ProjectItem
+              key={project.id}
+              project={project}
+              onRename={onRenameProject}
+              onDelete={onDeleteProject}
+            />
+          ))}
           {localProjects.length === 0 && (
             <p className="text-[10px] text-muted-foreground/40 px-3 py-1">No projects</p>
           )}
@@ -292,11 +224,11 @@ export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture, isMobile
   const [location] = useLocation();
   const queryClient = useQueryClient();
   const { data: rawFolders } = useListFolders();
+  const { data: allProjects } = useListProjects();
   const updateFolder = useUpdateFolder();
   const deleteFolder = useDeleteFolder();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
-  const reorderFolders = useReorderFolders();
 
   const [collapsed, setCollapsed] = useState(false);
   const [localFolders, setLocalFolders] = useState<Folder[]>([]);
@@ -312,30 +244,6 @@ export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture, isMobile
       setLocalFolders([...rawFolders].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
     }
   }, [rawFolders]);
-
-  const folderSensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleFolderDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setLocalFolders((prev) => {
-      const oldIdx = prev.findIndex((f) => f.id === active.id);
-      const newIdx = prev.findIndex((f) => f.id === over.id);
-      const reordered = arrayMove(prev, oldIdx, newIdx);
-      reorderFolders.mutate(
-        { data: { folderIds: reordered.map((f) => f.id) } },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListFoldersQueryKey() });
-          },
-        }
-      );
-      return reordered;
-    });
-  }, [reorderFolders, queryClient]);
 
   const isActive = (path: string) => {
     if (path === "/") return location === "/";
@@ -367,11 +275,6 @@ export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture, isMobile
   const handleDeleteProject = async (id: number) => {
     await deleteProject.mutateAsync({ id });
     queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-    if (localFolders.length > 0) {
-      localFolders.forEach((f) => {
-        queryClient.invalidateQueries({ queryKey: getListProjectsByFolderQueryKey(f.id) });
-      });
-    }
   };
 
   if (isMobileOverlay) {
@@ -518,23 +421,20 @@ export default function Sidebar({ onOpenCommandBar, onOpenQuickCapture, isMobile
                   <FolderPlus size={12} />
                 </button>
               </div>
-              <DndContext sensors={folderSensors} collisionDetection={closestCenter} onDragEnd={handleFolderDragEnd}>
-                <SortableContext items={localFolders.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-0.5">
-                    {localFolders.map((folder) => (
-                      <FolderSection
-                        key={folder.id}
-                        folder={folder}
-                        onAddProject={openAddProject}
-                        onRenameFolder={handleRenameFolder}
-                        onDeleteFolder={handleDeleteFolder}
-                        onRenameProject={handleRenameProject}
-                        onDeleteProject={handleDeleteProject}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+              <div className="space-y-0.5">
+                {localFolders.map((folder) => (
+                  <FolderSection
+                    key={folder.id}
+                    folder={folder}
+                    allProjects={allProjects || []}
+                    onAddProject={openAddProject}
+                    onRenameFolder={handleRenameFolder}
+                    onDeleteFolder={handleDeleteFolder}
+                    onRenameProject={handleRenameProject}
+                    onDeleteProject={handleDeleteProject}
+                  />
+                ))}
+              </div>
             </div>
           )}
 

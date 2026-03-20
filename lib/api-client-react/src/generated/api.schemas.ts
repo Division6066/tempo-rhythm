@@ -436,6 +436,27 @@ export interface AiChunkResponse {
   reasoning: string;
 }
 
+export type AiAutoCategorizeBodyType =
+  (typeof AiAutoCategorizeBodyType)[keyof typeof AiAutoCategorizeBodyType];
+
+export const AiAutoCategorizeBodyType = {
+  note: "note",
+  task: "task",
+} as const;
+
+export interface AiAutoCategorizeBody {
+  content: string;
+  title: string;
+  type: AiAutoCategorizeBodyType;
+}
+
+export interface AiAutoCategorizeResponse {
+  folder?: string | null;
+  project?: string | null;
+  tags: string[];
+  confidence: number;
+}
+
 export type AiPrioritizeBodyTasksItem = {
   id: number;
   title: string;
@@ -447,8 +468,15 @@ export interface AiPrioritizeBody {
   tasks: AiPrioritizeBodyTasksItem[];
 }
 
+export type AiPrioritizeResponseScoresItem = {
+  taskId: number;
+  score: number;
+  reason: string;
+};
+
 export interface AiPrioritizeResponse {
   orderedTaskIds: number[];
+  scores?: AiPrioritizeResponseScoresItem[];
   reasoning: string;
 }
 

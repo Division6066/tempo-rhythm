@@ -14,6 +14,7 @@ import {
   getGetNoteQueryKey,
   getListNoteLinksQueryKey,
   NoteLink,
+  useAiAutoCategorize,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import AiSuggestionBanner from "@/components/AiSuggestionBanner";
 
 export default function NoteEditor() {
   const [, params] = useRoute("/notes/:id");
@@ -72,6 +74,15 @@ export default function NoteEditor() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
+  const autoCategorize = useAiAutoCategorize();
+  const [categorizeSuggestion, setCategorizeSuggestion] = useState<{
+    folder: string | null;
+    project: string | null;
+    tags: string[];
+    confidence: number;
+  } | null>(null);
+  const lastCategorizedContent = useRef("");
 
   useEffect(() => {
     if (note && !isNew) {
@@ -156,12 +167,25 @@ export default function NoteEditor() {
         queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
         await syncWikiLinks(noteId, currentContent);
         setSaveStatus("saved");
+
+        const contentKey = `${currentTitle}::${currentContent}`;
+        if (currentContent.length > 10 && contentKey !== lastCategorizedContent.current) {
+          lastCategorizedContent.current = contentKey;
+          try {
+            const catResult = await autoCategorize.mutateAsync({
+              data: { title: currentTitle, content: currentContent, type: "note" },
+            });
+            if (catResult.confidence > 60) {
+              setCategorizeSuggestion(catResult);
+            }
+          } catch {}
+        }
       }
     } catch (e) {
       setSaveStatus("unsaved");
       toast({ variant: "destructive", title: "Failed to save note" });
     }
-  }, [isNew, noteId, createNote, updateNote, queryClient, syncWikiLinks, setLocation, toast]);
+  }, [isNew, noteId, createNote, updateNote, queryClient, syncWikiLinks, setLocation, toast, autoCategorize]);
 
   const debouncedSave = useCallback(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -357,6 +381,23 @@ export default function NoteEditor() {
     return [...new Set(matches)];
   }, [content]);
 
+  const handleApplyCategorization = useCallback(async () => {
+    if (!categorizeSuggestion) return;
+    const baseUrl = import.meta.env.BASE_URL || "/";
+    try {
+      await fetch(`${baseUrl}api/memories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: "warm",
+          content: `Auto-categorized note "${titleRef.current}" → folder: ${categorizeSuggestion.folder || "none"}, tags: ${categorizeSuggestion.tags.join(", ") || "none"} (${Math.round(categorizeSuggestion.confidence)}% confidence)`,
+        }),
+      });
+    } catch {}
+    setCategorizeSuggestion(null);
+    toast({ title: "Categorization applied" });
+  }, [categorizeSuggestion, toast]);
+
   if (isLoading && !isNew) {
     return <div className="flex h-[50vh] items-center justify-center"><div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" /></div>;
   }
@@ -439,6 +480,17 @@ export default function NoteEditor() {
             ))}
           </div>
         </div>
+      )}
+
+      {categorizeSuggestion && (
+        <AiSuggestionBanner
+          folder={categorizeSuggestion.folder}
+          project={categorizeSuggestion.project}
+          tags={categorizeSuggestion.tags}
+          confidence={categorizeSuggestion.confidence}
+          onApply={handleApplyCategorization}
+          onDismiss={() => setCategorizeSuggestion(null)}
+        />
       )}
 
       <Input 

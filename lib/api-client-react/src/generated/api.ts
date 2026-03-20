@@ -17,6 +17,8 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AiAutoCategorizeBody,
+  AiAutoCategorizeResponse,
   AiChatBody,
   AiChatResponse,
   AiChunkBody,
@@ -3448,6 +3450,92 @@ export const useAiChunkTask = <
   TContext
 > => {
   return useMutation(getAiChunkTaskMutationOptions(options));
+};
+
+/**
+ * @summary Suggest folder, project and tags for a note or task
+ */
+export const getAiAutoCategorizeUrl = () => {
+  return `/api/ai/auto-categorize`;
+};
+
+export const aiAutoCategorize = async (
+  aiAutoCategorizeBody: AiAutoCategorizeBody,
+  options?: RequestInit,
+): Promise<AiAutoCategorizeResponse> => {
+  return customFetch<AiAutoCategorizeResponse>(getAiAutoCategorizeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aiAutoCategorizeBody),
+  });
+};
+
+export const getAiAutoCategorizeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiAutoCategorize>>,
+    TError,
+    { data: BodyType<AiAutoCategorizeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof aiAutoCategorize>>,
+  TError,
+  { data: BodyType<AiAutoCategorizeBody> },
+  TContext
+> => {
+  const mutationKey = ["aiAutoCategorize"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof aiAutoCategorize>>,
+    { data: BodyType<AiAutoCategorizeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return aiAutoCategorize(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AiAutoCategorizeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof aiAutoCategorize>>
+>;
+export type AiAutoCategorizeMutationBody = BodyType<AiAutoCategorizeBody>;
+export type AiAutoCategorizeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Suggest folder, project and tags for a note or task
+ */
+export const useAiAutoCategorize = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiAutoCategorize>>,
+    TError,
+    { data: BodyType<AiAutoCategorizeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof aiAutoCategorize>>,
+  TError,
+  { data: BodyType<AiAutoCategorizeBody> },
+  TContext
+> => {
+  return useMutation(getAiAutoCategorizeMutationOptions(options));
 };
 
 /**

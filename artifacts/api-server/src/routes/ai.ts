@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, tasksTable, preferencesTable, memoriesTable, aiActionLogTable, calendarEventsTable } from "@workspace/db";
+import { db, tasksTable, preferencesTable, memoriesTable, aiActionLogTable, calendarEventsTable, foldersTable, projectsTable, tagsTable } from "@workspace/db";
 import { eq, inArray, desc } from "drizzle-orm";
 import {
   AiChatBody,
@@ -8,6 +8,8 @@ import {
   AiExtractTasksResponse,
   AiChunkTaskBody,
   AiChunkTaskResponse,
+  AiAutoCategorizeBody,
+  AiAutoCategorizeResponse,
   AiPrioritizeBody,
   AiPrioritizeResponse,
   AiGeneratePlanBody,
@@ -242,6 +244,58 @@ Format: {"subtasks": [{"title": "...", "priority": "high|medium|low", "estimated
   }
 });
 
+router.post("/ai/auto-categorize", async (req, res): Promise<void> => {
+  const parsed = AiAutoCategorizeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  try {
+    const folders = await db.select().from(foldersTable);
+    const projects = await db.select().from(projectsTable);
+    const tags = await db.select().from(tagsTable);
+    const ctx = await getContext();
+
+    const folderNames = folders.map(f => f.name);
+    const projectNames = projects.map(p => p.name);
+    const tagNames = tags.map(t => t.name);
+
+    const result = await callWithFallbackDetailed([
+      {
+        role: "system",
+        content: `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nMemories:\n${ctx.memories}\n\nSuggest categorization for this ${parsed.data.type}. Use existing folders/projects/tags when they fit, or suggest new ones if needed.
+
+Available folders: ${folderNames.length ? folderNames.join(", ") : "none yet"}
+Available projects: ${projectNames.length ? projectNames.join(", ") : "none yet"}
+Available tags: ${tagNames.length ? tagNames.join(", ") : "none yet"}
+
+Return valid JSON only, no markdown.
+Format: {"folder": "folder name or null", "project": "project name or null", "tags": ["tag1", "tag2"], "confidence": 0-100}`,
+      },
+      {
+        role: "user",
+        content: `Title: ${parsed.data.title}\nContent: ${parsed.data.content}\nType: ${parsed.data.type}`,
+      },
+    ]);
+
+    await logAiAction("auto-categorize", result);
+    const cleaned = result.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const data = JSON.parse(cleaned);
+    res.json(AiAutoCategorizeResponse.parse(data));
+  } catch (err) {
+    await logAiError("auto-categorize", "unknown", err);
+    res.json(
+      AiAutoCategorizeResponse.parse({
+        folder: null,
+        project: null,
+        tags: [],
+        confidence: 0,
+      })
+    );
+  }
+});
+
 router.post("/ai/prioritize", async (req, res): Promise<void> => {
   const parsed = AiPrioritizeBody.safeParse(req.body);
   if (!parsed.success) {
@@ -256,7 +310,7 @@ router.post("/ai/prioritize", async (req, res): Promise<void> => {
       {
         role: "system",
         content: `${SYSTEM_PROMPT}\n\nUser context:\n${ctx.preferences}\n\nPrioritize these tasks for someone with ADHD. Consider: urgency, energy required, quick wins for momentum. Return valid JSON only, no markdown.
-Format: {"orderedTaskIds": [id1, id2, ...], "reasoning": "..."}`,
+Format: {"orderedTaskIds": [id1, id2, ...], "scores": [{"taskId": id, "score": 0-100, "reason": "brief reason"}], "reasoning": "overall reasoning"}`,
       },
       {
         role: "user",
@@ -273,6 +327,7 @@ Format: {"orderedTaskIds": [id1, id2, ...], "reasoning": "..."}`,
     res.json(
       AiPrioritizeResponse.parse({
         orderedTaskIds: parsed.data.tasks.map((t: { id: number }) => t.id),
+        scores: parsed.data.tasks.map((t: { id: number }) => ({ taskId: t.id, score: 50, reason: "Default score" })),
         reasoning: "Kept original order.",
       })
     );

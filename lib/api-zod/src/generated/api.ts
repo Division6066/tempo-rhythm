@@ -204,7 +204,9 @@ export const CompleteTaskResponse = zod.object({
 export const ListNotesQueryParams = zod.object({
   projectId: zod.coerce.number().optional(),
   folderId: zod.coerce.number().optional(),
-  periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).optional(),
+  periodType: zod
+    .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+    .optional(),
   search: zod.coerce.string().optional(),
 });
 
@@ -217,7 +219,9 @@ export const ListNotesResponseItem = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
-  periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).nullish(),
+  periodType: zod
+    .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+    .nullish(),
   periodDate: zod.string().nullish(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
@@ -240,7 +244,9 @@ export const CreateNoteBody = zod.object({
   tags: zod.array(zod.string()).optional(),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean().default(createNoteBodyIsPinnedDefault),
-  periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).nullish(),
+  periodType: zod
+    .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+    .nullish(),
   periodDate: zod.string().nullish(),
 });
 
@@ -260,7 +266,9 @@ export const GetNoteResponse = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
-  periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).nullish(),
+  periodType: zod
+    .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+    .nullish(),
   periodDate: zod.string().nullish(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
@@ -296,7 +304,9 @@ export const UpdateNoteResponse = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
-  periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).nullish(),
+  periodType: zod
+    .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+    .nullish(),
   periodDate: zod.string().nullish(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
@@ -738,6 +748,22 @@ export const AiChunkTaskResponse = zod.object({
 });
 
 /**
+ * @summary Suggest folder, project and tags for a note or task
+ */
+export const AiAutoCategorizeBody = zod.object({
+  content: zod.string(),
+  title: zod.string(),
+  type: zod.enum(["note", "task"]),
+});
+
+export const AiAutoCategorizeResponse = zod.object({
+  folder: zod.string().nullish(),
+  project: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  confidence: zod.number(),
+});
+
+/**
  * @summary Suggest priority ordering for tasks
  */
 export const AiPrioritizeBody = zod.object({
@@ -753,6 +779,15 @@ export const AiPrioritizeBody = zod.object({
 
 export const AiPrioritizeResponse = zod.object({
   orderedTaskIds: zod.array(zod.number()),
+  scores: zod
+    .array(
+      zod.object({
+        taskId: zod.number(),
+        score: zod.number(),
+        reason: zod.string(),
+      }),
+    )
+    .optional(),
   reasoning: zod.string(),
 });
 
@@ -1145,7 +1180,9 @@ export const PublishNoteResponse = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
-  periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).nullish(),
+  periodType: zod
+    .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+    .nullish(),
   periodDate: zod.string().nullish(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
@@ -1169,7 +1206,9 @@ export const GetPublishedNoteResponse = zod.object({
   tags: zod.array(zod.string()),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean(),
-  periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).nullish(),
+  periodType: zod
+    .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+    .nullish(),
   periodDate: zod.string().nullish(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
@@ -1195,7 +1234,9 @@ export const GlobalSearchResponse = zod.object({
       tags: zod.array(zod.string()),
       templateType: zod.string().nullish(),
       isPinned: zod.boolean(),
-      periodType: zod.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]).nullish(),
+      periodType: zod
+        .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
+        .nullish(),
       periodDate: zod.string().nullish(),
       isPublished: zod.boolean(),
       publishSlug: zod.string().nullish(),

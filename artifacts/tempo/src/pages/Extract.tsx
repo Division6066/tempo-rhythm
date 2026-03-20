@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAiExtractTasks, useCreateTask, getListTasksQueryKey, type ExtractedTask } from "@workspace/api-client-react";
+import { useAiExtractTasks, useCreateTask, getListTasksQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,7 +29,7 @@ export default function Extract() {
     try {
       const result = await extractMutation.mutateAsync({ data: { text } });
       setExtractedTasks(
-        result.tasks.map((t: ExtractedTask) => ({
+        result.tasks.map((t: { title: string; priority: string; estimatedMinutes?: number | null; tags?: string[] }) => ({
           title: t.title,
           priority: t.priority,
           estimatedMinutes: t.estimatedMinutes,

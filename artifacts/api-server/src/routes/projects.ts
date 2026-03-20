@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, asc } from "drizzle-orm";
 import { db, projectsTable } from "@workspace/db";
+import { z } from "zod/v4";
 import {
   ListProjectsResponse,
   CreateProjectBody,
@@ -8,12 +9,11 @@ import {
   UpdateProjectBody,
   UpdateProjectResponse,
   DeleteProjectParams,
-  GetProjectParams,
-  GetProjectResponse,
-  ListProjectsByFolderParams,
-  ListProjectsByFolderResponse,
-  ReorderProjectsBody,
 } from "@workspace/api-zod";
+
+const GetProjectParams = z.object({ id: z.coerce.number() });
+const ListProjectsByFolderParams = z.object({ folderId: z.coerce.number() });
+const ReorderProjectsBody = z.object({ projectIds: z.array(z.number()) });
 
 const router: IRouter = Router();
 
@@ -35,7 +35,7 @@ router.get("/projects/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetProjectResponse.parse(project));
+  res.json(project);
 });
 
 router.get("/folders/:folderId/projects", async (req, res): Promise<void> => {
@@ -51,7 +51,7 @@ router.get("/folders/:folderId/projects", async (req, res): Promise<void> => {
     .where(eq(projectsTable.folderId, params.data.folderId))
     .orderBy(asc(projectsTable.sortOrder), asc(projectsTable.createdAt));
 
-  res.json(ListProjectsByFolderResponse.parse(projects));
+  res.json(projects);
 });
 
 router.post("/projects", async (req, res): Promise<void> => {

@@ -819,6 +819,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/AiChunkResponse"
 
+  /ai/auto-categorize:
+    post:
+      operationId: aiAutoCategorize
+      tags: [ai]
+      summary: Suggest folder, project and tags for a note or task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiAutoCategorizeBody"
+      responses:
+        "200":
+          description: Categorization suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiAutoCategorizeResponse"
+
   /ai/prioritize:
     post:
       operationId: aiPrioritize
@@ -2095,6 +2114,40 @@ components:
         - subtasks
         - reasoning
 
+    AiAutoCategorizeBody:
+      type: object
+      properties:
+        content:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+          enum: [note, task]
+      required:
+        - content
+        - title
+        - type
+
+    AiAutoCategorizeResponse:
+      type: object
+      properties:
+        folder:
+          type: string
+          nullable: true
+        project:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        confidence:
+          type: number
+      required:
+        - tags
+        - confidence
+
     AiPrioritizeBody:
       type: object
       properties:
@@ -2125,6 +2178,21 @@ components:
           type: array
           items:
             type: integer
+        scores:
+          type: array
+          items:
+            type: object
+            properties:
+              taskId:
+                type: integer
+              score:
+                type: number
+              reason:
+                type: string
+            required:
+              - taskId
+              - score
+              - reason
         reasoning:
           type: string
       required:

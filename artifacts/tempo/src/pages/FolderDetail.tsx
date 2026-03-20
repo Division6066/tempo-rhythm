@@ -1,13 +1,10 @@
 import { useRoute, useLocation } from "wouter";
 import {
-  useGetFolder,
-  useListProjectsByFolder,
+  useListFolders,
+  useListProjects,
   useListTasks,
-  getListFoldersQueryKey,
-  getListProjectsByFolderQueryKey,
 } from "@workspace/api-client-react";
 import type { Project } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, FolderGit2, ChevronRight, FolderOpen } from "lucide-react";
@@ -54,9 +51,12 @@ export default function FolderDetail() {
 
   const folderId = params?.id ? parseInt(params.id) : null;
 
-  const { data: folder } = useGetFolder(folderId ?? 0);
-  const { data: projects } = useListProjectsByFolder(folderId ?? 0);
+  const { data: allFolders } = useListFolders();
+  const { data: allProjectsList } = useListProjects();
   const { data: tasks } = useListTasks();
+
+  const folder = allFolders?.find(f => f.id === folderId);
+  const projects = allProjectsList?.filter(p => p.folderId === folderId);
 
   if (!folderId) {
     return (

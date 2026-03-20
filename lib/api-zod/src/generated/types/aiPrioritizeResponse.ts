@@ -5,8 +5,10 @@
  * TEMPO ADHD-friendly AI daily planner API
  * OpenAPI spec version: 0.1.0
  */
+import type { AiPrioritizeResponseScoresItem } from "./aiPrioritizeResponseScoresItem";
 
 export interface AiPrioritizeResponse {
   orderedTaskIds: number[];
+  scores?: AiPrioritizeResponseScoresItem[];
   reasoning: string;
 }

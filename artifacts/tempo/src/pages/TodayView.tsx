@@ -1,13 +1,17 @@
 import { useState, useMemo, useCallback, useRef } from "react";
-import { useListTasks, useUpdateTask, useCreateTask, getListTasksQueryKey, Task } from "@workspace/api-client-react";
+import { useListTasks, useUpdateTask, useCreateTask, useAiPrioritize, getListTasksQueryKey, Task } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Sparkles, RotateCcw } from "lucide-react";
 import TaskCard from "@/components/TaskCard";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors, DragOverlay, DragStartEvent, useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { AlertTriangle, Plus, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type PrioritySection = "high" | "medium" | "low";
+type ScoreMap = Record<number, { score: number; reason: string }>;
 
 function DroppableSection({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -42,11 +46,14 @@ function applySectionOrder(tasks: Task[], orderMap: Record<PrioritySection, numb
 export default function TodayView() {
   const { data: todayActive, isLoading: loadingActive } = useListTasks({ status: "today" });
   const { data: todayDone, isLoading: loadingDone } = useListTasks({ status: "done" });
-
+  const prioritize = useAiPrioritize();
   const updateTask = useUpdateTask();
   const createTask = useCreateTask();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
+  const [aiSortedIds, setAiSortedIds] = useState<number[] | null>(null);
+  const [aiScores, setAiScores] = useState<ScoreMap>({});
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [addingInSection, setAddingInSection] = useState<PrioritySection | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -226,6 +233,44 @@ export default function TodayView() {
     }
   };
 
+  const handleAiPrioritize = useCallback(async () => {
+    if (activeTasks.length === 0) return;
+    try {
+      const res = await prioritize.mutateAsync({
+        data: {
+          tasks: activeTasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            priority: t.priority,
+            estimatedMinutes: t.estimatedMinutes,
+          })),
+        },
+      });
+      setAiSortedIds(res.orderedTaskIds);
+      const scoreMap: ScoreMap = {};
+      if (res.scores) {
+        for (const s of res.scores) {
+          scoreMap[s.taskId] = { score: s.score, reason: s.reason };
+        }
+      }
+      setAiScores(scoreMap);
+    } catch {
+      toast({ variant: "destructive", title: "AI prioritization failed" });
+    }
+  }, [activeTasks, prioritize, toast]);
+
+  const resetSort = useCallback(() => {
+    setAiSortedIds(null);
+    setAiScores({});
+  }, []);
+
+  const sortedActiveTasks = aiSortedIds
+    ? aiSortedIds
+        .map(id => activeTasks.find(t => t.id === id))
+        .filter((t): t is Task => !!t)
+        .concat(activeTasks.filter(t => !aiSortedIds.includes(t.id)))
+    : null;
+
   if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -283,7 +328,31 @@ export default function TodayView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-display font-bold text-foreground mb-2">Today</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-display font-bold text-foreground">Today</h1>
+          <div className="flex items-center gap-2">
+            {aiSortedIds && (
+              <button
+                onClick={resetSort}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+              >
+                <RotateCcw size={12} /> Reset to manual order
+              </button>
+            )}
+            {activeTasks.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAiPrioritize}
+                disabled={prioritize.isPending}
+                className="border-primary/50 text-primary gap-1.5 h-8 text-xs"
+              >
+                <Sparkles size={14} />
+                {prioritize.isPending ? "Prioritizing..." : "AI Prioritize"}
+              </Button>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-4 mb-2">
           <Progress value={progress} className="h-2 flex-1" />
           <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">
@@ -292,7 +361,7 @@ export default function TodayView() {
         </div>
       </div>
 
-      {filterChips.length > 1 && (
+      {filterChips.length > 1 && !sortedActiveTasks && (
         <div className="flex items-center gap-2 flex-wrap">
           {filterChips.map((chip) => (
             <button
@@ -310,78 +379,91 @@ export default function TodayView() {
         </div>
       )}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="space-y-6">
-          {filteredOverdue.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-                <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider">Overdue</h2>
-              </div>
-              <SortableContext items={filteredOverdue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                {filteredOverdue.map((task) => (
-                  <TaskCard key={task.id} task={task} sortable />
-                ))}
-              </SortableContext>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <h2 className="text-xs font-semibold text-teal-400 uppercase tracking-wider">High Priority</h2>
-            <DroppableSection id="section-high">
-              <SortableContext items={highPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-0">
-                  {highPriority.map((task) => (
-                    <TaskCard key={task.id} task={task} sortable />
-                  ))}
-                </div>
-              </SortableContext>
-            </DroppableSection>
-            {renderInlineAdd("high")}
-          </div>
-
-          <div className="space-y-3">
-            <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Medium Priority</h2>
-            <DroppableSection id="section-medium">
-              <SortableContext items={mediumPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-0">
-                  {mediumPriority.map((task) => (
-                    <TaskCard key={task.id} task={task} sortable />
-                  ))}
-                </div>
-              </SortableContext>
-            </DroppableSection>
-            {renderInlineAdd("medium")}
-          </div>
-
-          <div className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Low Priority</h2>
-            <DroppableSection id="section-low">
-              <SortableContext items={lowPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-0">
-                  {lowPriority.map((task) => (
-                    <TaskCard key={task.id} task={task} sortable />
-                  ))}
-                </div>
-              </SortableContext>
-            </DroppableSection>
-            {renderInlineAdd("low")}
-          </div>
+      {sortedActiveTasks && sortedActiveTasks.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
+            <Sparkles size={10} /> AI Prioritized
+          </h2>
+          {sortedActiveTasks.map(task => (
+            <TaskCard key={task.id} task={task} aiScore={aiScores[task.id] || null} />
+          ))}
         </div>
+      )}
 
-        <DragOverlay>
-          {activeTask ? (
-            <div className="opacity-80">
-              <TaskCard task={activeTask} />
+      {!sortedActiveTasks && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="space-y-6">
+            {filteredOverdue.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider">Overdue</h2>
+                </div>
+                <SortableContext items={filteredOverdue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  {filteredOverdue.map((task) => (
+                    <TaskCard key={task.id} task={task} sortable />
+                  ))}
+                </SortableContext>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-teal-400 uppercase tracking-wider">High Priority</h2>
+              <DroppableSection id="section-high">
+                <SortableContext items={highPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-0">
+                    {highPriority.map((task) => (
+                      <TaskCard key={task.id} task={task} sortable />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DroppableSection>
+              {renderInlineAdd("high")}
             </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Medium Priority</h2>
+              <DroppableSection id="section-medium">
+                <SortableContext items={mediumPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-0">
+                    {mediumPriority.map((task) => (
+                      <TaskCard key={task.id} task={task} sortable />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DroppableSection>
+              {renderInlineAdd("medium")}
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Low Priority</h2>
+              <DroppableSection id="section-low">
+                <SortableContext items={lowPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-0">
+                    {lowPriority.map((task) => (
+                      <TaskCard key={task.id} task={task} sortable />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DroppableSection>
+              {renderInlineAdd("low")}
+            </div>
+          </div>
+
+          <DragOverlay>
+            {activeTask ? (
+              <div className="opacity-80">
+                <TaskCard task={activeTask} />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       {completed.length > 0 && (
         <div className="space-y-3 pt-4 border-t border-border/50">

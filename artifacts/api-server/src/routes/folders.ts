@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, asc } from "drizzle-orm";
 import { db, foldersTable } from "@workspace/db";
+import { z } from "zod/v4";
 import {
   ListFoldersResponse,
   CreateFolderBody,
@@ -8,10 +9,10 @@ import {
   UpdateFolderBody,
   UpdateFolderResponse,
   DeleteFolderParams,
-  GetFolderParams,
-  GetFolderResponse,
-  ReorderFoldersBody,
 } from "@workspace/api-zod";
+
+const GetFolderParams = z.object({ id: z.coerce.number() });
+const ReorderFoldersBody = z.object({ folderIds: z.array(z.number()) });
 
 const router: IRouter = Router();
 
@@ -33,7 +34,7 @@ router.get("/folders/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetFolderResponse.parse(folder));
+  res.json(folder);
 });
 
 router.post("/folders", async (req, res): Promise<void> => {

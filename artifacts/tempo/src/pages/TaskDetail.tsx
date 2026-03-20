@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
 import {
   useGetTask,
@@ -19,6 +19,7 @@ import {
   UpdateTaskBodyPriority,
   CreateTaskBodyStatus,
   CreateTaskBodyPriority,
+  useAiAutoCategorize,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Clock, Sparkles, Trash2, Check, X, Pencil, Repeat, Calendar, Battery, BatteryLow, BatteryMedium } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AiSuggestionBanner from "@/components/AiSuggestionBanner";
 
 type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
 
@@ -75,6 +77,15 @@ export default function TaskDetail() {
   const [recurrenceRule, setRecurrenceRule] = useState("");
   const [customRecurrence, setCustomRecurrence] = useState("");
 
+  const autoCategorize = useAiAutoCategorize();
+  const [categorizeSuggestion, setCategorizeSuggestion] = useState<{
+    folder: string | null;
+    project: string | null;
+    tags: string[];
+    confidence: number;
+  } | null>(null);
+  const lastCategorizedContent = useRef("");
+
   useEffect(() => {
     if (task) {
       setTitle(task.title);
@@ -122,6 +133,19 @@ export default function TaskDetail() {
         },
       });
       invalidateAll();
+
+      const contentKey = `${title}::${notes}`;
+      if (title.length > 3 && contentKey !== lastCategorizedContent.current) {
+        lastCategorizedContent.current = contentKey;
+        try {
+          const catResult = await autoCategorize.mutateAsync({
+            data: { title, content: notes || title, type: "task" },
+          });
+          if (catResult.confidence > 60) {
+            setCategorizeSuggestion(catResult);
+          }
+        } catch {}
+      }
     } catch {
       toast({ variant: "destructive", title: "Failed to update task" });
     }
@@ -228,6 +252,31 @@ export default function TaskDetail() {
       (s) => (s.data as Record<string, unknown>)?.parentTaskId === taskId
     ) || [];
 
+  const handleApplyCategorization = useCallback(async () => {
+    if (!categorizeSuggestion || !task) return;
+    const baseUrl = import.meta.env.BASE_URL || "/";
+    const newTags = [...(task.tags || []), ...categorizeSuggestion.tags.filter(t => !(task.tags || []).includes(t))];
+    try {
+      await updateTask.mutateAsync({
+        id: taskId,
+        data: { tags: newTags },
+      });
+      invalidateAll();
+    } catch {}
+    try {
+      await fetch(`${baseUrl}api/memories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: "warm",
+          content: `Auto-categorized task "${title}" → folder: ${categorizeSuggestion.folder || "none"}, tags: ${categorizeSuggestion.tags.join(", ") || "none"} (${Math.round(categorizeSuggestion.confidence)}% confidence)`,
+        }),
+      });
+    } catch {}
+    setCategorizeSuggestion(null);
+    toast({ title: "Categorization applied" });
+  }, [categorizeSuggestion, task, taskId, title, updateTask, toast]);
+
   if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -273,6 +322,17 @@ export default function TaskDetail() {
           </Button>
         </div>
       </div>
+
+      {categorizeSuggestion && (
+        <AiSuggestionBanner
+          folder={categorizeSuggestion.folder}
+          project={categorizeSuggestion.project}
+          tags={categorizeSuggestion.tags}
+          confidence={categorizeSuggestion.confidence}
+          onApply={handleApplyCategorization}
+          onDismiss={() => setCategorizeSuggestion(null)}
+        />
+      )}
 
       <div className="space-y-4">
         <Input

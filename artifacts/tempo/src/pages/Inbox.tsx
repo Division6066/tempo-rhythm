@@ -1,19 +1,23 @@
-import { useState } from "react";
-import { useListTasks, useCreateTask, useAiExtractTasks, getListTasksQueryKey, getListStagedSuggestionsQueryKey, useDeleteTask, useUpdateTask, useListStagedSuggestions, useCreateStagedSuggestion, useAcceptStagedSuggestion, useRejectStagedSuggestion, useUpdateStagedSuggestionData } from "@workspace/api-client-react";
+import { useState, useCallback } from "react";
+import { useListTasks, useCreateTask, useAiExtractTasks, useAiPrioritize, getListTasksQueryKey, getListStagedSuggestionsQueryKey, useDeleteTask, useUpdateTask, useListStagedSuggestions, useCreateStagedSuggestion, useAcceptStagedSuggestion, useRejectStagedSuggestion, useUpdateStagedSuggestionData, Task } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Inbox as InboxIcon, Sparkles, CornerDownLeft, Trash2, Check, X, Pencil } from "lucide-react";
+import { Inbox as InboxIcon, Sparkles, CornerDownLeft, Trash2, Check, X, Pencil, RotateCcw } from "lucide-react";
 import TaskCard from "@/components/TaskCard";
+import { useToast } from "@/hooks/use-toast";
 
 type ExtractedTask = { title: string; priority: string; estimatedMinutes?: number | null; tags?: string[] };
+type ScoreMap = Record<number, { score: number; reason: string }>;
 
 export default function Inbox() {
+  const { toast } = useToast();
   const { data: tasks, isLoading } = useListTasks({ status: "inbox" });
   const { data: stagedSuggestions } = useListStagedSuggestions({ type: "extractedTasks", status: "pending" });
   const createTask = useCreateTask();
   const extractTasks = useAiExtractTasks();
+  const prioritize = useAiPrioritize();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const createStaged = useCreateStagedSuggestion();
@@ -27,6 +31,8 @@ export default function Inbox() {
   const [isDumping, setIsDumping] = useState(false);
   const [editingSuggestionId, setEditingSuggestionId] = useState<number | null>(null);
   const [editingTasks, setEditingTasks] = useState<ExtractedTask[]>([]);
+  const [aiSortedIds, setAiSortedIds] = useState<number[] | null>(null);
+  const [aiScores, setAiScores] = useState<ScoreMap>({});
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
@@ -121,11 +127,73 @@ export default function Inbox() {
     invalidateAll();
   };
 
+  const handleAiPrioritize = useCallback(async () => {
+    if (!tasks || tasks.length === 0) return;
+    try {
+      const res = await prioritize.mutateAsync({
+        data: {
+          tasks: tasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            priority: t.priority,
+            estimatedMinutes: t.estimatedMinutes,
+          })),
+        },
+      });
+      setAiSortedIds(res.orderedTaskIds);
+      const scoreMap: ScoreMap = {};
+      if (res.scores) {
+        for (const s of res.scores) {
+          scoreMap[s.taskId] = { score: s.score, reason: s.reason };
+        }
+      }
+      setAiScores(scoreMap);
+    } catch {
+      toast({ variant: "destructive", title: "AI prioritization failed" });
+    }
+  }, [tasks, prioritize, toast]);
+
+  const resetSort = useCallback(() => {
+    setAiSortedIds(null);
+    setAiScores({});
+  }, []);
+
+  const displayTasks = aiSortedIds && tasks
+    ? aiSortedIds
+        .map(id => tasks.find(t => t.id === id))
+        .filter((t): t is Task => !!t)
+        .concat(tasks.filter(t => !aiSortedIds.includes(t.id)))
+    : tasks;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <InboxIcon className="text-primary h-8 w-8" />
-        <h1 className="text-3xl font-display font-bold text-foreground">Inbox</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <InboxIcon className="text-primary h-8 w-8" />
+          <h1 className="text-3xl font-display font-bold text-foreground">Inbox</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {aiSortedIds && (
+            <button
+              onClick={resetSort}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+            >
+              <RotateCcw size={12} /> Reset to manual order
+            </button>
+          )}
+          {tasks && tasks.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAiPrioritize}
+              disabled={prioritize.isPending}
+              className="border-primary/50 text-primary gap-1.5 h-8 text-xs"
+            >
+              <Sparkles size={14} />
+              {prioritize.isPending ? "Prioritizing..." : "AI Prioritize"}
+            </Button>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleQuickAdd} className="flex gap-2">
@@ -174,19 +242,19 @@ export default function Inbox() {
           {stagedSuggestions.map((suggestion) => {
             const extractedTasks = ((suggestion.data as Record<string, unknown>)?.tasks as ExtractedTask[]) || [];
             const isEditing = editingSuggestionId === suggestion.id;
-            const displayTasks = isEditing ? editingTasks : extractedTasks;
+            const displayTasksSuggestion = isEditing ? editingTasks : extractedTasks;
             return (
               <div key={suggestion.id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
                     <Sparkles size={14} />
-                    AI Extracted Tasks ({displayTasks.length})
+                    AI Extracted Tasks ({displayTasksSuggestion.length})
                     {isEditing && <span className="text-xs text-amber-400 font-normal ml-1">Editing</span>}
                   </h3>
                   <span className="text-xs text-muted-foreground">{suggestion.reasoning}</span>
                 </div>
                 <div className="space-y-2">
-                  {displayTasks.map((t, i) => (
+                  {displayTasksSuggestion.map((t, i) => (
                     <div key={i} className="bg-card/50 p-3 rounded-lg border border-border/50">
                       {isEditing ? (
                         <div className="space-y-2">
@@ -274,7 +342,7 @@ export default function Inbox() {
               </div>
             ))}
           </div>
-        ) : tasks?.length === 0 && (!stagedSuggestions || stagedSuggestions.length === 0) ? (
+        ) : displayTasks?.length === 0 && (!stagedSuggestions || stagedSuggestions.length === 0) ? (
           <div className="text-center py-16 space-y-4">
             <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <InboxIcon className="h-8 w-8 text-primary" />
@@ -288,9 +356,9 @@ export default function Inbox() {
             </Button>
           </div>
         ) : (
-          tasks?.map(task => (
+          displayTasks?.map(task => (
             <div key={task.id} className="relative group">
-              <TaskCard task={task} />
+              <TaskCard task={task} aiScore={aiScores[task.id] || null} />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-card/80 backdrop-blur-sm p-1 rounded-lg">
                 <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/20" onClick={() => moveToToday(task.id)} title="Move to Today">
                   <CornerDownLeft size={16} />

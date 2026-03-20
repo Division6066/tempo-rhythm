@@ -3,7 +3,6 @@ import {
   useCreateProject,
   useUpdateProject,
   getListProjectsQueryKey,
-  getListProjectsByFolderQueryKey,
 } from "@workspace/api-client-react";
 import type { Project } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -71,12 +70,6 @@ export default function ProjectModal({ open, onClose, folderId, editProject }: P
         toast({ title: "Project created" });
       }
       queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-      if (folderId) {
-        queryClient.invalidateQueries({ queryKey: getListProjectsByFolderQueryKey(folderId) });
-      }
-      if (editProject?.folderId) {
-        queryClient.invalidateQueries({ queryKey: getListProjectsByFolderQueryKey(editProject.folderId) });
-      }
       onClose();
     } catch {
       toast({ variant: "destructive", title: "Failed to save project" });
