@@ -41,6 +41,7 @@ export interface Task {
   notes?: string | null;
   parentTaskId?: number | null;
   aiGenerated: boolean;
+  startTime?: string | null;
   createdAt: string;
   updatedAt: string;
 }

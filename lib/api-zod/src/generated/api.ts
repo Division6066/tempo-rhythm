@@ -41,6 +41,7 @@ export const ListTasksResponseItem = zod.object({
   notes: zod.string().nullish(),
   parentTaskId: zod.number().nullish(),
   aiGenerated: zod.boolean(),
+  startTime: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -96,6 +97,7 @@ export const GetTaskResponse = zod.object({
   notes: zod.string().nullish(),
   parentTaskId: zod.number().nullish(),
   aiGenerated: zod.boolean(),
+  startTime: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -141,6 +143,7 @@ export const UpdateTaskResponse = zod.object({
   notes: zod.string().nullish(),
   parentTaskId: zod.number().nullish(),
   aiGenerated: zod.boolean(),
+  startTime: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -174,6 +177,7 @@ export const CompleteTaskResponse = zod.object({
     notes: zod.string().nullish(),
     parentTaskId: zod.number().nullish(),
     aiGenerated: zod.boolean(),
+    startTime: zod.string().nullish(),
     createdAt: zod.date(),
     updatedAt: zod.date(),
   }),
@@ -192,6 +196,7 @@ export const CompleteTaskResponse = zod.object({
       notes: zod.string().nullish(),
       parentTaskId: zod.number().nullish(),
       aiGenerated: zod.boolean(),
+      startTime: zod.string().nullish(),
       createdAt: zod.date(),
       updatedAt: zod.date(),
     })

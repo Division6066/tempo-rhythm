@@ -1542,6 +1542,9 @@ components:
           nullable: true
         aiGenerated:
           type: boolean
+        startTime:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time

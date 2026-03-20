@@ -33,6 +33,9 @@ interface CalendarComponentProps {
   onSelectEvent?: (event: CalendarEvent) => void;
   onSelectSlot?: (slotInfo: { start: Date; end: Date }) => void;
   onEventDrop?: (args: EventInteractionArgs<CalendarEvent>) => void;
+  onEventResize?: (args: EventInteractionArgs<CalendarEvent>) => void;
+  onDropFromOutside?: (args: { start: string | Date; end: string | Date; allDay?: boolean }) => void;
+  dragFromOutsideItem?: () => CalendarEvent | null;
   date?: Date;
   onNavigate?: (date: Date) => void;
   onView?: (view: View) => void;
@@ -64,12 +67,19 @@ export default function CalendarComponent({
   onSelectEvent,
   onSelectSlot,
   onEventDrop,
+  onEventResize,
+  onDropFromOutside,
+  dragFromOutsideItem,
   date,
   onNavigate,
   onView,
   view,
 }: CalendarComponentProps) {
   const draggableAccessor = useCallback(() => true, []);
+  const resizableAccessor = useCallback(
+    (event: CalendarEvent) => view === "day" || view === "week",
+    [view]
+  );
 
   return (
     <div className="tempo-calendar rounded-xl overflow-hidden border border-border bg-card">
@@ -87,12 +97,18 @@ export default function CalendarComponent({
         onSelectSlot={onSelectSlot}
         selectable
         draggableAccessor={draggableAccessor}
+        resizableAccessor={resizableAccessor}
         onEventDrop={onEventDrop}
-        resizable={false}
+        onEventResize={onEventResize}
+        resizable
         eventPropGetter={eventStyleGetter}
         style={{ minHeight: 500 }}
         popup
-        views={["month", "week"]}
+        views={["month", "week", "day"]}
+        step={15}
+        timeslots={4}
+        onDropFromOutside={onDropFromOutside}
+        dragFromOutsideItem={dragFromOutsideItem}
       />
     </div>
   );
