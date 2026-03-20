@@ -18,3 +18,9 @@ id = "hvTCaWqnmUedcgye-_sF4"
 uri = "file://.local/readiness/MEGA_PROMPTS.md"
 type = "text"
 title = "TEMPO — 20 Build Mega Prompts"
+
+[[outputs]]
+id = "NZcEb7sFoKhdfhcYK3XSH"
+uri = "file://docs/TEMPO-Status-Report.md"
+type = "text"
+title = "TEMPO Project Status Report"
