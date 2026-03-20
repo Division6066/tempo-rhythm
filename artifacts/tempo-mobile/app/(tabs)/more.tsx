@@ -2,17 +2,18 @@ import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../lib/theme";
+import { useThemeColors } from "../../lib/theme";
 
 export default function MoreScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
 
   const items = [
-    { label: "Projects", icon: "folder" as const, color: colors.teal, route: "/projects" },
+    { label: "Projects", icon: "folder" as const, color: colors.success, route: "/projects" },
     { label: "Notes", icon: "document-text" as const, color: colors.primary, route: "/notes" },
-    { label: "Calendar", icon: "calendar" as const, color: colors.amber, route: "/calendar" },
-    { label: "Daily Plan", icon: "today" as const, color: colors.amber, route: "/plan" },
-    { label: "Templates", icon: "copy" as const, color: colors.teal, route: "/templates" },
+    { label: "Calendar", icon: "calendar" as const, color: colors.warning, route: "/calendar" },
+    { label: "Daily Plan", icon: "today" as const, color: colors.warning, route: "/plan" },
+    { label: "Templates", icon: "copy" as const, color: colors.success, route: "/templates" },
     { label: "Filters", icon: "filter" as const, color: colors.primary, route: "/filters" },
     { label: "Settings", icon: "settings" as const, color: colors.muted, route: "/settings" },
   ];

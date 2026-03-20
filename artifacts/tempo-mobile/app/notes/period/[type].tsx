@@ -5,10 +5,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../tempo-app/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../../lib/theme";
+import { useThemeColors } from "../../../lib/theme";
 import { format, startOfWeek, startOfMonth } from "date-fns";
 
 export default function PeriodNoteScreen() {
+  const colors = useThemeColors();
   const { type } = useLocalSearchParams<{ type: string }>();
   const router = useRouter();
   const createNote = useMutation(api.notes.create);
@@ -81,7 +82,7 @@ export default function PeriodNoteScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-        <View style={{ backgroundColor: "rgba(108,99,255,0.1)", borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "rgba(108,99,255,0.2)" }}>
+        <View style={{ backgroundColor: "rgba(201,100,66,0.1)", borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "rgba(201,100,66,0.2)" }}>
           <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>
             {periodDate}
           </Text>

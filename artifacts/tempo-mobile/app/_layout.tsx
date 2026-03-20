@@ -1,18 +1,40 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React from "react";
 import { useConvexAuth } from "convex/react";
 import { Redirect, Stack, usePathname } from "expo-router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, View, Text, Pressable } from "react-native";
+import { ActivityIndicator, View, Text, Pressable, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { convex, secureStorage } from "../lib/convex";
-import { ThemeContext, getThemeColors, useTheme } from "../lib/theme";
-import type { ThemeMode } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 import { NetworkProvider } from "../lib/NetworkContext";
 import { OfflineBanner } from "../components/OfflineBanner";
 import { useNetwork } from "../lib/NetworkContext";
 import "../global.css";
+
+function ErrorUI({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
+  const colors = useThemeColors();
+  const scheme = useColorScheme();
+
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background, padding: 24 }}>
+      <Ionicons name="warning-outline" size={48} color={colors.destructive} style={{ marginBottom: 16 }} />
+      <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "700", marginBottom: 8, textAlign: "center" }}>
+        Something went wrong
+      </Text>
+      <Text style={{ color: colors.muted, fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+        {error?.message || "An unexpected error occurred."}
+      </Text>
+      <Pressable
+        onPress={onRetry}
+        style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 }}
+      >
+        <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>Try Again</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -30,21 +52,10 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1A1A2E", padding: 24 }}>
-          <Ionicons name="warning-outline" size={48} color="#FF6B6B" style={{ marginBottom: 16 }} />
-          <Text style={{ color: "#F0F0FF", fontSize: 18, fontWeight: "700", marginBottom: 8, textAlign: "center" }}>
-            Something went wrong
-          </Text>
-          <Text style={{ color: "#8888AA", fontSize: 14, textAlign: "center", marginBottom: 24 }}>
-            {this.state.error?.message || "An unexpected error occurred."}
-          </Text>
-          <Pressable
-            onPress={() => this.setState({ hasError: false, error: null })}
-            style={{ backgroundColor: "#6C63FF", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>Try Again</Text>
-          </Pressable>
-        </View>
+        <ErrorUI
+          error={this.state.error}
+          onRetry={() => this.setState({ hasError: false, error: null })}
+        />
       );
     }
 
@@ -67,7 +78,8 @@ function OfflineBannerWrapper() {
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const pathname = usePathname();
-  const { mode, colors } = useTheme();
+  const colors = useThemeColors();
+  const colorScheme = useColorScheme();
 
   if (isLoading) {
     return (
@@ -88,7 +100,7 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style={mode === "dark" ? "light" : "dark"} />
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <OfflineBannerWrapper />
       <Stack
         screenOptions={{
@@ -101,23 +113,13 @@ function RootNavigator() {
   );
 }
 
-function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>("dark");
-  const toggle = useCallback(() => setMode((m) => (m === "dark" ? "light" : "dark")), []);
-  const themeColors = useMemo(() => getThemeColors(mode), [mode]);
-  const value = useMemo(() => ({ mode, colors: themeColors, toggle }), [mode, themeColors, toggle]);
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <ConvexAuthProvider client={convex} storage={secureStorage}>
           <NetworkProvider>
-            <ThemeProvider>
-              <RootNavigator />
-            </ThemeProvider>
+            <RootNavigator />
           </NetworkProvider>
         </ConvexAuthProvider>
       </ErrorBoundary>

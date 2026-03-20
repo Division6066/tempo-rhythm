@@ -6,7 +6,7 @@ import { api } from "../../../tempo-app/convex/_generated/api";
 import type { Id } from "../../../tempo-app/convex/_generated/dataModel";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 import { format } from "date-fns";
 import { useNetwork } from "../lib/NetworkContext";
 import { cacheDailyPlans, getCachedDailyPlans } from "../lib/offlineCache";
@@ -14,6 +14,7 @@ import { cacheDailyPlans, getCachedDailyPlans } from "../lib/offlineCache";
 type PlanBlock = { type: string; title?: string; items?: string[]; tasks?: string[]; task?: string; startTime?: string; duration?: number; prompt?: string };
 
 export default function PlanScreen() {
+  const colors = useThemeColors();
   const { isConnected } = useNetwork();
   const todayDate = new Date().toISOString().split("T")[0];
   const plans = useQuery(api.dailyPlans.list, { date: todayDate });
@@ -79,7 +80,7 @@ export default function PlanScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {!hasPlan && !pendingStagedPlan && (
           <View style={{ alignItems: "center", paddingVertical: 40 }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: !isConnected ? "rgba(136,136,170,0.15)" : "rgba(108,99,255,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: !isConnected ? "rgba(136,136,170,0.15)" : "rgba(201,100,66,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
               <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={36} color={!isConnected ? colors.muted : colors.primary} />
             </View>
             <Text style={{ color: colors.foreground, fontSize: 20, fontWeight: "800", marginBottom: 8 }}>Let&apos;s plan your day</Text>
@@ -101,7 +102,7 @@ export default function PlanScreen() {
 
         {pendingStagedPlan && !hasPlan && (
           <View>
-            <View style={{ backgroundColor: "rgba(108,99,255,0.1)", borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)" }}>
+            <View style={{ backgroundColor: "rgba(201,100,66,0.1)", borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(201,100,66,0.3)" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <Ionicons name="sparkles" size={14} color={colors.primary} />
                 <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "700" }}>AI Suggestion</Text>
@@ -125,11 +126,11 @@ export default function PlanScreen() {
             ))}
 
             <View style={{ flexDirection: "row", justifyContent: "center", gap: 12, marginTop: 16 }}>
-              <Pressable onPress={() => rejectStaged({ id: pendingStagedPlan._id })} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,107,107,0.15)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,107,107,0.3)" }}>
-                <Ionicons name="close" size={24} color={colors.danger} />
+              <Pressable onPress={() => rejectStaged({ id: pendingStagedPlan._id })} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(184,84,80,0.15)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(184,84,80,0.3)" }}>
+                <Ionicons name="close" size={24} color={colors.destructive} />
               </Pressable>
-              <Pressable onPress={() => handleAcceptPlan(pendingStagedPlan._id, (pendingStagedPlan.data as { blocks: PlanBlock[] }).blocks)} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(0,201,167,0.15)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(0,201,167,0.3)" }}>
-                <Ionicons name="checkmark" size={24} color={colors.teal} />
+              <Pressable onPress={() => handleAcceptPlan(pendingStagedPlan._id, (pendingStagedPlan.data as { blocks: PlanBlock[] }).blocks)} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(107,158,125,0.15)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(107,158,125,0.3)" }}>
+                <Ionicons name="checkmark" size={24} color={colors.success} />
               </Pressable>
             </View>
           </View>
@@ -137,8 +138,8 @@ export default function PlanScreen() {
 
         {existingPlan && (
           <View>
-            <View style={{ backgroundColor: "rgba(0,201,167,0.1)", borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "rgba(0,201,167,0.3)", alignItems: "center" }}>
-              <Text style={{ color: colors.teal, fontSize: 13, fontWeight: "600" }}>Plan accepted</Text>
+            <View style={{ backgroundColor: "rgba(107,158,125,0.1)", borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "rgba(107,158,125,0.3)", alignItems: "center" }}>
+              <Text style={{ color: colors.success, fontSize: 13, fontWeight: "600" }}>Plan accepted</Text>
             </View>
             {(existingPlan.blocks as PlanBlock[]).map((block: PlanBlock, i: number) => (
               <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: colors.border }}>

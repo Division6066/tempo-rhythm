@@ -731,7 +731,7 @@ export default function NoteEditor() {
                 variant="ghost"
                 size="icon"
                 onClick={handlePublishToggle}
-                className={note?.isPublished ? "text-green-400" : "text-muted-foreground"}
+                className={note?.isPublished ? "text-success" : "text-muted-foreground"}
                 title={note?.isPublished ? "Unpublish" : "Publish"}
               >
                 <Globe size={20} />
@@ -784,14 +784,14 @@ export default function NoteEditor() {
       </div>
 
       {note?.isPublished && note.publishSlug && (
-        <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 text-xs">
-          <Globe size={14} className="text-green-400" />
-          <span className="text-green-300">Published at</span>
-          <code className="text-green-400 font-mono">/published/{note.publishSlug}</code>
+        <div className="flex items-center gap-2 bg-success/10 border border-success/30 rounded-lg px-3 py-2 text-xs">
+          <Globe size={14} className="text-success" />
+          <span className="text-success">Published at</span>
+          <code className="text-success font-mono">/published/{note.publishSlug}</code>
           <Button
             variant="ghost"
             size="icon"
-            className="h-5 w-5 text-green-400 ml-auto"
+            className="h-5 w-5 text-success ml-auto"
             onClick={() => setLocation(`/published/${note.publishSlug}`)}
           >
             <ExternalLink size={12} />
@@ -859,7 +859,7 @@ export default function NoteEditor() {
             <button
               key={mention}
               onClick={() => setLocation(`/notes?search=${encodeURIComponent(mention)}`)}
-              className="text-[11px] bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded-full hover:bg-blue-500/25 transition-colors cursor-pointer"
+              className="text-[11px] bg-info/15 text-info px-2 py-0.5 rounded-full hover:bg-info/25 transition-colors cursor-pointer"
             >
               {mention}
             </button>

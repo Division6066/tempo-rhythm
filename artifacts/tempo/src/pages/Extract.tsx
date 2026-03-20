@@ -96,9 +96,9 @@ export default function Extract() {
   };
 
   const priorityColors = {
-    high: "text-red-400 bg-red-400/10",
-    medium: "text-amber-400 bg-amber-400/10",
-    low: "text-blue-400 bg-blue-400/10",
+    high: "text-destructive bg-destructive/10",
+    medium: "text-warning bg-warning/10",
+    low: "text-info bg-info/10",
   };
 
   return (

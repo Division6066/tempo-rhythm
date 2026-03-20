@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
-import { useTheme } from "../../lib/theme";
+import { useThemeColors } from "../../lib/theme";
 import { useNetwork } from "../../lib/NetworkContext";
 import { cacheTodayTasks, getCachedTodayTasks } from "../../lib/offlineCache";
 import { addToQueue } from "../../lib/offlineQueue";
@@ -14,7 +14,7 @@ import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { hapticSuccess, hapticMedium } from "../../lib/haptics";
 
 export default function TodayScreen() {
-  const { colors } = useTheme();
+  const colors = useThemeColors();
   const { isConnected } = useNetwork();
   const allTasks = useQuery(api.tasks.list, {});
   const updateTask = useMutation(api.tasks.update);
@@ -97,7 +97,7 @@ export default function TodayScreen() {
 
         {highPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.teal, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>High Priority</Text>
+            <Text style={{ color: colors.success, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>High Priority</Text>
             {highPriority.map((t) => (
               <SwipeableTaskRow
                 key={t._id}
@@ -111,7 +111,7 @@ export default function TodayScreen() {
         )}
         {mediumPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.amber, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Medium Priority</Text>
+            <Text style={{ color: colors.warning, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Medium Priority</Text>
             {mediumPriority.map((t) => (
               <SwipeableTaskRow
                 key={t._id}

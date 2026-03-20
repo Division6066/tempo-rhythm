@@ -214,7 +214,7 @@ export default function Chat() {
             <div className="space-y-2">
               {memories.slice(0, 10).map((mem) => (
                 <div key={mem.id} className="text-xs text-muted-foreground border-l-2 border-primary/30 pl-2">
-                  <span className={`inline-block px-1 py-0.5 rounded text-[10px] mr-1 ${mem.tier === "warm" ? "bg-amber-500/20 text-amber-400" : "bg-blue-500/20 text-blue-400"}`}>
+                  <span className={`inline-block px-1 py-0.5 rounded text-[10px] mr-1 ${mem.tier === "warm" ? "bg-warning/20 text-warning" : "bg-info/20 text-info"}`}>
                     {mem.tier}
                   </span>
                   <span className="text-foreground">{mem.content}</span>

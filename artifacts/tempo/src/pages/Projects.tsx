@@ -58,7 +58,7 @@ export default function Projects() {
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#6C63FF");
+  const [color, setColor] = useState("#C96442");
   const [description, setDescription] = useState("");
   const [viewMode, setViewMode] = useViewPreference("projects");
 
@@ -107,7 +107,7 @@ export default function Projects() {
       <div className="space-y-6 pb-12">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <FolderGit2 className="text-teal-400 h-8 w-8" />
+            <FolderGit2 className="text-success h-8 w-8" />
             <h1 className="text-3xl font-display font-bold">Projects</h1>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function Projects() {
     );
   }
 
-  const colors = ["#6C63FF", "#00C9A7", "#FFB347", "#FF6B6B", "#9D4EDD", "#3B82F6", "#EC4899", "#22C55E"];
+  const colors = ["#C96442", "#6B9E7D", "#C9A54E", "#B85450", "#9D7E6C", "#5B8A9A", "#B07398", "#5A8F6E"];
 
   const handleProjectListDragEnd = async (event: DragEndEvent) => {
     const { active: dragActive, over } = event;
@@ -166,7 +166,7 @@ export default function Projects() {
       sortable: true,
       render: (p) => (
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: p.color || "#6C63FF" }} />
+          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: p.color || "#C96442" }} />
           <span className="font-medium text-foreground">{p.name}</span>
         </div>
       ),
@@ -179,7 +179,7 @@ export default function Projects() {
       render: (p) => (
         <span className={`text-xs px-2 py-0.5 rounded-full ${
           p.status === "active"
-            ? "bg-green-500/10 text-green-400"
+            ? "bg-success/10 text-success"
             : "bg-muted text-muted-foreground"
         }`}>
           {p.status}
@@ -233,7 +233,7 @@ export default function Projects() {
     <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <FolderGit2 className="text-teal-400 h-8 w-8" />
+          <FolderGit2 className="text-success h-8 w-8" />
           <h1 className="text-3xl font-display font-bold">Projects</h1>
         </div>
         <div className="flex items-center gap-3">
@@ -302,7 +302,7 @@ export default function Projects() {
                           <SortableProjectCard key={project.id} project={project} onClick={() => setLocation(`/projects/${project.id}`)}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: project.color || "#6C63FF" }} />
+                                <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: project.color || "#C96442" }} />
                                 <div>
                                   <h3 className="font-semibold text-lg">{project.name}</h3>
                                   {project.description && <p className="text-sm text-muted-foreground mt-0.5">{project.description}</p>}
@@ -335,7 +335,7 @@ export default function Projects() {
                       onClick={() => setLocation(`/projects/${project.id}`)}
                     >
                       <CardContent className="p-4 flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color || "#6C63FF" }} />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color || "#C96442" }} />
                         <span className="text-sm">{project.name}</span>
                       </CardContent>
                     </Card>
@@ -359,7 +359,7 @@ export default function Projects() {
                 className="glass p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-all border border-border/50"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: project.color || "#6C63FF" }} />
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: project.color || "#C96442" }} />
                   <h4 className="text-sm font-medium text-foreground truncate">{project.name}</h4>
                 </div>
                 {project.description && (

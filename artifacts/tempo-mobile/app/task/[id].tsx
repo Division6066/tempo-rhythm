@@ -6,7 +6,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../lib/theme";
+import { useThemeColors } from "../../lib/theme";
 import { hapticSuccess, hapticWarning, hapticLight } from "../../lib/haptics";
 
 type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
@@ -22,6 +22,7 @@ const RECURRENCE_OPTIONS = [
 ];
 
 export default function TaskDetailScreen() {
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const taskId = id as Id<"tasks">;
@@ -189,7 +190,7 @@ export default function TaskDetailScreen() {
 
   const statuses = ["inbox", "today", "scheduled", "done", "cancelled"];
   const priorities = ["high", "medium", "low"];
-  const priorityColors: Record<string, string> = { high: colors.teal, medium: colors.amber, low: colors.muted };
+  const priorityColors: Record<string, string> = { high: colors.success, medium: colors.warning, low: colors.muted };
   const currentProject = projects?.find((p) => p._id === task.projectId);
   const currentFolder = folders?.find((f) => f._id === task.folderId);
   const completedSubtasks = subtasks.filter((s) => s.status === "done").length;
@@ -201,12 +202,12 @@ export default function TaskDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </Pressable>
         <View style={{ flexDirection: "row", gap: 12 }}>
-          <Pressable onPress={handleChunk} disabled={chunking} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(108,99,255,0.1)", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)" }}>
+          <Pressable onPress={handleChunk} disabled={chunking} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(201,100,66,0.12)", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: "rgba(201,100,66,0.3)" }}>
             <Ionicons name="sparkles" size={14} color={colors.primary} />
             <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}>{chunking ? "..." : "Chunk"}</Text>
           </Pressable>
           <Pressable onPress={handleDelete} hitSlop={12}>
-            <Ionicons name="trash-outline" size={22} color={colors.danger} />
+            <Ionicons name="trash-outline" size={22} color={colors.destructive} />
           </Pressable>
         </View>
       </View>
@@ -266,7 +267,7 @@ export default function TaskDetailScreen() {
             style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: colors.border }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Ionicons name={currentFolder ? "folder" : "folder-outline"} size={16} color={currentFolder ? colors.teal : colors.muted} />
+              <Ionicons name={currentFolder ? "folder" : "folder-outline"} size={16} color={currentFolder ? colors.success : colors.muted} />
               <Text style={{ color: currentFolder ? colors.foreground : colors.muted, fontSize: 14, fontWeight: "600" }}>
                 {currentFolder?.name || "No folder"}
               </Text>
@@ -325,7 +326,7 @@ export default function TaskDetailScreen() {
                   style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: colors.border }}
                 >
                   <Pressable onPress={() => handleToggleSubtask(sub)} hitSlop={10}>
-                    <Ionicons name={sub.status === "done" ? "checkmark-circle" : "ellipse-outline"} size={20} color={sub.status === "done" ? colors.teal : colors.muted} />
+                    <Ionicons name={sub.status === "done" ? "checkmark-circle" : "ellipse-outline"} size={20} color={sub.status === "done" ? colors.success : colors.muted} />
                   </Pressable>
                   <Text style={{ color: sub.status === "done" ? colors.muted : colors.foreground, fontSize: 13, fontWeight: "600", flex: 1, textDecorationLine: sub.status === "done" ? "line-through" : "none" }}>
                     {sub.title}
@@ -407,6 +408,47 @@ export default function TaskDetailScreen() {
           </View>
         </View>
 
+        {task.status !== "done" && (
+          <Pressable
+            onPress={handleComplete}
+            style={{ backgroundColor: colors.success, borderRadius: 14, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 20 }}
+          >
+            <Ionicons name="checkmark" size={20} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>
+              {task.recurrenceRule ? "Complete & Create Next" : "Mark Complete"}
+            </Text>
+          </Pressable>
+        )}
+
+        {thisTaskStaged.length > 0 && thisTaskStaged.map((suggestion) => {
+          const data = suggestion.data as { subtasks: Subtask[]; reasoning: string };
+          return (
+            <View key={suggestion._id} style={{ backgroundColor: "rgba(201,100,66,0.12)", borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "rgba(201,100,66,0.3)" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <Ionicons name="sparkles" size={14} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>AI Subtasks</Text>
+              </View>
+              <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 10 }}>{data.reasoning}</Text>
+              {data.subtasks.map((s, i) => (
+                <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{s.title}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }}>{s.estimatedMinutes}m - {s.priority}</Text>
+                </View>
+              ))}
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <Pressable onPress={() => rejectStaged({ id: suggestion._id })} style={{ flexDirection: "row", alignItems: "center", gap: 4, padding: 10 }}>
+                  <Ionicons name="close" size={16} color={colors.destructive} />
+                  <Text style={{ color: colors.destructive, fontWeight: "600", fontSize: 13 }}>Reject</Text>
+                </Pressable>
+                <Pressable onPress={() => handleAcceptChunks(suggestion._id, data.subtasks)} style={{ backgroundColor: colors.success, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Accept</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
+
         <View style={{ marginBottom: 20 }}>
           <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Notes</Text>
           <TextInput
@@ -421,7 +463,7 @@ export default function TaskDetailScreen() {
         </View>
 
         {thisTaskStaged.map((s) => (
-          <View key={s._id} style={{ backgroundColor: "rgba(108,99,255,0.05)", borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "rgba(108,99,255,0.2)" }}>
+          <View key={s._id} style={{ backgroundColor: "rgba(201,100,66,0.12)", borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "rgba(201,100,66,0.3)" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <Ionicons name="sparkles" size={18} color={colors.primary} />
               <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "800" }}>AI Chunking Suggestion</Text>
@@ -494,45 +536,19 @@ export default function TaskDetailScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
               <Pressable
                 onPress={() => handleSetFolder(null)}
-                style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: !task.folderId ? `${colors.teal}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
+                style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: !task.folderId ? `${colors.success}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
               >
                 <Ionicons name="folder-open-outline" size={18} color={colors.muted} />
-                <Text style={{ color: !task.folderId ? colors.teal : colors.foreground, fontSize: 15, fontWeight: "600" }}>No folder</Text>
+                <Text style={{ color: !task.folderId ? colors.success : colors.foreground, fontSize: 15, fontWeight: "600" }}>No folder</Text>
               </Pressable>
               {(folders || []).map((folder) => (
                 <Pressable
                   key={folder._id}
                   onPress={() => handleSetFolder(folder._id)}
-                  style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: task.folderId === folder._id ? `${colors.teal}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
+                  style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: task.folderId === folder._id ? `${colors.success}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
                 >
-                  <Ionicons name="folder" size={18} color={task.folderId === folder._id ? colors.teal : colors.muted} />
-                  <Text style={{ color: task.folderId === folder._id ? colors.teal : colors.foreground, fontSize: 15, fontWeight: "600" }}>{folder.name}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={showFolderPicker} transparent animationType="fade">
-        <Pressable onPress={() => setShowFolderPicker(false)} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 24 }}>
-          <Pressable onPress={() => {}} style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.border, maxHeight: 400 }}>
-            <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800", marginBottom: 16 }}>Assign Folder</Text>
-            <ScrollView>
-              <Pressable
-                onPress={() => handleSetFolder(null)}
-                style={{ padding: 14, borderRadius: 10, marginBottom: 4, backgroundColor: !task.folderId ? `${colors.primary}20` : "transparent" }}
-              >
-                <Text style={{ color: !task.folderId ? colors.primary : colors.foreground, fontSize: 14, fontWeight: "600" }}>No folder</Text>
-              </Pressable>
-              {(folders || []).map((folder) => (
-                <Pressable
-                  key={folder._id}
-                  onPress={() => handleSetFolder(folder._id)}
-                  style={{ padding: 14, borderRadius: 10, marginBottom: 4, backgroundColor: task.folderId === folder._id ? `${colors.primary}20` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
-                >
-                  <Ionicons name={(folder.icon || "folder") as React.ComponentProps<typeof Ionicons>["name"]} size={16} color={task.folderId === folder._id ? colors.primary : colors.teal} />
-                  <Text style={{ color: task.folderId === folder._id ? colors.primary : colors.foreground, fontSize: 14, fontWeight: "600" }}>{folder.name}</Text>
+                  <Ionicons name="folder" size={18} color={task.folderId === folder._id ? colors.success : colors.muted} />
+                  <Text style={{ color: task.folderId === folder._id ? colors.success : colors.foreground, fontSize: 15, fontWeight: "600" }}>{folder.name}</Text>
                 </Pressable>
               ))}
             </ScrollView>

@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, useTheme } from "../../lib/theme";
+import { useThemeColors } from "../../lib/theme";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing, FadeInDown } from "react-native-reanimated";
 import FloatingActionButton from "../../components/FloatingActionButton";
 import AnimatedProgressBar from "../../components/AnimatedProgressBar";
@@ -16,6 +16,7 @@ import { cacheAllTasks, getCachedAllTasks, cacheProjects, getCachedProjects } fr
 import { addToQueue } from "../../lib/offlineQueue";
 
 function AnimatedStatCard({ label, value, icon, color, delay }: { label: string; value: number; icon: keyof typeof Ionicons.glyphMap; color: string; delay: number }) {
+  const colors = useThemeColors();
   const scale = useSharedValue(0);
   const counterValue = useSharedValue(0);
 
@@ -38,6 +39,7 @@ function AnimatedStatCard({ label, value, icon, color, delay }: { label: string;
 }
 
 function AnimatedProgressRing({ done, total }: { done: number; total: number }) {
+  const colors = useThemeColors();
   const scale = useSharedValue(0.5);
 
   useEffect(() => {
@@ -57,7 +59,7 @@ function AnimatedProgressRing({ done, total }: { done: number; total: number }) 
 }
 
 export default function HomeScreen() {
-  const { colors } = useTheme();
+  const colors = useThemeColors();
   const { isConnected } = useNetwork();
   const liveTasks = useQuery(api.tasks.list, {});
   const liveProjects = useQuery(api.projects.list);
@@ -140,19 +142,19 @@ export default function HomeScreen() {
     {
       label: "New note",
       icon: "document-text" as keyof typeof Ionicons.glyphMap,
-      color: colors.teal,
+      color: colors.success,
       onPress: () => router.push("/notes" as never),
     },
     {
       label: "Plan my day",
       icon: "sunny" as keyof typeof Ionicons.glyphMap,
-      color: colors.amber,
+      color: colors.warning,
       onPress: handlePlanPress,
     },
     {
       label: "Open chat",
       icon: "sparkles" as keyof typeof Ionicons.glyphMap,
-      color: "#9D4EDD",
+      color: "#C96442",
       onPress: handleAIPress,
     },
   ];
@@ -203,17 +205,17 @@ export default function HomeScreen() {
         </Animated.View>
 
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
-          <AnimatedStatCard label="Today" value={totalToday} icon="sunny" color={colors.amber} delay={200} />
-          <AnimatedStatCard label="Inbox" value={inboxTasks.length} icon="file-tray" color="#60A5FA" delay={300} />
-          <AnimatedStatCard label="Projects" value={projects?.filter((p: any) => p.status === "active").length || 0} icon="folder" color={colors.teal} delay={400} />
+          <AnimatedStatCard label="Today" value={totalToday} icon="sunny" color={colors.warning} delay={200} />
+          <AnimatedStatCard label="Inbox" value={inboxTasks.length} icon="file-tray" color={colors.info} delay={300} />
+          <AnimatedStatCard label="Projects" value={projects?.filter((p: any) => p.status === "active").length || 0} icon="folder" color={colors.success} delay={400} />
         </View>
 
         <Animated.View entering={FadeInDown.delay(500).duration(400)}>
           <Pressable
             onPress={handleAIPress}
-            style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: !isConnected ? colors.border : "rgba(108,99,255,0.3)", marginBottom: 24, opacity: !isConnected ? 0.6 : 1 }}
+            style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: !isConnected ? colors.border : "rgba(201,100,66,0.3)", marginBottom: 24, opacity: !isConnected ? 0.6 : 1 }}
           >
-            <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(108,99,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(201,100,66,0.2)", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
               <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={24} color={!isConnected ? colors.muted : colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
@@ -242,8 +244,8 @@ export default function HomeScreen() {
               >
                 <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{task.title}</Text>
                 <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                  <View style={{ backgroundColor: task.priority === "high" ? "rgba(0,201,167,0.2)" : task.priority === "medium" ? "rgba(255,179,71,0.2)" : "rgba(136,136,170,0.2)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
-                    <Text style={{ color: task.priority === "high" ? colors.teal : task.priority === "medium" ? colors.amber : colors.muted, fontSize: 10, fontWeight: "600" }}>{task.priority}</Text>
+                  <View style={{ backgroundColor: task.priority === "high" ? "rgba(107,158,125,0.2)" : task.priority === "medium" ? "rgba(201,165,78,0.2)" : "rgba(138,133,128,0.2)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ color: task.priority === "high" ? colors.success : task.priority === "medium" ? colors.warning : colors.muted, fontSize: 10, fontWeight: "600" }}>{task.priority}</Text>
                   </View>
                   {task.estimatedMinutes && (
                     <Text style={{ color: colors.muted, fontSize: 10 }}>{task.estimatedMinutes}m</Text>

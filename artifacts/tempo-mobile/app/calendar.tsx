@@ -6,7 +6,7 @@ import { api } from "../../../tempo-app/convex/_generated/api";
 import type { Id } from "../../../tempo-app/convex/_generated/dataModel";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 import { hapticLight } from "../lib/haptics";
 import {
   format,
@@ -28,6 +28,7 @@ import {
 type ViewMode = "week" | "month";
 
 export default function CalendarScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
@@ -194,7 +195,7 @@ export default function CalendarScreen() {
                   {hasItems && (
                     <View style={{ flexDirection: "row", gap: 2, marginTop: 2 }}>
                       {items.tasks.length > 0 && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary }} />}
-                      {items.events.length > 0 && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.teal }} />}
+                      {items.events.length > 0 && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.success }} />}
                     </View>
                   )}
                 </Pressable>
@@ -213,12 +214,12 @@ export default function CalendarScreen() {
                   setShowEventModal(true);
                 }}
                 style={{
-                  backgroundColor: today ? "rgba(108,99,255,0.08)" : colors.surface,
+                  backgroundColor: today ? "rgba(201,100,66,0.08)" : colors.surface,
                   borderRadius: 14,
                   padding: 16,
                   marginBottom: 10,
                   borderWidth: 1,
-                  borderColor: today ? "rgba(108,99,255,0.3)" : colors.border,
+                  borderColor: today ? "rgba(201,100,66,0.3)" : colors.border,
                 }}
               >
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -250,7 +251,7 @@ export default function CalendarScreen() {
                   <Pressable
                     key={t._id}
                     onPress={() => router.push(`/task/${t._id}` as never)}
-                    style={{ backgroundColor: "rgba(108,99,255,0.12)", borderRadius: 8, padding: 10, marginBottom: 4, borderLeftWidth: 3, borderLeftColor: colors.primary }}
+                    style={{ backgroundColor: "rgba(201,100,66,0.12)", borderRadius: 8, padding: 10, marginBottom: 4, borderLeftWidth: 3, borderLeftColor: colors.primary }}
                   >
                     <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{t.title}</Text>
                     {t.startTime && (
@@ -265,7 +266,7 @@ export default function CalendarScreen() {
                   <Pressable
                     key={e._id}
                     onPress={() => handleEventTap(e)}
-                    style={{ backgroundColor: "rgba(0,201,167,0.12)", borderRadius: 8, padding: 10, marginBottom: 4, borderLeftWidth: 3, borderLeftColor: colors.teal }}
+                    style={{ backgroundColor: "rgba(107,158,125,0.12)", borderRadius: 8, padding: 10, marginBottom: 4, borderLeftWidth: 3, borderLeftColor: colors.success }}
                   >
                     <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{e.title}</Text>
                     <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
@@ -290,7 +291,7 @@ export default function CalendarScreen() {
             onPress={() => router.push("/notes/period/monthly" as never)}
             style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border, alignItems: "center", gap: 4 }}
           >
-            <Ionicons name="calendar-outline" size={18} color={colors.teal} />
+            <Ionicons name="calendar-outline" size={18} color={colors.success} />
             <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "600" }}>Monthly Note</Text>
           </Pressable>
         </View>
@@ -352,7 +353,7 @@ export default function CalendarScreen() {
             {selectedEvent && (
               <>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: selectedEvent.color || colors.teal }} />
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: selectedEvent.color || colors.success }} />
                   <Text style={{ color: colors.foreground, fontSize: 20, fontWeight: "800", flex: 1 }}>{selectedEvent.title}</Text>
                   <Pressable onPress={() => setShowDetailModal(false)} hitSlop={12}>
                     <Ionicons name="close" size={22} color={colors.muted} />

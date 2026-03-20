@@ -34,9 +34,9 @@ import AiSuggestionBanner from "@/components/AiSuggestionBanner";
 type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
 
 const ENERGY_LEVELS = [
-  { value: "1", label: "Low Energy", icon: BatteryLow, color: "text-green-500", desc: "Light tasks, admin, reading" },
-  { value: "2", label: "Med Energy", icon: BatteryMedium, color: "text-amber-500", desc: "Regular work, meetings" },
-  { value: "3", label: "High Energy", icon: Battery, color: "text-red-500", desc: "Deep focus, creative work" },
+  { value: "1", label: "Low Energy", icon: BatteryLow, color: "text-success", desc: "Light tasks, admin, reading" },
+  { value: "2", label: "Med Energy", icon: BatteryMedium, color: "text-warning", desc: "Regular work, meetings" },
+  { value: "3", label: "High Energy", icon: Battery, color: "text-destructive", desc: "Deep focus, creative work" },
 ];
 
 export default function TaskDetail() {
@@ -306,7 +306,7 @@ export default function TaskDetail() {
               variant="outline"
               size="sm"
               onClick={handleComplete}
-              className="border-green-500/50 text-green-600 gap-2"
+              className="border-success/50 text-success gap-2"
             >
               <Check size={16} />
               Complete
@@ -527,7 +527,7 @@ export default function TaskDetail() {
               <div key={suggestion.id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
                   <Sparkles size={14} /> AI Subtasks
-                  {isEditing && <span className="text-xs text-amber-500 font-normal ml-1">Editing</span>}
+                  {isEditing && <span className="text-xs text-warning font-normal ml-1">Editing</span>}
                 </h3>
                 <p className="text-xs text-muted-foreground">{reasoning}</p>
                 <div className="space-y-2">
@@ -592,18 +592,18 @@ export default function TaskDetail() {
                       <Button variant="ghost" size="sm" className="text-muted-foreground gap-1" onClick={cancelEditingChunks}>
                         Cancel
                       </Button>
-                      <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={() => saveChunkEdits(suggestion.id)} disabled={updateStagedData.isPending}>
+                      <Button size="sm" className="bg-warning hover:bg-warning/90 text-white gap-1" onClick={() => saveChunkEdits(suggestion.id)} disabled={updateStagedData.isPending}>
                         <Check size={14} /> {updateStagedData.isPending ? "Saving..." : "Save Edits"}
                       </Button>
                     </>
                   ) : (
                     <>
-                      <Button variant="ghost" size="sm" className="text-amber-500 hover:bg-amber-500/10 gap-1" onClick={() => startEditingChunks(suggestion.id, subtasks)}>
+                      <Button variant="ghost" size="sm" className="text-warning hover:bg-warning/10 gap-1" onClick={() => startEditingChunks(suggestion.id, subtasks)}>
                         <Pencil size={14} /> Edit
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-teal-500 hover:bg-teal-600 text-white gap-1"
+                        className="bg-success hover:bg-success/90 text-white gap-1"
                         onClick={() => handleAcceptChunks(suggestion.id, subtasks)}
                       >
                         <Check size={14} /> Accept & Create

@@ -101,7 +101,7 @@ export default function Memories() {
   return (
     <div className="space-y-6 pb-12">
       <div className="flex items-center gap-3">
-        <Brain className="text-purple-400 h-8 w-8" />
+        <Brain className="text-primary h-8 w-8" />
         <div>
           <h1 className="text-3xl font-display font-bold">Memory</h1>
           <p className="text-sm text-muted-foreground">What TEMPO remembers about you</p>
@@ -205,13 +205,13 @@ export default function Memories() {
       <div className="flex gap-2">
         <button
           onClick={() => setTier("warm")}
-          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${tier === "warm" ? "bg-amber-500/10 border-amber-500 text-amber-400" : "border-border text-muted-foreground"}`}
+          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${tier === "warm" ? "bg-warning/10 border-warning text-warning" : "border-border text-muted-foreground"}`}
         >
           Active preferences
         </button>
         <button
           onClick={() => setTier("cold")}
-          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${tier === "cold" ? "bg-blue-500/10 border-blue-500 text-blue-400" : "border-border text-muted-foreground"}`}
+          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${tier === "cold" ? "bg-info/10 border-info text-info" : "border-border text-muted-foreground"}`}
         >
           Background context
         </button>
@@ -219,7 +219,7 @@ export default function Memories() {
 
       {hotMemories.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-violet-400 uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-xs font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
             <BookOpen size={12} /> Core Knowledge ({hotMemories.length})
           </h2>
           {hotMemories.map(mem => (
@@ -240,7 +240,7 @@ export default function Memories() {
 
       {warmMemories.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-xs font-semibold text-warning uppercase tracking-wider flex items-center gap-2">
             <Sparkles size={12} /> Active Preferences ({warmMemories.length})
           </h2>
           {warmMemories.map(mem => (
@@ -261,7 +261,7 @@ export default function Memories() {
 
       {coldMemories.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Background Context ({coldMemories.length})</h2>
+          <h2 className="text-xs font-semibold text-info uppercase tracking-wider">Background Context ({coldMemories.length})</h2>
           {coldMemories.map(mem => (
             <Card key={mem.id} className="glass border-border/50 group">
               <CardContent className="p-4 flex items-start justify-between gap-3">

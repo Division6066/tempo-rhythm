@@ -16,7 +16,7 @@ import { ArrowLeft, Trash2, CheckCircle2, FileText, Archive, RotateCcw, Palette 
 import { useToast } from "@/hooks/use-toast";
 import TaskCard from "@/components/TaskCard";
 
-const PROJECT_COLORS = ["#6C63FF", "#00C9A7", "#FFB347", "#FF6B6B", "#9D4EDD", "#3B82F6", "#EC4899", "#22C55E"];
+const PROJECT_COLORS = ["#C96442", "#6B9E7D", "#C9A54E", "#B85450", "#9D7E6C", "#5B8A9A", "#B07398", "#5A8F6E"];
 
 export default function ProjectDetail() {
   const [, params] = useRoute("/projects/:id");
@@ -92,7 +92,7 @@ export default function ProjectDetail() {
       <div className="flex items-center gap-4">
         <button
           className="w-6 h-6 rounded-full shrink-0 ring-2 ring-transparent hover:ring-primary/50 transition-all"
-          style={{ backgroundColor: project.color || "#6C63FF" }}
+          style={{ backgroundColor: project.color || "#C96442" }}
           onClick={() => setShowColorPicker(!showColorPicker)}
           title="Change color"
         />
@@ -120,7 +120,7 @@ export default function ProjectDetail() {
               key={c}
               onClick={() => handleColorChange(c)}
               className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                (project.color || "#6C63FF") === c ? "border-foreground scale-110" : "border-transparent"
+                (project.color || "#C96442") === c ? "border-foreground scale-110" : "border-transparent"
               }`}
               style={{ backgroundColor: c }}
             />

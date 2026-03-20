@@ -519,14 +519,14 @@ export default function Settings() {
                       onClick={() => toggleEnergyPeak(opt.id)}
                       className={`p-3 rounded-xl border transition-all text-left ${
                         formData.energyPeaks.includes(opt.id)
-                          ? "bg-teal-500/10 border-teal-500"
+                          ? "bg-success/10 border-success"
                           : "bg-card border-border"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-lg">{opt.icon}</span>
                         {formData.energyPeaks.includes(opt.id) && (
-                          <CheckCircle size={14} className="text-teal-500" />
+                          <CheckCircle size={14} className="text-success" />
                         )}
                       </div>
                       <h3 className="font-medium text-sm">{opt.label}</h3>
@@ -944,16 +944,16 @@ function DataPrivacySection() {
                 variant="outline"
                 onClick={() => setShowResetDialog(true)}
                 size="sm"
-                className="text-orange-500 border-orange-500/30 hover:bg-orange-500/10"
+                className="text-warning border-warning/30 hover:bg-warning/10"
               >
                 Reset
               </Button>
             </div>
 
             {showResetDialog && (
-              <div className="mt-3 p-4 rounded-lg border border-orange-500/30 bg-orange-500/5 space-y-3">
+              <div className="mt-3 p-4 rounded-lg border border-warning/30 bg-warning/5 space-y-3">
                 <p className="text-sm flex items-center gap-2">
-                  <AlertTriangle size={16} className="text-orange-500" />
+                  <AlertTriangle size={16} className="text-warning" />
                   Are you sure you want to delete all memories?
                 </p>
                 <div className="flex gap-2">
@@ -968,7 +968,7 @@ function DataPrivacySection() {
                     size="sm"
                     onClick={handleResetMemories}
                     disabled={resetMemories.isPending}
-                    className="bg-orange-500 hover:bg-orange-600"
+                    className="bg-warning hover:bg-warning/90"
                   >
                     {resetMemories.isPending ? "Resetting..." : "Yes, Reset Memories"}
                   </Button>
@@ -1108,7 +1108,7 @@ function InstallAppSection() {
             </p>
           </div>
           {isInstalled ? (
-            <span className="text-xs text-green-400 bg-green-500/10 px-3 py-1.5 rounded-full font-medium flex items-center gap-1">
+            <span className="text-xs text-success bg-success/10 px-3 py-1.5 rounded-full font-medium flex items-center gap-1">
               <CheckCircle size={14} /> Installed
             </span>
           ) : isIOS ? (
@@ -1197,8 +1197,8 @@ function DataImportSection() {
         </div>
       </div>
       {importResult && (
-        <div className="mt-3 p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-sm">
-          <p className="font-medium text-teal-400">Import complete:</p>
+        <div className="mt-3 p-3 rounded-lg bg-success/10 border border-success/30 text-sm">
+          <p className="font-medium text-success">Import complete:</p>
           <ul className="mt-1 space-y-0.5 text-muted-foreground">
             {importResult.tasks > 0 && <li>{importResult.tasks} tasks imported</li>}
             {importResult.notes > 0 && <li>{importResult.notes} notes imported</li>}
@@ -1418,8 +1418,8 @@ function LorePackImport() {
         </div>
 
         {importResult && (
-          <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-sm">
-            <p className="font-medium text-teal-400 flex items-center gap-1">
+          <div className="p-3 rounded-lg bg-success/10 border border-success/30 text-sm">
+            <p className="font-medium text-success flex items-center gap-1">
               <CheckCircle size={14} /> Import complete:
             </p>
             <ul className="mt-1 space-y-0.5 text-muted-foreground">

@@ -21,9 +21,9 @@ function ProjectCard({ project, taskCount }: { project: Project; taskCount: numb
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: `${project.color ?? "#6C63FF"}25` }}
+            style={{ backgroundColor: `${project.color ?? "#C96442"}25` }}
           >
-            <FolderGit2 size={18} style={{ color: project.color ?? "#6C63FF" }} />
+            <FolderGit2 size={18} style={{ color: project.color ?? "#C96442" }} />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">

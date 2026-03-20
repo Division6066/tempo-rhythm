@@ -221,7 +221,7 @@ export default function CommandBar({ open: controlledOpen, onOpenChange: control
             <div className="mb-2">
               {renderSectionHeader("Tasks")}
               {searchResults.tasks.map((task: Task) =>
-                renderItem(task.title, `/tasks/${task.id}`, <CheckCircle2 size={16} className="text-amber-400" />)
+                renderItem(task.title, `/tasks/${task.id}`, <CheckCircle2 size={16} className="text-warning" />)
               )}
             </div>
           )}
@@ -230,7 +230,7 @@ export default function CommandBar({ open: controlledOpen, onOpenChange: control
             <div className="mb-2">
               {renderSectionHeader("Projects")}
               {filteredProjects.map((project: Project) =>
-                renderItem(project.name, `/projects/${project.id}`, <FolderKanban size={16} className="text-teal-400" />)
+                renderItem(project.name, `/projects/${project.id}`, <FolderKanban size={16} className="text-success" />)
               )}
             </div>
           )}

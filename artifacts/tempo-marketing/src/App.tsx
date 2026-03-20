@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { convex } from "@/lib/convex";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import NotFound from "@/pages/not-found";
 
 import Home from "./pages/Home";
@@ -56,9 +57,11 @@ function App() {
   }
 
   return (
-    <ConvexAuthProvider client={convex}>
-      <AppWithProviders />
-    </ConvexAuthProvider>
+    <ThemeProvider>
+      <ConvexAuthProvider client={convex}>
+        <AppWithProviders />
+      </ConvexAuthProvider>
+    </ThemeProvider>
   );
 }
 

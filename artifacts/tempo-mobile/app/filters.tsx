@@ -6,11 +6,12 @@ import { api } from "../../../tempo-app/convex/_generated/api";
 import type { Id } from "../../../tempo-app/convex/_generated/dataModel";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 
 type FilterCondition = { field: string; operator: string; value: string };
 
 export default function FiltersScreen() {
+  const colors = useThemeColors();
   const savedFilters = useQuery(api.savedFilters.list);
   const allTasks = useQuery(api.tasks.list, {});
   const createFilter = useMutation(api.savedFilters.create);
@@ -81,7 +82,7 @@ export default function FiltersScreen() {
               <Pressable
                 key={preset.label}
                 onPress={() => setActiveFilter(preset.conditions)}
-                style={{ backgroundColor: "rgba(108,99,255,0.12)", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}
+                style={{ backgroundColor: "rgba(201,100,66,0.12)", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}
               >
                 <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>{preset.label}</Text>
               </Pressable>
@@ -107,11 +108,11 @@ export default function FiltersScreen() {
           >
             <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{task.title}</Text>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-              <View style={{ backgroundColor: "rgba(108,99,255,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+              <View style={{ backgroundColor: "rgba(201,100,66,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
                 <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "600" }}>{task.status}</Text>
               </View>
-              <View style={{ backgroundColor: "rgba(255,179,71,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
-                <Text style={{ color: colors.amber, fontSize: 10, fontWeight: "600" }}>{task.priority}</Text>
+              <View style={{ backgroundColor: "rgba(201,165,78,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text style={{ color: colors.warning, fontSize: 10, fontWeight: "600" }}>{task.priority}</Text>
               </View>
             </View>
           </Pressable>

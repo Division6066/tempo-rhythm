@@ -45,7 +45,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onOpenSearch, onToggleMobileSidebar }: NavbarProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [, setLocation] = useLocation();
 
   return (
@@ -79,7 +79,7 @@ export default function Navbar({ onOpenSearch, onToggleMobileSidebar }: NavbarPr
           className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Toggle theme"
         >
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          {resolvedTheme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
         <DropdownMenu>

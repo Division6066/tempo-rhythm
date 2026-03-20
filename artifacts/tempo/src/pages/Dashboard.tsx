@@ -20,9 +20,9 @@ function ProgressRing({ progress, doneToday, totalToday }: { progress: number; d
   }, [progress]);
 
   const getColor = (pct: number) => {
-    if (pct >= 100) return "text-emerald-400";
-    if (pct >= 66) return "text-teal-400";
-    if (pct >= 33) return "text-amber-400";
+    if (pct >= 100) return "text-success";
+    if (pct >= 66) return "text-success";
+    if (pct >= 33) return "text-warning";
     return "text-primary";
   };
 
@@ -45,7 +45,7 @@ function ProgressRing({ progress, doneToday, totalToday }: { progress: number; d
       </svg>
       <div className="absolute inset-0 flex items-center justify-center flex-col">
         {allDone ? (
-          <span className="text-xs font-bold text-emerald-400">All done!</span>
+          <span className="text-xs font-bold text-success">All done!</span>
         ) : (
           <>
             <span className="text-2xl font-display font-bold text-foreground">{doneToday}</span>
@@ -110,7 +110,7 @@ function StreakCounter({ plans }: { plans: DailyPlan[] | undefined }) {
   if (current === 0 && best === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold">
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
       <Flame size={14} />
       <span>{current} day{current !== 1 ? "s" : ""}</span>
       <span className="text-muted-foreground font-normal">Best: {best} day{best !== 1 ? "s" : ""}</span>
@@ -261,7 +261,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <StreakCounter plans={plans} />
             {prefs?.adhdMode && (
-              <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 border border-primary/30 shadow-[0_0_10px_rgba(108,99,255,0.2)]">
+              <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 border border-primary/30 shadow-[0_0_10px_rgba(201,100,66,0.2)]">
                 <Sparkles size={12} />
                 ADHD Mode
               </div>
@@ -274,25 +274,25 @@ export default function Dashboard() {
         <Link href="/today">
           <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
             <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-              <Sun className="text-amber-400 mb-2 h-5 w-5" />
+              <Sun className="text-warning mb-2 h-5 w-5" />
               <span className="text-2xl font-bold">{tasksDueCount}</span>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Due Today</span>
             </CardContent>
           </Card>
         </Link>
         <Link href="/today">
-          <Card className={`glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer ${overdueTasks.length > 0 ? "border-red-500/30" : ""}`}>
+          <Card className={`glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer ${overdueTasks.length > 0 ? "border-destructive/30" : ""}`}>
             <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-              <AlertTriangle className={`mb-2 h-5 w-5 ${overdueTasks.length > 0 ? "text-red-400" : "text-muted-foreground"}`} />
-              <span className={`text-2xl font-bold ${overdueTasks.length > 0 ? "text-red-400" : ""}`}>{overdueTasks.length}</span>
-              <span className={`text-[10px] uppercase tracking-wider font-medium ${overdueTasks.length > 0 ? "text-red-400/80" : "text-muted-foreground"}`}>Overdue</span>
+              <AlertTriangle className={`mb-2 h-5 w-5 ${overdueTasks.length > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              <span className={`text-2xl font-bold ${overdueTasks.length > 0 ? "text-destructive" : ""}`}>{overdueTasks.length}</span>
+              <span className={`text-[10px] uppercase tracking-wider font-medium ${overdueTasks.length > 0 ? "text-destructive/80" : "text-muted-foreground"}`}>Overdue</span>
             </CardContent>
           </Card>
         </Link>
         <Link href="/today">
           <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
             <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-              <CalendarDays className="text-blue-400 mb-2 h-5 w-5" />
+              <CalendarDays className="text-info mb-2 h-5 w-5" />
               <span className="text-2xl font-bold">{eventsToday}</span>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Events</span>
             </CardContent>
@@ -324,7 +324,7 @@ export default function Dashboard() {
 
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Zap size={16} className="text-amber-400" />
+          <Zap size={16} className="text-warning" />
           <h3 className="font-semibold text-foreground">Top 3 — Focus on these</h3>
         </div>
         <QuickAddTask />
@@ -350,7 +350,7 @@ export default function Dashboard() {
         <Link href="/inbox">
           <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
             <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-              <Inbox className="text-blue-400 mb-2 h-5 w-5" />
+              <Inbox className="text-info mb-2 h-5 w-5" />
               <span className="text-2xl font-bold">{inboxCount}</span>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Inbox</span>
             </CardContent>
@@ -359,7 +359,7 @@ export default function Dashboard() {
         <Link href="/projects">
           <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
             <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-              <ListTodo className="text-teal-400 mb-2 h-5 w-5" />
+              <ListTodo className="text-success mb-2 h-5 w-5" />
               <span className="text-2xl font-bold">{projects?.filter(p => p.status === 'active').length || 0}</span>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Projects</span>
             </CardContent>
@@ -368,7 +368,7 @@ export default function Dashboard() {
         <Link href="/focus">
           <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
             <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-              <Timer className="text-teal-400 mb-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+              <Timer className="text-success mb-2 h-5 w-5 group-hover:scale-110 transition-transform" />
               <span className="text-2xl font-bold text-muted-foreground">-</span>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Focus</span>
             </CardContent>
@@ -380,7 +380,7 @@ export default function Dashboard() {
         <Link href="/focus">
           <Card className="glass border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success group-hover:scale-110 transition-transform">
                 <Timer size={20} />
               </div>
               <div>

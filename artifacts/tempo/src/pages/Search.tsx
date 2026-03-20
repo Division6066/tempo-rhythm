@@ -450,15 +450,15 @@ export default function Search() {
                   className="w-full text-left bg-card border border-border/50 rounded-xl px-4 py-3 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <CheckSquare size={14} className={task.status === "done" ? "text-primary shrink-0" : "text-blue-400 shrink-0"} />
+                    <CheckSquare size={14} className={task.status === "done" ? "text-primary shrink-0" : "text-info shrink-0"} />
                     <span className={`font-medium truncate ${task.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>
                       {task.title}
                     </span>
-                    <span className="ml-auto text-[10px] font-medium bg-blue-500/15 text-blue-400 px-1.5 py-0.5 rounded-full shrink-0">Task</span>
+                    <span className="ml-auto text-[10px] font-medium bg-info/15 text-info px-1.5 py-0.5 rounded-full shrink-0">Task</span>
                   </div>
                   <div className="flex gap-2 ml-5">
                     <span className={`text-[10px] ${
-                      task.priority === "high" ? "text-red-400" : task.priority === "medium" ? "text-amber-400" : "text-blue-400"
+                      task.priority === "high" ? "text-destructive" : task.priority === "medium" ? "text-warning" : "text-info"
                     }`}>
                       {task.priority}
                     </span>

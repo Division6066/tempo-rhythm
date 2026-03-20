@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Switch, Alert, Share } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Switch, Alert, Share, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 import { hapticSuccess, hapticWarning } from "../lib/haptics";
 
 export default function SettingsScreen() {
-  const { colors, mode, toggle: toggleTheme } = useTheme();
+  const colors = useThemeColors();
+  const colorScheme = useColorScheme();
   const prefs = useQuery(api.preferences.get);
   const allTasks = useQuery(api.tasks.list, {});
   const notes = useQuery(api.notes.list);
@@ -153,15 +154,12 @@ export default function SettingsScreen() {
           <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>Appearance</Text>
           <SettingRow
             icon="moon"
-            label="Dark Mode"
-            description="Toggle between light and dark themes"
+            label="Theme"
+            description="Follows your device system setting"
             right={
-              <Switch
-                value={mode === "dark"}
-                onValueChange={toggleTheme}
-                trackColor={{ false: colors.surfaceLight, true: `${colors.primary}88` }}
-                thumbColor={mode === "dark" ? colors.primary : colors.muted}
-              />
+              <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "600" }}>
+                {colorScheme === "dark" ? "Dark" : "Light"}
+              </Text>
             }
           />
         </SectionCard>
@@ -269,10 +267,10 @@ export default function SettingsScreen() {
               { text: "Sign Out", style: "destructive", onPress: () => signOut() },
             ]);
           }}
-          style={{ backgroundColor: "rgba(255,107,107,0.1)", borderRadius: 14, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: "rgba(255,107,107,0.2)" }}
+          style={{ backgroundColor: "rgba(184,84,80,0.1)", borderRadius: 14, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: "rgba(184,84,80,0.2)" }}
         >
-          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-          <Text style={{ color: colors.danger, fontWeight: "700", fontSize: 16 }}>Sign Out</Text>
+          <Ionicons name="log-out-outline" size={20} color={colors.destructive} />
+          <Text style={{ color: colors.destructive, fontWeight: "700", fontSize: 16 }}>Sign Out</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

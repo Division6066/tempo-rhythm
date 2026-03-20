@@ -5,10 +5,11 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 import { hapticLight } from "../lib/haptics";
 
 export default function ProjectsScreen() {
+  const colors = useThemeColors();
   const projects = useQuery(api.projects.list);
   const allTasks = useQuery(api.tasks.list, {});
   const createProject = useMutation(api.projects.create);
@@ -16,9 +17,9 @@ export default function ProjectsScreen() {
 
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
-  const [selectedColor, setSelectedColor] = useState("#6C63FF");
+  const [selectedColor, setSelectedColor] = useState("#C96442");
 
-  const projectColors = ["#6C63FF", "#00C9A7", "#FFB347", "#FF6B6B", "#9D4EDD", "#3B82F6"];
+  const projectColors = ["#C96442", "#6B9E7D", "#C9A54E", "#B85450", "#9D7E6C", "#5B8A9A"];
   const active = projects?.filter((p) => p.status === "active") || [];
 
   const getProjectTaskCounts = (projectId: string) => {

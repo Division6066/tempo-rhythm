@@ -39,9 +39,9 @@ function stripBlockIds(blocks: PlanBlock[]): Record<string, unknown>[] {
 }
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; description: string; icon: ReactNode; color: string }[] = [
-  { value: "low", label: "Low", description: "Tired, foggy, need gentle tasks", icon: <BatteryLow size={20} />, color: "text-amber-400 border-amber-400/40 bg-amber-400/10" },
-  { value: "medium", label: "Medium", description: "Decent energy, can focus some", icon: <BatteryMedium size={20} />, color: "text-blue-400 border-blue-400/40 bg-blue-400/10" },
-  { value: "high", label: "High", description: "Energized, ready for deep work", icon: <BatteryFull size={20} />, color: "text-emerald-400 border-emerald-400/40 bg-emerald-400/10" },
+  { value: "low", label: "Low", description: "Tired, foggy, need gentle tasks", icon: <BatteryLow size={20} />, color: "text-warning border-warning/40 bg-warning/10" },
+  { value: "medium", label: "Medium", description: "Decent energy, can focus some", icon: <BatteryMedium size={20} />, color: "text-info border-info/40 bg-info/10" },
+  { value: "high", label: "High", description: "Energized, ready for deep work", icon: <BatteryFull size={20} />, color: "text-success border-success/40 bg-success/10" },
 ];
 
 const MOOD_EMOJIS = [
@@ -569,7 +569,7 @@ export default function DailyPlan() {
               <Sparkles className="text-primary mt-0.5 shrink-0" size={16} />
               <div>
                 <h3 className="font-semibold text-primary mb-1">
-                  AI Suggestion {isEditingPlan && <span className="text-xs text-amber-400 font-normal ml-1">Editing</span>}
+                  AI Suggestion {isEditingPlan && <span className="text-xs text-warning font-normal ml-1">Editing</span>}
                 </h3>
                 <p className="text-sm text-foreground/80">{pendingStagedPlan.reasoning}</p>
               </div>
@@ -622,7 +622,7 @@ export default function DailyPlan() {
                   </Button>
                   <Button
                     size="icon"
-                    className="bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-lg"
+                    className="bg-warning hover:bg-warning/90 text-white rounded-full shadow-lg"
                     onClick={() => saveEditedPlan(pendingStagedPlan.id)}
                     title="Save edits"
                     disabled={updateStagedData.isPending}
@@ -635,7 +635,7 @@ export default function DailyPlan() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-amber-400 hover:bg-amber-500/20 rounded-full"
+                    className="text-warning hover:bg-warning/20 rounded-full"
                     onClick={() => startEditingPlan(currentBlocks)}
                     title="Edit plan"
                   >

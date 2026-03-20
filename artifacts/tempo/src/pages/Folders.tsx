@@ -37,7 +37,7 @@ function SortableFolderCard({ folder, onDelete }: { folder: Folder; onDelete: (i
             <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground shrink-0 touch-none" onClick={e => e.stopPropagation()}>
               <GripVertical size={16} />
             </button>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
               <IconComponent size={20} />
             </div>
             <div>
@@ -117,7 +117,7 @@ export default function Folders() {
     <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <FolderOpen className="text-amber-400 h-8 w-8" />
+          <FolderOpen className="text-warning h-8 w-8" />
           <h1 className="text-3xl font-display font-bold">Areas</h1>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

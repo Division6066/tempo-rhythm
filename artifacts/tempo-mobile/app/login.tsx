@@ -11,9 +11,10 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 
 export default function LoginScreen() {
+  const colors = useThemeColors();
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -200,15 +201,15 @@ export default function LoginScreen() {
           {error ? (
             <View
               style={{
-                backgroundColor: "rgba(255,107,107,0.1)",
+                backgroundColor: "rgba(184,84,80,0.1)",
                 borderWidth: 1,
-                borderColor: "rgba(255,107,107,0.2)",
+                borderColor: "rgba(184,84,80,0.2)",
                 borderRadius: 8,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
               }}
             >
-              <Text style={{ fontSize: 14, color: colors.danger }}>
+              <Text style={{ fontSize: 14, color: colors.destructive }}>
                 {error}
               </Text>
             </View>

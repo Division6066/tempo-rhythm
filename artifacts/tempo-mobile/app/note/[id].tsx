@@ -6,11 +6,12 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../lib/theme";
+import { useThemeColors } from "../../lib/theme";
 import { MarkdownPreview } from "../../lib/markdown";
 import { hapticWarning } from "../../lib/haptics";
 
 export default function NoteEditorScreen() {
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const isNew = id === "new";
@@ -81,7 +82,7 @@ export default function NoteEditorScreen() {
             <Ionicons name={isPinned ? "pin" : "pin-outline"} size={22} color={isPinned ? colors.primary : colors.muted} />
           </Pressable>
           <Pressable onPress={handleDelete} hitSlop={12}>
-            <Ionicons name="trash-outline" size={22} color={colors.danger} />
+            <Ionicons name="trash-outline" size={22} color={colors.destructive} />
           </Pressable>
         </View>
       </View>

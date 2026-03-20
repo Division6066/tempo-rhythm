@@ -88,8 +88,8 @@ export default function FocusSession() {
   const stateColors = {
     idle: "text-muted-foreground",
     focus: "text-primary",
-    break: "text-teal-400",
-    done: "text-amber-400",
+    break: "text-success",
+    done: "text-warning",
   };
 
   const stateLabels = {
@@ -182,7 +182,7 @@ export default function FocusSession() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center py-6"
         >
-          <CheckCircle2 className="text-teal-400 w-16 h-16 mx-auto mb-4" />
+          <CheckCircle2 className="text-success w-16 h-16 mx-auto mb-4" />
           <h2 className="text-2xl font-display font-bold mb-2">Great work!</h2>
           <p className="text-muted-foreground">You completed {sessions} focus sessions.</p>
           <Button onClick={reset} variant="outline" className="mt-4 rounded-xl">

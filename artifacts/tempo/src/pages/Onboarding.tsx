@@ -55,7 +55,7 @@ export default function Onboarding() {
 
   const steps = [
     <div key="step-0" className="flex flex-col items-center justify-center text-center space-y-6 mt-12">
-      <div className="w-24 h-24 bg-primary/20 rounded-3xl flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(108,99,255,0.3)] animate-pulse">
+      <div className="w-24 h-24 bg-primary/20 rounded-3xl flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(201,100,66,0.3)] animate-pulse">
         <Sparkles className="text-primary w-12 h-12" />
       </div>
       <h1 className="text-4xl font-display font-bold">Welcome to TEMPO</h1>
@@ -94,7 +94,7 @@ export default function Onboarding() {
 
     <div key="step-2" className="space-y-6 mt-8">
       <div className="text-center space-y-2 mb-8">
-        <Clock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+        <Clock className="w-12 h-12 text-warning mx-auto mb-4" />
         <h2 className="text-3xl font-display font-bold">Your Planning Style</h2>
       </div>
       <div className="grid gap-4">
@@ -106,13 +106,13 @@ export default function Onboarding() {
           <button 
             key={style.id}
             onClick={() => setFormData({...formData, planningStyle: style.id as any})}
-            className={clsx("p-5 rounded-2xl border transition-all text-left flex justify-between items-center", formData.planningStyle === style.id ? "bg-amber-500/10 border-amber-500" : "bg-card border-border")}
+            className={clsx("p-5 rounded-2xl border transition-all text-left flex justify-between items-center", formData.planningStyle === style.id ? "bg-warning/10 border-warning" : "bg-card border-border")}
           >
             <div>
               <h3 className="font-bold text-lg">{style.title}</h3>
               <p className="text-muted-foreground text-sm">{style.desc}</p>
             </div>
-            {formData.planningStyle === style.id && <CheckCircle className="text-amber-500"/>}
+            {formData.planningStyle === style.id && <CheckCircle className="text-warning"/>}
           </button>
         ))}
       </div>
@@ -124,13 +124,13 @@ export default function Onboarding() {
 
     <div key="step-3" className="space-y-6 mt-8">
       <div className="text-center space-y-2 mb-4">
-        <Sun className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+        <Sun className="w-12 h-12 text-warning mx-auto mb-4" />
         <h2 className="text-3xl font-display font-bold">Your Schedule</h2>
         <p className="text-muted-foreground">When does your day start and end?</p>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-          <div className="flex items-center gap-2 text-amber-400">
+          <div className="flex items-center gap-2 text-warning">
             <Sun size={18} />
             <span className="font-semibold">Wake up</span>
           </div>
@@ -142,7 +142,7 @@ export default function Onboarding() {
           />
         </div>
         <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-          <div className="flex items-center gap-2 text-blue-400">
+          <div className="flex items-center gap-2 text-info">
             <Moon size={18} />
             <span className="font-semibold">Sleep</span>
           </div>
@@ -155,7 +155,7 @@ export default function Onboarding() {
         </div>
       </div>
       <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-        <div className="flex items-center gap-2 text-teal-400">
+        <div className="flex items-center gap-2 text-success">
           <Timer size={18} />
           <span className="font-semibold">Focus session length</span>
         </div>
@@ -167,7 +167,7 @@ export default function Onboarding() {
               className={clsx(
                 "flex-1 py-3 rounded-xl text-center font-bold transition-all",
                 formData.focusSessionMinutes === mins
-                  ? "bg-teal-500/20 border border-teal-500 text-teal-400"
+                  ? "bg-success/20 border border-success text-success"
                   : "bg-muted border border-transparent text-muted-foreground"
               )}
             >
@@ -184,7 +184,7 @@ export default function Onboarding() {
 
     <div key="step-4" className="space-y-6 mt-8">
       <div className="text-center space-y-2 mb-4">
-        <Battery className="w-12 h-12 text-teal-400 mx-auto mb-4" />
+        <Battery className="w-12 h-12 text-success mx-auto mb-4" />
         <h2 className="text-3xl font-display font-bold">Energy Peaks</h2>
         <p className="text-muted-foreground">When do you feel most focused? Pick all that apply.</p>
       </div>
@@ -196,13 +196,13 @@ export default function Onboarding() {
             className={clsx(
               "p-4 rounded-2xl border transition-all text-left",
               formData.energyPeaks.includes(opt.id)
-                ? "bg-teal-500/10 border-teal-500"
+                ? "bg-success/10 border-success"
                 : "bg-card border-border"
             )}
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-xl">{opt.icon}</span>
-              {formData.energyPeaks.includes(opt.id) && <CheckCircle size={16} className="text-teal-400" />}
+              {formData.energyPeaks.includes(opt.id) && <CheckCircle size={16} className="text-success" />}
             </div>
             <h3 className="font-bold text-sm">{opt.label}</h3>
             <p className="text-xs text-muted-foreground">{opt.desc}</p>
@@ -216,8 +216,8 @@ export default function Onboarding() {
     </div>,
 
     <div key="step-5" className="flex flex-col items-center justify-center text-center space-y-6 mt-16">
-      <div className="w-24 h-24 bg-teal-500/20 rounded-full flex items-center justify-center mb-4">
-        <CheckCircle className="text-teal-400 w-12 h-12" />
+      <div className="w-24 h-24 bg-success/20 rounded-full flex items-center justify-center mb-4">
+        <CheckCircle className="text-success w-12 h-12" />
       </div>
       <h2 className="text-3xl font-display font-bold">You're all set!</h2>
       <p className="text-muted-foreground max-w-sm">
@@ -250,7 +250,7 @@ export default function Onboarding() {
       <Button 
         onClick={handleComplete} 
         disabled={completeMutation.isPending}
-        className="mt-4 w-full max-w-xs h-14 text-lg bg-teal-500 hover:bg-teal-400 text-white rounded-2xl shadow-lg shadow-teal-500/20"
+        className="mt-4 w-full max-w-xs h-14 text-lg bg-success hover:bg-success text-white rounded-2xl shadow-lg shadow-success/20"
       >
         {completeMutation.isPending ? "Saving..." : "Go to Dashboard"}
       </Button>

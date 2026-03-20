@@ -4,9 +4,10 @@ import { useQuery } from "convex/react";
 import { api } from "../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 
 export default function NotesScreen() {
+  const colors = useThemeColors();
   const notes = useQuery(api.notes.list);
   const router = useRouter();
 
@@ -33,7 +34,7 @@ export default function NotesScreen() {
               <Text style={{ color: colors.primary, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>Pinned</Text>
             </View>
             {pinned.map((note) => (
-              <Pressable key={note._id} onPress={() => router.push(`/note/${note._id}` as never)} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)", height: 100 }}>
+              <Pressable key={note._id} onPress={() => router.push(`/note/${note._id}` as never)} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: "rgba(201,100,66,0.3)", height: 100 }}>
                 <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "700" }} numberOfLines={1}>{note.title || "Untitled"}</Text>
                 <Text style={{ color: colors.muted, fontSize: 13, marginTop: 6 }} numberOfLines={2}>{note.content || "Empty note"}</Text>
               </Pressable>

@@ -8,14 +8,14 @@ import { Tag, Plus, Trash2, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const TAG_COLORS = [
-  { name: "Purple", value: "#6C63FF" },
-  { name: "Teal", value: "#00C9A7" },
-  { name: "Amber", value: "#FFB347" },
-  { name: "Red", value: "#FF6B6B" },
-  { name: "Blue", value: "#3B82F6" },
-  { name: "Pink", value: "#EC4899" },
-  { name: "Green", value: "#22C55E" },
-  { name: "Gray", value: "#9CA3AF" },
+  { name: "Terracotta", value: "#C96442" },
+  { name: "Sage", value: "#6B9E7D" },
+  { name: "Amber", value: "#C9A54E" },
+  { name: "Brick", value: "#B85450" },
+  { name: "Stone", value: "#5B8A9A" },
+  { name: "Mauve", value: "#B07398" },
+  { name: "Forest", value: "#5A8F6E" },
+  { name: "Warm Gray", value: "#8A8580" },
 ];
 
 export default function Tags() {
@@ -27,7 +27,7 @@ export default function Tags() {
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#6C63FF");
+  const [color, setColor] = useState("#C96442");
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +113,7 @@ export default function Tags() {
               key={tag.id}
               className="group flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-card hover:border-primary/30 transition-colors"
             >
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color || "#6C63FF" }} />
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color || "#C96442" }} />
               <span className="text-sm font-medium">{tag.name}</span>
               <button
                 onClick={() => handleDelete(tag.id)}

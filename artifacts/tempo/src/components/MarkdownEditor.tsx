@@ -350,13 +350,13 @@ export default function MarkdownEditor({
   const saveIndicator = saveStatus && (
     <div className="flex items-center gap-1.5 text-xs">
       {saveStatus === "saved" && (
-        <span className="text-green-400 flex items-center gap-1"><Check size={12} /> Saved</span>
+        <span className="text-success flex items-center gap-1"><Check size={12} /> Saved</span>
       )}
       {saveStatus === "saving" && (
         <span className="text-muted-foreground flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Saving…</span>
       )}
       {saveStatus === "unsaved" && (
-        <span className="text-amber-400 flex items-center gap-1"><AlertCircle size={12} /> Unsaved</span>
+        <span className="text-warning flex items-center gap-1"><AlertCircle size={12} /> Unsaved</span>
       )}
     </div>
   );

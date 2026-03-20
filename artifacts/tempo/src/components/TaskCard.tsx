@@ -19,14 +19,14 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 const ENERGY_ICONS: Record<number, { icon: typeof Battery; label: string; color: string }> = {
-  1: { icon: BatteryLow, label: "Low energy", color: "text-green-500" },
-  2: { icon: BatteryMedium, label: "Med energy", color: "text-amber-500" },
-  3: { icon: Battery, label: "High energy", color: "text-red-500" },
+  1: { icon: BatteryLow, label: "Low energy", color: "text-success" },
+  2: { icon: BatteryMedium, label: "Med energy", color: "text-warning" },
+  3: { icon: Battery, label: "High energy", color: "text-destructive" },
 };
 
 function getScoreBadgeClasses(score: number): string {
-  if (score >= 80) return "bg-red-500/20 text-red-500 border-red-500/30";
-  if (score >= 60) return "bg-amber-500/20 text-amber-500 border-amber-500/30";
+  if (score >= 80) return "bg-destructive/20 text-destructive border-destructive/30";
+  if (score >= 60) return "bg-warning/20 text-warning border-warning/30";
   return "bg-muted text-muted-foreground border-border";
 }
 
@@ -96,8 +96,8 @@ export default function TaskCard({ task, sortable = false, aiScore }: TaskCardPr
   };
 
   const priorityColors: Record<string, string> = {
-    high: "bg-teal-500/20 text-teal-600",
-    medium: "bg-amber-500/20 text-amber-600",
+    high: "bg-success/20 text-success",
+    medium: "bg-warning/20 text-warning",
     low: "bg-muted text-muted-foreground",
   };
 
@@ -117,7 +117,7 @@ export default function TaskCard({ task, sortable = false, aiScore }: TaskCardPr
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link href={`/tasks/${task.id}`}>
-        <div className={`glass p-4 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-muted/50 transition-all border relative ${isOverdue ? "border-red-500/50 bg-red-500/5" : "border-border/50 hover:border-primary/30"}`}>
+        <div className={`glass p-4 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-muted/50 transition-all border relative ${isOverdue ? "border-destructive/50 bg-destructive/5" : "border-border/50 hover:border-primary/30"}`}>
           {sortable && (
             <button
               className={`mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-opacity ${isHovered ? "opacity-100" : "opacity-0"}`}
@@ -144,7 +144,7 @@ export default function TaskCard({ task, sortable = false, aiScore }: TaskCardPr
                 {PRIORITY_LABELS[task.priority] || task.priority}
               </span>
               {isOverdue && (
-                <span className="flex items-center text-[10px] text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full font-medium">
+                <span className="flex items-center text-[10px] text-destructive bg-destructive/10 px-2 py-0.5 rounded-full font-medium">
                   <AlertCircle size={10} className="mr-1" />
                   Overdue
                 </span>
@@ -199,7 +199,7 @@ export default function TaskCard({ task, sortable = false, aiScore }: TaskCardPr
                 Move to Inbox
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-red-500 focus:text-red-500"
+                className="text-destructive focus:text-destructive"
                 onClick={(e) => handleContextAction("delete", e)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />

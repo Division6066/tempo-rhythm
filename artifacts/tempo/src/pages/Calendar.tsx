@@ -617,9 +617,9 @@ function SidebarTaskCard({
   onDragEnd: () => void;
 }) {
   const priorityColors: Record<string, string> = {
-    high: "bg-emerald-500",
-    medium: "bg-amber-400",
-    low: "bg-gray-400",
+    high: "bg-success",
+    medium: "bg-warning",
+    low: "bg-muted-foreground",
   };
 
   return (
@@ -635,7 +635,7 @@ function SidebarTaskCard({
       <GripVertical size={14} className="text-muted-foreground shrink-0 opacity-50 group-hover:opacity-100" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[task.priority] || "bg-gray-400"}`} />
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[task.priority] || "bg-muted-foreground"}`} />
           <span className="text-xs font-medium text-foreground truncate">{task.title}</span>
         </div>
         {task.estimatedMinutes && (

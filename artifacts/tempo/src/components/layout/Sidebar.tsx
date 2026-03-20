@@ -74,7 +74,7 @@ function ContextMenu({
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); onDelete(); onClose(); }}
-        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:bg-muted cursor-pointer"
+        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-muted cursor-pointer"
       >
         <Trash2 size={13} /> Delete
       </button>
@@ -105,7 +105,7 @@ function ProjectItem({
         >
           <div
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-            style={{ backgroundColor: project.color ?? "#6C63FF" }}
+            style={{ backgroundColor: project.color ?? "#C96442" }}
           />
           <span className="flex-1 truncate text-xs">{project.name}</span>
           <button

@@ -98,7 +98,7 @@ export default function PWAInstallPrompt() {
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #1A1A2E 0%, #16213E 100%)",
+          background: "linear-gradient(135deg, #1A1815 0%, #2A2825 100%)",
           borderRadius: 16,
           padding: "16px 20px",
           display: "flex",
@@ -142,7 +142,7 @@ export default function PWAInstallPrompt() {
           </div>
           <div
             style={{
-              color: "rgba(224,224,255,0.7)",
+              color: "rgba(245,243,240,0.7)",
               fontSize: 12,
               lineHeight: "16px",
               marginTop: 2,
@@ -158,7 +158,7 @@ export default function PWAInstallPrompt() {
           <button
             onClick={handleInstall}
             style={{
-              background: "#6C63FF",
+              background: "#C96442",
               color: "#FFFFFF",
               border: "none",
               borderRadius: 8,
@@ -188,7 +188,7 @@ export default function PWAInstallPrompt() {
             justifyContent: "center",
           }}
         >
-          <X size={18} color="rgba(224,224,255,0.5)" />
+          <X size={18} color="rgba(245,243,240,0.5)" />
         </button>
       </div>
     </div>

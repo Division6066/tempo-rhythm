@@ -425,8 +425,8 @@ export default function TodayView() {
             {filteredOverdue.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                  <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider">Overdue</h2>
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <h2 className="text-xs font-semibold text-destructive uppercase tracking-wider">Overdue</h2>
                 </div>
                 <SortableContext items={filteredOverdue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                   {filteredOverdue.map((task) => (
@@ -437,7 +437,7 @@ export default function TodayView() {
             )}
 
             <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-teal-400 uppercase tracking-wider">High Priority</h2>
+              <h2 className="text-xs font-semibold text-success uppercase tracking-wider">High Priority</h2>
               <DroppableSection id="section-high">
                 <SortableContext items={highPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-0">
@@ -451,7 +451,7 @@ export default function TodayView() {
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Medium Priority</h2>
+              <h2 className="text-xs font-semibold text-warning uppercase tracking-wider">Medium Priority</h2>
               <DroppableSection id="section-medium">
                 <SortableContext items={mediumPriority.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-0">

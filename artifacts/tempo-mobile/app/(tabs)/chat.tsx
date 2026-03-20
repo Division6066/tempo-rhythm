@@ -4,13 +4,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../lib/theme";
+import { useThemeColors } from "../../lib/theme";
 import { useNetwork } from "../../lib/NetworkContext";
 
 type Message = { role: "user" | "assistant"; content: string; suggestions?: string[] };
 
 export default function ChatScreen() {
-  const { colors } = useTheme();
+  const colors = useThemeColors();
   const { isConnected } = useNetwork();
   const memories = useQuery(api.memories.list);
   const persistedMessages = useQuery(api.chatMessages.list, { limit: 50 });
@@ -83,7 +83,7 @@ export default function ChatScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={90}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingVertical: 12 }}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(108,99,255,0.2)", alignItems: "center", justifyContent: "center" }}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(201,100,66,0.2)", alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="sparkles" size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -96,8 +96,8 @@ export default function ChatScreen() {
         </View>
 
         {!isConnected && (
-          <View style={{ marginHorizontal: 16, backgroundColor: "rgba(255,107,107,0.1)", borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "rgba(255,107,107,0.2)" }}>
-            <Ionicons name="cloud-offline-outline" size={20} color={colors.danger} />
+          <View style={{ marginHorizontal: 16, backgroundColor: "rgba(184,84,80,0.1)", borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "rgba(184,84,80,0.2)" }}>
+            <Ionicons name="cloud-offline-outline" size={20} color={colors.destructive} />
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>Requires Connection</Text>
               <Text style={{ color: colors.muted, fontSize: 12 }}>AI chat needs an internet connection to work.</Text>
@@ -107,9 +107,9 @@ export default function ChatScreen() {
 
         {isConnected && memoryCount > 0 && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 20, paddingBottom: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(0,201,167,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(0,201,167,0.2)" }}>
-              <Ionicons name="bulb-outline" size={14} color={colors.teal} />
-              <Text style={{ color: colors.teal, fontSize: 11, fontWeight: "600" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(107,158,125,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(107,158,125,0.2)" }}>
+              <Ionicons name="bulb-outline" size={14} color={colors.success} />
+              <Text style={{ color: colors.success, fontSize: 11, fontWeight: "600" }}>
                 TEMPO remembers your context ({memoryCount} {memoryCount === 1 ? "memory" : "memories"})
               </Text>
             </View>
@@ -129,7 +129,7 @@ export default function ChatScreen() {
                 {msg.suggestions && msg.suggestions.length > 0 && (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                     {msg.suggestions.map((s, idx) => (
-                      <Pressable key={idx} onPress={() => handleSend(s)} disabled={!isConnected} style={{ backgroundColor: "rgba(108,99,255,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(108,99,255,0.2)", opacity: !isConnected ? 0.5 : 1 }}>
+                      <Pressable key={idx} onPress={() => handleSend(s)} disabled={!isConnected} style={{ backgroundColor: "rgba(201,100,66,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(201,100,66,0.2)", opacity: !isConnected ? 0.5 : 1 }}>
                         <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>{s}</Text>
                       </Pressable>
                     ))}

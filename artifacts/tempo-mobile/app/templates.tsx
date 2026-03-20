@@ -5,9 +5,10 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../lib/theme";
+import { useThemeColors } from "../lib/theme";
 
 export default function TemplatesScreen() {
+  const colors = useThemeColors();
   const templates = useQuery(api.templates.list);
   const seedBuiltIn = useMutation(api.templates.seedBuiltIn);
   const createNote = useMutation(api.notes.create);
@@ -55,7 +56,7 @@ export default function TemplatesScreen() {
                 )}
                 <View style={{ flexDirection: "row", gap: 6, marginTop: 6 }}>
                   {tmpl.category && (
-                    <View style={{ backgroundColor: "rgba(108,99,255,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <View style={{ backgroundColor: "rgba(201,100,66,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
                       <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "600" }}>{tmpl.category}</Text>
                     </View>
                   )}

@@ -15,13 +15,13 @@ function getPasswordStrength(password: string): { level: number; label: string; 
   if (/[^a-zA-Z0-9]/.test(password)) score++;
 
   const levels: { level: number; label: string; color: string }[] = [
-    { level: 1, label: "Weak", color: "bg-red-500" },
-    { level: 2, label: "Fair", color: "bg-orange-500" },
-    { level: 3, label: "Good", color: "bg-yellow-500" },
-    { level: 4, label: "Strong", color: "bg-green-500" },
+    { level: 1, label: "Weak", color: "bg-destructive" },
+    { level: 2, label: "Fair", color: "bg-warning" },
+    { level: 3, label: "Good", color: "bg-warning" },
+    { level: 4, label: "Strong", color: "bg-success" },
   ];
 
-  return levels[score - 1] || { level: 0, label: "Too short", color: "bg-red-500" };
+  return levels[score - 1] || { level: 0, label: "Too short", color: "bg-destructive" };
 }
 
 export default function ResetPassword() {

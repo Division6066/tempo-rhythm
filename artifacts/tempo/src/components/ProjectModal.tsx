@@ -12,14 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 
 const PROJECT_COLORS = [
-  "#6C63FF",
-  "#00C9A7",
-  "#FFB347",
-  "#FF6B6B",
-  "#9D4EDD",
-  "#3B82F6",
-  "#EC4899",
-  "#10B981",
+  "#C96442",
+  "#6B9E7D",
+  "#C9A54E",
+  "#B85450",
+  "#9D7E6C",
+  "#5B8A9A",
+  "#B07398",
+  "#5A8F6E",
 ];
 
 type Props = {
@@ -36,13 +36,13 @@ export default function ProjectModal({ open, onClose, folderId, editProject }: P
   const { toast } = useToast();
 
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#6C63FF");
+  const [color, setColor] = useState("#C96442");
   const [description, setDescription] = useState("");
 
   useEffect(() => {
     if (open) {
       setName(editProject?.name ?? "");
-      setColor(editProject?.color ?? "#6C63FF");
+      setColor(editProject?.color ?? "#C96442");
       setDescription(editProject?.description ?? "");
     }
   }, [open, editProject]);

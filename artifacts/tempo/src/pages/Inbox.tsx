@@ -250,7 +250,7 @@ export default function Inbox() {
                   <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
                     <Sparkles size={14} />
                     AI Extracted Tasks ({displayTasksSuggestion.length})
-                    {isEditing && <span className="text-xs text-amber-400 font-normal ml-1">Editing</span>}
+                    {isEditing && <span className="text-xs text-warning font-normal ml-1">Editing</span>}
                   </h3>
                   <span className="text-xs text-muted-foreground">{suggestion.reasoning}</span>
                 </div>
@@ -312,16 +312,16 @@ export default function Inbox() {
                       <Button variant="ghost" size="sm" className="text-muted-foreground gap-1" onClick={cancelEditing}>
                         Cancel
                       </Button>
-                      <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={() => saveEdits(suggestion.id)} disabled={updateStagedData.isPending}>
+                      <Button size="sm" className="bg-warning hover:bg-warning/90 text-white gap-1" onClick={() => saveEdits(suggestion.id)} disabled={updateStagedData.isPending}>
                         <Check size={14} /> {updateStagedData.isPending ? "Saving..." : "Save Edits"}
                       </Button>
                     </>
                   ) : (
                     <>
-                      <Button variant="ghost" size="sm" className="text-amber-400 hover:bg-amber-500/10 gap-1" onClick={() => startEditing(suggestion.id, extractedTasks)}>
+                      <Button variant="ghost" size="sm" className="text-warning hover:bg-warning/10 gap-1" onClick={() => startEditing(suggestion.id, extractedTasks)}>
                         <Pencil size={14} /> Edit
                       </Button>
-                      <Button size="sm" className="bg-[hsl(168,100%,39%)] hover:bg-[hsl(168,100%,45%)] text-white gap-1" onClick={() => handleAcceptExtracted(suggestion.id, extractedTasks)}>
+                      <Button size="sm" className="bg-success hover:bg-success/90 text-white gap-1" onClick={() => handleAcceptExtracted(suggestion.id, extractedTasks)}>
                         <Check size={14} /> Accept All
                       </Button>
                     </>

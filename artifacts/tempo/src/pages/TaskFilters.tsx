@@ -108,14 +108,14 @@ export default function TaskFilters() {
   };
 
   const priorityColor = (p: string) => {
-    if (p === "high") return "text-red-400";
-    if (p === "medium") return "text-amber-400";
-    return "text-blue-400";
+    if (p === "high") return "text-destructive";
+    if (p === "medium") return "text-warning";
+    return "text-info";
   };
 
   const statusColor = (s: string) => {
-    if (s === "done") return "text-green-400";
-    if (s === "today") return "text-amber-400";
+    if (s === "done") return "text-success";
+    if (s === "today") return "text-warning";
     if (s === "cancelled") return "text-muted-foreground";
     return "text-foreground";
   };
@@ -186,7 +186,7 @@ export default function TaskFilters() {
         const proj = projectMap[t.projectId];
         return proj ? (
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: proj.color || "#6C63FF" }} />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: proj.color || "#C96442" }} />
             <span className="text-xs text-foreground">{proj.name}</span>
           </div>
         ) : <span className="text-muted-foreground text-xs">—</span>;
@@ -317,7 +317,7 @@ export default function TaskFilters() {
               <div className="flex items-center gap-3">
                 <CheckCircle2
                   size={18}
-                  className={task.status === "done" ? "text-green-400" : "text-muted-foreground"}
+                  className={task.status === "done" ? "text-success" : "text-muted-foreground"}
                 />
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium truncate ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}>
@@ -325,7 +325,7 @@ export default function TaskFilters() {
                   </p>
                   <div className="flex gap-2 mt-0.5">
                     <span className="text-[10px] text-muted-foreground">{task.status}</span>
-                    <span className={`text-[10px] ${task.priority === "high" ? "text-red-400" : task.priority === "medium" ? "text-amber-400" : "text-blue-400"}`}>
+                    <span className={`text-[10px] ${task.priority === "high" ? "text-destructive" : task.priority === "medium" ? "text-warning" : "text-info"}`}>
                       {task.priority}
                     </span>
                     {task.scheduledDate && <span className="text-[10px] text-muted-foreground">{task.scheduledDate}</span>}
