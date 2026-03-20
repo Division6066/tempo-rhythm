@@ -50,11 +50,14 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
               >
                 <RefreshCw className="h-4 w-4" />
-                Reload Page
+                Try Again
               </button>
               <a
                 href={`mailto:support@tempo.app?subject=${reportSubject}&body=${reportBody}`}

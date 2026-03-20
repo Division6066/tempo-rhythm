@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useListTasks, useUpdateTask, useCreateTask, useAiPrioritize, getListTasksQueryKey, Task } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
@@ -273,8 +274,31 @@ export default function TodayView() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" />
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-9 w-32 mb-2" />
+          <div className="flex items-center gap-4 mb-2">
+            <Skeleton className="h-2 flex-1" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+        {["High Priority", "Medium Priority", "Low Priority"].map((label) => (
+          <div key={label} className="space-y-3">
+            <Skeleton className="h-4 w-24" />
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="glass p-4 rounded-xl space-y-2">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+                <div className="flex items-center gap-2 ml-8">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     );
   }

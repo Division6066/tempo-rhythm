@@ -50,6 +50,8 @@ import {
   Cpu,
   Eye,
   Mic,
+  Smartphone,
+  Share,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -81,6 +83,7 @@ const ENERGY_OPTIONS = [
 const SECTIONS = [
   { id: "profile", label: "Profile & Navigation", icon: SettingsIcon },
   { id: "appearance", label: "Appearance", icon: Palette },
+  { id: "app", label: "App", icon: Smartphone },
   { id: "planning", label: "Planning & Schedule", icon: Clock },
   { id: "calendar", label: "Calendar", icon: Calendar },
   { id: "notifications", label: "Notifications", icon: Bell },
@@ -436,6 +439,10 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </SettingsAccordion>
+
+        <SettingsAccordion sectionId="app" expanded={expandedSections.has("app")} onToggle={() => toggleSection("app")}>
+          <InstallAppSection />
         </SettingsAccordion>
 
         <SettingsAccordion sectionId="planning" expanded={expandedSections.has("planning")} onToggle={() => toggleSection("planning")}>
@@ -1019,6 +1026,98 @@ function DataPrivacySection() {
               </div>
             )}
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+function InstallAppSection() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as unknown as { standalone?: boolean }).standalone === true;
+    setIsInstalled(standalone);
+
+    const ios =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      !(window as unknown as { MSStream?: unknown }).MSStream;
+    setIsIOS(ios);
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    const installedHandler = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", installedHandler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setIsInstalled(true);
+    }
+    setDeferredPrompt(null);
+  };
+
+  return (
+    <Card className="glass border-border/50">
+      <CardContent className="p-6 space-y-6">
+        <h2 className="font-semibold text-lg border-b border-border/50 pb-2 flex items-center gap-2">
+          <Smartphone size={18} className="text-muted-foreground" /> App
+        </h2>
+
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label className="text-base flex items-center gap-2">
+              <Download size={16} /> Install App
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              {isInstalled
+                ? "TEMPO is installed on your device."
+                : isIOS
+                  ? "Tap the Share button in Safari, then \"Add to Home Screen\"."
+                  : "Install TEMPO for quick access and offline use."}
+            </p>
+          </div>
+          {isInstalled ? (
+            <span className="text-xs text-green-400 bg-green-500/10 px-3 py-1.5 rounded-full font-medium flex items-center gap-1">
+              <CheckCircle size={14} /> Installed
+            </span>
+          ) : isIOS ? (
+            <span className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full font-medium flex items-center gap-1">
+              <Share size={14} /> Use Share Menu
+            </span>
+          ) : deferredPrompt ? (
+            <Button size="sm" onClick={handleInstall} className="gap-1.5">
+              <Download size={14} /> Install
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full font-medium">
+              Not available
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

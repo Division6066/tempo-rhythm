@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useListTasks, useCreateTask, useAiExtractTasks, useAiPrioritize, getListTasksQueryKey, getListStagedSuggestionsQueryKey, useDeleteTask, useUpdateTask, useListStagedSuggestions, useCreateStagedSuggestion, useAcceptStagedSuggestion, useRejectStagedSuggestion, useUpdateStagedSuggestionData, Task } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -336,9 +337,9 @@ export default function Inbox() {
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-card rounded-xl border border-border p-4 space-y-2 animate-pulse">
-                <div className="h-4 w-3/4 bg-primary/10 rounded" />
-                <div className="h-3 w-1/2 bg-primary/10 rounded" />
+              <div key={i} className="bg-card rounded-xl border border-border p-4 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
               </div>
             ))}
           </div>

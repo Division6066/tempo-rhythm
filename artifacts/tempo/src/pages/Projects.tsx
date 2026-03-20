@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useListProjects, useCreateProject, useListTasks, useUpdateProject, getListProjectsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,35 @@ export default function Projects() {
   ], [active, archived]);
 
   if (isLoading) {
-    return <div className="flex h-[50vh] items-center justify-center"><div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" /></div>;
+    return (
+      <div className="space-y-6 pb-12">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FolderGit2 className="text-teal-400 h-8 w-8" />
+            <h1 className="text-3xl font-display font-bold">Projects</h1>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass border-border/50 rounded-xl p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-4 h-4 rounded-full" />
+                  <div>
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-3 w-56 mt-2" />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                <Skeleton className="h-1.5 flex-1 rounded-full" />
+                <Skeleton className="h-3 w-8" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const colors = ["#6C63FF", "#00C9A7", "#FFB347", "#FF6B6B", "#9D4EDD", "#3B82F6", "#EC4899", "#22C55E"];

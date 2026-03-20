@@ -1,8 +1,26 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import fs from "fs";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+
+function swPrecachePlugin(): Plugin {
+  return {
+    name: "sw-precache",
+    writeBundle(options, bundle) {
+      const outDir = options.dir || path.resolve(import.meta.dirname, "dist/public");
+      const assets: string[] = [];
+      for (const [fileName] of Object.entries(bundle)) {
+        if (/\.(js|css)$/.test(fileName)) {
+          assets.push("/" + fileName);
+        }
+      }
+      const manifest = JSON.stringify(assets);
+      fs.writeFileSync(path.join(outDir, "precache-manifest.json"), manifest);
+    },
+  };
+}
 
 const rawPort = process.env.PORT;
 
@@ -32,6 +50,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    swPrecachePlugin(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [

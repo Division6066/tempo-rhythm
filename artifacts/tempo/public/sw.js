@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tempo-v1';
+const CACHE_NAME = 'tempo-v2';
 
 const APP_SHELL_URLS = [
   '/',
@@ -10,7 +10,18 @@ const APP_SHELL_URLS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL_URLS))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(APP_SHELL_URLS);
+      try {
+        const res = await fetch('/precache-manifest.json');
+        if (res.ok) {
+          const assets = await res.json();
+          if (Array.isArray(assets) && assets.length > 0) {
+            await cache.addAll(assets);
+          }
+        }
+      } catch (e) {}
+    })
   );
   self.skipWaiting();
 });
@@ -33,6 +44,10 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/api')) {
+    return;
+  }
+
+  if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -42,14 +57,27 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  if (request.mode === 'navigate') {
+  const isAsset = /\.(js|css|woff2?|ttf|png|svg|jpg|webp|ico)$/.test(url.pathname);
+
+  if (isAsset) {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        });
+      })
     );
     return;
   }

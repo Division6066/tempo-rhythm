@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useListNotes, useListFolders, useUpdateNote, getListNotesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
@@ -79,11 +80,11 @@ export default function Notes() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="glass p-4 rounded-xl h-32 space-y-3 animate-pulse">
-              <div className="h-5 w-2/3 bg-primary/10 rounded" />
-              <div className="h-3 w-full bg-primary/10 rounded" />
-              <div className="h-3 w-3/4 bg-primary/10 rounded" />
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="glass p-4 rounded-xl h-32 space-y-3">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
             </div>
           ))}
         </div>

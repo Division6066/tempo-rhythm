@@ -56,73 +56,73 @@ function Router() {
       </Route>
       
       <Route path="/">
-        <AppLayout><Dashboard /></AppLayout>
+        <AppLayout><ErrorBoundary><Dashboard /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/today">
-        <AppLayout><TodayView /></AppLayout>
+        <AppLayout><ErrorBoundary><TodayView /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/inbox">
-        <AppLayout><Inbox /></AppLayout>
+        <AppLayout><ErrorBoundary><Inbox /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/tasks/:id">
-        <AppLayout><TaskDetail /></AppLayout>
+        <AppLayout><ErrorBoundary><TaskDetail /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/notes">
-        <AppLayout><Notes /></AppLayout>
+        <AppLayout><ErrorBoundary><Notes /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/notes/:id">
-        <AppLayout><NoteEditor /></AppLayout>
+        <AppLayout><ErrorBoundary><NoteEditor /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/projects">
-        <AppLayout><Projects /></AppLayout>
+        <AppLayout><ErrorBoundary><Projects /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/projects/:id">
-        <AppLayout><ProjectDetail /></AppLayout>
+        <AppLayout><ErrorBoundary><ProjectDetail /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/chat">
-        <AppLayout><Chat /></AppLayout>
+        <AppLayout><ErrorBoundary><Chat /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/settings">
-        <AppLayout><Settings /></AppLayout>
+        <AppLayout><ErrorBoundary><Settings /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/plan">
-        <AppLayout><DailyPlan /></AppLayout>
+        <AppLayout><ErrorBoundary><DailyPlan /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/calendar">
-        <AppLayout><Calendar /></AppLayout>
+        <AppLayout><ErrorBoundary><Calendar /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/period-notes">
-        <AppLayout><PeriodNotes /></AppLayout>
+        <AppLayout><ErrorBoundary><PeriodNotes /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/filters">
-        <AppLayout><TaskFilters /></AppLayout>
+        <AppLayout><ErrorBoundary><TaskFilters /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/templates">
-        <AppLayout><NoteTemplates /></AppLayout>
+        <AppLayout><ErrorBoundary><NoteTemplates /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/focus">
-        <AppLayout><FocusSession /></AppLayout>
+        <AppLayout><ErrorBoundary><FocusSession /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/folders">
-        <AppLayout><Folders /></AppLayout>
+        <AppLayout><ErrorBoundary><Folders /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/folders/:id">
-        <AppLayout><FolderDetail /></AppLayout>
+        <AppLayout><ErrorBoundary><FolderDetail /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/tags">
-        <AppLayout><Tags /></AppLayout>
+        <AppLayout><ErrorBoundary><Tags /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/memories">
-        <AppLayout><Memories /></AppLayout>
+        <AppLayout><ErrorBoundary><Memories /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/search">
-        <AppLayout><Search /></AppLayout>
+        <AppLayout><ErrorBoundary><Search /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/extract">
-        <AppLayout><Extract /></AppLayout>
+        <AppLayout><ErrorBoundary><Extract /></ErrorBoundary></AppLayout>
       </Route>
       <Route path="/preferences">
-        <AppLayout><Preferences /></AppLayout>
+        <AppLayout><ErrorBoundary><Preferences /></ErrorBoundary></AppLayout>
       </Route>
       
       <Route component={NotFound} />
