@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMutation, useAction } from "convex/react";
+import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../lib/theme";
@@ -9,26 +9,58 @@ import { colors } from "../../lib/theme";
 type Message = { role: "user" | "assistant"; content: string; suggestions?: string[] };
 
 export default function ChatScreen() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hi! I'm TEMPO. I can help you plan your day, break down overwhelming tasks, or just act as a sounding board. What's on your mind?" },
-  ]);
+  const memories = useQuery(api.memories.list);
+  const persistedMessages = useQuery(api.chatMessages.list, { limit: 50 });
+  const saveMessage = useMutation(api.chatMessages.create);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const chatAction = useAction(api.ai.chat);
-  const createTask = useMutation(api.tasks.create);
   const scrollRef = useRef<ScrollView>(null);
+
+  const memoryCount = memories?.length ?? 0;
+
+  useEffect(() => {
+    if (persistedMessages && !historyLoaded) {
+      if (persistedMessages.length > 0) {
+        const loaded: Message[] = persistedMessages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          suggestions: m.suggestions,
+        }));
+        setMessages(loaded);
+      } else {
+        const greeting: Message = {
+          role: "assistant",
+          content: "Hi! I'm TEMPO. I can help you plan your day, break down overwhelming tasks, or just act as a sounding board. What's on your mind?",
+        };
+        setMessages([greeting]);
+        saveMessage({ role: "assistant", content: greeting.content });
+      }
+      setHistoryLoaded(true);
+    }
+  }, [persistedMessages, historyLoaded]);
 
   const handleSend = async (text: string = input) => {
     if (!text.trim() || sending) return;
     setInput("");
-    const newMessages: Message[] = [...messages, { role: "user", content: text }];
+    const userMsg: Message = { role: "user", content: text };
+    const newMessages: Message[] = [...messages, userMsg];
     setMessages(newMessages);
     setSending(true);
+
+    saveMessage({ role: "user", content: text });
+
     try {
       const res = await chatAction({ message: text });
-      setMessages([...newMessages, { role: "assistant", content: res.response, suggestions: res.suggestions }]);
+      const assistantMsg: Message = { role: "assistant", content: res.response, suggestions: res.suggestions };
+      setMessages([...newMessages, assistantMsg]);
+      saveMessage({ role: "assistant", content: res.response, suggestions: res.suggestions });
     } catch {
-      setMessages([...newMessages, { role: "assistant", content: "Sorry, I'm having trouble connecting right now." }]);
+      const errorMsg: Message = { role: "assistant", content: "Sorry, I'm having trouble connecting right now." };
+      setMessages([...newMessages, errorMsg]);
+      saveMessage({ role: "assistant", content: errorMsg.content });
     } finally {
       setSending(false);
     }
@@ -42,11 +74,22 @@ export default function ChatScreen() {
           <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(108,99,255,0.2)", alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="sparkles" size={18} color={colors.primary} />
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800" }}>TEMPO Assistant</Text>
             <Text style={{ color: colors.muted, fontSize: 11 }}>Always here to help you focus.</Text>
           </View>
         </View>
+
+        {memoryCount > 0 && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 20, paddingBottom: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(0,201,167,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(0,201,167,0.2)" }}>
+              <Ionicons name="bulb-outline" size={14} color={colors.teal} />
+              <Text style={{ color: colors.teal, fontSize: 11, fontWeight: "600" }}>
+                TEMPO remembers your context ({memoryCount} {memoryCount === 1 ? "memory" : "memories"})
+              </Text>
+            </View>
+          </View>
+        )}
 
         <ScrollView ref={scrollRef} style={{ flex: 1, paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false} onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
           {messages.map((msg, i) => (

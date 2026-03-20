@@ -205,4 +205,14 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"]),
+
+  chatMessages: defineTable({
+    userId: v.string(),
+    role: v.string(),
+    content: v.string(),
+    suggestions: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_user_time", ["userId", "createdAt"]),
 });

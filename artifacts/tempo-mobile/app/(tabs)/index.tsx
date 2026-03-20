@@ -1,16 +1,19 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../lib/theme";
+import { colors, useTheme } from "../../lib/theme";
 import { format } from "date-fns";
+import { hapticMedium } from "../../lib/haptics";
 
 export default function HomeScreen() {
   const tasks = useQuery(api.tasks.list, {});
   const projects = useQuery(api.projects.list);
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
   const todayTasks = tasks?.filter((t) => t.status === "today") || [];
   const inboxTasks = tasks?.filter((t) => t.status === "inbox") || [];
@@ -24,12 +27,26 @@ export default function HomeScreen() {
     return "Good evening";
   };
 
+  const onRefresh = useCallback(async () => {
+    hapticMedium();
+    setRefreshing(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setRefreshing(false);
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
           {format(new Date(), "EEEE, MMM do")}

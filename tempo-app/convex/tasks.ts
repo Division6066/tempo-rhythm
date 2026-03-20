@@ -106,6 +106,8 @@ export const update = mutation({
     recurrenceRule: v.optional(v.union(v.string(), v.null())),
     recurrenceEndDate: v.optional(v.union(v.string(), v.null())),
     completedAt: v.optional(v.union(v.number(), v.null())),
+    projectId: v.optional(v.union(v.id("projects"), v.null())),
+    folderId: v.optional(v.union(v.id("folders"), v.null())),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);

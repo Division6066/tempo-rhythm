@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useAction } from "convex/react";
@@ -7,6 +7,7 @@ import { api } from "../../../../tempo-app/convex/_generated/api";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../lib/theme";
+import { hapticSuccess, hapticWarning, hapticLight } from "../../lib/haptics";
 
 type Subtask = { title: string; priority: string; estimatedMinutes: number; tags: string[] };
 
@@ -26,6 +27,7 @@ export default function TaskDetailScreen() {
   const taskId = id as Id<"tasks">;
 
   const task = useQuery(api.tasks.get, { id: taskId });
+  const allTasks = useQuery(api.tasks.list, {});
   const updateTask = useMutation(api.tasks.update);
   const completeTask = useMutation(api.tasks.complete);
   const deleteTask = useMutation(api.tasks.remove);
@@ -35,6 +37,9 @@ export default function TaskDetailScreen() {
   const stagedSuggestions = useQuery(api.staging.listPending, { type: "chunkedTask" });
   const acceptStaged = useMutation(api.staging.accept);
   const rejectStaged = useMutation(api.staging.reject);
+  const tags = useQuery(api.tags.list);
+  const projects = useQuery(api.projects.list);
+  const folders = useQuery(api.folders.list);
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -45,6 +50,12 @@ export default function TaskDetailScreen() {
   const [duration, setDuration] = useState("");
   const [recurrenceRule, setRecurrenceRule] = useState("");
   const [chunking, setChunking] = useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [showTagPicker, setShowTagPicker] = useState(false);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+
+  const subtasks = allTasks?.filter((t) => t.parentTaskId === taskId) || [];
 
   useEffect(() => {
     if (task) {
@@ -74,6 +85,7 @@ export default function TaskDetailScreen() {
   };
 
   const handleComplete = async () => {
+    hapticSuccess();
     await completeTask({ id: taskId });
     if (task?.recurrenceRule) {
       Alert.alert("Completed", "Next occurrence has been created.");
@@ -82,6 +94,7 @@ export default function TaskDetailScreen() {
   };
 
   const handleDelete = () => {
+    hapticWarning();
     Alert.alert("Delete Task", "Are you sure?", [
       { text: "Cancel" },
       { text: "Delete", style: "destructive", onPress: async () => { await deleteTask({ id: taskId }); router.back(); } },
@@ -104,8 +117,9 @@ export default function TaskDetailScreen() {
     }
   };
 
-  const handleAcceptChunks = async (suggestionId: Id<"stagedSuggestions">, subtasks: Subtask[]) => {
-    for (const s of subtasks) {
+  const handleAcceptChunks = async (suggestionId: Id<"stagedSuggestions">, subs: Subtask[]) => {
+    hapticSuccess();
+    for (const s of subs) {
       await createTask({
         title: s.title,
         priority: s.priority,
@@ -116,6 +130,49 @@ export default function TaskDetailScreen() {
       });
     }
     await acceptStaged({ id: suggestionId });
+  };
+
+  const handleAddSubtask = async () => {
+    if (!newSubtaskTitle.trim()) return;
+    hapticLight();
+    await createTask({
+      title: newSubtaskTitle.trim(),
+      priority: task?.priority || "medium",
+      status: task?.status || "inbox",
+      parentTaskId: taskId,
+      aiGenerated: false,
+    });
+    setNewSubtaskTitle("");
+  };
+
+  const handleToggleSubtask = async (subtask: { _id: Id<"tasks">; status: string }) => {
+    hapticLight();
+    if (subtask.status === "done") {
+      await updateTask({ id: subtask._id, status: "today" });
+    } else {
+      await completeTask({ id: subtask._id });
+    }
+  };
+
+  const handleToggleTag = async (tagName: string) => {
+    hapticLight();
+    const currentTags = task?.tags || [];
+    const newTags = currentTags.includes(tagName)
+      ? currentTags.filter((t) => t !== tagName)
+      : [...currentTags, tagName];
+    await updateTask({ id: taskId, tags: newTags });
+  };
+
+  const handleSetProject = async (projectId: Id<"projects"> | null) => {
+    hapticLight();
+    await updateTask({ id: taskId, projectId });
+    setShowProjectPicker(false);
+  };
+
+  const handleSetFolder = async (folderId: Id<"folders"> | null) => {
+    hapticLight();
+    await updateTask({ id: taskId, folderId });
+    setShowFolderPicker(false);
   };
 
   const thisTaskStaged = stagedSuggestions?.filter(
@@ -133,6 +190,9 @@ export default function TaskDetailScreen() {
   const statuses = ["inbox", "today", "scheduled", "done", "cancelled"];
   const priorities = ["high", "medium", "low"];
   const priorityColors: Record<string, string> = { high: colors.teal, medium: colors.amber, low: colors.muted };
+  const currentProject = projects?.find((p) => p._id === task.projectId);
+  const currentFolder = folders?.find((f) => f._id === task.folderId);
+  const completedSubtasks = subtasks.filter((s) => s.status === "done").length;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -180,6 +240,118 @@ export default function TaskDetailScreen() {
                 <Text style={{ color: priority === p ? priorityColors[p] : colors.foreground, fontSize: 13, fontWeight: "600", textTransform: "capitalize" }}>{p}</Text>
               </Pressable>
             ))}
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Project</Text>
+          <Pressable
+            onPress={() => setShowProjectPicker(true)}
+            style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: colors.border }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              {currentProject && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: currentProject.color || colors.primary }} />}
+              <Text style={{ color: currentProject ? colors.foreground : colors.muted, fontSize: 14, fontWeight: "600" }}>
+                {currentProject?.name || "No project"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          </Pressable>
+        </View>
+
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Folder</Text>
+          <Pressable
+            onPress={() => setShowFolderPicker(true)}
+            style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: colors.border }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Ionicons name={currentFolder ? "folder" : "folder-outline"} size={16} color={currentFolder ? colors.teal : colors.muted} />
+              <Text style={{ color: currentFolder ? colors.foreground : colors.muted, fontSize: 14, fontWeight: "600" }}>
+                {currentFolder?.name || "No folder"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          </Pressable>
+        </View>
+
+        <View style={{ marginBottom: 20 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>Tags</Text>
+            <Pressable onPress={() => setShowTagPicker(!showTagPicker)} hitSlop={8}>
+              <Ionicons name={showTagPicker ? "chevron-up" : "add-circle-outline"} size={20} color={colors.primary} />
+            </Pressable>
+          </View>
+          {task.tags.length > 0 && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: showTagPicker ? 10 : 0 }}>
+              {task.tags.map((tag) => (
+                <View key={tag} style={{ backgroundColor: `${colors.primary}22`, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>{tag}</Text>
+                  <Pressable onPress={() => handleToggleTag(tag)} hitSlop={8}>
+                    <Ionicons name="close-circle" size={14} color={colors.primary} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+          {showTagPicker && tags && tags.length > 0 && (
+            <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {tags.filter((t) => !task.tags.includes(t.name)).map((tag) => (
+                  <Pressable key={tag._id} onPress={() => handleToggleTag(tag.name)} style={{ backgroundColor: `${tag.color || colors.primary}22`, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: `${tag.color || colors.primary}44` }}>
+                    <Text style={{ color: tag.color || colors.primary, fontSize: 12, fontWeight: "600" }}>{tag.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {tags.filter((t) => !task.tags.includes(t.name)).length === 0 && (
+                <Text style={{ color: colors.muted, fontSize: 12, textAlign: "center" }}>All tags assigned</Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        <View style={{ marginBottom: 20 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
+              Subtasks {subtasks.length > 0 && `(${completedSubtasks}/${subtasks.length})`}
+            </Text>
+          </View>
+          {subtasks.length > 0 && (
+            <View style={{ marginBottom: 10 }}>
+              {subtasks.map((sub) => (
+                <Pressable
+                  key={sub._id}
+                  onPress={() => router.push(`/task/${sub._id}` as never)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: colors.border }}
+                >
+                  <Pressable onPress={() => handleToggleSubtask(sub)} hitSlop={10}>
+                    <Ionicons name={sub.status === "done" ? "checkmark-circle" : "ellipse-outline"} size={20} color={sub.status === "done" ? colors.teal : colors.muted} />
+                  </Pressable>
+                  <Text style={{ color: sub.status === "done" ? colors.muted : colors.foreground, fontSize: 13, fontWeight: "600", flex: 1, textDecorationLine: sub.status === "done" ? "line-through" : "none" }}>
+                    {sub.title}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.muted} />
+                </Pressable>
+              ))}
+            </View>
+          )}
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TextInput
+              value={newSubtaskTitle}
+              onChangeText={setNewSubtaskTitle}
+              placeholder="Add subtask..."
+              placeholderTextColor={colors.muted}
+              onSubmitEditing={handleAddSubtask}
+              returnKeyType="done"
+              style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.foreground, fontSize: 13, borderWidth: 1, borderColor: colors.border }}
+            />
+            <Pressable
+              onPress={handleAddSubtask}
+              disabled={!newSubtaskTitle.trim()}
+              style={{ backgroundColor: newSubtaskTitle.trim() ? colors.primary : colors.surfaceLight, borderRadius: 10, width: 44, alignItems: "center", justifyContent: "center" }}
+            >
+              <Ionicons name="add" size={20} color={newSubtaskTitle.trim() ? "#fff" : colors.muted} />
+            </Pressable>
           </View>
         </View>
 
@@ -297,6 +469,60 @@ export default function TaskDetailScreen() {
           />
         </View>
       </ScrollView>
+
+      <Modal visible={showProjectPicker} transparent animationType="fade">
+        <Pressable onPress={() => setShowProjectPicker(false)} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 24 }}>
+          <Pressable onPress={() => {}} style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, maxHeight: 400, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800", marginBottom: 16 }}>Assign Project</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Pressable
+                onPress={() => handleSetProject(null)}
+                style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: !task.projectId ? `${colors.primary}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
+              >
+                <Ionicons name="remove-circle-outline" size={18} color={colors.muted} />
+                <Text style={{ color: !task.projectId ? colors.primary : colors.foreground, fontSize: 15, fontWeight: "600" }}>No project</Text>
+              </Pressable>
+              {(projects || []).filter((p) => p.status === "active").map((project) => (
+                <Pressable
+                  key={project._id}
+                  onPress={() => handleSetProject(project._id)}
+                  style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: task.projectId === project._id ? `${colors.primary}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
+                >
+                  <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: project.color || colors.primary }} />
+                  <Text style={{ color: task.projectId === project._id ? colors.primary : colors.foreground, fontSize: 15, fontWeight: "600" }}>{project.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showFolderPicker} transparent animationType="fade">
+        <Pressable onPress={() => setShowFolderPicker(false)} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 24 }}>
+          <Pressable onPress={() => {}} style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, maxHeight: 400, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800", marginBottom: 16 }}>Assign Folder</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Pressable
+                onPress={() => handleSetFolder(null)}
+                style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: !task.folderId ? `${colors.teal}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
+              >
+                <Ionicons name="folder-open-outline" size={18} color={colors.muted} />
+                <Text style={{ color: !task.folderId ? colors.teal : colors.foreground, fontSize: 15, fontWeight: "600" }}>No folder</Text>
+              </Pressable>
+              {(folders || []).map((folder) => (
+                <Pressable
+                  key={folder._id}
+                  onPress={() => handleSetFolder(folder._id)}
+                  style={{ padding: 14, borderRadius: 10, marginBottom: 6, backgroundColor: task.folderId === folder._id ? `${colors.teal}22` : "transparent", flexDirection: "row", alignItems: "center", gap: 10 }}
+                >
+                  <Ionicons name="folder" size={18} color={task.folderId === folder._id ? colors.teal : colors.muted} />
+                  <Text style={{ color: task.folderId === folder._id ? colors.teal : colors.foreground, fontSize: 15, fontWeight: "600" }}>{folder.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

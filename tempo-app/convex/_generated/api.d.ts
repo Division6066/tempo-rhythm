@@ -12,6 +12,7 @@ import type * as _helpers from "../_helpers.js";
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
 import type * as calendarEvents from "../calendarEvents.js";
+import type * as chatMessages from "../chatMessages.js";
 import type * as dailyPlans from "../dailyPlans.js";
 import type * as folders from "../folders.js";
 import type * as http from "../http.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   auth: typeof auth;
   calendarEvents: typeof calendarEvents;
+  chatMessages: typeof chatMessages;
   dailyPlans: typeof dailyPlans;
   folders: typeof folders;
   http: typeof http;

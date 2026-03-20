@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useConvexAuth } from "convex/react";
 import { Redirect, Stack, usePathname } from "expo-router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
@@ -6,6 +6,8 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { convex, secureStorage } from "../lib/convex";
+import { ThemeContext, getThemeColors } from "../lib/theme";
+import type { ThemeMode } from "../lib/theme";
 import "../global.css";
 
 class ErrorBoundary extends React.Component<
@@ -81,11 +83,21 @@ function RootNavigator() {
   );
 }
 
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [mode, setMode] = useState<ThemeMode>("dark");
+  const toggle = useCallback(() => setMode((m) => (m === "dark" ? "light" : "dark")), []);
+  const themeColors = useMemo(() => getThemeColors(mode), [mode]);
+  const value = useMemo(() => ({ mode, colors: themeColors, toggle }), [mode, themeColors, toggle]);
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
 export default function RootLayout() {
   return (
     <ErrorBoundary>
       <ConvexAuthProvider client={convex} storage={secureStorage}>
-        <RootNavigator />
+        <ThemeProvider>
+          <RootNavigator />
+        </ThemeProvider>
       </ConvexAuthProvider>
     </ErrorBoundary>
   );

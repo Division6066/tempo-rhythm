@@ -1,11 +1,13 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../lib/theme";
+import { colors, useTheme } from "../../lib/theme";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
+import { hapticSuccess, hapticMedium } from "../../lib/haptics";
 
 function TaskRow({ task, onToggle, onPress }: { task: { _id: Id<"tasks">; title: string; status: string; priority: string; estimatedMinutes?: number }; onToggle: () => void; onPress: () => void }) {
   const isDone = task.status === "done";
@@ -32,9 +34,10 @@ function TaskRow({ task, onToggle, onPress }: { task: { _id: Id<"tasks">; title:
 export default function TodayScreen() {
   const allTasks = useQuery(api.tasks.list, {});
   const updateTask = useMutation(api.tasks.update);
+  const completeTask = useMutation(api.tasks.complete);
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const tasks = allTasks ?? null;
   const todayTasks = (allTasks || []).filter((t) => t.status === "today" || t.status === "done");
   const completedCount = todayTasks.filter((t) => t.status === "done").length;
   const progress = todayTasks.length > 0 ? (completedCount / todayTasks.length) * 100 : 0;
@@ -45,12 +48,34 @@ export default function TodayScreen() {
   const completed = todayTasks.filter((t) => t.status === "done");
 
   const toggleTask = async (id: Id<"tasks">, currentStatus: string) => {
-    await updateTask({ id, status: currentStatus === "done" ? "today" : "done" });
+    if (currentStatus === "done") {
+      await updateTask({ id, status: "today" });
+    } else {
+      hapticSuccess();
+      await completeTask({ id });
+    }
   };
+
+  const onRefresh = useCallback(async () => {
+    hapticMedium();
+    setRefreshing(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setRefreshing(false);
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
         <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800", marginBottom: 12 }}>Today</Text>
 
         <View style={{ marginBottom: 20 }}>

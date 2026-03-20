@@ -6,9 +6,11 @@ import { api } from "../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../lib/theme";
+import { hapticLight } from "../lib/haptics";
 
 export default function ProjectsScreen() {
   const projects = useQuery(api.projects.list);
+  const allTasks = useQuery(api.tasks.list, {});
   const createProject = useMutation(api.projects.create);
   const router = useRouter();
 
@@ -18,6 +20,12 @@ export default function ProjectsScreen() {
 
   const projectColors = ["#6C63FF", "#00C9A7", "#FFB347", "#FF6B6B", "#9D4EDD", "#3B82F6"];
   const active = projects?.filter((p) => p.status === "active") || [];
+
+  const getProjectTaskCounts = (projectId: string) => {
+    const tasks = (allTasks || []).filter((t) => t.projectId === projectId);
+    const done = tasks.filter((t) => t.status === "done").length;
+    return { total: tasks.length, done };
+  };
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -44,12 +52,34 @@ export default function ProjectsScreen() {
             <Text style={{ color: colors.muted, fontSize: 14 }}>No active projects.</Text>
           </View>
         ) : (
-          active.map((project) => (
-            <View key={project._id} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 18, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: colors.border }}>
-              <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: project.color || colors.primary }} />
-              <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>{project.name}</Text>
-            </View>
-          ))
+          active.map((project) => {
+            const counts = getProjectTaskCounts(project._id);
+            const progress = counts.total > 0 ? (counts.done / counts.total) * 100 : 0;
+            return (
+              <Pressable
+                key={project._id}
+                onPress={() => {
+                  hapticLight();
+                  router.push(`/project/${project._id}` as never);
+                }}
+                style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 18, marginBottom: 10, borderWidth: 1, borderColor: colors.border }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                  <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: project.color || colors.primary }} />
+                  <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700", flex: 1 }}>{project.name}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                </View>
+                {counts.total > 0 && (
+                  <View>
+                    <View style={{ height: 4, backgroundColor: colors.surfaceLight, borderRadius: 2, overflow: "hidden", marginBottom: 6 }}>
+                      <View style={{ height: "100%", backgroundColor: project.color || colors.primary, borderRadius: 2, width: `${progress}%` }} />
+                    </View>
+                    <Text style={{ color: colors.muted, fontSize: 11 }}>{counts.done}/{counts.total} tasks complete</Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })
         )}
       </ScrollView>
 
