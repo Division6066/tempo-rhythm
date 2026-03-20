@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
   useListTasks,
   useListSavedFilters,
   useCreateSavedFilter,
   useDeleteSavedFilter,
+  useListProjects,
+  useUpdateTask,
   getListSavedFiltersQueryKey,
+  getListTasksQueryKey,
   ListTasksStatus,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,9 +18,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Filter, Save, Trash2, CheckCircle2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ViewToggle, type ViewMode } from "@/components/ViewToggle";
+import { DataTable, type DataTableColumn } from "@/components/DataTable";
+import { useViewPreference } from "@/hooks/useViewPreference";
+import type { Task, Project } from "@workspace/api-client-react";
 
 type TaskStatus = "inbox" | "today" | "scheduled" | "done" | "cancelled";
-type TaskPriority = "high" | "medium" | "low";
 
 function isValidStatus(s: string): s is TaskStatus {
   return ["inbox", "today", "scheduled", "done", "cancelled"].includes(s);
@@ -33,12 +40,21 @@ export default function TaskFilters() {
   const [searchFilter, setSearchFilter] = useState("");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [filterName, setFilterName] = useState("");
+  const [viewMode, setViewMode] = useViewPreference("taskfilters", "list", ["list", "table"]);
 
   const statusParam = isValidStatus(statusFilter) ? statusFilter as typeof ListTasksStatus[keyof typeof ListTasksStatus] : undefined;
   const { data: tasks } = useListTasks(statusParam ? { status: statusParam } : {});
   const { data: savedFilters } = useListSavedFilters();
+  const { data: projectsList } = useListProjects();
   const createFilter = useCreateSavedFilter();
   const deleteFilter = useDeleteSavedFilter();
+  const updateTask = useUpdateTask();
+
+  const projectMap = useMemo(() => {
+    const map: Record<number, Project> = {};
+    projectsList?.forEach((p) => { map[p.id] = p; });
+    return map;
+  }, [projectsList]);
 
   let filteredTasks = tasks || [];
   if (priorityFilter !== "all") {
@@ -91,24 +107,142 @@ export default function TaskFilters() {
     }
   };
 
+  const priorityColor = (p: string) => {
+    if (p === "high") return "text-red-400";
+    if (p === "medium") return "text-amber-400";
+    return "text-blue-400";
+  };
+
+  const statusColor = (s: string) => {
+    if (s === "done") return "text-green-400";
+    if (s === "today") return "text-amber-400";
+    if (s === "cancelled") return "text-muted-foreground";
+    return "text-foreground";
+  };
+
+  const handleToggleComplete = async (task: Task, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newStatus = task.status === "done" ? "inbox" : "done";
+    try {
+      await updateTask.mutateAsync({ id: task.id, data: { status: newStatus } });
+      queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+    } catch {}
+  };
+
+  const tableColumns: DataTableColumn<Task>[] = [
+    {
+      key: "checkbox",
+      label: "",
+      render: (t) => (
+        <div onClick={(e) => handleToggleComplete(t, e)}>
+          <Checkbox checked={t.status === "done"} />
+        </div>
+      ),
+    },
+    {
+      key: "title",
+      label: "Title",
+      sortable: true,
+      render: (t) => (
+        <span className={`font-medium ${t.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>
+          {t.title}
+        </span>
+      ),
+      sortValue: (t) => t.title,
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (t) => (
+        <span className={`text-xs capitalize ${statusColor(t.status)}`}>{t.status}</span>
+      ),
+      sortValue: (t) => t.status,
+    },
+    {
+      key: "priority",
+      label: "Priority",
+      sortable: true,
+      render: (t) => (
+        <span className={`text-xs capitalize ${priorityColor(t.priority)}`}>{t.priority}</span>
+      ),
+      sortValue: (t) => t.priority === "high" ? 0 : t.priority === "medium" ? 1 : 2,
+    },
+    {
+      key: "dueDate",
+      label: "Due Date",
+      sortable: true,
+      render: (t) => (
+        <span className="text-muted-foreground text-xs">{t.dueDate || "—"}</span>
+      ),
+      sortValue: (t) => t.dueDate || "",
+    },
+    {
+      key: "project",
+      label: "Project",
+      sortable: true,
+      render: (t) => {
+        if (!t.projectId) return <span className="text-muted-foreground text-xs">—</span>;
+        const proj = projectMap[t.projectId];
+        return proj ? (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: proj.color || "#6C63FF" }} />
+            <span className="text-xs text-foreground">{proj.name}</span>
+          </div>
+        ) : <span className="text-muted-foreground text-xs">—</span>;
+      },
+      sortValue: (t) => t.projectId ? (projectMap[t.projectId]?.name || "") : "",
+    },
+    {
+      key: "tags",
+      label: "Tags",
+      render: (t) => (
+        <div className="flex gap-1">
+          {t.tags?.slice(0, 2).map((tag) => (
+            <span key={tag} className="text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5">{tag}</span>
+          ))}
+          {(t.tags?.length || 0) > 2 && (
+            <span className="text-[10px] text-muted-foreground">+{t.tags.length - 2}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "duration",
+      label: "Duration",
+      sortable: true,
+      render: (t) => (
+        <span className="text-muted-foreground text-xs">
+          {t.estimatedMinutes ? `${t.estimatedMinutes}m` : "—"}
+        </span>
+      ),
+      sortValue: (t) => t.estimatedMinutes || 0,
+    },
+  ];
+
+  const validModes: ViewMode[] = ["list", "table"];
+
   return (
     <div className="space-y-4 pb-12">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-display font-bold flex items-center gap-2">
           <Filter size={24} className="text-primary" /> Task Filters
         </h1>
-        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1"><Save size={14} /> Save Filter</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Save Current Filter</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <Input placeholder="Filter name" value={filterName} onChange={(e) => setFilterName(e.target.value)} />
-              <Button className="w-full" onClick={handleSaveFilter} disabled={createFilter.isPending}>Save</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-3">
+          <ViewToggle current={viewMode} onChange={setViewMode} modes={validModes} />
+          <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1"><Save size={14} /> Save Filter</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Save Current Filter</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <Input placeholder="Filter name" value={filterName} onChange={(e) => setFilterName(e.target.value)} />
+                <Button className="w-full" onClick={handleSaveFilter} disabled={createFilter.isPending}>Save</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {savedFilters && savedFilters.length > 0 && (
@@ -172,34 +306,46 @@ export default function TaskFilters() {
 
       <div className="text-sm text-muted-foreground">{filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""}</div>
 
-      <div className="space-y-2">
-        {filteredTasks.map((task: { id: number; title: string; status: string; priority: string; scheduledDate?: string | null }) => (
-          <button
-            key={task.id}
-            onClick={() => setLocation(`/tasks/${task.id}`)}
-            className="w-full text-left p-3 bg-card rounded-lg border border-border hover:border-primary/50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <CheckCircle2
-                size={18}
-                className={task.status === "done" ? "text-green-400" : "text-muted-foreground"}
-              />
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium truncate ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}>
-                  {task.title}
-                </p>
-                <div className="flex gap-2 mt-0.5">
-                  <span className="text-[10px] text-muted-foreground">{task.status}</span>
-                  <span className={`text-[10px] ${task.priority === "high" ? "text-red-400" : task.priority === "medium" ? "text-amber-400" : "text-blue-400"}`}>
-                    {task.priority}
-                  </span>
-                  {task.scheduledDate && <span className="text-[10px] text-muted-foreground">{task.scheduledDate}</span>}
+      {viewMode === "list" && (
+        <div className="space-y-2">
+          {filteredTasks.map((task: Task) => (
+            <button
+              key={task.id}
+              onClick={() => setLocation(`/tasks/${task.id}`)}
+              className="w-full text-left p-3 bg-card rounded-lg border border-border hover:border-primary/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <CheckCircle2
+                  size={18}
+                  className={task.status === "done" ? "text-green-400" : "text-muted-foreground"}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium truncate ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                    {task.title}
+                  </p>
+                  <div className="flex gap-2 mt-0.5">
+                    <span className="text-[10px] text-muted-foreground">{task.status}</span>
+                    <span className={`text-[10px] ${task.priority === "high" ? "text-red-400" : task.priority === "medium" ? "text-amber-400" : "text-blue-400"}`}>
+                      {task.priority}
+                    </span>
+                    {task.scheduledDate && <span className="text-[10px] text-muted-foreground">{task.scheduledDate}</span>}
+                  </div>
                 </div>
               </div>
-            </div>
-          </button>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {viewMode === "table" && (
+        <DataTable
+          columns={tableColumns}
+          data={filteredTasks as Task[]}
+          getRowId={(t) => t.id}
+          onRowClick={(t) => setLocation(`/tasks/${t.id}`)}
+          emptyMessage="No tasks match your filters."
+        />
+      )}
     </div>
   );
 }
