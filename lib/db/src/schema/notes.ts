@@ -13,6 +13,7 @@ export const notesTable = pgTable("notes", {
   isPinned: boolean("is_pinned").notNull().default(false),
   periodType: text("period_type"),
   periodDate: text("period_date"),
+  isArchived: boolean("is_archived").notNull().default(false),
   isPublished: boolean("is_published").notNull().default(false),
   publishSlug: text("publish_slug"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

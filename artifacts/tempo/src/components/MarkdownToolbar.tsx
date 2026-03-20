@@ -4,8 +4,12 @@ import { Input } from "@/components/ui/input";
 import {
   Heading1, Heading2, Heading3, Bold, Italic, Strikethrough,
   Code, Quote, FileCode, Minus, List, ListOrdered, CheckSquare,
-  Table, Link, Mic, Square, Loader2, Brackets,
+  Table, Link, Mic, Square, Loader2, Brackets, Sparkles,
+  PenLine, FileText, Zap, Brain, Expand, Languages, ListChecks,
+  ChevronDown,
 } from "lucide-react";
+
+export type AiAction = "rewrite" | "summarize" | "simplify" | "adhd-friendly" | "expand" | "translate" | "extract-tasks";
 
 interface MarkdownToolbarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -17,6 +21,7 @@ interface MarkdownToolbarProps {
     onStartRecording: () => void;
     onStopRecording: () => void;
   };
+  onAiAction?: (action: AiAction, selectedText: string) => void;
 }
 
 type ToolAction = {
@@ -25,16 +30,39 @@ type ToolAction = {
   action: () => void;
 };
 
-export default function MarkdownToolbar({ textareaRef, onInsert, getValue, voiceProps }: MarkdownToolbarProps) {
+const AI_ACTIONS: { action: AiAction; icon: React.ReactNode; label: string }[] = [
+  { action: "rewrite", icon: <PenLine size={14} />, label: "Rewrite" },
+  { action: "summarize", icon: <FileText size={14} />, label: "Summarize" },
+  { action: "simplify", icon: <Zap size={14} />, label: "Simplify" },
+  { action: "adhd-friendly", icon: <Brain size={14} />, label: "Make ADHD-Friendly" },
+  { action: "expand", icon: <Expand size={14} />, label: "Expand" },
+  { action: "translate", icon: <Languages size={14} />, label: "Translate" },
+  { action: "extract-tasks", icon: <ListChecks size={14} />, label: "Extract Tasks" },
+];
+
+export default function MarkdownToolbar({ textareaRef, onInsert, getValue, voiceProps, onAiAction }: MarkdownToolbarProps) {
   const [showLinkPopover, setShowLinkPopover] = useState(false);
+  const [showAiMenu, setShowAiMenu] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const linkInputRef = useRef<HTMLInputElement>(null);
+  const aiMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (showLinkPopover && linkInputRef.current) {
       linkInputRef.current.focus();
     }
   }, [showLinkPopover]);
+
+  useEffect(() => {
+    if (!showAiMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (aiMenuRef.current && !aiMenuRef.current.contains(e.target as Node)) {
+        setShowAiMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showAiMenu]);
 
   const getSelection = useCallback(() => {
     const ta = textareaRef.current;
@@ -96,6 +124,13 @@ export default function MarkdownToolbar({ textareaRef, onInsert, getValue, voice
   const insertWikiLink = useCallback(() => {
     wrapSelection("[[", "]]");
   }, [wrapSelection]);
+
+  const handleAiAction = useCallback((action: AiAction) => {
+    const sel = getSelection();
+    const text = sel.text || getValue();
+    onAiAction?.(action, text);
+    setShowAiMenu(false);
+  }, [getSelection, getValue, onAiAction]);
 
   const tools: ToolAction[][] = [
     [
@@ -174,6 +209,35 @@ export default function MarkdownToolbar({ textareaRef, onInsert, getValue, voice
                 <Mic size={15} />
               </Button>
             )}
+          </>
+        )}
+        {onAiAction && (
+          <>
+            <div className="w-px h-5 bg-border mx-1" />
+            <div className="relative" ref={aiMenuRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 gap-1 text-primary hover:bg-primary/10 text-xs font-medium"
+                onClick={() => setShowAiMenu(!showAiMenu)}
+              >
+                <Sparkles size={14} /> AI ✦ <ChevronDown size={12} />
+              </Button>
+              {showAiMenu && (
+                <div className="absolute top-full right-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[180px]">
+                  {AI_ACTIONS.map((item) => (
+                    <button
+                      key={item.action}
+                      onClick={() => handleAiAction(item.action)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      {item.icon}
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>

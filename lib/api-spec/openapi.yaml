@@ -929,6 +929,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/AiGeneratePlanResponse"
 
+  /ai/rewrite:
+    post:
+      operationId: aiRewrite
+      tags: [ai]
+      summary: Rewrite text with a specified AI action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiRewriteBody"
+      responses:
+        "200":
+          description: Rewritten text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiRewriteResponse"
+
   /onboarding:
     post:
       operationId: completeOnboarding
@@ -1681,6 +1700,8 @@ components:
         periodDate:
           type: string
           nullable: true
+        isArchived:
+          type: boolean
         isPublished:
           type: boolean
         publishSlug:
@@ -1698,6 +1719,7 @@ components:
         - content
         - tags
         - isPinned
+        - isArchived
         - isPublished
         - createdAt
         - updatedAt
@@ -1757,6 +1779,8 @@ components:
           type: string
           nullable: true
         isPinned:
+          type: boolean
+        isArchived:
           type: boolean
         periodType:
           type: string
@@ -2263,6 +2287,34 @@ components:
       required:
         - response
         - suggestions
+
+    AiRewriteBody:
+      type: object
+      properties:
+        text:
+          type: string
+        action:
+          type: string
+          enum: [rewrite, summarize, simplify, adhd-friendly, expand, translate]
+        targetLanguage:
+          type: string
+          nullable: true
+        deepThink:
+          type: boolean
+      required:
+        - text
+        - action
+
+    AiRewriteResponse:
+      type: object
+      properties:
+        result:
+          type: string
+        confidence:
+          type: number
+          nullable: true
+      required:
+        - result
 
     AiExtractBody:
       type: object

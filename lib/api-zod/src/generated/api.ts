@@ -223,6 +223,7 @@ export const ListNotesResponseItem = zod.object({
     .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
     .nullish(),
   periodDate: zod.string().nullish(),
+  isArchived: zod.boolean(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
@@ -270,6 +271,7 @@ export const GetNoteResponse = zod.object({
     .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
     .nullish(),
   periodDate: zod.string().nullish(),
+  isArchived: zod.boolean(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
@@ -291,6 +293,7 @@ export const UpdateNoteBody = zod.object({
   tags: zod.array(zod.string()).optional(),
   templateType: zod.string().nullish(),
   isPinned: zod.boolean().optional(),
+  isArchived: zod.boolean().optional(),
   periodType: zod.string().nullish(),
   periodDate: zod.string().nullish(),
 });
@@ -308,6 +311,7 @@ export const UpdateNoteResponse = zod.object({
     .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
     .nullish(),
   periodDate: zod.string().nullish(),
+  isArchived: zod.boolean(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
@@ -947,6 +951,28 @@ export const AiGeneratePlanResponse = zod.object({
 });
 
 /**
+ * @summary Rewrite text with a specified AI action
+ */
+export const AiRewriteBody = zod.object({
+  text: zod.string(),
+  action: zod.enum([
+    "rewrite",
+    "summarize",
+    "simplify",
+    "adhd-friendly",
+    "expand",
+    "translate",
+  ]),
+  targetLanguage: zod.string().nullish(),
+  deepThink: zod.boolean().optional(),
+});
+
+export const AiRewriteResponse = zod.object({
+  result: zod.string(),
+  confidence: zod.number().nullish(),
+});
+
+/**
  * @summary Complete onboarding and save preferences
  */
 export const CompleteOnboardingBody = zod.object({
@@ -1340,6 +1366,7 @@ export const PublishNoteResponse = zod.object({
     .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
     .nullish(),
   periodDate: zod.string().nullish(),
+  isArchived: zod.boolean(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
@@ -1382,6 +1409,7 @@ export const GetPublishedNoteResponse = zod.object({
     .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
     .nullish(),
   periodDate: zod.string().nullish(),
+  isArchived: zod.boolean(),
   isPublished: zod.boolean(),
   publishSlug: zod.string().nullish(),
   createdAt: zod.date(),
@@ -1410,6 +1438,7 @@ export const GlobalSearchResponse = zod.object({
         .enum(["daily", "weekly", "monthly", "quarterly", "yearly"])
         .nullish(),
       periodDate: zod.string().nullish(),
+      isArchived: zod.boolean(),
       isPublished: zod.boolean(),
       publishSlug: zod.string().nullish(),
       createdAt: zod.date(),

@@ -7,6 +7,7 @@ import { PanelLeftClose, PanelRightClose, Columns, Check, Loader2, AlertCircle }
 import MarkdownToolbar from "./MarkdownToolbar";
 import WikiLinkAutocomplete from "./WikiLinkAutocomplete";
 import TagAutocomplete from "./TagAutocomplete";
+import type { AiAction } from "./MarkdownToolbar";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 
 interface MarkdownEditorProps {
@@ -25,6 +26,7 @@ interface MarkdownEditorProps {
   allNotes?: Array<{ id: number; title: string }>;
   allTags?: string[];
   onCreateNote?: (title: string) => void;
+  onAiAction?: (action: AiAction, selectedText: string) => void;
 }
 
 function getCaretCoordinates(textarea: HTMLTextAreaElement): { top: number; left: number } {
@@ -87,6 +89,7 @@ export default function MarkdownEditor({
   allNotes,
   allTags,
   onCreateNote,
+  onAiAction,
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
@@ -412,6 +415,7 @@ export default function MarkdownEditor({
             onInsert={handleToolbarInsert}
             getValue={getTextareaValue}
             voiceProps={voiceProps}
+            onAiAction={onAiAction}
           />
         )}
         <div className="flex items-center justify-between border-b border-border bg-card/30 px-2">
@@ -457,6 +461,7 @@ export default function MarkdownEditor({
         onInsert={handleToolbarInsert}
         getValue={getTextareaValue}
         voiceProps={voiceProps}
+        onAiAction={onAiAction}
       />
       <div className="flex items-center justify-between border-b border-border bg-card/30 px-2 py-0.5">
         <div className="flex items-center gap-0.5">

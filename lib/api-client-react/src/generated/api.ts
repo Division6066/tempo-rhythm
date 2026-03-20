@@ -29,6 +29,8 @@ import type {
   AiGeneratePlanResponse,
   AiPrioritizeBody,
   AiPrioritizeResponse,
+  AiRewriteBody,
+  AiRewriteResponse,
   CalendarEvent,
   CompleteTaskResponse,
   CreateCalendarEventBody,
@@ -4036,6 +4038,92 @@ export const useAiGeneratePlan = <
   TContext
 > => {
   return useMutation(getAiGeneratePlanMutationOptions(options));
+};
+
+/**
+ * @summary Rewrite text with a specified AI action
+ */
+export const getAiRewriteUrl = () => {
+  return `/api/ai/rewrite`;
+};
+
+export const aiRewrite = async (
+  aiRewriteBody: AiRewriteBody,
+  options?: RequestInit,
+): Promise<AiRewriteResponse> => {
+  return customFetch<AiRewriteResponse>(getAiRewriteUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aiRewriteBody),
+  });
+};
+
+export const getAiRewriteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiRewrite>>,
+    TError,
+    { data: BodyType<AiRewriteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof aiRewrite>>,
+  TError,
+  { data: BodyType<AiRewriteBody> },
+  TContext
+> => {
+  const mutationKey = ["aiRewrite"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof aiRewrite>>,
+    { data: BodyType<AiRewriteBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return aiRewrite(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AiRewriteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof aiRewrite>>
+>;
+export type AiRewriteMutationBody = BodyType<AiRewriteBody>;
+export type AiRewriteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Rewrite text with a specified AI action
+ */
+export const useAiRewrite = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiRewrite>>,
+    TError,
+    { data: BodyType<AiRewriteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof aiRewrite>>,
+  TError,
+  { data: BodyType<AiRewriteBody> },
+  TContext
+> => {
+  return useMutation(getAiRewriteMutationOptions(options));
 };
 
 /**

@@ -14,6 +14,8 @@ import {
   AiPrioritizeResponse,
   AiGeneratePlanBody,
   AiGeneratePlanResponse,
+  AiRewriteBody,
+  AiRewriteResponse,
 } from "@workspace/api-zod";
 import { callWithFallback, callWithFallbackDetailed, synthesizeCouncil, getModelHealthStats } from "@workspace/integrations-openai-ai-server";
 import type { AiCallResult, CouncilResult } from "@workspace/integrations-openai-ai-server";
@@ -421,6 +423,57 @@ Format: {"blocks": [{"type": "top3", "items": ["...", "...", "..."], "rationale"
         reasoning: "Generated a balanced plan with top priorities, deep work, and quick wins.",
       })
     );
+  }
+});
+
+const REWRITE_SYSTEM_PROMPTS: Record<string, string> = {
+  rewrite: "Rewrite the following text to be clearer, better structured, and more polished. Maintain the same meaning and tone. Return ONLY the rewritten text, no explanations.",
+  summarize: "Summarize the following text concisely, capturing the key points. Use bullet points if helpful. Return ONLY the summary, no explanations.",
+  simplify: "Simplify the following text using plain, easy-to-understand language. Aim for a 6th-grade reading level. Return ONLY the simplified text, no explanations.",
+  "adhd-friendly": "Rewrite the following text to be ADHD-friendly: use short paragraphs (2-3 sentences max), bullet points, bold key terms, visual chunking with headers, and clear action items. Make it scannable and reduce cognitive load. Return ONLY the rewritten text, no explanations.",
+  expand: "Expand the following text with more detail, examples, and context while maintaining the original meaning and tone. Return ONLY the expanded text, no explanations.",
+  translate: "Translate the following text to TARGET_LANGUAGE. Maintain formatting and structure. Return ONLY the translated text, no explanations.",
+};
+
+router.post("/ai/rewrite", async (req, res): Promise<void> => {
+  const parsed = AiRewriteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { text, action, targetLanguage, deepThink } = parsed.data;
+
+  try {
+    let systemPrompt = REWRITE_SYSTEM_PROMPTS[action] || REWRITE_SYSTEM_PROMPTS.rewrite;
+    if (action === "translate" && targetLanguage) {
+      systemPrompt = systemPrompt.replace("TARGET_LANGUAGE", targetLanguage);
+    } else if (action === "translate") {
+      systemPrompt = systemPrompt.replace("TARGET_LANGUAGE", "Spanish");
+    }
+
+    const messages: Array<{ role: string; content: string }> = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: text },
+    ];
+
+    let resultText: string;
+
+    if (deepThink) {
+      const council = await synthesizeCouncil(text, systemPrompt, { maxModels: 3, timeoutMs: 30000 });
+      resultText = council.synthesis;
+      await logAiAction(`rewrite:${action}:council`, council);
+    } else {
+      const result = await callWithFallbackDetailed(messages as any);
+      resultText = result.content;
+      await logAiAction(`rewrite:${action}`, result);
+    }
+
+    res.json(AiRewriteResponse.parse({ result: resultText, confidence: null }));
+  } catch (err) {
+    console.error("AI rewrite error:", err);
+    await logAiError(`rewrite:${action}`, "unknown", err);
+    res.status(500).json({ error: "AI rewrite failed. Please try again." });
   }
 });
 

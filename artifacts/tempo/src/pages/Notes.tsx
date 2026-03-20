@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useListNotes, useListFolders, useUpdateNote, getListNotesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
-import { Plus, Pin, FileText, Search, X } from "lucide-react";
+import { Plus, Pin, FileText, Search, X, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ViewToggle } from "@/components/ViewToggle";
@@ -22,17 +22,21 @@ export default function Notes() {
   const initialSearch = params.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [viewMode, setViewMode] = useViewPreference("notes");
+  const [showArchived, setShowArchived] = useState(false);
 
   const filteredNotes = useMemo(() => {
     if (!notes) return [];
-    if (!searchQuery) return notes;
-    const q = searchQuery.toLowerCase();
-    return notes.filter(
-      (n) =>
-        (n.title || "").toLowerCase().includes(q) ||
-        (n.content || "").toLowerCase().includes(q)
-    );
-  }, [notes, searchQuery]);
+    let result = notes.filter((n) => showArchived ? n.isArchived : !n.isArchived);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (n) =>
+          (n.title || "").toLowerCase().includes(q) ||
+          (n.content || "").toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [notes, searchQuery, showArchived]);
 
   const folderMap = useMemo(() => {
     const map: Record<number, Folder> = {};
@@ -179,6 +183,13 @@ export default function Notes() {
           <h1 className="text-3xl font-display font-bold text-foreground">Notes</h1>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors ${showArchived ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+          >
+            <Archive size={14} />
+            {showArchived ? "Showing Archived" : "Show Archived"}
+          </button>
           <ViewToggle current={viewMode} onChange={setViewMode} />
           <Button onClick={() => setLocation("/notes/new")} size="sm" className="gap-2">
             <Plus size={16} /> New Note

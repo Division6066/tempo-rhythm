@@ -17,14 +17,20 @@ import {
   getListNoteLinksQueryKey,
   NoteLink,
   useAiAutoCategorize,
+  useAiRewrite,
+  useAiExtractTasks,
+  useCreateStagedSuggestion,
+  useCreateNoteTemplate,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Trash2, Pin, Globe, Link2, ExternalLink, X, ChevronDown, ChevronRight, MoreVertical, Archive, Save } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import type { AiAction } from "@/components/MarkdownToolbar";
 import AiSuggestionBanner from "@/components/AiSuggestionBanner";
+import AiPreviewPanel from "@/components/AiPreviewPanel";
 
 export default function NoteEditor() {
   const [, params] = useRoute("/notes/:id");
@@ -82,6 +88,11 @@ export default function NoteEditor() {
   const chunksRef = useRef<Blob[]>([]);
 
   const autoCategorize = useAiAutoCategorize();
+  const aiRewrite = useAiRewrite();
+  const aiExtractTasks = useAiExtractTasks();
+  const createStaged = useCreateStagedSuggestion();
+  const createNoteTemplate = useCreateNoteTemplate();
+
   const [categorizeSuggestion, setCategorizeSuggestion] = useState<{
     folder: string | null;
     project: string | null;
@@ -89,6 +100,27 @@ export default function NoteEditor() {
     confidence: number;
   } | null>(null);
   const lastCategorizedContent = useRef("");
+
+  const [showThreeDotMenu, setShowThreeDotMenu] = useState(false);
+  const threeDotRef = useRef<HTMLDivElement>(null);
+
+  const [aiPanel, setAiPanel] = useState<{
+    visible: boolean;
+    action: string;
+    result: string;
+    isLoading: boolean;
+    sourceText: string;
+    deepThink: boolean;
+    isSelection: boolean;
+  }>({ visible: false, action: "", result: "", isLoading: false, sourceText: "", deepThink: false, isSelection: false });
+
+  const [showTranslateDialog, setShowTranslateDialog] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState("Spanish");
+  const pendingTranslateTextRef = useRef("");
+
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateCategory, setTemplateCategory] = useState("general");
 
   useEffect(() => {
     if (note && !isNew) {
@@ -474,6 +506,138 @@ export default function NoteEditor() {
       .map((n) => ({ id: n.id, title: n.title }));
   }, [allNotes, noteId]);
 
+  useEffect(() => {
+    if (!showThreeDotMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (threeDotRef.current && !threeDotRef.current.contains(e.target as Node)) {
+        setShowThreeDotMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showThreeDotMenu]);
+
+  const executeAiRewrite = useCallback(async (text: string, action: string, deepThink: boolean, isSelection: boolean, lang?: string) => {
+    setAiPanel(prev => ({ ...prev, visible: true, action, isLoading: true, result: "", sourceText: text, deepThink, isSelection }));
+    try {
+      const res = await aiRewrite.mutateAsync({
+        data: { text, action: action as any, deepThink, targetLanguage: lang || undefined },
+      });
+      setAiPanel(prev => ({ ...prev, isLoading: false, result: res.result }));
+    } catch {
+      setAiPanel(prev => ({ ...prev, isLoading: false, result: "Failed to process. Please try again." }));
+    }
+  }, [aiRewrite]);
+
+  const handleAiAction = useCallback(async (action: AiAction, selectedText: string) => {
+    const isSelection = selectedText !== content;
+
+    if (action === "extract-tasks") {
+      try {
+        const res = await aiExtractTasks.mutateAsync({ data: { text: selectedText } });
+        if (res.tasks && res.tasks.length > 0) {
+          await createStaged.mutateAsync({
+            data: {
+              type: "extractedTasks",
+              data: { tasks: res.tasks, sourceNote: title },
+              reasoning: `Extracted ${res.tasks.length} task(s) from note "${title}"`,
+            },
+          });
+          toast({ title: `${res.tasks.length} task(s) extracted`, description: "Check your Inbox to review them." });
+          setLocation("/inbox");
+        } else {
+          toast({ title: "No tasks found", description: "Try selecting text that contains actionable items." });
+        }
+      } catch {
+        toast({ variant: "destructive", title: "Failed to extract tasks" });
+      }
+      return;
+    }
+
+    if (action === "translate") {
+      pendingTranslateTextRef.current = selectedText;
+      setShowTranslateDialog(true);
+      return;
+    }
+
+    executeAiRewrite(selectedText, action, aiPanel.deepThink, isSelection);
+  }, [aiExtractTasks, createStaged, executeAiRewrite, title, toast, setLocation, aiPanel.deepThink, content]);
+
+  const handleTranslateConfirm = useCallback(() => {
+    const text = pendingTranslateTextRef.current;
+    const isSelection = text !== content;
+    setShowTranslateDialog(false);
+    executeAiRewrite(text, "translate", aiPanel.deepThink, isSelection, targetLanguage);
+  }, [executeAiRewrite, aiPanel.deepThink, targetLanguage, content]);
+
+  const handleAiInsert = useCallback(() => {
+    if (aiPanel.isSelection) {
+      const newContent = content.replace(aiPanel.sourceText, aiPanel.result);
+      setContent(newContent);
+      contentRef.current = newContent;
+    } else {
+      setContent(aiPanel.result);
+      contentRef.current = aiPanel.result;
+    }
+    setAiPanel(prev => ({ ...prev, visible: false }));
+    debouncedSave();
+  }, [aiPanel.result, aiPanel.sourceText, aiPanel.isSelection, content, debouncedSave]);
+
+  const handleAiRetry = useCallback(() => {
+    executeAiRewrite(aiPanel.sourceText, aiPanel.action, aiPanel.deepThink, aiPanel.isSelection);
+  }, [aiPanel.sourceText, aiPanel.action, aiPanel.deepThink, aiPanel.isSelection, executeAiRewrite]);
+
+  const handleArchive = useCallback(async () => {
+    if (isNew) return;
+    try {
+      await updateNote.mutateAsync({ id: noteId, data: { isArchived: true } });
+      queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+      setLocation("/notes");
+      const undoTimer = setTimeout(() => {}, 5000);
+      toast({
+        title: "Note archived",
+        description: "This note has been archived.",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              clearTimeout(undoTimer);
+              await updateNote.mutateAsync({ id: noteId, data: { isArchived: false } });
+              queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+              toast({ title: "Note restored" });
+            }}
+          >
+            Undo
+          </Button>
+        ),
+      });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to archive note" });
+    }
+    setShowThreeDotMenu(false);
+  }, [isNew, noteId, updateNote, queryClient, setLocation, toast]);
+
+  const handleSaveAsTemplate = useCallback(async () => {
+    if (!templateName.trim()) return;
+    try {
+      await createNoteTemplate.mutateAsync({
+        data: {
+          name: templateName.trim(),
+          content: content,
+          category: templateCategory,
+          isBuiltIn: false,
+        },
+      });
+      toast({ title: "Template saved", description: `"${templateName}" is now available as a template.` });
+      setShowTemplateDialog(false);
+      setTemplateName("");
+      setTemplateCategory("general");
+    } catch {
+      toast({ variant: "destructive", title: "Failed to save template" });
+    }
+  }, [templateName, templateCategory, content, createNoteTemplate, toast]);
+
   if (isLoading && !isNew) {
     return <div className="flex h-[50vh] items-center justify-center"><div className="w-16 h-16 rounded-full animate-breathe bg-primary/20" /></div>;
   }
@@ -510,9 +674,45 @@ export default function NoteEditor() {
           <Button variant="ghost" size="icon" onClick={togglePin} className={isPinned ? "text-primary" : "text-muted-foreground"}>
             <Pin size={20} className={isPinned ? "fill-current" : ""} />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/20" onClick={handleDelete}>
-            <Trash2 size={20} />
-          </Button>
+          <div className="relative" ref={threeDotRef}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground"
+              onClick={() => setShowThreeDotMenu(!showThreeDotMenu)}
+            >
+              <MoreVertical size={20} />
+            </Button>
+            {showThreeDotMenu && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[180px]">
+                {!isNew && (
+                  <button
+                    onClick={handleArchive}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    <Archive size={14} /> Archive
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setShowTemplateDialog(true);
+                    setShowThreeDotMenu(false);
+                    setTemplateName(title || "Untitled Template");
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                >
+                  <Save size={14} /> Save as Template
+                </button>
+                <div className="border-t border-border my-1" />
+                <button
+                  onClick={() => { handleDelete(); setShowThreeDotMenu(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -616,6 +816,7 @@ export default function NoteEditor() {
           allNotes={editorNotes}
           allTags={allTagNames}
           onCreateNote={handleCreateNoteFromWikiLink}
+          onAiAction={handleAiAction}
         />
       </div>
 
@@ -658,6 +859,90 @@ export default function NoteEditor() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {aiPanel.visible && (
+        <AiPreviewPanel
+          result={aiPanel.result}
+          isLoading={aiPanel.isLoading}
+          action={aiPanel.action}
+          onInsert={handleAiInsert}
+          onRetry={handleAiRetry}
+          onDismiss={() => setAiPanel(prev => ({ ...prev, visible: false }))}
+          deepThink={aiPanel.deepThink}
+          onToggleDeepThink={(v) => setAiPanel(prev => ({ ...prev, deepThink: v }))}
+        />
+      )}
+
+      {showTemplateDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTemplateDialog(false)}>
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">Save as Template</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Template Name</label>
+                <Input
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="My Template"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Category</label>
+                <select
+                  value={templateCategory}
+                  onChange={(e) => setTemplateCategory(e.target.value)}
+                  className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
+                >
+                  <option value="general">General</option>
+                  <option value="journal">Journal</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="project">Project</option>
+                  <option value="review">Review</option>
+                  <option value="planning">Planning</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowTemplateDialog(false)}>Cancel</Button>
+              <Button onClick={handleSaveAsTemplate} disabled={!templateName.trim()}>
+                Save Template
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTranslateDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTranslateDialog(false)}>
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">Translate To</h2>
+            <select
+              value={targetLanguage}
+              onChange={(e) => setTargetLanguage(e.target.value)}
+              className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
+              autoFocus
+            >
+              <option value="Spanish">Spanish</option>
+              <option value="French">French</option>
+              <option value="German">German</option>
+              <option value="Portuguese">Portuguese</option>
+              <option value="Italian">Italian</option>
+              <option value="Japanese">Japanese</option>
+              <option value="Korean">Korean</option>
+              <option value="Chinese (Simplified)">Chinese (Simplified)</option>
+              <option value="Arabic">Arabic</option>
+              <option value="Hindi">Hindi</option>
+              <option value="Dutch">Dutch</option>
+              <option value="Russian">Russian</option>
+            </select>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowTranslateDialog(false)}>Cancel</Button>
+              <Button onClick={handleTranslateConfirm}>Translate</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

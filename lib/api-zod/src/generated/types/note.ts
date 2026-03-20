@@ -18,6 +18,7 @@ export interface Note {
   isPinned: boolean;
   periodType?: NotePeriodType;
   periodDate?: string | null;
+  isArchived: boolean;
   isPublished: boolean;
   publishSlug?: string | null;
   createdAt: Date;

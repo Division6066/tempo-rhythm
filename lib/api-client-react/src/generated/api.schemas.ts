@@ -149,6 +149,7 @@ export interface Note {
   isPinned: boolean;
   periodType?: NotePeriodType;
   periodDate?: string | null;
+  isArchived: boolean;
   isPublished: boolean;
   publishSlug?: string | null;
   createdAt: string;
@@ -187,6 +188,7 @@ export interface UpdateNoteBody {
   tags?: string[];
   templateType?: string | null;
   isPinned?: boolean;
+  isArchived?: boolean;
   periodType?: string | null;
   periodDate?: string | null;
 }
@@ -516,6 +518,30 @@ export interface AiChatBody {
 export interface AiChatResponse {
   response: string;
   suggestions: string[];
+}
+
+export type AiRewriteBodyAction =
+  (typeof AiRewriteBodyAction)[keyof typeof AiRewriteBodyAction];
+
+export const AiRewriteBodyAction = {
+  rewrite: "rewrite",
+  summarize: "summarize",
+  simplify: "simplify",
+  "adhd-friendly": "adhd-friendly",
+  expand: "expand",
+  translate: "translate",
+} as const;
+
+export interface AiRewriteBody {
+  text: string;
+  action: AiRewriteBodyAction;
+  targetLanguage?: string | null;
+  deepThink?: boolean;
+}
+
+export interface AiRewriteResponse {
+  result: string;
+  confidence?: number | null;
 }
 
 export interface AiExtractBody {

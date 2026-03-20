@@ -14,6 +14,7 @@ export interface UpdateNoteBody {
   tags?: string[];
   templateType?: string | null;
   isPinned?: boolean;
+  isArchived?: boolean;
   periodType?: string | null;
   periodDate?: string | null;
 }
