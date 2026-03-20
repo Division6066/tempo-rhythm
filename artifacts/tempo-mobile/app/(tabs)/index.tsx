@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { View, Text, ScrollView, Pressable, Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
@@ -8,13 +8,38 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, useTheme } from "../../lib/theme";
 import { format } from "date-fns";
 import { hapticMedium } from "../../lib/haptics";
+import { useNetwork } from "../../lib/NetworkContext";
+import { cacheAllTasks, getCachedAllTasks, cacheProjects, getCachedProjects } from "../../lib/offlineCache";
 
 export default function HomeScreen() {
   const { colors } = useTheme();
-  const tasks = useQuery(api.tasks.list, {});
-  const projects = useQuery(api.projects.list);
+  const { isConnected } = useNetwork();
+  const liveTasks = useQuery(api.tasks.list, {});
+  const liveProjects = useQuery(api.projects.list);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+
+  const [cachedTasks, setCachedTasks] = useState<any[] | null>(null);
+  const [cachedProjectsList, setCachedProjectsList] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (liveTasks) {
+      cacheAllTasks(liveTasks);
+    } else if (!isConnected) {
+      getCachedAllTasks().then(setCachedTasks);
+    }
+  }, [liveTasks, isConnected]);
+
+  useEffect(() => {
+    if (liveProjects) {
+      cacheProjects(liveProjects);
+    } else if (!isConnected) {
+      getCachedProjects().then(setCachedProjectsList);
+    }
+  }, [liveProjects, isConnected]);
+
+  const tasks = liveTasks ?? cachedTasks;
+  const projects = liveProjects ?? cachedProjectsList;
 
   const todayTasks = tasks?.filter((t) => t.status === "today") || [];
   const inboxTasks = tasks?.filter((t) => t.status === "inbox") || [];
@@ -34,6 +59,22 @@ export default function HomeScreen() {
     await new Promise((resolve) => setTimeout(resolve, 500));
     setRefreshing(false);
   }, []);
+
+  const handleAIPress = () => {
+    if (!isConnected) {
+      Alert.alert("Requires Connection", "AI features need an internet connection to work.");
+      return;
+    }
+    router.push("/(tabs)/chat" as never);
+  };
+
+  const handlePlanPress = () => {
+    if (!isConnected) {
+      Alert.alert("Requires Connection", "Plan generation needs an internet connection to work.");
+      return;
+    }
+    router.push("/plan" as never);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -68,10 +109,11 @@ export default function HomeScreen() {
                 {doneToday === totalToday && totalToday > 0 ? "All done!" : "Keep going!"}
               </Text>
               <Pressable
-                onPress={() => router.push("/plan" as never)}
-                style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center" }}
+                onPress={handlePlanPress}
+                style={{ backgroundColor: !isConnected ? colors.surfaceLight : colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
               >
-                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Plan my day</Text>
+                {!isConnected && <Ionicons name="cloud-offline-outline" size={14} color={colors.muted} />}
+                <Text style={{ color: !isConnected ? colors.muted : "#fff", fontWeight: "700", fontSize: 14 }}>Plan my day</Text>
               </Pressable>
             </View>
           </View>
@@ -81,7 +123,7 @@ export default function HomeScreen() {
           {[
             { label: "Today", value: totalToday, icon: "sunny" as const, color: colors.amber },
             { label: "Inbox", value: inboxTasks.length, icon: "file-tray" as const, color: "#60A5FA" },
-            { label: "Projects", value: projects?.filter((p) => p.status === "active").length || 0, icon: "folder" as const, color: colors.teal },
+            { label: "Projects", value: projects?.filter((p: any) => p.status === "active").length || 0, icon: "folder" as const, color: colors.teal },
           ].map((stat) => (
             <View key={stat.label} style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: colors.border }}>
               <Ionicons name={stat.icon} size={18} color={stat.color} style={{ marginBottom: 8 }} />
@@ -92,15 +134,15 @@ export default function HomeScreen() {
         </View>
 
         <Pressable
-          onPress={() => router.push("/(tabs)/chat" as never)}
-          style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "rgba(108,99,255,0.3)", marginBottom: 24 }}
+          onPress={handleAIPress}
+          style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: !isConnected ? colors.border : "rgba(108,99,255,0.3)", marginBottom: 24, opacity: !isConnected ? 0.6 : 1 }}
         >
           <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(108,99,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
-            <Ionicons name="sparkles" size={24} color={colors.primary} />
+            <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={24} color={!isConnected ? colors.muted : colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>AI Assistant</Text>
-            <Text style={{ color: colors.muted, fontSize: 12 }}>Chat, plan, or chunk tasks</Text>
+            <Text style={{ color: colors.muted, fontSize: 12 }}>{!isConnected ? "Requires connection" : "Chat, plan, or chunk tasks"}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.muted} />
         </Pressable>

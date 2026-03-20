@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useAction } from "convex/react";
@@ -7,10 +7,14 @@ import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../lib/theme";
+import { useNetwork } from "../../lib/NetworkContext";
+import { cacheInboxTasks, getCachedInboxTasks } from "../../lib/offlineCache";
+import { addToQueue } from "../../lib/offlineQueue";
 
 type StagedTask = { title: string; priority: string; estimatedMinutes?: number };
 
 export default function InboxScreen() {
+  const { isConnected } = useNetwork();
   const tasks = useQuery(api.tasks.list, { status: "inbox" });
   const stagedSuggestions = useQuery(api.staging.listPending, { type: "extractedTasks" });
   const createTask = useMutation(api.tasks.create);
@@ -26,15 +30,36 @@ export default function InboxScreen() {
   const [brainDump, setBrainDump] = useState("");
   const [showDump, setShowDump] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [cachedTasksList, setCachedTasksList] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (tasks) {
+      cacheInboxTasks(tasks);
+    } else if (!isConnected) {
+      getCachedInboxTasks().then(setCachedTasksList);
+    }
+  }, [tasks, isConnected]);
+
+  const effectiveTasks = tasks ?? cachedTasksList;
 
   const handleQuickAdd = async () => {
     if (!quickTask.trim()) return;
+    if (!isConnected) {
+      await addToQueue({ type: "createTask", args: { title: quickTask, status: "inbox", priority: "medium" } });
+      setQuickTask("");
+      Alert.alert("Queued", "Task will be created when you're back online.");
+      return;
+    }
     await createTask({ title: quickTask, status: "inbox", priority: "medium" });
     setQuickTask("");
   };
 
   const handleExtract = async () => {
     if (!brainDump.trim()) return;
+    if (!isConnected) {
+      Alert.alert("Requires Connection", "AI task extraction needs an internet connection.");
+      return;
+    }
     setExtracting(true);
     try {
       const res = await extractTasks({ text: brainDump });
@@ -103,16 +128,29 @@ export default function InboxScreen() {
               <Pressable onPress={() => setShowDump(false)} style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
                 <Text style={{ color: colors.muted, fontWeight: "600" }}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={handleExtract} disabled={extracting} style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 6, opacity: extracting ? 0.6 : 1 }}>
-                <Ionicons name="sparkles" size={16} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "700" }}>{extracting ? "Extracting..." : "Extract Tasks"}</Text>
+              <Pressable
+                onPress={handleExtract}
+                disabled={extracting || !isConnected}
+                style={{ backgroundColor: !isConnected ? colors.surfaceLight : colors.primary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 6, opacity: extracting || !isConnected ? 0.6 : 1 }}
+              >
+                <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={16} color="#fff" />
+                <Text style={{ color: "#fff", fontWeight: "700" }}>{!isConnected ? "Offline" : extracting ? "Extracting..." : "Extract Tasks"}</Text>
               </Pressable>
             </View>
           </View>
         ) : (
-          <Pressable onPress={() => setShowDump(true)} style={{ borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border, borderStyle: "dashed", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <Ionicons name="sparkles" size={16} color={colors.muted} />
-            <Text style={{ color: colors.muted, fontWeight: "600" }}>Brain Dump (AI Extract)</Text>
+          <Pressable
+            onPress={() => {
+              if (!isConnected) {
+                Alert.alert("Requires Connection", "AI task extraction needs an internet connection.");
+                return;
+              }
+              setShowDump(true);
+            }}
+            style={{ borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: !isConnected ? colors.border : colors.border, borderStyle: "dashed", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, opacity: !isConnected ? 0.5 : 1 }}
+          >
+            <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={16} color={colors.muted} />
+            <Text style={{ color: colors.muted, fontWeight: "600" }}>{!isConnected ? "Brain Dump (Offline)" : "Brain Dump (AI Extract)"}</Text>
           </Pressable>
         )}
 
@@ -149,7 +187,7 @@ export default function InboxScreen() {
           );
         })}
 
-        {tasks?.map((task) => (
+        {effectiveTasks?.map((task) => (
           <Pressable
             key={task._id}
             onPress={() => router.push(`/task/${task._id}` as never)}
@@ -165,7 +203,14 @@ export default function InboxScreen() {
                 )}
               </View>
             </View>
-            <Pressable onPress={() => updateTask({ id: task._id, status: "today" })} hitSlop={10} style={{ padding: 6 }}>
+            <Pressable onPress={() => {
+              if (!isConnected) {
+                addToQueue({ type: "updateTask", args: { id: task._id, status: "today" } });
+                Alert.alert("Queued", "This change will sync when you're back online.");
+                return;
+              }
+              updateTask({ id: task._id, status: "today" });
+            }} hitSlop={10} style={{ padding: 6 }}>
               <Ionicons name="arrow-forward-circle-outline" size={22} color={colors.primary} />
             </Pressable>
             <Pressable onPress={() => { Alert.alert("Delete?", "Remove this task?", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: () => removeTask({ id: task._id }) }]); }} hitSlop={10} style={{ padding: 6 }}>
@@ -173,7 +218,7 @@ export default function InboxScreen() {
             </Pressable>
           </Pressable>
         ))}
-        {tasks && tasks.length === 0 && !stagedSuggestions?.length && (
+        {effectiveTasks && effectiveTasks.length === 0 && !stagedSuggestions?.length && (
           <View style={{ padding: 40, alignItems: "center" }}>
             <Text style={{ color: colors.muted, fontSize: 14 }}>Inbox is empty.</Text>
           </View>

@@ -64,6 +64,14 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **date-fns:** Date utility library.
 - **react-big-calendar:** Full-featured calendar component with drag-and-drop support.
 
+## Mobile App Offline Support
+- **Network Detection:** `@react-native-community/netinfo` monitors connectivity in real-time via `useNetworkStatus` hook
+- **Offline Banner:** Global `OfflineBanner` component in root layout shows "You're offline" / "Back online" / "Syncing..." states
+- **Data Caching:** AsyncStorage caches today's tasks, inbox tasks, all tasks, projects, and daily plans on each successful fetch; cached data displayed when offline
+- **Offline Write Queue:** Pending mutations (createTask, updateTask) queued in AsyncStorage with serialized/locked access to prevent race conditions; synced automatically on reconnect
+- **AI Feature Gating:** Chat, brain dump extraction, and plan generation show "Requires Connection" disabled states when offline
+- **Global Sync:** `NetworkProvider` in root layout handles queue replay on reconnect regardless of active screen
+
 ## Performance Optimizations
 - **Code Splitting:** All page components in `artifacts/tempo/src/App.tsx` use `React.lazy()` with a shared `Suspense`/`PageLoader` fallback for route-based code splitting.
 - **Service Worker:** PWA service worker (`artifacts/tempo/public/sw.js`) caches static assets with stale-while-revalidate strategy, excludes `/api/` and Convex WebSocket requests from caching, and provides offline fallback to `index.html` for navigation requests.

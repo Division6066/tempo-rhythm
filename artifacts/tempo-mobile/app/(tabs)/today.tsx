@@ -1,11 +1,14 @@
-import { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { View, Text, ScrollView, Pressable, Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, useTheme } from "../../lib/theme";
+import { useNetwork } from "../../lib/NetworkContext";
+import { cacheTodayTasks, getCachedTodayTasks } from "../../lib/offlineCache";
+import { addToQueue } from "../../lib/offlineQueue";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { hapticSuccess, hapticMedium } from "../../lib/haptics";
 
@@ -33,13 +36,30 @@ function TaskRow({ task, onToggle, onPress, colors }: { task: { _id: Id<"tasks">
 
 export default function TodayScreen() {
   const { colors } = useTheme();
+  const { isConnected } = useNetwork();
   const allTasks = useQuery(api.tasks.list, {});
   const updateTask = useMutation(api.tasks.update);
   const completeTask = useMutation(api.tasks.complete);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
-  const todayTasks = (allTasks || []).filter((t) => t.status === "today" || t.status === "done");
+  const [cachedTasks, setCachedTasks] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (allTasks) {
+      const todayAndDone = allTasks.filter((t) => t.status === "today" || t.status === "done");
+      cacheTodayTasks(todayAndDone);
+    } else if (!isConnected) {
+      getCachedTodayTasks().then(setCachedTasks);
+    }
+  }, [allTasks, isConnected]);
+
+  const effectiveTasks = allTasks ?? null;
+  const todaySource = effectiveTasks
+    ? effectiveTasks.filter((t) => t.status === "today" || t.status === "done")
+    : cachedTasks ?? [];
+
+  const todayTasks = todaySource;
   const completedCount = todayTasks.filter((t) => t.status === "done").length;
   const progress = todayTasks.length > 0 ? (completedCount / todayTasks.length) * 100 : 0;
 
@@ -49,6 +69,12 @@ export default function TodayScreen() {
   const completed = todayTasks.filter((t) => t.status === "done");
 
   const toggleTask = async (id: Id<"tasks">, currentStatus: string) => {
+    if (!isConnected) {
+      const newStatus = currentStatus === "done" ? "today" : "done";
+      await addToQueue({ type: "updateTask", args: { id, status: newStatus } });
+      Alert.alert("Queued", "This change will sync when you're back online.");
+      return;
+    }
     if (currentStatus === "done") {
       await updateTask({ id, status: "today" });
     } else {

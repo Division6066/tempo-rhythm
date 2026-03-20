@@ -8,6 +8,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { convex, secureStorage } from "../lib/convex";
 import { ThemeContext, getThemeColors, useTheme } from "../lib/theme";
 import type { ThemeMode } from "../lib/theme";
+import { NetworkProvider } from "../lib/NetworkContext";
+import { OfflineBanner } from "../components/OfflineBanner";
+import { useNetwork } from "../lib/NetworkContext";
 import "../global.css";
 
 class ErrorBoundary extends React.Component<
@@ -48,6 +51,18 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+function OfflineBannerWrapper() {
+  const { isConnected, wasOffline, isSyncing, pendingCount } = useNetwork();
+  return (
+    <OfflineBanner
+      isConnected={isConnected}
+      wasOffline={wasOffline}
+      isSyncing={isSyncing}
+      pendingCount={pendingCount}
+    />
+  );
+}
+
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const pathname = usePathname();
@@ -73,6 +88,7 @@ function RootNavigator() {
   return (
     <>
       <StatusBar style={mode === "dark" ? "light" : "dark"} />
+      <OfflineBannerWrapper />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -96,9 +112,11 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <ConvexAuthProvider client={convex} storage={secureStorage}>
-        <ThemeProvider>
-          <RootNavigator />
-        </ThemeProvider>
+        <NetworkProvider>
+          <ThemeProvider>
+            <RootNavigator />
+          </ThemeProvider>
+        </NetworkProvider>
       </ConvexAuthProvider>
     </ErrorBoundary>
   );

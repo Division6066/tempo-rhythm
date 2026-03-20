@@ -5,11 +5,13 @@ import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../lib/theme";
+import { useNetwork } from "../../lib/NetworkContext";
 
 type Message = { role: "user" | "assistant"; content: string; suggestions?: string[] };
 
 export default function ChatScreen() {
   const { colors } = useTheme();
+  const { isConnected } = useNetwork();
   const memories = useQuery(api.memories.list);
   const persistedMessages = useQuery(api.chatMessages.list, { limit: 50 });
   const saveMessage = useMutation(api.chatMessages.create);
@@ -46,6 +48,7 @@ export default function ChatScreen() {
 
   const handleSend = async (text: string = input) => {
     if (!text.trim() || sending) return;
+    if (!isConnected) return;
     setInput("");
     const userMsg: Message = { role: "user", content: text };
     const newMessages: Message[] = [...messages, userMsg];
@@ -92,7 +95,17 @@ export default function ChatScreen() {
           </Pressable>
         </View>
 
-        {memoryCount > 0 && (
+        {!isConnected && (
+          <View style={{ marginHorizontal: 16, backgroundColor: "rgba(255,107,107,0.1)", borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "rgba(255,107,107,0.2)" }}>
+            <Ionicons name="cloud-offline-outline" size={20} color={colors.danger} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>Requires Connection</Text>
+              <Text style={{ color: colors.muted, fontSize: 12 }}>AI chat needs an internet connection to work.</Text>
+            </View>
+          </View>
+        )}
+
+        {isConnected && memoryCount > 0 && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 20, paddingBottom: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(0,201,167,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(0,201,167,0.2)" }}>
               <Ionicons name="bulb-outline" size={14} color={colors.teal} />
@@ -116,7 +129,7 @@ export default function ChatScreen() {
                 {msg.suggestions && msg.suggestions.length > 0 && (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                     {msg.suggestions.map((s, idx) => (
-                      <Pressable key={idx} onPress={() => handleSend(s)} style={{ backgroundColor: "rgba(108,99,255,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(108,99,255,0.2)" }}>
+                      <Pressable key={idx} onPress={() => handleSend(s)} disabled={!isConnected} style={{ backgroundColor: "rgba(108,99,255,0.1)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(108,99,255,0.2)", opacity: !isConnected ? 0.5 : 1 }}>
                         <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>{s}</Text>
                       </Pressable>
                     ))}
@@ -139,17 +152,18 @@ export default function ChatScreen() {
           )}
         </ScrollView>
 
-        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 20, marginHorizontal: 12, marginBottom: 8 }}>
+        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 20, marginHorizontal: 12, marginBottom: 8, opacity: !isConnected ? 0.5 : 1 }}>
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Ask me anything..."
+            placeholder={!isConnected ? "Chat unavailable offline..." : "Ask me anything..."}
             placeholderTextColor={colors.muted}
             onSubmitEditing={() => handleSend()}
             returnKeyType="send"
+            editable={isConnected}
             style={{ flex: 1, color: colors.foreground, fontSize: 15, paddingVertical: 6 }}
           />
-          <Pressable onPress={() => handleSend()} disabled={!input.trim() || sending} style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: !input.trim() || sending ? colors.surfaceLight : colors.primary, alignItems: "center", justifyContent: "center" }}>
+          <Pressable onPress={() => handleSend()} disabled={!input.trim() || sending || !isConnected} style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: !input.trim() || sending || !isConnected ? colors.surfaceLight : colors.primary, alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="send" size={18} color="#fff" />
           </Pressable>
         </View>

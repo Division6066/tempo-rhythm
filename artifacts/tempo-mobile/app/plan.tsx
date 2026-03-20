@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, ScrollView, Pressable, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../tempo-app/convex/_generated/api";
@@ -8,10 +8,13 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../lib/theme";
 import { format } from "date-fns";
+import { useNetwork } from "../lib/NetworkContext";
+import { cacheDailyPlans, getCachedDailyPlans } from "../lib/offlineCache";
 
 type PlanBlock = { type: string; title?: string; items?: string[]; tasks?: string[]; task?: string; startTime?: string; duration?: number; prompt?: string };
 
 export default function PlanScreen() {
+  const { isConnected } = useNetwork();
   const todayDate = new Date().toISOString().split("T")[0];
   const plans = useQuery(api.dailyPlans.list, { date: todayDate });
   const stagedPlans = useQuery(api.staging.listPending, { type: "dailyPlan" });
@@ -23,12 +26,26 @@ export default function PlanScreen() {
   const router = useRouter();
 
   const [generating, setGenerating] = useState(false);
+  const [cachedPlansList, setCachedPlansList] = useState<any[] | null>(null);
 
-  const existingPlan = plans && plans.length > 0 ? plans[0] : null;
+  useEffect(() => {
+    if (plans) {
+      cacheDailyPlans(plans);
+    } else if (!isConnected) {
+      getCachedDailyPlans().then(setCachedPlansList);
+    }
+  }, [plans, isConnected]);
+
+  const effectivePlans = plans ?? cachedPlansList;
+  const existingPlan = effectivePlans && effectivePlans.length > 0 ? effectivePlans[0] : null;
   const pendingStagedPlan = stagedPlans && stagedPlans.length > 0 ? stagedPlans[0] : null;
   const hasPlan = !!existingPlan;
 
   const handleGenerate = async () => {
+    if (!isConnected) {
+      Alert.alert("Requires Connection", "Plan generation needs an internet connection.");
+      return;
+    }
     setGenerating(true);
     try {
       const res = await generatePlan({ date: todayDate });
@@ -62,16 +79,22 @@ export default function PlanScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {!hasPlan && !pendingStagedPlan && (
           <View style={{ alignItems: "center", paddingVertical: 40 }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(108,99,255,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-              <Ionicons name="sparkles" size={36} color={colors.primary} />
+            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: !isConnected ? "rgba(136,136,170,0.15)" : "rgba(108,99,255,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+              <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={36} color={!isConnected ? colors.muted : colors.primary} />
             </View>
             <Text style={{ color: colors.foreground, fontSize: 20, fontWeight: "800", marginBottom: 8 }}>Let&apos;s plan your day</Text>
             <Text style={{ color: colors.muted, fontSize: 14, textAlign: "center", maxWidth: 280, marginBottom: 24 }}>
-              AI will look at your tasks, energy, and routines to build a realistic plan.
+              {!isConnected ? "Plan generation requires an internet connection." : "AI will look at your tasks, energy, and routines to build a realistic plan."}
             </Text>
-            <Pressable onPress={handleGenerate} disabled={generating} style={{ backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 8, opacity: generating ? 0.7 : 1 }}>
-              <Ionicons name="sparkles" size={18} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>{generating ? "Analyzing..." : "Generate AI Plan"}</Text>
+            <Pressable
+              onPress={handleGenerate}
+              disabled={generating || !isConnected}
+              style={{ backgroundColor: !isConnected ? colors.surfaceLight : colors.primary, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 8, opacity: generating || !isConnected ? 0.7 : 1 }}
+            >
+              <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={18} color={!isConnected ? colors.muted : "#fff"} />
+              <Text style={{ color: !isConnected ? colors.muted : "#fff", fontWeight: "700", fontSize: 15 }}>
+                {!isConnected ? "Offline" : generating ? "Analyzing..." : "Generate AI Plan"}
+              </Text>
             </Pressable>
           </View>
         )}
