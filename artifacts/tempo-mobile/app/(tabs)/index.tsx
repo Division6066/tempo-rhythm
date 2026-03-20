@@ -1,21 +1,67 @@
 import { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, useTheme } from "../../lib/theme";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing, FadeInDown } from "react-native-reanimated";
+import FloatingActionButton from "../../components/FloatingActionButton";
+import AnimatedProgressBar from "../../components/AnimatedProgressBar";
 import { format } from "date-fns";
 import { hapticMedium } from "../../lib/haptics";
 import { useNetwork } from "../../lib/NetworkContext";
 import { cacheAllTasks, getCachedAllTasks, cacheProjects, getCachedProjects } from "../../lib/offlineCache";
+import { addToQueue } from "../../lib/offlineQueue";
+
+function AnimatedStatCard({ label, value, icon, color, delay }: { label: string; value: number; icon: keyof typeof Ionicons.glyphMap; color: string; delay: number }) {
+  const scale = useSharedValue(0);
+  const counterValue = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 12, stiffness: 100 });
+    counterValue.value = withTiming(value, { duration: 800, easing: Easing.out(Easing.cubic) });
+  }, [value, scale, counterValue]);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View entering={FadeInDown.delay(delay).duration(400)} style={[{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: colors.border }, cardStyle]}>
+      <Ionicons name={icon} size={18} color={color} style={{ marginBottom: 8 }} />
+      <Text style={{ color: colors.foreground, fontSize: 22, fontWeight: "800" }}>{value}</Text>
+      <Text style={{ color: colors.muted, fontSize: 9, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase" }}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+function AnimatedProgressRing({ done, total }: { done: number; total: number }) {
+  const scale = useSharedValue(0.5);
+
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 10, stiffness: 80 });
+  }, [done, total, scale]);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={[{ width: 80, height: 80, alignItems: "center", justifyContent: "center" }, ringStyle]}>
+      <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800" }}>{done}</Text>
+      <Text style={{ color: colors.muted, fontSize: 11 }}>/ {total}</Text>
+    </Animated.View>
+  );
+}
 
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { isConnected } = useNetwork();
   const liveTasks = useQuery(api.tasks.list, {});
   const liveProjects = useQuery(api.projects.list);
+  const createTask = useMutation(api.tasks.create);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -41,10 +87,11 @@ export default function HomeScreen() {
   const tasks = liveTasks ?? cachedTasks;
   const projects = liveProjects ?? cachedProjectsList;
 
-  const todayTasks = tasks?.filter((t) => t.status === "today") || [];
+  const todayTasks = tasks?.filter((t) => t.status === "today" || t.status === "done") || [];
   const inboxTasks = tasks?.filter((t) => t.status === "inbox") || [];
   const doneToday = todayTasks.filter((t) => t.status === "done").length;
   const totalToday = todayTasks.length;
+  const progress = totalToday > 0 ? (doneToday / totalToday) * 100 : 0;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -76,6 +123,40 @@ export default function HomeScreen() {
     router.push("/plan" as never);
   };
 
+  const fabActions = [
+    {
+      label: "Add task",
+      icon: "add-circle" as keyof typeof Ionicons.glyphMap,
+      color: colors.primary,
+      onPress: () => {
+        if (!isConnected) {
+          addToQueue({ type: "createTask", args: { title: "New task", status: "inbox", priority: "medium" } });
+          Alert.alert("Queued", "Task will be created when you're back online.");
+          return;
+        }
+        createTask({ title: "New task", status: "inbox", priority: "medium" });
+      },
+    },
+    {
+      label: "New note",
+      icon: "document-text" as keyof typeof Ionicons.glyphMap,
+      color: colors.teal,
+      onPress: () => router.push("/notes" as never),
+    },
+    {
+      label: "Plan my day",
+      icon: "sunny" as keyof typeof Ionicons.glyphMap,
+      color: colors.amber,
+      onPress: handlePlanPress,
+    },
+    {
+      label: "Open chat",
+      icon: "sparkles" as keyof typeof Ionicons.glyphMap,
+      color: "#9D4EDD",
+      onPress: handleAIPress,
+    },
+  ];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
@@ -90,64 +171,60 @@ export default function HomeScreen() {
           />
         }
       >
-        <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
-          {format(new Date(), "EEEE, MMM do")}
-        </Text>
-        <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800", marginBottom: 24 }}>
-          {getGreeting()}
-        </Text>
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
+            {format(new Date(), "EEEE, MMM do")}
+          </Text>
+          <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800", marginBottom: 24 }}>
+            {getGreeting()}
+          </Text>
+        </Animated.View>
 
-        <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: colors.border }}>
+        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: colors.border }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 20 }}>
-            <View style={{ width: 80, height: 80, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ color: colors.foreground, fontSize: 28, fontWeight: "800" }}>{doneToday}</Text>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>/ {totalToday}</Text>
-            </View>
+            <AnimatedProgressRing done={doneToday} total={totalToday} />
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700", marginBottom: 4 }}>Today&apos;s Progress</Text>
-              <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 12 }}>
+              <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8 }}>
                 {doneToday === totalToday && totalToday > 0 ? "All done!" : "Keep going!"}
               </Text>
-              <Pressable
-                onPress={handlePlanPress}
-                style={{ backgroundColor: !isConnected ? colors.surfaceLight : colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
-              >
-                {!isConnected && <Ionicons name="cloud-offline-outline" size={14} color={colors.muted} />}
-                <Text style={{ color: !isConnected ? colors.muted : "#fff", fontWeight: "700", fontSize: 14 }}>Plan my day</Text>
-              </Pressable>
+              <AnimatedProgressBar progress={progress} />
+              <View style={{ marginTop: 12 }}>
+                <Pressable
+                  onPress={handlePlanPress}
+                  style={{ backgroundColor: !isConnected ? colors.surfaceLight : colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
+                >
+                  {!isConnected && <Ionicons name="cloud-offline-outline" size={14} color={colors.muted} />}
+                  <Text style={{ color: !isConnected ? colors.muted : "#fff", fontWeight: "700", fontSize: 14 }}>Plan my day</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
-          {[
-            { label: "Today", value: totalToday, icon: "sunny" as const, color: colors.amber },
-            { label: "Inbox", value: inboxTasks.length, icon: "file-tray" as const, color: "#60A5FA" },
-            { label: "Projects", value: projects?.filter((p: any) => p.status === "active").length || 0, icon: "folder" as const, color: colors.teal },
-          ].map((stat) => (
-            <View key={stat.label} style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: colors.border }}>
-              <Ionicons name={stat.icon} size={18} color={stat.color} style={{ marginBottom: 8 }} />
-              <Text style={{ color: colors.foreground, fontSize: 22, fontWeight: "800" }}>{stat.value}</Text>
-              <Text style={{ color: colors.muted, fontSize: 9, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase" }}>{stat.label}</Text>
-            </View>
-          ))}
+          <AnimatedStatCard label="Today" value={totalToday} icon="sunny" color={colors.amber} delay={200} />
+          <AnimatedStatCard label="Inbox" value={inboxTasks.length} icon="file-tray" color="#60A5FA" delay={300} />
+          <AnimatedStatCard label="Projects" value={projects?.filter((p: any) => p.status === "active").length || 0} icon="folder" color={colors.teal} delay={400} />
         </View>
 
-        <Pressable
-          onPress={handleAIPress}
-          style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: !isConnected ? colors.border : "rgba(108,99,255,0.3)", marginBottom: 24, opacity: !isConnected ? 0.6 : 1 }}
-        >
-          <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(108,99,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
-            <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={24} color={!isConnected ? colors.muted : colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>AI Assistant</Text>
-            <Text style={{ color: colors.muted, fontSize: 12 }}>{!isConnected ? "Requires connection" : "Chat, plan, or chunk tasks"}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.muted} />
-        </Pressable>
+        <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+          <Pressable
+            onPress={handleAIPress}
+            style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: !isConnected ? colors.border : "rgba(108,99,255,0.3)", marginBottom: 24, opacity: !isConnected ? 0.6 : 1 }}
+          >
+            <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(108,99,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
+              <Ionicons name={!isConnected ? "cloud-offline-outline" : "sparkles"} size={24} color={!isConnected ? colors.muted : colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>AI Assistant</Text>
+              <Text style={{ color: colors.muted, fontSize: 12 }}>{!isConnected ? "Requires connection" : "Chat, plan, or chunk tasks"}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+          </Pressable>
+        </Animated.View>
 
-        <View>
+        <Animated.View entering={FadeInDown.delay(600).duration(400)}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>Up Next</Text>
             <Pressable onPress={() => router.push("/(tabs)/today" as never)}>
@@ -180,8 +257,10 @@ export default function HomeScreen() {
               <Text style={{ color: colors.muted, fontSize: 13 }}>No upcoming tasks today.</Text>
             </View>
           )}
-        </View>
+        </Animated.View>
       </ScrollView>
+
+      <FloatingActionButton actions={fabActions} />
     </SafeAreaView>
   );
 }

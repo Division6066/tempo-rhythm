@@ -6,10 +6,12 @@ import { api } from "../../../../tempo-app/convex/_generated/api";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeIn, FadeOut, Layout as LayoutAnimation } from "react-native-reanimated";
 import { colors } from "../../lib/theme";
 import { useNetwork } from "../../lib/NetworkContext";
 import { cacheInboxTasks, getCachedInboxTasks } from "../../lib/offlineCache";
 import { addToQueue } from "../../lib/offlineQueue";
+import SwipeableTaskRow from "../../components/SwipeableTaskRow";
 
 type StagedTask = { title: string; priority: string; estimatedMinutes?: number };
 
@@ -90,6 +92,14 @@ export default function InboxScreen() {
     await acceptStaged({ id: suggestionId });
   };
 
+  const handleComplete = async (id: Id<"tasks">) => {
+    await updateTask({ id, status: "done" });
+  };
+
+  const handleDefer = async (id: Id<"tasks">) => {
+    await updateTask({ id, status: "today" });
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
@@ -114,7 +124,7 @@ export default function InboxScreen() {
         </View>
 
         {showDump ? (
-          <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+          <Animated.View entering={FadeIn.duration(200)} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
             <TextInput
               value={brainDump}
               onChangeText={setBrainDump}
@@ -137,7 +147,7 @@ export default function InboxScreen() {
                 <Text style={{ color: "#fff", fontWeight: "700" }}>{!isConnected ? "Offline" : extracting ? "Extracting..." : "Extract Tasks"}</Text>
               </Pressable>
             </View>
-          </View>
+          </Animated.View>
         ) : (
           <Pressable
             onPress={() => {
@@ -157,7 +167,7 @@ export default function InboxScreen() {
         {stagedSuggestions && stagedSuggestions.length > 0 && stagedSuggestions.map((suggestion) => {
           const extractedTasks = (suggestion.data as { tasks: StagedTask[] }).tasks || [];
           return (
-            <View key={suggestion._id} style={{ backgroundColor: "rgba(108,99,255,0.08)", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)" }}>
+            <Animated.View key={suggestion._id} entering={FadeIn.duration(300)} layout={LayoutAnimation.springify()} style={{ backgroundColor: "rgba(108,99,255,0.08)", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 }}>
                 <Ionicons name="sparkles" size={14} color={colors.primary} />
                 <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>AI Extracted Tasks ({extractedTasks.length})</Text>
@@ -183,40 +193,18 @@ export default function InboxScreen() {
                   <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Accept</Text>
                 </Pressable>
               </View>
-            </View>
+            </Animated.View>
           );
         })}
 
         {effectiveTasks?.map((task) => (
-          <Pressable
+          <SwipeableTaskRow
             key={task._id}
+            task={{ ...task, priority: task.priority || "medium" }}
+            onComplete={() => handleComplete(task._id)}
+            onDefer={() => handleDefer(task._id)}
             onPress={() => router.push(`/task/${task._id}` as never)}
-            style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: colors.border }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{task.title}</Text>
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-                {task.aiGenerated && (
-                  <View style={{ backgroundColor: "rgba(108,99,255,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
-                    <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "600" }}>AI</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            <Pressable onPress={() => {
-              if (!isConnected) {
-                addToQueue({ type: "updateTask", args: { id: task._id, status: "today" } });
-                Alert.alert("Queued", "This change will sync when you're back online.");
-                return;
-              }
-              updateTask({ id: task._id, status: "today" });
-            }} hitSlop={10} style={{ padding: 6 }}>
-              <Ionicons name="arrow-forward-circle-outline" size={22} color={colors.primary} />
-            </Pressable>
-            <Pressable onPress={() => { Alert.alert("Delete?", "Remove this task?", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: () => removeTask({ id: task._id }) }]); }} hitSlop={10} style={{ padding: 6 }}>
-              <Ionicons name="trash-outline" size={20} color={colors.danger} />
-            </Pressable>
-          </Pressable>
+          />
         ))}
         {effectiveTasks && effectiveTasks.length === 0 && !stagedSuggestions?.length && (
           <View style={{ padding: 40, alignItems: "center" }}>

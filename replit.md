@@ -81,6 +81,8 @@ The design emphasizes a warm light theme with a primary violet color scheme, aim
 - **Dark Mode:** Full dark theme with CSS variables, toggle persisted to localStorage via ThemeProvider context.
 - **Navbar:** Top navbar with "Tempo Flow" branding, search button, dark/light toggle, and user dropdown menu (preferences, logout).
 - **Mobile Sidebar:** Hamburger menu opens a slide-in sidebar overlay on mobile (<768px) with 44px touch targets.
+- **Mobile Swipe Gestures:** `react-native-gesture-handler` Swipeable on task rows — swipe right to complete (green), swipe left to defer/snooze (amber), with haptic feedback via `expo-haptics`. Reusable `SwipeableTaskRow` component in `artifacts/tempo-mobile/components/`.
+- **Mobile Animations:** Reanimated layout animations (FadeIn/FadeOut, Layout.springify) on task list items, animated progress bar and stat cards on Home dashboard, spring-animated FAB with 4 quick actions (Add task, New note, Plan my day, Open chat).
 - **Error Boundary:** React error boundary wrapping the app with friendly error message and reload button.
 - **Loading States:** Skeleton loaders for task lists, notes grid, and calendar. Spinner with "Saving…" text on mutation buttons.
 - **Empty States:** Inbox, Calendar, and Notes all show friendly empty-state messages with icon, description, and "Create first [item]" CTA button.

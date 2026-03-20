@@ -4,6 +4,7 @@ import { Redirect, Stack, usePathname } from "expo-router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View, Text, Pressable } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { convex, secureStorage } from "../lib/convex";
 import { ThemeContext, getThemeColors, useTheme } from "../lib/theme";
@@ -110,14 +111,16 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <ErrorBoundary>
-      <ConvexAuthProvider client={convex} storage={secureStorage}>
-        <NetworkProvider>
-          <ThemeProvider>
-            <RootNavigator />
-          </ThemeProvider>
-        </NetworkProvider>
-      </ConvexAuthProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <ConvexAuthProvider client={convex} storage={secureStorage}>
+          <NetworkProvider>
+            <ThemeProvider>
+              <RootNavigator />
+            </ThemeProvider>
+          </NetworkProvider>
+        </ConvexAuthProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }

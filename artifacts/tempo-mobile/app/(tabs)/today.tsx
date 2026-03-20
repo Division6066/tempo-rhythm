@@ -1,38 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, Alert, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../tempo-app/convex/_generated/api";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { colors, useTheme } from "../../lib/theme";
+import { useTheme } from "../../lib/theme";
 import { useNetwork } from "../../lib/NetworkContext";
 import { cacheTodayTasks, getCachedTodayTasks } from "../../lib/offlineCache";
 import { addToQueue } from "../../lib/offlineQueue";
+import SwipeableTaskRow from "../../components/SwipeableTaskRow";
+import AnimatedProgressBar from "../../components/AnimatedProgressBar";
 import type { Id } from "../../../../tempo-app/convex/_generated/dataModel";
 import { hapticSuccess, hapticMedium } from "../../lib/haptics";
-
-function TaskRow({ task, onToggle, onPress, colors }: { task: { _id: Id<"tasks">; title: string; status: string; priority: string; estimatedMinutes?: number }; onToggle: () => void; onPress: () => void; colors: import("../../lib/theme").ThemeColors }) {
-  const isDone = task.status === "done";
-  const priorityColor = task.priority === "high" ? colors.teal : task.priority === "medium" ? colors.amber : colors.muted;
-
-  return (
-    <Pressable onPress={onPress} style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: colors.border }}>
-      <Pressable onPress={onToggle} hitSlop={12}>
-        <Ionicons name={isDone ? "checkmark-circle" : "ellipse-outline"} size={22} color={isDone ? colors.primary : colors.muted} />
-      </Pressable>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: isDone ? colors.muted : colors.foreground, fontSize: 14, fontWeight: "600", textDecorationLine: isDone ? "line-through" : "none" }}>{task.title}</Text>
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-          <View style={{ backgroundColor: `${priorityColor}33`, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
-            <Text style={{ color: priorityColor, fontSize: 10, fontWeight: "600" }}>{task.priority}</Text>
-          </View>
-          {task.estimatedMinutes && <Text style={{ color: colors.muted, fontSize: 10 }}>{task.estimatedMinutes}m</Text>}
-        </View>
-      </View>
-    </Pressable>
-  );
-}
 
 export default function TodayScreen() {
   const { colors } = useTheme();
@@ -83,6 +62,10 @@ export default function TodayScreen() {
     }
   };
 
+  const deferTask = async (id: Id<"tasks">) => {
+    await updateTask({ id, status: "inbox" });
+  };
+
   const onRefresh = useCallback(async () => {
     hapticMedium();
     setRefreshing(true);
@@ -107,9 +90,7 @@ export default function TodayScreen() {
 
         <View style={{ marginBottom: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View style={{ flex: 1, height: 6, backgroundColor: colors.surfaceLight, borderRadius: 3, overflow: "hidden" }}>
-              <View style={{ height: "100%", backgroundColor: colors.primary, borderRadius: 3, width: `${progress}%` }} />
-            </View>
+            <AnimatedProgressBar progress={progress} />
             <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "600" }}>{completedCount} / {todayTasks.length}</Text>
           </View>
         </View>
@@ -117,25 +98,57 @@ export default function TodayScreen() {
         {highPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
             <Text style={{ color: colors.teal, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>High Priority</Text>
-            {highPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
+            {highPriority.map((t) => (
+              <SwipeableTaskRow
+                key={t._id}
+                task={t}
+                onComplete={() => toggleTask(t._id, t.status)}
+                onDefer={() => deferTask(t._id)}
+                onPress={() => router.push(`/task/${t._id}` as never)}
+              />
+            ))}
           </View>
         )}
         {mediumPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
             <Text style={{ color: colors.amber, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Medium Priority</Text>
-            {mediumPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
+            {mediumPriority.map((t) => (
+              <SwipeableTaskRow
+                key={t._id}
+                task={t}
+                onComplete={() => toggleTask(t._id, t.status)}
+                onDefer={() => deferTask(t._id)}
+                onPress={() => router.push(`/task/${t._id}` as never)}
+              />
+            ))}
           </View>
         )}
         {lowPriority.length > 0 && (
           <View style={{ marginBottom: 20 }}>
             <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Low Priority</Text>
-            {lowPriority.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
+            {lowPriority.map((t) => (
+              <SwipeableTaskRow
+                key={t._id}
+                task={t}
+                onComplete={() => toggleTask(t._id, t.status)}
+                onDefer={() => deferTask(t._id)}
+                onPress={() => router.push(`/task/${t._id}` as never)}
+              />
+            ))}
           </View>
         )}
         {completed.length > 0 && (
           <View style={{ marginBottom: 20, opacity: 0.6, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
             <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Completed</Text>
-            {completed.map((t) => <TaskRow key={t._id} task={t} onToggle={() => toggleTask(t._id, t.status)} onPress={() => router.push(`/task/${t._id}` as never)} colors={colors} />)}
+            {completed.map((t) => (
+              <SwipeableTaskRow
+                key={t._id}
+                task={t}
+                onComplete={() => toggleTask(t._id, t.status)}
+                onDefer={() => deferTask(t._id)}
+                onPress={() => router.push(`/task/${t._id}` as never)}
+              />
+            ))}
           </View>
         )}
         {todayTasks.length === 0 && (
