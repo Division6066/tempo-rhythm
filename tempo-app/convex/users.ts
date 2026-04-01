@@ -11,7 +11,7 @@ export const getCurrentUser = query({
 });
 
 export const getProfile = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.string() },
   handler: async (ctx, { userId }) => {
     return await ctx.db
       .query("profiles")
@@ -22,7 +22,7 @@ export const getProfile = query({
 
 export const upsertProfile = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.string(),
     fullName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

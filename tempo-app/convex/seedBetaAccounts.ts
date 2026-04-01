@@ -17,7 +17,7 @@ export const findUserByEmail = internalQuery({
 });
 
 export const ensurePaidProfile = internalMutation({
-  args: { userId: v.id("users") },
+  args: { userId: v.string() },
   handler: async (ctx, { userId }) => {
     const existing = await ctx.db
       .query("profiles")
@@ -63,7 +63,7 @@ export const createBetaUser = internalMutation({
     });
     const now = Date.now();
     await ctx.db.insert("profiles", {
-      userId,
+      userId: userId as string,
       fullName: name,
       role: "user",
       userType: "paid",

@@ -6,7 +6,7 @@ export default defineSchema({
   ...authTables,
 
   profiles: defineTable({
-    userId: v.id("users"),
+    userId: v.optional(v.string()),
     fullName: v.optional(v.string()),
     role: v.union(v.literal("admin"), v.literal("user")),
     userType: v.optional(v.union(v.literal("free"), v.literal("paid"))),
@@ -134,6 +134,27 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"]),
+
+  subscriptions: defineTable({
+    userId: v.optional(v.string()),
+    revenueCatCustomerId: v.optional(v.string()),
+    revenueCatAppUserId: v.optional(v.string()),
+    revenueCatProductId: v.optional(v.string()),
+    revenueCatEntitlementId: v.optional(v.string()),
+    tier: v.union(v.literal("basic"), v.literal("pro"), v.literal("max")),
+    status: v.string(),
+    platform: v.optional(v.string()),
+    environment: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
+    cancelledAt: v.optional(v.number()),
+    eventType: v.optional(v.string()),
+    lastEventId: v.optional(v.string()),
+    updatedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_revenueCatCustomerId", ["revenueCatCustomerId"])
+    .index("by_revenueCatAppUserId", ["revenueCatAppUserId"]),
 
   memories: defineTable({
     userId: v.optional(v.string()),

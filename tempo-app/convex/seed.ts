@@ -94,16 +94,17 @@ export const upsertBetaUser = internalMutation({
       } as any);
     }
 
+    const userId = String(user!._id);
     const existingProfile = await ctx.db
       .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", user!._id))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
 
     if (existingProfile) {
       await ctx.db.patch(existingProfile._id, { userType: "paid" as const });
     } else {
       await ctx.db.insert("profiles", {
-        userId: user._id,
+        userId,
         fullName: `Beta Tester ${index}`,
         role: "user" as const,
         userType: "paid" as const,

@@ -62,3 +62,5 @@ attached_assets/Pasted-Replit-Secrets-*
 .replit
 replit.nix
 .config/
+.checkpoint-*.json
+CONFIG_REPORT.md
