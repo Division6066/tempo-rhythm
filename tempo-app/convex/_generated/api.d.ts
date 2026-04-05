@@ -27,6 +27,7 @@ import type * as seed from "../seed.js";
 import type * as seedBetaAccounts from "../seedBetaAccounts.js";
 import type * as seedBetaRunner from "../seedBetaRunner.js";
 import type * as staging from "../staging.js";
+import type * as subscriptions from "../subscriptions.js";
 import type * as tags from "../tags.js";
 import type * as tasks from "../tasks.js";
 import type * as templates from "../templates.js";
@@ -58,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   seedBetaAccounts: typeof seedBetaAccounts;
   seedBetaRunner: typeof seedBetaRunner;
   staging: typeof staging;
+  subscriptions: typeof subscriptions;
   tags: typeof tags;
   tasks: typeof tasks;
   templates: typeof templates;

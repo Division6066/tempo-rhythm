@@ -215,4 +215,22 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_user_time", ["userId", "createdAt"]),
+
+  subscriptions: defineTable({
+    userId: v.optional(v.string()),
+    revenuecatAppUserId: v.optional(v.string()),
+    tier: v.string(),
+    status: v.string(),
+    productId: v.optional(v.string()),
+    entitlementId: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
+    purchasedAt: v.optional(v.number()),
+    environment: v.optional(v.string()),
+    store: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_revenuecatAppUserId", ["revenuecatAppUserId"])
+    .index("by_status", ["status"]),
 });
