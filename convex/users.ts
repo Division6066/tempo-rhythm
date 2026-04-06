@@ -126,6 +126,43 @@ export const updateUserType = mutation({
   },
 });
 
+/**
+ * Called by the RevenueCat webhook (convex/revenuecat.ts) to sync subscription status.
+ * Uses appUserId (RevenueCat user ID = Convex user email or subject) to find and update the user.
+ */
+export const updateSubscriptionStatus = mutation({
+  args: {
+    userId: v.string(),
+    userType: v.union(v.literal("free"), v.literal("paid")),
+    activeEntitlements: v.array(v.string()),
+    revenueCatEvent: v.string(),
+  },
+  handler: async (ctx, { userId, userType, activeEntitlements: _entitlements, revenueCatEvent: _event }) => {
+    // Try to find user by email (RevenueCat appUserId is typically the user's email)
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", userId))
+      .unique();
+
+    // Fallback: try to find by ID if userId looks like a Convex ID
+    if (!user) {
+      try {
+        user = await ctx.db.get(userId as import("./_generated/dataModel").Id<"users">);
+      } catch {
+        // Not a valid Convex ID — user not found
+      }
+    }
+
+    if (!user) {
+      console.warn(`[RevenueCat] User not found for appUserId: ${userId}`);
+      return { updated: false };
+    }
+
+    await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
+    return { updated: true, userId: user._id };
+  },
+});
+
 export const remove = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {

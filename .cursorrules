@@ -1,0 +1,89 @@
+You are building TEMPO Flow, an ADHD-friendly AI daily planner.
+
+## TECH STACK (NON-NEGOTIABLE)
+
+- Frontend (Web): Next.js 16+ App Router — Server Components by default
+- Frontend (Mobile): Expo / React Native with Expo Router v4
+- Styling: NativeWind v4 + Tailwind 3.3.2 (PINNED — do NOT upgrade)
+- Backend: Convex — `tremendous-bass-443` for dev, `ceaseless-dog-617` for staging
+- Auth: Convex Auth (`@convex-dev/auth`) — NOT Clerk, NOT NextAuth
+- Payments (Web): Polar — NOT Stripe
+- Payments (Mobile): RevenueCat (`react-native-purchases`) — NOT Stripe
+- AI: Gemma 4 26B A4B + Mistral Small 4 via OpenRouter — NOT OpenAI SDK directly
+- Monorepo: Turborepo + pnpm
+
+## FORBIDDEN PACKAGES
+
+NEVER add these to any package.json:
+firebase, supabase, prisma, drizzle, clerk, @clerk/*, stripe, express, trpc, openai, @auth/core, next-auth
+
+## NEXT.JS CONVENTIONS (v16+)
+
+- Default to Server Components. Only add `'use client'` for interactivity or browser APIs.
+- Push `'use client'` as far down the component tree as possible.
+- Use Server Actions (`'use server'`) for mutations, not Route Handlers (unless public API).
+- All request APIs are async: `await cookies()`, `await headers()`, `await params`, `await searchParams`.
+- Use `proxy.ts` instead of `middleware.ts` (Next.js 16 rename).
+- Turbopack config is top-level in `next.config.ts`, not under `experimental`.
+
+## CONVEX CONVENTIONS
+
+- `userId` is always `v.optional(v.string())`, NEVER `v.id("users")`.
+- No `journals` table — use `notes` with `periodType` field.
+- All timestamps are `v.number()` (Unix ms).
+- Tables must have `createdAt` and `updatedAt` fields.
+- RevenueCat webhook lives at `/api/revenuecat-webhook` in `convex/http.ts`.
+
+## AI SAFETY RULES
+
+- AI NEVER silently mutates state — always accept/reject flow.
+- AI-generated content marked with `aiGenerated: true`.
+- Templates are finite curated primitives, never freeform.
+
+## DESIGN SYSTEM ("Soft Editorial")
+
+- Headlines: Newsreader (serif)
+- Body: Inter (sans-serif)
+- Code: IBM Plex Mono
+- Dark bg: `#131312`
+- Light bg: `#F3EBE2`
+- Primary accent: orange gradient `#D97757 → #E8A87C`
+- Cards: inner shadows + grain texture
+
+## PRICING (3 tiers, no free tier, $1 trial)
+
+| Tier  | Monthly | Annual |
+|-------|---------|--------|
+| Basic | $5      | $50    |
+| Pro   | $10     | $100   |
+| Max   | $20     | $200   |
+
+RevenueCat entitlements: `basic`, `pro`, `max`
+
+## CRITICAL FLAGS (NEVER change via automation)
+
+In `config/appConfig.ts`:
+- `PAYMENT_SYSTEM_ENABLED`
+- `MOCK_PAYMENTS`
+- `PAYWALL_ENABLED`
+- `FORCE_PROD_MODE`
+
+## MONOREPO STRUCTURE
+
+```
+tempo-rhythm/
+├── apps/web/         Next.js 16+
+├── apps/mobile/      Expo
+├── packages/ui/      Shared UI
+├── packages/types/   Shared types
+├── packages/utils/   Shared utils
+├── convex/           Backend
+├── turbo.json
+└── pnpm-workspace.yaml
+```
+
+## SECRETS RULE
+
+- EXPO_PUBLIC_* and NEXT_PUBLIC_* are CLIENT-VISIBLE — only public keys
+- REVENUECAT_SECRET_KEY and CONVEX_DEPLOY_KEY are server-only
+- Never commit .env* files
