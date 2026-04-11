@@ -2,6 +2,9 @@
   "plugins": {
     "convex": {
       "enabled": true
+    },
+    "browse": {
+      "enabled": true
     }
   }
 }
