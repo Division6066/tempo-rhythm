@@ -7,34 +7,34 @@
 */
 
 @theme {
-  /* משתני צבעים - מצב בהיר (ברירת מחדל) */
-  --color-background: #ffffff; /* צבע רקע ראשי */
-  --color-foreground: #09090b; /* צבע טקסט ראשי */
+  /* Soft Editorial — light */
+  --color-background: #f3ebe2;
+  --color-foreground: #131312;
 
-  --color-card: #ffffff; /* צבע רקע לכרטיסים */
-  --color-card-foreground: #09090b; /* צבע טקסט בכרטיסים */
+  --color-card: #faf6f0;
+  --color-card-foreground: #131312;
 
-  --color-popover: #ffffff; /* צבע רקע לתפריטים צפים */
-  --color-popover-foreground: #09090b;
+  --color-popover: #faf6f0;
+  --color-popover-foreground: #131312;
 
-  --color-primary: #18181b; /* צבע ראשי (למשל כפתורים) */
-  --color-primary-foreground: #fafafa;
+  --color-primary: #d97757;
+  --color-primary-foreground: #fafaf9;
 
-  --color-secondary: #f4f4f5; /* צבע משני */
-  --color-secondary-foreground: #18181b;
+  --color-secondary: #ede4d8;
+  --color-secondary-foreground: #131312;
 
-  --color-muted: #f4f4f5; /* צבעים לאלמנטים מוחלשים */
-  --color-muted-foreground: #71717a;
+  --color-muted: #e8dfd3;
+  --color-muted-foreground: #5c5348;
 
-  --color-accent: #f4f4f5; /* צבע להדגשה (Hover וכדומה) */
-  --color-accent-foreground: #18181b;
+  --color-accent: #e8a87c;
+  --color-accent-foreground: #131312;
 
-  --color-destructive: #ef4444; /* צבע לפעולות הרסניות (שגיאה/מחיקה) */
-  --color-destructive-foreground: #fafafa;
+  --color-destructive: #c45c4a;
+  --color-destructive-foreground: #fafaf9;
 
-  --color-border: #e4e4e7; /* צבע גבולות */
-  --color-input: #e4e4e7; /* צבע גבולות לשדות קלט */
-  --color-ring: #09090b; /* צבע טבעת פוקוס */
+  --color-border: #d4c9bc;
+  --color-input: #d4c9bc;
+  --color-ring: #d97757;
 
   /* רדיוסים לפינות (Radius) */
   --radius-lg: 0.5rem;
@@ -45,25 +45,25 @@
 /* הגדרות עבור מצב כהה (Dark Mode) */
 @media (prefers-color-scheme: dark) {
   @theme {
-    --color-background: #09090b;
-    --color-foreground: #fafafa;
-    --color-card: #09090b;
-    --color-card-foreground: #fafafa;
-    --color-popover: #09090b;
-    --color-popover-foreground: #fafafa;
-    --color-primary: #fafafa;
-    --color-primary-foreground: #18181b;
-    --color-secondary: #27272a;
-    --color-secondary-foreground: #fafafa;
-    --color-muted: #27272a;
-    --color-muted-foreground: #a1a1aa;
-    --color-accent: #27272a;
-    --color-accent-foreground: #fafafa;
-    --color-destructive: #7f1d1d;
-    --color-destructive-foreground: #fafafa;
-    --color-border: #27272a;
-    --color-input: #27272a;
-    --color-ring: #d4d4d8;
+    --color-background: #131312;
+    --color-foreground: #f5f3ef;
+    --color-card: #1c1c1a;
+    --color-card-foreground: #f5f3ef;
+    --color-popover: #1c1c1a;
+    --color-popover-foreground: #f5f3ef;
+    --color-primary: #d97757;
+    --color-primary-foreground: #131312;
+    --color-secondary: #2a2926;
+    --color-secondary-foreground: #f5f3ef;
+    --color-muted: #2a2926;
+    --color-muted-foreground: #a89f94;
+    --color-accent: #e8a87c;
+    --color-accent-foreground: #131312;
+    --color-destructive: #b54a3c;
+    --color-destructive-foreground: #fafaf9;
+    --color-border: #3a3834;
+    --color-input: #3a3834;
+    --color-ring: #e8a87c;
   }
 }
 
@@ -73,6 +73,43 @@
 }
 
 body {
-  @apply bg-background text-foreground; /* צבעי רקע וטקסט ברירת מחדל */
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-background text-foreground antialiased;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 15% 10%, rgba(217, 119, 87, 0.12), transparent 50%),
+    radial-gradient(ellipse 100% 60% at 85% 90%, rgba(232, 168, 124, 0.1), transparent 45%);
+}
+
+/* Subtle paper grain (Soft Editorial) */
+.grain-bg {
+  position: relative;
+}
+.grain-bg::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  z-index: 0;
+}
+.grain-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+.font-heading {
+  font-family: var(--font-newsreader), ui-serif, Georgia, "Times New Roman", serif;
+}
+
+.font-code {
+  font-family: var(--font-ibm-mono), ui-monospace, monospace;
+}
+
+.text-gradient-primary {
+  background-image: linear-gradient(135deg, #d97757 0%, #e8a87c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

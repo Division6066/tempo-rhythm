@@ -5,6 +5,13 @@ import type { NextConfig } from "next";
 const workspaceRoot = path.join(__dirname, "../..");
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: "/page1", destination: "/dashboard", permanent: false },
+      { source: "/page2", destination: "/dashboard", permanent: false },
+      { source: "/page3", destination: "/dashboard", permanent: false },
+    ];
+  },
   turbopack: {
     root: workspaceRoot,
   },

@@ -1,35 +1,55 @@
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+
+/** Shared resolver for the authenticated app user document. */
+export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    return null;
+  }
+
+  // In Convex Auth the subject is: authAccountId|userId
+  const subjectParts = identity.subject.split("|");
+  if (subjectParts.length >= 2) {
+    const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
+    try {
+      const user = await ctx.db.get(userId);
+      if (user) return user;
+    } catch {
+      // invalid ID, fall through to email lookup
+    }
+  }
+
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
+      .unique();
+    if (user) return user;
+  }
+
+  return null;
+}
 
 export const getCurrentUser = query({
   args: {},
+  handler: async (ctx) => fetchCurrentUser(ctx),
+});
+
+/** Profile for dashboard greeting and header; extends user with `greetingName`. */
+export const getProfile = query({
+  args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return null;
-    }
-
-    // In Convex Auth the subject is: authAccountId|userId
-    const subjectParts = identity.subject.split("|");
-    if (subjectParts.length >= 2) {
-      const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-      try {
-        const user = await ctx.db.get(userId);
-        if (user) return user;
-      } catch {
-        // invalid ID, fall through to email lookup
-      }
-    }
-
-    if (identity.email) {
-      const user = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
-        .unique();
-      if (user) return user;
-    }
-
-    return null;
+    const user = await fetchCurrentUser(ctx);
+    if (!user) return null;
+    const greetingName =
+      user.fullName?.trim() || user.email?.split("@")[0] || "there";
+    return {
+      ...user,
+      greetingName,
+    };
   },
 });
 

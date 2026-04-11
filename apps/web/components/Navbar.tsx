@@ -98,7 +98,7 @@ export default function Navbar() {
       <div className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
           {/* קישורי ניווט - צד ימין (RTL) */}
-          <div className="flex gap-8 items-center">
+          <div className="flex max-w-[70vw] flex-wrap items-center gap-x-4 gap-y-2 sm:max-w-none sm:gap-x-6">
             <Link
               href="/"
               className="text-2xl hover:scale-110 transition-transform"
@@ -106,24 +106,25 @@ export default function Navbar() {
             >
               <Home className="w-6 h-6 text-foreground" />
             </Link>
-            <Link
-              href="/page1"
-              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors hover:underline underline-offset-4 decoration-2"
-            >
-              עמוד 1
-            </Link>
-            <Link
-              href="/page2"
-              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors hover:underline underline-offset-4 decoration-2"
-            >
-              עמוד 2
-            </Link>
-            <Link
-              href="/page3"
-              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors hover:underline underline-offset-4 decoration-2"
-            >
-              עמוד 3
-            </Link>
+            {[
+              { href: "/dashboard", label: "לוח בית" },
+              { href: "/tasks", label: "משימות" },
+              { href: "/notes", label: "פתקים" },
+              { href: "/calendar", label: "יומן" },
+              { href: "/coach", label: "מאמן" },
+              { href: "/habits", label: "הרגלים" },
+              { href: "/goals", label: "מטרות" },
+              { href: "/settings", label: "הגדרות" },
+              { href: "/analytics", label: "נתונים" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors hover:underline underline-offset-4 decoration-2"
+              >
+                {label}
+              </Link>
+            ))}
           </div>
 
           {/* פרופיל משתמש או כפתור התחברות - צד שמאל (RTL) */}

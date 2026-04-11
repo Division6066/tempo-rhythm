@@ -62,6 +62,7 @@ export const get = query({
 export const create = mutation({
   args: {
     title: v.optional(v.string()),
+    technique: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -82,11 +83,47 @@ export const create = mutation({
     const conversationId = await ctx.db.insert('conversations', {
       userId: user._id,
       title: args.title || 'New Conversation',
+      technique: args.technique,
       createdAt: now,
       updatedAt: now,
     });
 
     return conversationId;
+  },
+});
+
+// Mutation: Update coach technique (optional)
+export const updateTechnique = mutation({
+  args: {
+    conversationId: v.id('conversations'),
+    technique: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Not authenticated');
+    }
+
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .first();
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation || conversation.userId !== user._id) {
+      throw new Error('Conversation not found or access denied');
+    }
+
+    await ctx.db.patch(args.conversationId, {
+      technique: args.technique === null ? undefined : args.technique,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
   },
 });
 

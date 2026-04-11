@@ -6,7 +6,15 @@ import {
 import type { NextRequest } from "next/server";
 
 // הגדרת נתיבים ציבוריים (שלא דורשים אימות)
-const isPublicRoute = createRouteMatcher(["/", "/sign-in", "/sign-up"]);
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/sign-in",
+  "/sign-up",
+  "/terms",
+  "/privacy",
+  "/contact",
+  "/success",
+]);
 
 // Middleware לבדיקת אימות והפניות
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
