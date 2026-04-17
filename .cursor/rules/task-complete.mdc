@@ -1,0 +1,16 @@
+---
+description: Mark TASKS.md items done after a work chunk and suggest the next three
+alwaysApply: false
+---
+
+# Task complete — tick off and continue
+
+When the user says work is done, asks to tick off tasks, or wants to close a session:
+
+1. List what shipped (files, behavior) in 3–6 bullets max.
+2. Update [`docs/TASKS.md`](docs/TASKS.md): set the completed row(s) **Status** to `done` (or `in-review` if a PR is open but not merged — match whatever the table already uses for that state).
+3. If acceptance criteria were met only partially, keep status `in-progress` and note what remains.
+4. Run the same "pick three" logic as **session-start**: suggest the next three `todo` tasks with satisfied deps.
+5. Remind the user: large changes belong in a PR; one logical change per PR when possible.
+
+Never mark `done` without the user confirming the work is actually finished.

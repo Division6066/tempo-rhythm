@@ -1,89 +1,79 @@
-You are building TEMPO Flow, an ADHD-friendly AI daily planner.
+# Tempo Flow — Cursor rules
 
-## TECH STACK (NON-NEGOTIABLE)
+Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Expo mobile + Convex + OpenRouter. See `README.md` for the project overview.
 
-- Frontend (Web): Next.js 16+ App Router — Server Components by default
-- Frontend (Mobile): Expo / React Native with Expo Router v4
-- Styling: NativeWind v4 + Tailwind 3.3.2 (PINNED — do NOT upgrade)
-- Backend: Convex — `tremendous-bass-443` for dev, `ceaseless-dog-617` for staging
-- Auth: Convex Auth (`@convex-dev/auth`) — NOT Clerk, NOT NextAuth
-- Payments (Web): Polar — NOT Stripe
-- Payments (Mobile): RevenueCat (`react-native-purchases`) — NOT Stripe
-- AI: Gemma 4 26B A4B + Mistral Small 4 via OpenRouter — NOT OpenAI SDK directly
-- Monorepo: Turborepo + pnpm
+## Read these first (every session)
 
-## FORBIDDEN PACKAGES
+1. **`docs/HARD_RULES.md`** — canonical non-negotiables. Read before touching code.
+2. **`docs/TASKS.md`** — find your assigned task by owner tag and update status as you go.
+3. **`docs/PRDs/PRD_Phase_1_MVP.md`** — current phase spec. Other phase PRDs under `docs/PRDs/` are for planning context only.
+4. **`docs/CURSOR_PROMPTS.md`** — kickoff prompts for each Cursor Cloud cluster.
 
-NEVER add these to any package.json:
-firebase, supabase, prisma, drizzle, clerk, @clerk/*, stripe, express, trpc, openai, @auth/core, next-auth
+## Owner tags
 
-## NEXT.JS CONVENTIONS (v16+)
+Only claim tasks whose owner tag matches your agent identity:
 
-- Default to Server Components. Only add `'use client'` for interactivity or browser APIs.
-- Push `'use client'` as far down the component tree as possible.
-- Use Server Actions (`'use server'`) for mutations, not Route Handlers (unless public API).
-- All request APIs are async: `await cookies()`, `await headers()`, `await params`, `await searchParams`.
-- Use `proxy.ts` instead of `middleware.ts` (Next.js 16 rename).
-- Turbopack config is top-level in `next.config.ts`, not under `experimental`.
+- `cursor-ide` — the local interactive Cursor IDE (the human is watching).
+- `cursor-cloud-1` — Core Features cluster: Tasks, Notes, Calendar, Journal, Brain Dump, Search, Templates, Library, Projects, Folders.
+- `cursor-cloud-2` — AI and Intelligence cluster: Coach, Planning, AI extraction, RAG, tagging engine, Habits, Goals, Rewards, Analytics.
+- `cursor-cloud-3` — Platform and Polish cluster: Auth, Settings, RevenueCat paywall, design-system enforcement, PWA polish, React Native polish, accessibility, OpenDyslexic, voice plumbing.
+- `twin`, `pokee`, `zo`, `human-amit` — NOT Cursor. Never pick these up in code.
 
-## CONVEX CONVENTIONS
+## Pre-flight rule (every non-trivial task)
 
-- `userId` is always `v.optional(v.string())`, NEVER `v.id("users")`.
-- No `journals` table — use `notes` with `periodType` field.
-- All timestamps are `v.number()` (Unix ms).
-- Tables must have `createdAt` and `updatedAt` fields.
-- RevenueCat webhook lives at `/api/revenuecat-webhook` in `convex/http.ts`.
+Before writing code:
 
-## AI SAFETY RULES
+1. List the files you plan to create or modify.
+2. Confirm your understanding of the feature against the current phase PRD.
+3. List any clarifying questions.
+4. Wait for approval before writing code (unless the task is a trivial fix).
 
-- AI NEVER silently mutates state — always accept/reject flow.
-- AI-generated content marked with `aiGenerated: true`.
-- Templates are finite curated primitives, never freeform.
+## Forbidden tech (never add as a dependency or reference)
 
-## DESIGN SYSTEM ("Soft Editorial")
+- Firebase, Supabase (any service)
+- Prisma, Drizzle, TypeORM, any other ORM
+- Auth0, Clerk, NextAuth, BetterAuth (we use Convex Auth)
+- Stripe direct SDK (we use RevenueCat)
+- OpenAI, Anthropic, Google AI direct SDKs (we use OpenRouter)
+- Redux, Zustand, Jotai, Recoil, MobX (Convex is reactive by default)
+- Axios or any fetch wrapper
+- MongoDB, Postgres (any direct DB client)
+- Do not replace **web** Tailwind v4 with Tailwind v3 or mix duplicate global CSS frameworks on web
+- Notion, Linear, Airtable (never referenced in code, env vars, or docs)
 
-- Headlines: Newsreader (serif)
-- Body: Inter (sans-serif)
-- Code: IBM Plex Mono
-- Dark bg: `#131312`
-- Light bg: `#F3EBE2`
-- Primary accent: orange gradient `#D97757 → #E8A87C`
-- Cards: inner shadows + grain texture
+## Core engineering rules
 
-## PRICING (3 tiers, no free tier, $1 trial)
+- **Accept-reject flow:** the AI coach never silently mutates user state. Every mutation surfaces a confirm / edit / reject card.
+- **Confidence router:** auto-apply only when model confidence is ≥ 0.8, always with an undo window. 0.5–0.8 requires a one-click confirm. Below 0.5 opens a clarifying dialog.
+- **RAM-only scanner rule:** any third-party content scan (email, WhatsApp, Telegram, chat history imports) processes in memory only. Raw messages never persist to disk or Convex.
+- **Generic schema rule:** Convex tables stay generic. User-specific formatting and structure emerge from the AI / render layer, not from schema columns.
+- **Every table has (target):** `userId: v.optional(v.string())`, `createdAt`, `updatedAt`, `deletedAt` (soft delete). **Current code** may use `userId: v.id("users")` until migration tasks in `docs/TASKS.md` are completed.
+- **Voice tracking:** count minutes of real audio, not tokens. Daily caps reset at user's local midnight. Basic 30 min, Pro 90 min, Max 180 min.
+- **Coach personality setting:** a numeric 0–10 dial per user, overridable per session. Inject the current value into the system prompt.
 
-| Tier  | Monthly | Annual |
-|-------|---------|--------|
-| Basic | $5      | $50    |
-| Pro   | $10     | $100   |
-| Max   | $20     | $200   |
+## Testing and quality gates
 
-RevenueCat entitlements: `basic`, `pro`, `max`
+- Every new Convex mutation gets at least one test in `convex/*.test.ts`.
+- Every React component with non-trivial logic gets a render test.
+- PRs run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm convex:schema-guard`, `pnpm scan:forbidden-tech`.
+- PRs must target a feature branch, never `main` directly.
 
-## CRITICAL FLAGS (NEVER change via automation)
+## Commit style
 
-In `config/appConfig.ts`:
-- `PAYMENT_SYSTEM_ENABLED`
-- `MOCK_PAYMENTS`
-- `PAYWALL_ENABLED`
-- `FORCE_PROD_MODE`
+- Conventional commits: `feat(tasks): ...`, `fix(coach): ...`, `chore(deps): ...`, `docs: ...`.
+- One logical change per commit.
+- Reference the `TASKS.md` task ID in the PR description: `Task: T-042`.
 
-## MONOREPO STRUCTURE
+## Branch naming
 
-```
-tempo-rhythm/
-├── apps/web/         Next.js 16+
-├── apps/mobile/      Expo
-├── packages/ui/      Shared UI
-├── packages/types/   Shared types
-├── packages/utils/   Shared utils
-├── convex/           Backend
-├── turbo.json
-└── pnpm-workspace.yaml
-```
+- `feat/<task-id>-<short-kebab>` e.g. `feat/T-042-brain-dump-extractor`
+- `fix/<task-id>-<short-kebab>`
+- `chore/<scope>-<short-kebab>`
 
-## SECRETS RULE
+## When in doubt
 
-- EXPO_PUBLIC_* and NEXT_PUBLIC_* are CLIENT-VISIBLE — only public keys
-- REVENUECAT_SECRET_KEY and CONVEX_DEPLOY_KEY are server-only
-- Never commit .env* files
+- Prefer simplicity over cleverness.
+- Prefer Convex primitives over imported libraries.
+- Prefer composition over inheritance.
+- If a rule in this file conflicts with `docs/HARD_RULES.md`, `HARD_RULES.md` wins.
+- Ask a clarifying question rather than guess.
