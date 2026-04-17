@@ -1,0 +1,21 @@
+---
+description: What's next — surface three actionable tasks from TASKS.md (ADHD-friendly session start)
+alwaysApply: false
+---
+
+# Session start — "What should I do?"
+
+When this rule applies (user asks what to do next, starting a session, or wants a small batch of work):
+
+1. Open and read [`docs/TASKS.md`](docs/TASKS.md).
+2. Prefer tasks with status `todo` whose **Deps** column is satisfied (earlier IDs done or marked N/A for this repo).
+3. Cross-check the codebase lightly: skip tasks that are already obviously implemented unless TASKS still says `todo` (then suggest updating TASKS first).
+4. Reply with **exactly three** tasks, each on its own line, using this format:
+
+   `1. **T-xxxx** — Title`  
+   One sentence: why it matters / acceptance in plain language.
+
+5. Keep language short and scannable (dyslexia-friendly). No walls of text.
+6. If everything in the current milestone is blocked, say what is blocking and offer one `docs` or reconciliation task.
+
+Do **not** start implementing until the user explicitly asks you to execute one of the three.

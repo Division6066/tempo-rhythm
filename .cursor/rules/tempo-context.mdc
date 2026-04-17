@@ -1,0 +1,14 @@
+---
+description: Tempo Flow project context — read before feature work
+alwaysApply: true
+---
+
+# Tempo Flow — always-on context
+
+- **Product:** Overwhelm-first ADHD / neurodivergent daily planner. Never shame the user; prefer confirm/undo for AI-driven changes.
+- **Task source of truth:** [`docs/TASKS.md`](docs/TASKS.md) — update status in the same change as code when you finish work.
+- **Non-negotiables:** Read [`docs/HARD_RULES.md`](docs/HARD_RULES.md) before touching Convex, auth, payments, or AI.
+- **Current phase PRD:** [`docs/PRDs/PRD_Phase_1_MVP.md`](docs/PRDs/PRD_Phase_1_MVP.md) (later phases under `docs/PRDs/` are planning only unless the task says otherwise).
+- **Repo layout:** `apps/web` (Next 16 + Tailwind v4), `apps/mobile` (Expo 53 + NativeWind), `convex/` at root, `packages/types`, `packages/utils`, `packages/ui`.
+- **Forbidden:** Firebase, Supabase, Prisma/Drizzle ORMs, Clerk/Auth0/NextAuth, direct OpenAI/Anthropic/Google AI SDKs, Redux/Zustand/Jotai for app state, Axios. Use Convex + native `fetch` + OpenRouter (see HARD_RULES).
+- **If rules conflict:** `docs/HARD_RULES.md` wins over PRDs and chat.

@@ -1,87 +1,111 @@
-# Tempo Rhythm
+# Tempo Flow
 
-Full-stack application: Next.js web app + Expo/React Native mobile app, sharing a single Convex backend.
+**Your brain's operating system.**
 
-## Architecture
+Tempo Flow is an open-source, overwhelm-first AI daily planner and personal operating system. It unifies tasks, notes, journal, calendar, habits, routines, goals, projects, and an AI executive-function coach into one app. It is built for neurodivergent brains — people with ADHD, autism, anxiety, burnout, or just too many tabs open — and it is designed to make the overwhelming feel workable.
 
-```
-tempo/
-├── apps/
-│   ├── web/          Next.js 15 App Router — Convex Auth + Polar payments
-│   └── mobile/       Expo (React Native) — Convex Auth + RevenueCat payments
-├── convex/           Shared Convex backend (functions, schema, auth)
-├── convex.json       Points Convex CLI to the shared backend
-└── package.json      Workspace root
-```
+## Status
 
-## First-Time Setup
+- **License:** Business Source License 1.1 (converts to Apache License 2.0 four years after each versioned release). See [`LICENSE`](./LICENSE).
+- **Current phase:** Tempo 1.0 "Foundation" — active development.
+- **Repository visibility:** public / source-available.
+- **Production hosting:** reserved to the Licensor. Self-hosting for your own individual or internal organizational use is expressly permitted — see the Additional Use Grant in `LICENSE`.
 
-### 1. Install Bun (package manager)
+## Tech stack (this repository — MVP target)
+
+- **Web:** Next.js 16 (App Router, Turbopack) deployable on Vercel, Progressive Web App–ready
+- **Mobile:** Expo SDK 53 (React Native) for iOS and Android, NativeWind 4
+- **Backend:** Convex at repo root `convex/` (queries, mutations, actions, HTTP routes, scheduled jobs, file storage)
+- **Auth:** Convex Auth (`@convex-dev/auth`)
+- **Payments:** RevenueCat on mobile; Polar (`@polar-sh/nextjs`) for web checkout in this repo — align with PRD over time
+- **AI routing (target):** OpenRouter — Gemma / Mistral per `docs/PRDs/PRD_Phase_1_MVP.md` (router package planned)
+- **Styling:** Tailwind CSS v4 + PostCSS in `apps/web`; NativeWind + Tailwind 3.x in `apps/mobile`
+- **Shared packages:** `packages/types`, `packages/utils`, `packages/ui` (tokens and shared UI to grow here)
+- **Typography (target):** Newsreader, Inter, IBM Plex Mono, OpenDyslexic toggle per PRD
+- **Compliance (target):** GetTerms.io
+- **Analytics (target):** PostHog (opt-in)
+- **Observability (target):** Sentry + PostHog
+- **Package manager:** pnpm
+- **Monorepo:** Turborepo (`apps/*`, `packages/*`)
+
+See [`docs/HARD_RULES.md`](./docs/HARD_RULES.md) for the full non-negotiables list and [`docs/PRDs/PRD_Phase_1_MVP.md`](./docs/PRDs/PRD_Phase_1_MVP.md) for the full MVP spec.
+
+## Coding session workflow
+
+Pick three tasks, implement, tick off — see [`docs/SESSION_WORKFLOW.md`](./docs/SESSION_WORKFLOW.md). In Cursor chat use **`/whats-next`** and **`/tick-task`** (defined under `.cursor/commands/`).
+
+## Quick start
+
 ```bash
-# Windows
-powershell -c "irm bun.sh/install.ps1 | iex"
+# 1. Clone
+git clone https://github.com/<your-org>/tempo-flow.git
+cd tempo-flow
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Start Convex dev backend (runs in a separate terminal; keep it running)
+pnpm convex:dev
+
+# 4. Start the web app (Next.js)
+pnpm dev:web
+
+# 5. (Optional) Start the mobile app
+pnpm dev:mobile
 ```
 
-### 2. Install workspace dependencies
-```bash
-# Web app
-cd apps/web && bun install
+Required environment variables are documented in `.env.example` at the repo root. Copy to `.env.local` and fill in values from your own Convex, OpenRouter, RevenueCat, and GetTerms accounts before running.
 
-# Mobile app
-cd apps/mobile && bun install
-```
+## Documentation tree
 
-### 3. Set up Convex (shared backend)
-```bash
-# From workspace root — creates/connects a Convex project
-bunx convex dev
-```
+All project documentation lives under [`./docs/`](./docs/).
 
-After running, copy the generated `CONVEX_DEPLOYMENT` and URL into:
-- `apps/web/.env.local`
-- `apps/mobile/.env.local`
+- [`docs/HARD_RULES.md`](./docs/HARD_RULES.md) — non-negotiables. Read this first every session.
+- [`docs/CURSOR_RULES.md`](./docs/CURSOR_RULES.md) — expanded rules with rationale.
+- [`docs/CURSOR_PROMPTS.md`](./docs/CURSOR_PROMPTS.md) — prompt library for Cursor IDE and Cursor Cloud agents.
+- [`docs/TASKS.md`](./docs/TASKS.md) — master task list, owner-tagged.
+- [`docs/SESSION_WORKFLOW.md`](./docs/SESSION_WORKFLOW.md) — `/whats-next` / `/tick-task` session flow.
+- [`docs/PRDs/`](./docs/PRDs/) — one PRD per public phase (1.0, 1.1, 1.5, 2.0, 3.0).
+- [`docs/AGENT_SETUP/`](./docs/AGENT_SETUP/) — Tempo-specific setup guides for Zo Computer, Twin.so, Pokee AI, and the overall agent handoff map.
 
-### 4. Run the apps
+For project-agnostic agent workflow patterns that can be reused across other projects, see the separate `reusable-workflows/` folder distributed alongside this repo.
 
-**Web:**
-```bash
-cd apps/web
-bun run dev        # http://localhost:3000
-```
+## Roadmap (public phases)
 
-**Mobile:**
-```bash
-cd apps/mobile
-bun run dev        # Expo Go / Android / iOS
-```
+1. **Tempo 1.0 "Foundation"** — full MVP, all 42 screens, web PWA + iOS App Store + Google Play Store.
+2. **Tempo 1.1 "Presence"** — polish, founder vlog embed, public `CONTRIBUTING`, community changelog, plugin SDK skeleton.
+3. **Tempo 1.5 "Memory"** — bring-your-own-key providers, offline on-device inference, privacy modes, NotebookLM-style scoped retrieval, flashcards, spaced repetition, Anki export, RemNote sync, public plugin SDK.
+4. **Tempo 2.0 "Connected"** — calendar and health integrations, chat history import, MCP server, CLI, browser extension, REST API, photo accountability, messaging bridges, Bluetooth sync, avatar body-double for the top tier.
+5. **Tempo 3.0 "Ecosystem"** — learning-platform integrations, bi-directional builder sync, community template gallery, user-selectable EU/Swiss inference region, plugin marketplace.
 
-## Environment Variables
+See the full roadmap in the strategy `.docx` files distributed with this repo, and per-phase PRDs under `docs/PRDs/`.
 
-| Variable | App | Required | Notes |
-|---|---|---|---|
-| `CONVEX_DEPLOYMENT` | Both | Yes | Generated by `bunx convex dev` |
-| `NEXT_PUBLIC_CONVEX_URL` | Web | Yes | Generated by `bunx convex dev` |
-| `EXPO_PUBLIC_CONVEX_URL` | Mobile | Yes | Generated by `bunx convex dev` |
-| `POLAR_ACCESS_TOKEN` | Web | Payments | Polar org access token |
-| `POLAR_SUCCESS_URL` | Web | Payments | Redirect URL after checkout |
-| `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` | Mobile | Payments | RevenueCat iOS key |
-| `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` | Mobile | Payments | RevenueCat Android key |
+## Supporting the project
 
-## Payment System
+Tempo Flow is developed by one person. If it helps you, consider supporting development:
 
-> **Important:** Payment flags are marked critical in config. Do not let automation change them. Set manually:
+- **GitHub Sponsors** (tiered): `https://github.com/sponsors/<amit-handle>` (placeholder — update after launch)
+  - **Supporter** — name in credits, GitHub Sponsor badge
+  - **Beta Tester** — early access to closed-beta builds, Discord role gated access
+  - **Founder's Circle** — beta access plus a monthly founder AMA, feature voting
+- **Ko-fi:** `https://ko-fi.com/<amit-handle>` (placeholder)
+- **Buy Me a Coffee:** `https://www.buymeacoffee.com/<amit-handle>` (placeholder)
+- **Crypto donations** (from Tempo 2.0 onwards): BTC, ETH, SOL, XMR addresses will be published in Settings → Donate.
 
-### Web (`apps/web/config/appConfig.ts`)
-- `PAYWALL_ENABLED` — show/hide paywall UI
-- `MOCK_PAYMENTS` — simulate payment flow without real checkout
-- `PAYMENT_SYSTEM_ENABLED` — enable real Polar checkout (requires `POLAR_ACCESS_TOKEN`)
+## Community
 
-### Mobile (`apps/mobile/config/appConfig.ts`)
-- `PAYMENT_SYSTEM_ENABLED` — enable real RevenueCat purchases
-- `MOCK_PAYMENTS` — simulate purchase flow
+- **Discord:** `https://discord.gg/<invite>` (placeholder — joining unlocks the `#community` channels; GitHub Sponsor tiers unlock `#beta-testers` and `#founders-circle` role-gated channels)
+- **Founder vlog:** `https://www.youtube.com/@<channel>` (placeholder — techno-optimism, future-proofing, building with AI)
+- **Ask the Founder:** built into the app — Settings → Ask the Founder. Submissions land in a private queue; opt-in transcripts may be published as part of the 1.1 release.
 
-## Backend Features
-- Auth: email/password via Convex Auth (30-day sessions)
-- Users: free/paid tiers, admin/user roles
-- Conversations & Messages: AI conversation history (future AI features)
-- Memories: salience-based AI memory system with decay
+## Contributing
+
+See `CONTRIBUTING.md` (published alongside the Tempo 1.1 release). Until then, open an issue before starting work on a significant change, and follow [`docs/HARD_RULES.md`](./docs/HARD_RULES.md) rigorously.
+
+Third-party plugins built against the public plugin API (published in Tempo 1.5) may be monetized by their authors through GitHub Sponsors, Patreon, Ko-fi, Buy Me a Coffee, or similar patronage platforms. See the Additional Use Grant in `LICENSE` for the full wording.
+
+## License
+
+Business Source License 1.1. Converts to Apache License 2.0 four years after each versioned release. Full text in [`LICENSE`](./LICENSE).
+
+Copyright © 2026 Amit Levin.
