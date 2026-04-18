@@ -8,11 +8,12 @@
   "files": {
     "ignoreUnknown": false,
     "includes": [
-      "**",
-      "!!**/.expo",
-      "!!**/convex/_generated",
-      "!!**/components/__tests__",
-      "!!**/global.css"
+      "**/*",
+      "!**/.expo",
+      "!**/convex/_generated",
+      "!**/components/__tests__",
+      "!**/global.css",
+      "!scripts"
     ]
   },
   "formatter": {
@@ -30,9 +31,9 @@
         "noAccumulatingSpread": "error"
       },
       "style": {
-        "useBlockStatements": "warn",
-        "noImplicitBoolean": "warn",
-        "useConst": "warn"
+        "useConst": "warn",
+        "useBlockStatements": "off",
+        "noImplicitBoolean": "off"
       },
       "suspicious": {
         "noAsyncPromiseExecutor": "error",

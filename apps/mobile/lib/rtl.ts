@@ -210,8 +210,12 @@ export const tw = {
    */
   get textStart(): string {
     const align = getTextAlign();
-    if (align === 'right') return 'text-right';
-    if (align === 'left') return 'text-left';
+    if (align === 'right') {
+      return 'text-right';
+    }
+    if (align === 'left') {
+      return 'text-left';
+    }
     return '';
   },
 
@@ -220,8 +224,12 @@ export const tw = {
    */
   get textEnd(): string {
     const align = getTextAlign();
-    if (align === 'left') return 'text-right';
-    if (align === 'right') return 'text-left';
+    if (align === 'left') {
+      return 'text-right';
+    }
+    if (align === 'right') {
+      return 'text-left';
+    }
     return '';
   },
 

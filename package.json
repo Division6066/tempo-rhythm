@@ -18,7 +18,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "convex:dev": "bun x convex dev",
     "convex:deploy": "bun x convex deploy",
-    "convex:codegen": "bun x convex codegen --once"
+    "convex:codegen": "bun x convex codegen"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.91",

@@ -3,39 +3,34 @@
  * Converts Windows absolute paths to file:// URLs for ESM loader
  */
 
-import { pathToFileURL } from 'url';
-import { fileURLToPath } from 'url';
+import { resolve as pathResolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export async function resolve(specifier, context, nextResolve) {
-  // Convert Windows absolute paths (like c:\Users\...) to file:// URLs
-  if (process.platform === 'win32' && specifier && typeof specifier === 'string') {
-    // Check if it's a Windows absolute path (starts with drive letter)
-    if (specifier.match(/^[A-Z]:[\\/]/i)) {
+  let spec = specifier;
+  if (process.platform === 'win32' && spec && typeof spec === 'string') {
+    if (spec.match(/^[A-Z]:[\\/]/i)) {
       try {
-        specifier = pathToFileURL(specifier).href;
-      } catch (e) {
-        // If conversion fails, try to normalize the path
-        specifier = specifier.replace(/\\/g, '/');
-        if (!specifier.startsWith('file://')) {
-          specifier = pathToFileURL(specifier).href;
+        spec = pathToFileURL(spec).href;
+      } catch {
+        spec = spec.replace(/\\/g, '/');
+        if (!spec.startsWith('file://')) {
+          spec = pathToFileURL(spec).href;
         }
       }
     }
-    // Also handle file:// URLs that might have Windows paths
-    if (specifier.startsWith('file://') && specifier.includes('\\')) {
-      specifier = specifier.replace(/\\/g, '/');
+    if (spec.startsWith('file://') && spec.includes('\\')) {
+      spec = spec.replace(/\\/g, '/');
     }
-    // Handle relative paths that resolve to Windows paths
-    if (context.parentURL && specifier.startsWith('.')) {
+    if (context.parentURL && spec.startsWith('.')) {
       try {
         const parentPath = fileURLToPath(context.parentURL);
-        const { resolve } = await import('path');
-        const resolved = resolve(parentPath, '..', specifier);
-        specifier = pathToFileURL(resolved).href;
-      } catch (e) {
+        const resolved = pathResolve(parentPath, '..', spec);
+        spec = pathToFileURL(resolved).href;
+      } catch {
         // Fall through to nextResolve
       }
     }
   }
-  return nextResolve(specifier, context);
+  return nextResolve(spec, context);
 }

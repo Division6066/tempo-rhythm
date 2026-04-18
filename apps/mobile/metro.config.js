@@ -1,14 +1,14 @@
 // Node 24 Windows ESM workaround: convert absolute paths to file:// URLs
-const path = require('path');
-const Module = require('module');
+const path = require('node:path');
+const Module = require('node:module');
 const originalResolveFilename = Module.prototype._resolveFilename;
 
-Module.prototype._resolveFilename = function(request, parent, isMain) {
-  if (request && request.startsWith && !request.startsWith('.') && !request.startsWith('/')) {
+Module.prototype._resolveFilename = function (request, parent, isMain) {
+  if (request?.startsWith && !request.startsWith('.') && !request.startsWith('/')) {
     try {
       return originalResolveFilename.call(this, request, parent, isMain);
-    } catch (e) {
-      // Ignore and continue
+    } catch {
+      // Ignore and fall through to the default resolver below.
     }
   }
   return originalResolveFilename.call(this, request, parent, isMain);
