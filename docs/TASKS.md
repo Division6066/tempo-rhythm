@@ -26,6 +26,14 @@ _(nothing in flight right now)_
 
 ### 2. Auto-fix + re-enable the style rules we muted in CI
 - **Why:** PR #10 silenced `noImplicitBoolean` and `useBlockStatements` in `apps/web/biome.json` and `apps/mobile/biome.json` to unblock CI. We should run `biome check --write` across web + mobile, re-enable the rules, and verify CI stays green.
+- **Blocker on Windows:** `bun x @biomejs/biome` fails locally on Windows with `Cannot find module '@biomejs/cli-win32-x64/biome.exe'` (bun workspace + optional native dep bug). Run this on a Linux box or in a cloud agent.
+- **Steps (Linux):**
+  1. Branch `chore/biome-style-reenable`.
+  2. In `apps/web/biome.json` and `apps/mobile/biome.json`, change `useBlockStatements` and `noImplicitBoolean` from `"off"` to `"warn"` (or `"error"` if you want hard CI fail).
+  3. `cd apps/web && bun x @biomejs/biome@2.3.8 check --write --unsafe .`
+  4. `cd apps/mobile && bun x @biomejs/biome@2.3.8 check --write --unsafe .`
+  5. Review the diff — all machine-applied. Commit.
+  6. Open PR, wait for CI green, merge.
 - **Exit:** both biome.json files have the two rules back on, diff is machine-applied only, CI is green, PR merged.
 
 ### 3. Phase 3 — `.cursor/` rules, sub-agents, slash commands, hooks
