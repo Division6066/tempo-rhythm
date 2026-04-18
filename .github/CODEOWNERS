@@ -1,0 +1,10 @@
+# Tempo Flow CODEOWNERS
+# Default: Amit owns every path unless overridden below.
+# See docs/HARD_RULES.md §17 — HARD_RULES.md itself can only be changed via a PR
+# approved by the project owner.
+
+*                       @Division6066
+
+# HARD_RULES is the single source of truth for non-negotiables.
+# Only Amit can approve edits to it.
+/docs/HARD_RULES.md     @Division6066
