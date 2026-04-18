@@ -4,9 +4,9 @@
  * Bypasses ESM path loading issues by using CommonJS require
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
-const { pathToFileURL } = require('url');
+const { spawn } = require('node:child_process');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 
 // Force CommonJS for metro config on Windows
 // Convert to absolute path and then to file:// URL for loader

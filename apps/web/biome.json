@@ -32,10 +32,10 @@
         "noAccumulatingSpread": "error"
       },
       "style": {
-        "useBlockStatements": "warn",
-        "noImplicitBoolean": "warn",
         "useConst": "warn",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "useBlockStatements": "off",
+        "noImplicitBoolean": "off"
       },
       "suspicious": {
         "noAsyncPromiseExecutor": "error",

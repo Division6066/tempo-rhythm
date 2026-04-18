@@ -13,7 +13,7 @@
       "!**/convex/_generated",
       "!**/components/__tests__",
       "!**/global.css",
-      "!scripts/**"
+      "!scripts"
     ]
   },
   "formatter": {
@@ -31,9 +31,9 @@
         "noAccumulatingSpread": "error"
       },
       "style": {
-        "useBlockStatements": "warn",
-        "noImplicitBoolean": "warn",
-        "useConst": "warn"
+        "useConst": "warn",
+        "useBlockStatements": "off",
+        "noImplicitBoolean": "off"
       },
       "suspicious": {
         "noAsyncPromiseExecutor": "error",
