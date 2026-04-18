@@ -18,7 +18,7 @@ import { endOfLocalDayMs, startOfLocalDayMs } from "@/lib/localDay";
 export default function DashboardPage() {
   const { isAuthenticated } = useConvexAuth();
   const user = useQuery(api.users.getCurrentUser);
-  const stats = useQuery(api.analytics.overview);
+  const stats = useQuery(api.analytics.overview, {});
   const tasks = useQuery(api.tasks.list, {});
   const ensureUser = useMutation(api.users.createOrUpdateUser);
 

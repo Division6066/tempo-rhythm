@@ -1,5 +1,6 @@
 # dependencies
 node_modules/
+.turbo/
 .pnp
 .pnp.js
 
@@ -35,7 +36,9 @@ bun.lockb
 Thumbs.db
 
 # Convex
-convex/_generated/
+# NOTE: convex/_generated/ is committed so CI can typecheck without
+# CONVEX_DEPLOYMENT credentials. `convex dev` regenerates it from
+# convex/schema.ts + functions on every save; commit alongside schema changes.
 
 # IDE
 .vscode/

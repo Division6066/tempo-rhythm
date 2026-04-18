@@ -6,8 +6,8 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "biome lint .",
-    "check": "biome check ."
+    "lint": "bun x biome lint .",
+    "check": "bun x biome check ."
   },
   "devDependencies": {
     "typescript": "^5.9.3"
