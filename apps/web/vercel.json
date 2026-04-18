@@ -1,11 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "cd ../.. && bun install --frozen-lockfile && bun x convex codegen --once && bun run build --filter=tempo-rhythm-web",
-  "installCommand": "echo 'install handled by buildCommand'",
+  "installCommand": "cd ../.. && bun install --frozen-lockfile",
+  "buildCommand": "next build",
   "outputDirectory": ".next",
-  "devCommand": "bun run dev",
-  "ignoreCommand": "bun x turbo-ignore @tempo/web || bun x turbo-ignore tempo-rhythm-web || exit 1",
+  "devCommand": "next dev",
+  "ignoreCommand": "bun x turbo-ignore tempo-rhythm-web || exit 1",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   }
