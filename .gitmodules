@@ -1,3 +1,5 @@
 [submodule "docs/brain"]
 	path = docs/brain
 	url = https://github.com/Division6066/tempo-brain.git
+	branch = main
+	update = merge
