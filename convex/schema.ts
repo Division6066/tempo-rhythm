@@ -18,13 +18,15 @@ export default defineSchema({
 
   users: defineTable({
     email: v.string(),
+    emailVerificationTime: v.optional(v.number()),
     emailVerified: v.optional(v.boolean()),
     fullName: v.optional(v.string()),
-    role: v.union(v.literal("admin"), v.literal("user")),
+    name: v.optional(v.string()),
+    role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
     userType: v.optional(v.union(v.literal("free"), v.literal("paid"))),
-    isActive: v.boolean(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    isActive: v.optional(v.boolean()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
