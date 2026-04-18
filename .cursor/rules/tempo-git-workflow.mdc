@@ -1,0 +1,52 @@
+---
+description: Tempo Flow git + PR workflow — enforces HARD_RULES §12 and §14
+alwaysApply: true
+---
+
+# Tempo Flow — git + PR workflow
+
+Source of truth: @docs/HARD_RULES.md §12 (git + PR rules) and §14 (owner-tag discipline).
+
+## Never push to `master`
+
+- All changes land through a pull request against `master`.
+- Branch protection is enabled; direct pushes will be rejected.
+- `master` is always deployable. If a PR would break it, fix the PR or revert.
+
+## Branch naming
+
+Use one of:
+
+- `feat/T-XXXX-<short-kebab>` — new feature tied to a `TASKS.md` row
+- `fix/T-XXXX-<short-kebab>` — bug fix tied to a `TASKS.md` row
+- `chore/<scope>-<short-kebab>` — tooling, CI, deps, no user impact
+- `docs/<scope>-<short-kebab>` — docs-only changes
+
+`T-XXXX` matches the task ID format in `docs/TASKS.md`.
+
+## Commits + PR titles
+
+- Conventional Commits: `feat(scope): ...`, `fix(scope): ...`, `chore(scope): ...`.
+- One logical change per PR. Stack PRs for large features.
+
+## Opening a PR
+
+- Run the `/pr` slash command, or run `gh pr create --base master` manually.
+- The PR uses `.github/pull_request_template.md` — fill in every section.
+- Link the `TASKS.md` task ID. Copy acceptance criteria verbatim.
+- Attach screenshots or a short screen recording for any UI change.
+
+## Review + merge
+
+- Reviewer is Amit (`human-amit`) by default. A second code agent may be tagged
+  `reviewer` only after human approval.
+- **Code agents never merge their own PRs.** Stop after the PR is open.
+- Resolve every review conversation before merge.
+
+## Owner-tag discipline (§14)
+
+- Only claim tasks whose owner tag matches your agent identity.
+- `cursor-cloud-1` does not touch `cursor-cloud-2` work, and vice versa.
+- `twin`, `pokee`, `zo`, and `human-amit` tasks are off-limits to code agents.
+- Never ask a human to do work labeled for a code agent.
+- Never have a code agent click a web dashboard — that is Twin's job.
