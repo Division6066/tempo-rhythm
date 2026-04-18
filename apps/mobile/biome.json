@@ -12,7 +12,8 @@
       "!!**/.expo",
       "!!**/convex/_generated",
       "!!**/components/__tests__",
-      "!!**/global.css"
+      "!!**/global.css",
+      "!!scripts/**"
     ]
   },
   "formatter": {
