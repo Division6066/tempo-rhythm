@@ -2,6 +2,17 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// HARD_RULES §9 — every user-owned table must carry `deletedAt: v.optional(v.number())`
+// for soft-delete. `undefined` means the row is live; a number is the epoch-ms the row was
+// soft-deleted at. Hard deletes are forbidden for user-visible data (§9, §6 DSR grace window).
+//
+// `userId` is intentionally `v.id("users")` in this repo until the migration to
+// `v.optional(v.string())` lands (see docs/brain/TASKS.md for the migration ticket).
+// HARD_RULES §9 "Current repository" explicitly permits this transitional state.
+//
+// Every table queried by userId carries a compound `by_userId_deletedAt` index so active
+// rows can be streamed without a full scan.
+
 export default defineSchema({
   ...authTables,
 
@@ -14,21 +25,24 @@ export default defineSchema({
     isActive: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
     .index("by_role", ["role"])
-    .index("by_userType", ["userType"]),
+    .index("by_userType", ["userType"])
+    .index("by_deletedAt", ["deletedAt"]),
 
   conversations: defineTable({
     userId: v.id("users"),
     title: v.string(),
-    /** Coach technique key (e.g. pomodoro, body_double) for AI Coach UI */
     technique: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_updatedAt", ["userId", "updatedAt"]),
+    .index("by_userId_updatedAt", ["userId", "updatedAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   messages: defineTable({
     conversationId: v.id("conversations"),
@@ -38,9 +52,11 @@ export default defineSchema({
     councilResponse: v.optional(v.any()),
     toolCalls: v.optional(v.any()),
     createdAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_conversationId", ["conversationId"])
-    .index("by_conversationId_createdAt", ["conversationId", "createdAt"]),
+    .index("by_conversationId_createdAt", ["conversationId", "createdAt"])
+    .index("by_conversationId_deletedAt", ["conversationId", "deletedAt"]),
 
   memories: defineTable({
     userId: v.id("users"),
@@ -59,9 +75,11 @@ export default defineSchema({
     metadata: v.optional(v.any()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_salience", ["userId", "salience"]),
+    .index("by_userId_salience", ["userId", "salience"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   tasks: defineTable({
     userId: v.id("users"),
@@ -77,10 +95,12 @@ export default defineSchema({
     dueAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
-    .index("by_userId_dueAt", ["userId", "dueAt"]),
+    .index("by_userId_dueAt", ["userId", "dueAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   notes: defineTable({
     userId: v.id("users"),
@@ -96,10 +116,12 @@ export default defineSchema({
     aiGenerated: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_pinned", ["userId", "pinned"])
-    .index("by_userId_updatedAt", ["userId", "updatedAt"]),
+    .index("by_userId_updatedAt", ["userId", "updatedAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   habits: defineTable({
     userId: v.id("users"),
@@ -110,7 +132,10 @@ export default defineSchema({
     lastCompletedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_userId", ["userId"]),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   goals: defineTable({
     userId: v.id("users"),
@@ -121,7 +146,9 @@ export default defineSchema({
     status: v.union(v.literal("active"), v.literal("completed"), v.literal("archived")),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_status", ["userId", "status"]),
+    .index("by_userId_status", ["userId", "status"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 });
