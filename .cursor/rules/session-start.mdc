@@ -1,21 +1,65 @@
 ---
-description: What's next — surface three actionable tasks from TASKS.md (ADHD-friendly session start)
+description: Session start — pick the next tickets for Amit's time budget (ADHD-friendly)
 alwaysApply: false
 ---
 
 # Session start — "What should I do?"
 
-When this rule applies (user asks what to do next, starting a session, or wants a small batch of work):
+Trigger: user says "what's next", starts a session, runs `/whats-next`, or says "I have X minutes".
 
-1. Open and read [`docs/brain/TASKS.md`](docs/brain/TASKS.md).
-2. Prefer tasks with status `todo` whose **Deps** column is satisfied (earlier IDs done or marked N/A for this repo).
-3. Cross-check the codebase lightly: skip tasks that are already obviously implemented unless TASKS still says `todo` (then suggest updating TASKS first).
-4. Reply with **exactly three** tasks, each on its own line, using this format:
+## Input: how much time does Amit have?
 
-   `1. **T-xxxx** — Title`  
-   One sentence: why it matters / acceptance in plain language.
+- If the user gave a number ("30 min", "45 min", "2 hours", "overnight"), use it as the budget.
+- If no number, default to **45 min** and ask only after proposing (don't block on the question).
 
-5. Keep language short and scannable (dyslexia-friendly). No walls of text.
-6. If everything in the current milestone is blocked, say what is blocking and offer one `docs` or reconciliation task.
+## Step 1 — Read the ticket index
 
-Do **not** start implementing until the user explicitly asks you to execute one of the three.
+Read [`docs/brain/tickets/_INDEX.md`](docs/brain/tickets/_INDEX.md). If it is empty / "not yet generated", fall back to `docs/brain/TASKS.md` macro rows and warn the user that tickets need regeneration.
+
+## Step 2 — Filter
+
+Keep tickets that satisfy ALL of:
+
+1. `Status: todo`.
+2. All `Blocked by:` IDs have `Status: done`.
+3. `Estimate ≤ remaining budget`.
+4. `Assignee` is either one of the Cursor identities (`cursor-ide`, `cursor-cloud-1/2/3`) or a non-Cursor identity with `(fallback: cursor-*)` AND the primary agent is not yet configured (assume Twin / Pokey / Zo are NOT configured yet unless the user says otherwise).
+
+## Step 3 — Pick
+
+Pick a set that:
+
+- Fits the budget. For 30 min → one ticket. For 45 min → one ticket (use the extra 15 min as slack). For 60 min → one long ticket OR two 30-min tickets if parallelizable. For 2 hours → up to four 30-min tickets in a parallelizable group. For 8 hours → use the long-running playbook (`tempo-long-running.mdc`), not this rule.
+- Prefers the dependency chain `Root → Tier 1 → Tier 2` so downstream work unblocks.
+- Prefers ticketed work over macro-only work.
+
+## Step 4 — Output
+
+Reply with **three** candidates (even if the user asked for one — the other two are backups). Format:
+
+```
+1. **T-XXXX** — <title> — <estimate> — `cluster:<tag>`
+   <one-line plain-language description of "done">.
+   Why this one: <dependency rationale / value>.
+
+2. **T-YYYY** — ...
+
+3. **T-ZZZZ** — ...
+```
+
+Then ask: "Which one do you want me to execute? (Reply with the ID or say 'execute 1'.)"
+
+## Step 5 — Do NOT start implementing
+
+Stop after the list. Never auto-begin. Never auto-branch. The user's explicit go-ahead is required.
+
+## Edge cases
+
+- **No tickets match the budget:** propose the smallest available ticket + offer to split it into sub-tickets on the fly (creates new files in `docs/brain/tickets/`).
+- **Everything is blocked:** name the blockers and propose a `docs/*` or `chore/*` ticket that unblocks them.
+- **All tickets are for an agent Cursor can't fall back for (`human-amit` only):** tell the user which human tasks are on the critical path; do not pretend to execute them.
+
+## Output style
+
+- Scannable. No walls of text. Dyslexia-friendly: short sentences, one idea per line.
+- No cheerleading. No "great choice!" No shame if the previous session didn't burn down. Calm and concrete.

@@ -1,16 +1,64 @@
 ---
-description: Mark TASKS.md items done after a work chunk and suggest the next three
+description: Task complete — tick off the ticket + macro row and propose what's next
 alwaysApply: false
 ---
 
 # Task complete — tick off and continue
 
-When the user says work is done, asks to tick off tasks, or wants to close a session:
+Trigger: user says work is done on ticket T-XXXX, runs `/tick-task`, or asks to close a session.
 
-1. List what shipped (files, behavior) in 3–6 bullets max.
-2. Update [`docs/brain/TASKS.md`](docs/brain/TASKS.md): set the completed row(s) **Status** to `done` (or `in-review` if a PR is open but not merged — match whatever the table already uses for that state).
-3. If acceptance criteria were met only partially, keep status `in-progress` and note what remains.
-4. Run the same "pick three" logic as **session-start**: suggest the next three `todo` tasks with satisfied deps.
-5. Remind the user: large changes belong in a PR; one logical change per PR when possible.
+## 1. Confirm what shipped
 
-Never mark `done` without the user confirming the work is actually finished.
+List in 3–6 bullets max:
+
+- Files changed (paths).
+- Behavior added / changed.
+- Tests / screenshots, if any.
+- PR link(s).
+
+## 2. Update the ticket file
+
+- Open `docs/brain/tickets/T-XXXX.md`.
+- Flip `Status:` — `todo → in-progress → in-review → done`.
+- Tick every item in the file's `Acceptance criteria` checklist and `Done checklist`.
+- If ACs were only partially met, keep `Status: in-progress`, write what remains in a new `## Deferred` section.
+
+## 3. Update macro TASKS.md
+
+- If the ticket was the **last sibling in a cluster** (e.g. `T-0007-c` when a, b, c existed), flip the parent macro row in `docs/brain/TASKS.md` to `done`.
+- If the macro row has a `PR:` column, fill in the PR number.
+- Do not mark a macro row `done` while any sub-ticket is still `todo` / `in-progress`.
+
+## 4. Commit inside the submodule, then bump parent
+
+```bash
+cd docs/brain
+git add tickets/T-XXXX.md TASKS.md
+git commit -m "docs(brain): T-XXXX done"
+git push origin main
+
+cd ../..
+git add docs/brain
+git commit -m "chore(submodule): bump brain to <short-sha>"
+```
+
+Never edit `docs/brain/*` from the parent working tree without `cd`-ing in. See `docs/brain/AGENTS.md` §3.
+
+## 5. Sync public TASKS.md
+
+If the ticket changes user-visible product scope (not internal infra), update `docs/TASKS.md` (public) with a one-line entry matching the tempo+cursor-safe summary.
+
+## 6. Propose the next three
+
+Run the `session-start` rule logic: filter → pick three → surface.
+
+## 7. Reminder
+
+Large changes belong in a PR. One logical change per PR when possible. Agents never self-merge.
+
+## Never
+
+- Mark `done` without the user confirming the work is actually finished.
+- Mark `done` with red CI.
+- Mark `done` with an unmerged PR (use `in-review` instead).
+- Edit `docs/brain/` from the parent tree.

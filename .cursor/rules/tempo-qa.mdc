@@ -1,0 +1,96 @@
+---
+description: Tempo Flow QA checklist — run before declaring any task done
+alwaysApply: false
+---
+
+# Tempo Flow — QA checklist
+
+Every ticket's `Done checklist` refers back to this file. Run it before flipping a ticket to `in-review` or `done`.
+
+## 1. Workspace detection
+
+Figure out which workspace(s) the change touched, by looking at `Files to touch`:
+
+- `apps/web/**` → run web commands.
+- `apps/mobile/**` → run mobile commands.
+- `convex/**` → run Convex commands.
+- `packages/**` → run that package's commands.
+- Multiple → run all affected.
+
+## 2. Typecheck
+
+```bash
+# repo root — all workspaces
+bun run typecheck
+```
+
+Per-workspace shortcuts:
+
+```bash
+cd apps/web && bun run typecheck
+cd apps/mobile && bun run typecheck
+cd packages/types && bun run typecheck
+cd packages/ui && bun run typecheck
+cd packages/utils && bun run typecheck
+```
+
+Convex codegen must be current: `bunx convex codegen` before re-running typecheck if you changed `convex/schema.ts` or a function signature.
+
+## 3. Lint
+
+```bash
+bun run lint
+```
+
+On Windows, if Biome fails with `Cannot find module '@biomejs/cli-win32-x64/biome.exe'`, the task is a **Linux-only QA step** — document it in the ticket as `QA blocked on Windows native Biome bug, will run on cloud agent` and let the cloud agent run it instead.
+
+## 4. Tests
+
+```bash
+bun run test
+```
+
+Only required if the ticket added / touched test files. Write "n/a (no test surface touched)" in the ticket done-checklist otherwise.
+
+## 5. Hard-rules scan
+
+```bash
+bun run scan:forbidden-tech
+```
+
+Must pass. If it flags something you believe is a false positive, stop — do not silence the rule. Ask the user.
+
+## 6. Convex schema + function validation
+
+If `convex/schema.ts` or any `convex/*.ts` changed:
+
+```bash
+bunx convex dev --once --typecheck=enable
+```
+
+Watch for schema validation errors against production data — if any fire, the widened-field pattern (see `docs/TASKS.md` "schema widening debt") may apply.
+
+## 7. Manual UI smoke (for UI tickets)
+
+- Start the dev server: `cd apps/web && bun run dev` (or `cd apps/mobile && bun run start`).
+- Open the route / screen the ticket touches.
+- Check light mode AND dark mode.
+- Check empty state, error state, loading skeleton if the ticket adds a list / detail screen.
+- Capture a screenshot or short screen recording for the PR body.
+
+## 8. PR checklist
+
+- Branch name matches `feat|fix|chore|docs/T-XXXX-<kebab>`.
+- Commit(s) use Conventional Commits.
+- PR body fills `.github/pull_request_template.md` completely — especially: task ID, acceptance criteria, screenshots, test plan.
+- Ticket file's `Status:` frontmatter flipped to `in-review`.
+
+## 9. Report back
+
+End with a one-line status line:
+
+```
+QA: typecheck ✓  lint ✓  test ✓ (or n/a)  hard-rules ✓  convex ✓ (or n/a)  ui ✓ (or n/a)
+```
+
+If any step is `✗`, stop — do not proceed to merge.

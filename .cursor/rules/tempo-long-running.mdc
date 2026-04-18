@@ -1,0 +1,83 @@
+---
+description: Tempo Flow long-running / overnight session playbook (8-hour cloud agent mode)
+alwaysApply: false
+---
+
+# Tempo Flow — long-running session playbook
+
+Apply this rule when the user says "overnight", "8-hour session", "long-running", "marathon", or references `tempo-long-running.mdc`, or when `Execution: long-running-compute` on the ticket.
+
+## 1. Plan before you move
+
+- Read the ticket(s) provided. If the user asked for "a long session to push toward M1", pick the longest dependency chain starting from the oldest open Root ticket in `tickets/_INDEX.md` "By dependency chain" → "Root".
+- Publish a plan in chat: **ordered list of ticket IDs** you intend to close, with an estimate per ticket totaling ≤ the session budget (8 h → ~ 16 × 30-min tickets, allow 20 % slack).
+- Stop and wait for explicit "go" before starting. Never silently fill 8 hours.
+
+## 2. Work in worktrees
+
+```bash
+# at repo root
+git worktree add ../tempo-wt/T-XXXX feat/T-XXXX-<kebab>
+cd ../tempo-wt/T-XXXX
+```
+
+- One worktree per ticket. Do not mix tickets.
+- Every worktree gets its own fresh `bun install`.
+
+## 3. Checkpoint every 30 minutes
+
+At each 30-min boundary:
+
+1. Stage + commit the in-progress work (`git add -A && git commit -m "wip(T-XXXX): <short>"`).
+2. Post a one-paragraph status to chat: which ticket, where in the acceptance criteria, blockers if any.
+3. Update the ticket file's `Status: in-progress` with a `last_checkpoint: <ISO>` frontmatter field.
+
+## 4. Per-ticket exit criteria
+
+Before moving to the next ticket:
+
+- Every `Acceptance criteria` item ticked.
+- Full QA run (`.cursor/rules/tempo-qa.mdc`).
+- Branch pushed, PR opened (`/pr`), `Status: in-review` in the ticket file.
+- One-line summary posted.
+
+## 5. Escalate instead of guessing
+
+If blocked > 15 min on a decision a human must make (pricing, branding tone, legal wording, which of two viable designs to pick):
+
+- Stop the ticket.
+- Post `[BLOCKED] T-XXXX — <question>` in chat.
+- Move to the next parallelizable ticket in the plan. Do not burn cycles.
+
+## 6. Never merge; never self-approve
+
+- `master` is human-approved only. Leave all PRs open with a clean body.
+- Do not enqueue the next PR as a stack on top of an unreviewed one unless the user explicitly opted in.
+
+## 7. End-of-session report
+
+At session close, emit a report with:
+
+- Tickets closed (PR links + status).
+- Tickets started but not closed (why + where to resume).
+- Tickets intentionally skipped (reason).
+- Aggregate metrics: wall-clock, commits, lines added / removed, test count delta.
+- Any `[BLOCKED]` items still open at end.
+
+## 8. Hard stops
+
+Cancel and surface to the user immediately if any of the following happens — do NOT keep spinning:
+
+- CI has been red for ≥ 30 min after your PR opened.
+- A hard-rule scan fails and the "fix" would require editing the scan config (that means the change is actually wrong).
+- Convex schema validation starts failing against production data mid-session.
+- Branch protection blocks a force-push you believe is needed (it isn't — rebase instead).
+- Repo-wide typecheck went from green → red and your changes are implicated.
+
+## 9. Idempotency
+
+Assume the session may crash and resume. On resume:
+
+- `git status` each worktree to see what's staged.
+- Read the ticket file's frontmatter to see where you left off.
+- Do NOT regenerate work already committed.

@@ -13,32 +13,34 @@
 
 ## Doing
 
-_(nothing in flight right now)_
+_(nothing in flight right now — waiting for tomorrow morning's 45-min + overnight test runs)_
 
 ---
 
 ## Next (top 3 — pick from here)
 
-### 1. Generate tickets from PRDs + brain notes
-- **Why:** Today `docs/PRDs/` is empty and `docs/brain/` only has `AGENTS.md`; we have no written backlog. The session needs an ingestion pass that reads whatever lands in `docs/brain/sources/` and emits actionable tickets under `docs/tickets/*.md`.
-- **Shape:** one sub-agent does a one-shot run, produces 10–30 tickets (id, title, 2–3 bullet AC, estimate, dependency graph), then appends them to the **Backlog** section below.
-- **Exit:** `docs/tickets/*.md` exists, Backlog lists the new tickets, nothing committed outside those paths.
+> Atomic 30-min tickets for Phase 0 + M0 + M1 now live in the private `docs/brain/tickets/` submodule (59 tickets, indexed at `docs/brain/tickets/_INDEX.md`). Use `/whats-next` in Cursor — it reads that index and surfaces candidates matching your time budget + assignee fallback ladder.
+
+### 1. Execute one 30-min ticket from `docs/brain/tickets/` (dogfood the new flow)
+- **Why:** The ticket-based flow, rules, and slash commands were scaffolded today. Tomorrow's 45-min test drives the "one ticket, full execute" path.
+- **Shape:** open Cursor, say `/whats-next`, pick one, run `/start-ticket T-XXXX`, finish with `/run-qa` and `/pr`.
+- **Exit:** one PR open, ticket flipped to `in-review`, QA line green, branch `feat/T-XXXX-<kebab>`.
 
 ### 2. Auto-fix + re-enable the style rules we muted in CI
-- **Why:** PR #10 silenced `noImplicitBoolean` and `useBlockStatements` in `apps/web/biome.json` and `apps/mobile/biome.json` to unblock CI. We should run `biome check --write` across web + mobile, re-enable the rules, and verify CI stays green.
+- **Why:** PR #10 silenced `noImplicitBoolean` and `useBlockStatements` in `apps/web/biome.json` and `apps/mobile/biome.json` to unblock CI. Run `biome check --write` across web + mobile, re-enable, verify CI stays green.
 - **Blocker on Windows:** `bun x @biomejs/biome` fails locally on Windows with `Cannot find module '@biomejs/cli-win32-x64/biome.exe'` (bun workspace + optional native dep bug). Run this on a Linux box or in a cloud agent.
 - **Steps (Linux):**
   1. Branch `chore/biome-style-reenable`.
-  2. In `apps/web/biome.json` and `apps/mobile/biome.json`, change `useBlockStatements` and `noImplicitBoolean` from `"off"` to `"warn"` (or `"error"` if you want hard CI fail).
+  2. In `apps/web/biome.json` and `apps/mobile/biome.json`, change `useBlockStatements` and `noImplicitBoolean` from `"off"` to `"warn"` (or `"error"`).
   3. `cd apps/web && bun x @biomejs/biome@2.3.8 check --write --unsafe .`
   4. `cd apps/mobile && bun x @biomejs/biome@2.3.8 check --write --unsafe .`
-  5. Review the diff — all machine-applied. Commit.
-  6. Open PR, wait for CI green, merge.
-- **Exit:** both biome.json files have the two rules back on, diff is machine-applied only, CI is green, PR merged.
+  5. Commit, open PR, merge.
+- **Exit:** both biome.json files have the two rules back on, CI green, PR merged.
 
-### 3. Phase 3 — `.cursor/` rules, sub-agents, slash commands, hooks
-- **Why:** Tomorrow's parallel cloud agents need shared guardrails (`.cursor/rules/tempo-*.mdc`), verification sub-agents (`.cursor/agents/tempo-*`), the `/whats-next` and `/run-qa` slash commands, and a stop-hook.
-- **Exit:** all files exist, `/whats-next` returns 3 items from this TASKS.md, stop-hook runs without error in a fresh clone.
+### 3. Run an overnight autonomous session (stress-test the long-running rails)
+- **Why:** The 8-hour marathon exercises `tempo-long-running.mdc`, the `/long-session` slash command, worktree isolation, checkpoints, and block-escalation.
+- **Shape:** Cursor Cloud agent, pick identity `cursor-cloud-1` or `cursor-cloud-3`, start from the earliest Root ticket in `tickets/_INDEX.md` "By dependency chain".
+- **Exit:** a session report in chat listing closed / started / skipped / blocked tickets, plus N PRs open for review (no self-merges).
 
 ---
 
@@ -65,6 +67,14 @@ _(nothing in flight right now)_
 ---
 
 ## Done (by date)
+
+### 2026-04-18 — "Phase 3 rails" session (evening)
+- **Atomic ticket queue generated:** 59 ticket files across 13 cluster parents covering Phase 0 + M0 + M1 in `docs/brain/tickets/`. Each ticket sized ~30 min, with `product` / `assignee` / `execution` / `cluster` / `parallelizable` / `blocked-by` / `blocks` frontmatter and full acceptance criteria + implementation guidance. See `docs/brain/tickets/_INDEX.md` (by time / parallelizability / dependency / cluster / assignee / fallback log) and `docs/brain/tickets/CLUSTERS.md` (parent → child split rationale).
+- **Source ingestion:** all loose documents from yesterday copied into `docs/brain/sources/` under dated subfolders (build-pack 2026-04-05, replit-kit 2026-03-13, personal-os-prompts + bundle 2026-04-16, tempo-flow 2026-04-17, misc incl. the 610 KB `Tempo_Flow_Master_Document`). Provenance table + distillation status in `docs/brain/sources/README.md`.
+- **Sub-agent playbooks:** `docs/brain/agents-playbook/` now has paste-ready prompts for `cursor-cloud-core`, `cursor-cloud-ai`, `cursor-cloud-platform`, `long-session`, `docs-to-tickets`, `qa-bot`, `reviewer`. Each enforces HARD_RULES and the ticket contract.
+- **Cursor rules:** `.cursor/rules/` gained `tempo-hard-rules.mdc` (always-on quick reference), `tempo-tickets.mdc` (how to read/execute a ticket), `tempo-qa.mdc` (the QA gate), `tempo-long-running.mdc` (8-hour session playbook). `tempo-context.mdc`, `session-start.mdc`, `task-complete.mdc` upgraded to understand the ticket format + assignee fallback ladder.
+- **Slash commands:** `.cursor/commands/` gained `/run-qa`, `/start-ticket`, `/long-session`. `/whats-next` upgraded to accept a time budget and filter by assignee fallback.
+- **Fallback ladder applied:** Twin / Pokey / Zo tickets fall back to Cursor identities with `[<primary>-fallback]` commit tag until those external agents are configured. Today's fallback count: 1 (T-0015 Vercel bind).
 
 ### 2026-04-18 — "CI green + prod wiring" session
 - PR [#10](https://github.com/Division6066/tempo-rhythm/pull/10) merged (squash). Makes every CI job green on `master`:

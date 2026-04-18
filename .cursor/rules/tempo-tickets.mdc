@@ -1,0 +1,66 @@
+---
+description: How to read, pick, and execute a ticket from docs/brain/tickets/
+alwaysApply: false
+---
+
+# Tempo Flow — ticket workflow
+
+When the user references a ticket ID (`T-0007`, `T-0007-a`, etc.) or asks you to execute one, follow this contract.
+
+## 1. Locate the ticket file
+
+- Read [`docs/brain/tickets/_INDEX.md`](docs/brain/tickets/_INDEX.md) if you need to find one by time budget, cluster, or parallelizability.
+- Read the ticket file at [`docs/brain/tickets/T-XXXX.md`](docs/brain/tickets/) — that file is your **complete** context. Do not skip fields.
+- If the ticket has a `Parent:` line, read the parent cluster file too (`T-XXXX-cluster.md`) for sequence + sibling deps.
+
+## 2. Respect the frontmatter
+
+- `Status: todo` is the only status you may pick up. `in-progress` means another agent has it. `blocked` needs the user.
+- `Blocked by:` — every listed ID MUST be `done` before you start. If any is not done, stop and tell the user; offer a root-level alternative.
+- `Assignee:` — only execute if it matches your identity (`cursor-ide`, `cursor-cloud-1/2/3`, etc.) OR if the ticket has `(fallback: cursor-...)` AND the primary assignee (`twin`, `pokey`, `zo`) is not yet configured. When falling back, include `[<primary>-fallback]` in the commit subject.
+- `Execution:` tells you the mode:
+  - `ide-local` — runs in Cursor IDE with user present, normal workflow.
+  - `cloud-background` — runs as a Cursor Cloud agent in its own git worktree.
+  - `browser-automation` — ideally Twin; if falling back, be explicit in the PR body that a human or cursor-ide executed manually.
+  - `long-running-compute` — ideally Zo; if falling back, run as a long-session cloud agent (see `tempo-long-running.mdc`).
+  - `human` — stop, tell the user, exit.
+
+## 3. Start a branch
+
+- Branch name: `feat/T-XXXX-<short-kebab-from-title>` (or `fix/` / `chore/` / `docs/` to match the ticket's intent).
+- For a sub-ticket like `T-0007-a`, use the full id: `feat/T-0007-a-<kebab>`.
+- If running as a cloud agent, create a fresh git worktree: `git worktree add ../tempo-wt/T-XXXX feat/T-XXXX-<kebab>`.
+
+## 4. Execute
+
+- Touch only the files in `Files to touch`. If you need additional files, pause and explain why in chat; do not silently sprawl.
+- Apply `Acceptance criteria` as your explicit checklist.
+- Apply every HARD_RULE tagged in `Applicable HARD_RULES`.
+- Keep changes surgical; one logical concern per commit even if the ticket spans multiple commits.
+
+## 5. Update the ticket file in the same commit as the code
+
+- Flip the ticket's `Status:` frontmatter from `todo` → `in-progress` when you open the branch, → `in-review` when you open the PR, → `done` only after merge + green deploy.
+- Tick the `Done checklist` items in the file as you complete them.
+- Ticket file lives in the submodule — commit the status change inside `docs/brain/`, then bump the parent pointer in `tempo-rhythm`. See `docs/brain/AGENTS.md` §3.
+
+## 6. Run QA before declaring done
+
+Invoke `/run-qa` or follow `.cursor/rules/tempo-qa.mdc`. Never claim a ticket is done without the checklist output.
+
+## 7. Mark the macro task
+
+If the ticket is the last `-x` sibling in a cluster, flip the parent macro row in `docs/brain/TASKS.md` too. Reference the rule `tempo-task-complete.mdc` for the exact update pattern.
+
+## Parallelizability
+
+- Before picking a ticket, check `Parallelizable: yes/no`. If yes, and the ticket's `files_touched` are disjoint with any currently-running agent's files, it is safe to run in parallel (use a separate worktree).
+- The `_INDEX.md` "By parallelizability" section pre-computes safe groups.
+
+## Anti-patterns
+
+- Writing code before reading the ticket file in full.
+- Ignoring `Blocked by:` because "I'm sure it's fine".
+- Mixing two tickets in one branch — open a second PR instead.
+- Editing the ticket file in the `tempo-rhythm` working tree without `cd`-ing into `docs/brain/`.
+- Skipping `Done checklist` and shipping the PR anyway.

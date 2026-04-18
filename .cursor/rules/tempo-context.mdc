@@ -1,14 +1,26 @@
 ---
-description: Tempo Flow project context — read before feature work
+description: Tempo Flow — always-on context
 alwaysApply: true
 ---
 
 # Tempo Flow — always-on context
 
 - **Product:** Overwhelm-first ADHD / neurodivergent daily planner. Never shame the user; prefer confirm/undo for AI-driven changes.
-- **Task source of truth:** [`docs/brain/TASKS.md`](docs/brain/TASKS.md) — update status in the same change as code when you finish work.
-- **Non-negotiables:** Read [`docs/HARD_RULES.md`](docs/HARD_RULES.md) before touching Convex, auth, payments, or AI.
-- **Current phase PRD:** [`docs/brain/PRDs/PRD_Phase_1_MVP.md`](docs/brain/PRDs/PRD_Phase_1_MVP.md) (later phases under `docs/brain/PRDs/` are planning only unless the task says otherwise).
+- **Task source of truth:**
+  - Macro roadmap (phases, milestones): [`docs/brain/TASKS.md`](docs/brain/TASKS.md)
+  - Atomic 30-min tickets (executable, cold-start): [`docs/brain/tickets/`](docs/brain/tickets/) — index at [`docs/brain/tickets/_INDEX.md`](docs/brain/tickets/_INDEX.md)
+  - Public-safe mirror (what the world sees): [`docs/TASKS.md`](docs/TASKS.md)
+  - Update task + ticket status in the same change as code, not in chat.
+- **Non-negotiables:** Read [`docs/HARD_RULES.md`](docs/HARD_RULES.md) before touching Convex, auth, payments, or AI. Read [`docs/brain/AGENTS.md`](docs/brain/AGENTS.md) before writing anything inside `docs/brain/`.
+- **Current phase PRD:** [`docs/brain/PRDs/PRD_Phase_1_MVP.md`](docs/brain/PRDs/PRD_Phase_1_MVP.md). Later phases under `docs/brain/PRDs/` are planning only unless the ticket says otherwise.
+- **Brand voice:** [`docs/brain/brand/voice.md`](docs/brain/brand/voice.md) + [`docs/brain/brand/do-and-dont.md`](docs/brain/brand/do-and-dont.md). Anti-shame, calm, concrete. Apply on every UI string.
 - **Repo layout:** `apps/web` (Next 16 + Tailwind v4), `apps/mobile` (Expo 53 + NativeWind), `convex/` at root, `packages/types`, `packages/utils`, `packages/ui`.
 - **Forbidden:** Firebase, Supabase, Prisma/Drizzle ORMs, Clerk/Auth0/NextAuth, direct OpenAI/Anthropic/Google AI SDKs, Redux/Zustand/Jotai for app state, Axios. Use Convex + native `fetch` + OpenRouter (see HARD_RULES).
-- **If rules conflict:** `docs/HARD_RULES.md` wins over PRDs and chat.
+- **Agent identities (fallback ladder):**
+  - Code in IDE with user present → `cursor-ide`
+  - Cloud background code agent → `cursor-cloud-1/2/3` (1=core/schema, 2=AI/RAG, 3=platform/UI)
+  - Browser dashboard automation → `twin` (fallback: `cursor-ide` + `human-amit`)
+  - Cross-SaaS orchestration → `pokey` (fallback: `cursor-ide`)
+  - Long-running compute → `zo` (fallback: `cursor-cloud-2`)
+  - Physical / identity / payment → `human-amit` only
+- **If rules conflict:** `docs/HARD_RULES.md` wins over PRDs, tickets, and chat.

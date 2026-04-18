@@ -1,0 +1,56 @@
+---
+description: Tempo Flow HARD_RULES — quick reference, full rules live at docs/HARD_RULES.md
+alwaysApply: true
+---
+
+# Tempo Flow — HARD_RULES quick reference
+
+Full rules: [`docs/HARD_RULES.md`](docs/HARD_RULES.md). If anything here looks outdated, trust the file and ask the user to update this mirror.
+
+## Never use
+
+- Firebase, Supabase, any flavor of Prisma / Drizzle ORM.
+- Clerk, Auth0, NextAuth. Auth is **Convex Auth** only.
+- Direct provider SDKs: `openai`, `@anthropic-ai/*`, `@google/generative-ai`. All LLM calls go through **OpenRouter** via native `fetch` in a Convex action or `packages/ai`.
+- `axios`. Use native `fetch`.
+- Redux, Zustand, Jotai, any other app-state library. Use **Convex reactive queries**; local UI state stays in React state / `useReducer`.
+
+## Data + auth
+
+- All reads / writes go through Convex queries, mutations, and actions. Validate every public function's args and return type.
+- Every public function does an auth check (`ctx.auth.getUserIdentity()`) before touching user data.
+- Never call `Date.now()` inside a query — it breaks caching. Use `_creationTime`, or pass the timestamp from the client / a mutation.
+- Queries use indexes (`withIndex`), not `filter`, for anything larger than constant-time lookups.
+- `use node` is for actions that need Node APIs — never for queries or mutations.
+- Only schedule `internal.*` functions. Never schedule `api.*`.
+
+## AI
+
+- One router: `packages/ai/route-by-task.ts` (or the interim `convex/lib/ai/*`). No ad-hoc model calls.
+- Model defaults: `gemma-2-9b` for routine writes, `mistral-small` fallback, escalate to stronger models only with explicit user consent.
+- Every AI mutation is a **proposal**, not a direct write. Render an accept / reject preview in the UI.
+- Scanners (WhatsApp / Telegram / ChatGPT export etc.) are **RAM-only** — never persist raw scanned content to Convex.
+
+## Payments
+
+- RevenueCat for mobile + web entitlements. Server-side verification via RevenueCat webhooks writing to Convex.
+- Crypto donations are informational links (BTC / ETH / SOL / XMR addresses) — never custody funds in-app.
+
+## Git + PR
+
+- Never push to `master`. All work lands via PR. Branch protection is on.
+- Branch names: `feat/T-XXXX-<kebab>`, `fix/T-XXXX-<kebab>`, `chore/<scope>-<kebab>`, `docs/<scope>-<kebab>`.
+- Conventional Commits. One logical change per PR.
+- Code agents never merge their own PRs. Stop at "PR open".
+- Owner-tag discipline (§14): only claim work whose owner matches your agent identity. If the ticket says `twin (fallback: cursor-ide + human-amit)` and Twin is unconfigured, Cursor may do it — but keep the `twin` intent visible in the commit message (`feat(scope): ... [twin-fallback]`).
+
+## Brand + UX
+
+- Anti-shame language at all times. Never tell the user they are "behind", "failing", "lazy". See `docs/brain/brand/do-and-dont.md`.
+- Confirm + undo for any AI-initiated change to user data.
+- Empty states, error states, loading skeletons, light + dark, dyslexia toggle — every route gets them before the milestone closes.
+
+## Submodule hygiene
+
+- `docs/brain/` is a git submodule (`tempo-brain`). Edits happen **inside** the submodule (cd first), then the parent commit bumps the pointer. See `docs/brain/AGENTS.md` §3.
+- Never commit secrets to either repo.
