@@ -3,6 +3,9 @@
     "name": "Tempo Rhythm",
     "slug": "tempo-rhythm",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tempo-rhythm",
@@ -22,6 +25,7 @@
       "bundleIdentifier": "com.temporhythm.app"
     },
     "android": {
+      "package": "com.temporhythm.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"
