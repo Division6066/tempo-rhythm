@@ -5,8 +5,8 @@ Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Ex
 ## Read these first (every session)
 
 1. **`docs/HARD_RULES.md`** — canonical non-negotiables. Read before touching code.
-2. **`docs/TASKS.md`** — find your assigned task by owner tag and update status as you go.
-3. **`docs/PRDs/PRD_Phase_1_MVP.md`** — current phase spec. Other phase PRDs under `docs/PRDs/` are for planning context only.
+2. **`docs/brain/TASKS.md`** — find your assigned task by owner tag and update status as you go.
+3. **`docs/brain/PRDs/PRD_Phase_1_MVP.md`** — current phase spec. Other phase PRDs under `docs/brain/PRDs/` are for planning context only.
 4. **`docs/CURSOR_PROMPTS.md`** — kickoff prompts for each Cursor Cloud cluster.
 
 ## Owner tags
@@ -47,7 +47,7 @@ Before writing code:
 - **Confidence router:** auto-apply only when model confidence is ≥ 0.8, always with an undo window. 0.5–0.8 requires a one-click confirm. Below 0.5 opens a clarifying dialog.
 - **RAM-only scanner rule:** any third-party content scan (email, WhatsApp, Telegram, chat history imports) processes in memory only. Raw messages never persist to disk or Convex.
 - **Generic schema rule:** Convex tables stay generic. User-specific formatting and structure emerge from the AI / render layer, not from schema columns.
-- **Every table has (target):** `userId: v.optional(v.string())`, `createdAt`, `updatedAt`, `deletedAt` (soft delete). **Current code** may use `userId: v.id("users")` until migration tasks in `docs/TASKS.md` are completed.
+- **Every table has (target):** `userId: v.optional(v.string())`, `createdAt`, `updatedAt`, `deletedAt` (soft delete). **Current code** may use `userId: v.id("users")` until migration tasks in `docs/brain/TASKS.md` are completed.
 - **Voice tracking:** count minutes of real audio, not tokens. Daily caps reset at user's local midnight. Basic 30 min, Pro 90 min, Max 180 min.
 - **Coach personality setting:** a numeric 0–10 dial per user, overridable per session. Inject the current value into the system prompt.
 

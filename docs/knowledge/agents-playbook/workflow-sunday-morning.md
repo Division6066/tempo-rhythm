@@ -46,7 +46,7 @@
 
 ## Pre-conditions for the loop to work
 
-- `docs/TASKS.md` has at least three `todo` tasks whose ticket files exist at `docs/knowledge/tickets/T-XXXX.md`.
+- `docs/brain/TASKS.md` has at least three `todo` tasks whose ticket files exist at `docs/brain/tickets/T-XXXX.md`.
 - Each ticket file has `estimated_time`, `files_touched`, `dependencies` populated by the generator.
 - Stop hook (`.cursor/hooks.json`) runs `tsc` + `lint` + the project scan suite on agent completion.
 - Verification sub-agents (`.cursor/agents/tempo-*`) are registered.

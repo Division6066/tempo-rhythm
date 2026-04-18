@@ -10,7 +10,7 @@
 | Pick the next batch of work | [`tickets/_INDEX.md`](tickets/_INDEX.md) |
 | Design a UI component | [`brand/_INDEX.md`](brand/_INDEX.md) → [`brand/visual-tokens.md`](brand/visual-tokens.md) |
 | Write marketing / UI copy | [`brand/voice.md`](brand/voice.md) |
-| Understand what "done" means for Phase 1 MVP | [`prds/README.md`](prds/README.md) → `docs/PRDs/PRD_Phase_1_MVP.md` |
+| Understand what "done" means for Phase 1 MVP | [`prds/README.md`](prds/README.md) → `docs/brain/PRDs/PRD_Phase_1_MVP.md` |
 | Know what you absolutely must not do | [`rules/README.md`](rules/README.md) → `docs/HARD_RULES.md` |
 | Run a 45-minute multi-agent session | [`agents-playbook/workflow-sunday-morning.md`](agents-playbook/workflow-sunday-morning.md) |
 | Know when to stop and ask Amit | [`agents-playbook/checkpoints.md`](agents-playbook/checkpoints.md) |
@@ -32,7 +32,7 @@ docs/knowledge/
 │   ├── _INDEX.md                   ← grouped by time, parallelizability, deps, cluster
 │   └── T-XXXX.md                   ← one per todo/in-progress task (filled by Phase 3 agent)
 ├── prds/
-│   └── README.md                   ← pointer to docs/PRDs/
+│   └── README.md                   ← pointer to docs/brain/PRDs/
 ├── rules/
 │   └── README.md                   ← pointer to docs/HARD_RULES.md + .cursor/rules/*
 ├── agents-playbook/

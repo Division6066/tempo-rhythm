@@ -22,7 +22,7 @@ Use one of:
 - `chore/<scope>-<short-kebab>` — tooling, CI, deps, no user impact
 - `docs/<scope>-<short-kebab>` — docs-only changes
 
-`T-XXXX` matches the task ID format in `docs/TASKS.md`.
+`T-XXXX` matches the task ID format in `docs/brain/TASKS.md`.
 
 ## Commits + PR titles
 

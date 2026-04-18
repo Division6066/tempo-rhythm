@@ -7,7 +7,7 @@ alwaysApply: false
 
 When this rule applies (user asks what to do next, starting a session, or wants a small batch of work):
 
-1. Open and read [`docs/TASKS.md`](docs/TASKS.md).
+1. Open and read [`docs/brain/TASKS.md`](docs/brain/TASKS.md).
 2. Prefer tasks with status `todo` whose **Deps** column is satisfied (earlier IDs done or marked N/A for this repo).
 3. Cross-check the codebase lightly: skip tasks that are already obviously implemented unless TASKS still says `todo` (then suggest updating TASKS first).
 4. Reply with **exactly three** tasks, each on its own line, using this format:

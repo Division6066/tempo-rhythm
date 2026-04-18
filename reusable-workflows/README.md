@@ -247,7 +247,7 @@ $PROJECT/
   agent-playbooks/        # this folder
   docs/
     HARD_RULES.md
-  TASKS.md                # or docs/TASKS.md — single source of truth
+  TASKS.md                # or docs/brain/TASKS.md — single source of truth
   .cursorrules
 ```
 

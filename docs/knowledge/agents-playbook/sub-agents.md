@@ -10,7 +10,7 @@
 | `tempo-design-token-validator` | yes | after any diff touching `packages/ui/**` or `apps/web/app/globals.css` or `apps/*/src/**/*.tsx` | Fails on arbitrary hex values, missing tokens, inconsistent spacing, forbidden Tailwind patterns. |
 | `tempo-accept-reject-checker` | yes | after any diff that mentions `action`, `mutation`, AI calls, or `convex/proposals.ts` | Confirms no AI-originating mutation bypasses the proposals flow. |
 | `tempo-hard-rules-auditor` | yes | on every PR | Runs through all 17 HARD_RULES sections against the diff. Produces a report. |
-| `tempo-brand-validator` | yes | on diffs touching UI copy or components | Checks copy against `docs/knowledge/brand/voice.md` pattern library. Flags violations and proposes on-brand replacements. |
+| `tempo-brand-validator` | yes | on diffs touching UI copy or components | Checks copy against `docs/brain/brand/voice.md` pattern library. Flags violations and proposes on-brand replacements. |
 | `tempo-test-runner` | **no** | after build completes | Runs `pnpm typecheck`, `pnpm test`, `pnpm scan:forbidden-tech`, `pnpm scan:ram-only-audit`, `pnpm scan:design-tokens`. Reports pass/fail per suite. |
 
 ## How the orchestrator uses them

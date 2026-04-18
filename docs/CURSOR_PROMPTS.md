@@ -34,8 +34,8 @@ Before you write any code:
 
 1. Read docs/HARD_RULES.md in full.
 2. Read docs/CURSOR_RULES.md in full.
-3. Read the phase PRD referenced by the task ID (docs/PRDs/PRD_Phase_X.md).
-4. Read the task entry in docs/TASKS.md that you're about to work on.
+3. Read the phase PRD referenced by the task ID (docs/brain/PRDs/PRD_Phase_X.md).
+4. Read the task entry in docs/brain/TASKS.md that you're about to work on.
 5. If anything in these documents conflicts with my instructions, HARD_RULES wins — ask me instead of guessing.
 
 Once you've read the above, confirm back to me in one paragraph: the task ID you're on, the acceptance criteria, and any ambiguity you see. Do not start coding yet.
@@ -66,12 +66,12 @@ Boundaries:
 - When your feature needs those, import from the packages owned by Agents 2 and 3. Do not reimplement.
 
 Working method:
-1. Open docs/TASKS.md. Find tasks tagged `cluster:core-features` and `status:todo`.
+1. Open docs/brain/TASKS.md. Find tasks tagged `cluster:core-features` and `status:todo`.
 2. Pick the highest-priority task with no blocking dependencies.
 3. Follow the session preamble in CURSOR_PROMPTS.md §1.
 4. Write the code. Write the tests. Run tsc --noEmit. Run the test suite.
 5. Open a PR titled `[T-XXXX] <task title>`. Include in the PR body: what you built, acceptance criteria mapping, screenshots if UI.
-6. Update docs/TASKS.md to set the task to `status:in-review`.
+6. Update docs/brain/TASKS.md to set the task to `status:in-review`.
 7. Post a one-line status update to the Discord `#agent-cursor` channel via the webhook.
 8. Pick the next task.
 
@@ -157,7 +157,7 @@ Task: [[T-XXXX]] — [[task title]]
    - Any HARD_RULES you think might bite this feature
 3. Wait for my confirmation before writing code.
 
-Acceptance criteria (from docs/TASKS.md):
+Acceptance criteria (from docs/brain/TASKS.md):
 [[paste acceptance criteria here]]
 
 Files in scope:

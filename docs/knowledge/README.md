@@ -7,8 +7,8 @@ This folder is **the agent brain**. Every Cursor agent, every Claude Code agent,
 | Folder | What it is | Who reads it |
 |---|---|---|
 | `brand/` | Brand identity, voice, visual tokens, do-and-dont examples. Enforced when touching UI. | Design skills + `tempo-brand` skill |
-| `tickets/` | One self-contained prompt per `todo`/`in-progress` task in `docs/TASKS.md`. `_INDEX.md` groups by time budget and parallelizability. | `/whats-next` command, parallel build agents |
-| `prds/` | Pointers to canonical PRDs under `docs/PRDs/`. Never copy content — always reference. | Every agent starting a feature |
+| `tickets/` | One self-contained prompt per `todo`/`in-progress` task in `docs/brain/TASKS.md`. `_INDEX.md` groups by time budget and parallelizability. | `/whats-next` command, parallel build agents |
+| `prds/` | Pointers to canonical PRDs under `docs/brain/PRDs/`. Never copy content — always reference. | Every agent starting a feature |
 | `rules/` | Pointers to `docs/HARD_RULES.md` + `.cursor/rules/*`. | Every agent, every session |
 | `agents-playbook/` | How agents run the Sunday-morning 45-minute workflow, when to checkpoint with Amit, how sub-agents verify diffs. | Orchestrator agents, `/whats-next` |
 | `sources/` | Raw source folders/docs that get ingested into the above. **Drop new source material here**; a distillation agent folds it upward. | The ingestion agent only |

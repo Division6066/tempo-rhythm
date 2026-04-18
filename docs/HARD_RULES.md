@@ -112,7 +112,7 @@ Rules:
 
 ### Current repository (until migration tasks)
 
-Several tables today use **`userId: v.id("users")`** tied to Convex Auth. That is acceptable until `docs/TASKS.md` reconciliation migrates toward the optional-string `userId` pattern for anonymous onboarding. New code should prefer the PRD target when adding tables.
+Several tables today use **`userId: v.id("users")`** tied to Convex Auth. That is acceptable until `docs/brain/TASKS.md` reconciliation migrates toward the optional-string `userId` pattern for anonymous onboarding. New code should prefer the PRD target when adding tables.
 
 ---
 

@@ -11,8 +11,8 @@ For the hard non-negotiables, see [`HARD_RULES.md`](./HARD_RULES.md). This file 
 **Rule.** Read these files in order before touching code:
 
 1. `docs/HARD_RULES.md`
-2. `docs/TASKS.md` (filter by your owner tag)
-3. `docs/PRDs/PRD_Phase_1_MVP.md` (current phase spec)
+2. `docs/brain/TASKS.md` (filter by your owner tag)
+3. `docs/brain/PRDs/PRD_Phase_1_MVP.md` (current phase spec)
 4. `docs/CURSOR_PROMPTS.md` (if you need a kickoff template)
 
 **Rationale.** Context drift is the single biggest failure mode of long-running Cursor Cloud agents. Reading the rules first and the current PRD second keeps the agent aligned with project posture instead of free-forming from model priors. `TASKS.md` tells you what you are allowed to work on; the PRD tells you what "done" means.
@@ -117,7 +117,7 @@ If you think you need a forbidden dependency, open an issue first with the justi
 
 **Rationale.** `userId` optional handles anonymous onboarding and Convex Auth transitional states. `createdAt` + `updatedAt` give us user-visible sort order that does not depend on Convex internals. Soft delete means we can always recover from an AI mis-mutation and it feeds into the 30-day grace window for account deletion under GDPR.
 
-**Current repository:** several live tables use `userId: v.id("users")` until migration tasks in `docs/TASKS.md` land.
+**Current repository:** several live tables use `userId: v.id("users")` until migration tasks in `docs/brain/TASKS.md` land.
 
 ---
 
