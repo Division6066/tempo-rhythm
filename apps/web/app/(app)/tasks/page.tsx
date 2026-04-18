@@ -41,7 +41,9 @@ export default function TasksPage() {
     ? Id
     : never) => {
     const task = tasks?.find((t) => t._id === taskId);
-    if (!task) return;
+    if (!task) {
+      return;
+    }
     const next = task.status === "done" ? "todo" : "done";
     await updateTask({ taskId, status: next });
   };

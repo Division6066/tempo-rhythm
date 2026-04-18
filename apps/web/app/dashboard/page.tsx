@@ -29,7 +29,9 @@ export default function DashboardPage() {
   }, [isAuthenticated, ensureUser]);
 
   const todayTasks = useMemo(() => {
-    if (!tasks) return [];
+    if (!tasks) {
+      return [];
+    }
     const start = startOfLocalDayMs();
     const end = endOfLocalDayMs();
     return tasks.filter(
