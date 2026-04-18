@@ -23,8 +23,10 @@ const projectRoot = __dirname;
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch the workspace root so Metro picks up the shared convex/ directory
-config.watchFolders = [workspaceRoot];
+// Merge with Expo's default watchFolders so we keep defaults AND add the
+// workspace root (needed to pick up the shared convex/ directory).
+const defaultWatchFolders = Array.isArray(config.watchFolders) ? config.watchFolders : [];
+config.watchFolders = Array.from(new Set([...defaultWatchFolders, workspaceRoot]));
 
 // Resolve modules from workspace root (shared convex/) as well
 config.resolver.nodeModulesPaths = [
