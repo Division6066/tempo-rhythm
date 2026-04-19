@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { BookOpen, CheckSquare, Heart, Home } from "lucide-react-native";
+import { tempoColors } from "@tempo/ui/theme";
 
 /**
  * Tempo Flow bottom tab bar.
@@ -11,11 +12,11 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#D97757",
-        tabBarInactiveTintColor: "#9A968F",
+        tabBarActiveTintColor: tempoColors.tempoOrange,
+        tabBarInactiveTintColor: tempoColors.dustGreySoft,
         tabBarStyle: {
-          backgroundColor: "#FAF6F0",
-          borderTopColor: "#E6DDD1",
+          backgroundColor: tempoColors.creamRaised,
+          borderTopColor: tempoColors.lineSoft,
         },
       }}
     >

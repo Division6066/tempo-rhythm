@@ -13,19 +13,19 @@ import { Check } from "../icons";
  */
 
 export type TaskRowProps = {
-  id: string;
+  taskId: string;
   title: string;
   done?: boolean;
   meta?: string;
   leading?: ReactNode;
   trailing?: ReactNode;
-  onToggle?: (id: string, next: boolean) => void;
-  onOpen?: (id: string) => void;
+  onToggle?: (taskId: string, next: boolean) => void;
+  onOpen?: (taskId: string) => void;
   className?: string;
 };
 
 export function TaskRow({
-  id,
+  taskId,
   title,
   done = false,
   meta,
@@ -47,7 +47,7 @@ export function TaskRow({
       <button
         type="button"
         aria-label={done ? "Mark task as not done" : "Mark task as done"}
-        onClick={() => onToggle?.(id, !done)}
+        onClick={() => onToggle?.(taskId, !done)}
         className={[
           "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
           done
@@ -60,11 +60,11 @@ export function TaskRow({
 
       {leading}
 
-      {/* @action openTask @navigate /tasks/{id} */}
+      {/* @action openTask @navigate /tasks/{taskId} */}
       <button
         type="button"
         className="flex flex-1 flex-col items-start text-left"
-        onClick={() => onOpen?.(id)}
+        onClick={() => onOpen?.(taskId)}
       >
         <span
           className={[

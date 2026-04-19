@@ -32,7 +32,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return TEMPO_SCREENS.slice(0, 40);
+    if (!q) return TEMPO_SCREENS;
     return TEMPO_SCREENS.filter(
       (s) =>
         s.title.toLowerCase().includes(q) ||
@@ -40,6 +40,13 @@ export function CommandPalette({ open, onOpenChange }: Props) {
         s.category.toLowerCase().includes(q),
     );
   }, [query]);
+
+  // Keep the focused item in view as the user navigates with arrow keys.
+  const itemRefs = useRef<Array<HTMLLIElement | null>>([]);
+  useEffect(() => {
+    const el = itemRefs.current[focused];
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, [focused]);
 
   useEffect(() => {
     if (!open) return;
@@ -100,6 +107,9 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             items.map((s, i) => (
               <li
                 key={s.slug}
+                ref={(el) => {
+                  itemRefs.current[i] = el;
+                }}
                 className={[
                   "flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-small cursor-pointer",
                   i === focused
