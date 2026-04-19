@@ -293,20 +293,21 @@ p {
   background: transparent;
 }
 
-/* ---- Motion prefs ---------------------------------------- */
-/*
+/* ---- Motion prefs ----------------------------------------
  * prefers-reduced-motion needs `!important` to override inline transition
- * styles from third-party libs (Radix, framer-motion, etc). This is the
- * WCAG-recommended pattern; suppressing biome's noImportantStyles here.
+ * styles from third-party libs (Radix, framer-motion). WCAG-recommended.
  */
-/* biome-ignore lint/complexity/noImportantStyles: required to override third-party inline transitions. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
     animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
     animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
     transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
     scroll-behavior: auto !important;
   }
 }
