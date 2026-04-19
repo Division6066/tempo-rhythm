@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tempo Flow — Mobile Web App Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: Inter, system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  @keyframes mball-breath {
+    0%, 100% { transform: scale(1); opacity: 0.55; }
+    50%      { transform: scale(1.12); opacity: 0; }
+  }
+  @keyframes mball-fade {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+  @keyframes mball-slide {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="mobile/mobile-shell.jsx"></script>
+<script type="text/babel" src="mobile/mobile-screens-a.jsx"></script>
+<script type="text/babel" src="mobile/mobile-screens-b.jsx"></script>
+
+<script type="text/babel">
+/* ============ Canvas header ============ */
+const Header = () => (
+  <div style={{
+    padding:"42px 60px 12px",
+    maxWidth: 1200,
+  }}>
+    <div style={{fontFamily:'"JetBrains Mono", monospace', fontSize:11, color:"rgba(60,50,40,0.6)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:10}}>
+      Tempo Flow · Mobile web app · v0.3
+    </div>
+    <div style={{fontFamily:'Fraunces, serif', fontSize:44, fontWeight:500, letterSpacing:"-0.015em", color:"rgba(40,30,20,0.92)", lineHeight:1.1, marginBottom:10, textWrap:"pretty"}}>
+      The brain's OS, sized for a thumb.
+    </div>
+    <div style={{fontFamily:'Fraunces, serif', fontSize:17, lineHeight:1.55, color:"rgba(60,50,40,0.78)", maxWidth:780, textWrap:"pretty"}}>
+      NotePlan-inspired daily note at the center, wrapped with the PRD's feature set: separate Journal and Notes,
+      Brain Dump → Planning Session flow, Library of reusable pieces, Habits + Goals + Templates. A persistent
+      <strong style={{color:"#C8643F"}}> chat ball</strong> lives above the bottom tab bar on every screen so the coach is one tap from anywhere.
+    </div>
+  </div>
+);
+
+/* ============ Sections layout ============ */
+const App = () => (
+  <DesignCanvas>
+    <Header/>
+
+    <DCSection title="Core flow" subtitle="Today → Tasks → Brain Dump → Planning. The daily loop the PRD's activation metric depends on.">
+      <DCArtboard label="01 · Today (daily note)" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="today"><MobileToday/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="02 · Tasks (swipe-to-complete)" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="tasks"><MobileTasks/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="03 · Brain Dump" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="today"><MobileBrainDump/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="04 · Planning Session" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="today"><MobilePlan/></PhoneShell>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection title="Coach & chat ball" subtitle="The coach is both a full screen AND a universal panel reachable from the floating ball on every screen.">
+      <DCArtboard label="05 · Coach (full screen, walkie)" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="coach"><MobileCoachScreen/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="06 · Chat ball · open from any screen" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneWithPanelOpen/>
+      </DCArtboard>
+      <DCPostIt top={10} left={-110} rotate={-4} width={200}>
+        Tap the orange ball on ANY screen. Slides up with Chat + Brain Dump tabs.
+      </DCPostIt>
+    </DCSection>
+
+    <DCSection title="Library — all your reusable stuff" subtitle="Prompts, recipes, routines, formats, references. Notes, Journal, Habits, Goals, Projects, Templates nest here too.">
+      <DCArtboard label="07 · Library" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="library"><MobileLibrary/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="08 · Journal (separate from notes)" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="library"><MobileJournal/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="09 · Habits" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="library"><MobileHabits/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="10 · Template editor (NL → template)" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="library"><MobileTemplateEditor/></PhoneShell>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection title="Onboarding · 5-step pre-auth flow" subtitle="Welcome → Personalization → Template → Brain Dump → First Plan. Chat ball hidden throughout; bottom tabs hidden too.">
+      <DCArtboard label="ONB 1 · Welcome" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell showTabs={false} showChatBall={false}><MobileOnboarding initialStep={0}/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="ONB 2 · Personalization" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell showTabs={false} showChatBall={false}><MobileOnboarding initialStep={1}/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="ONB 3 · Starting shape" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell showTabs={false} showChatBall={false}><MobileOnboarding initialStep={2}/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="ONB 4 · Brain Dump" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell showTabs={false} showChatBall={false}><MobileOnboarding initialStep={3}/></PhoneShell>
+      </DCArtboard>
+      <DCArtboard label="ONB 5 · First plan + account" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell showTabs={false} showChatBall={false}><MobileOnboarding initialStep={4}/></PhoneShell>
+      </DCArtboard>
+      <DCPostIt top={10} left={-110} rotate={-3} width={200}>
+        Each artboard is the <em>same</em> component at a different step — the real flow is interactive. Click through on any artboard.
+      </DCPostIt>
+    </DCSection>
+
+    <DCSection title="Settings" subtitle="Exposes voice, accessibility and coach-warmth toggles the PRD calls out.">
+      <DCArtboard label="Settings" width={390} height={844} style={{borderRadius:52, background:"transparent", boxShadow:"none", overflow:"visible"}}>
+        <PhoneShell tab="settings"><MobileSettings/></PhoneShell>
+      </DCArtboard>
+    </DCSection>
+
+    {/* footnotes / handoff notes */}
+    <div style={{padding:"0 60px 80px", maxWidth:1100}}>
+      <div style={{fontFamily:'"JetBrains Mono", monospace', fontSize:11, color:"rgba(60,50,40,0.6)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:12}}>Handoff notes · for Cursor</div>
+      <div style={{fontFamily:"Fraunces, serif", fontSize:15, lineHeight:1.6, color:"rgba(60,50,40,0.85)", textWrap:"pretty", display:"grid", gridTemplateColumns:"1fr 1fr", gap:32}}>
+        <div>
+          <strong style={{color:"rgba(40,30,20,0.92)"}}>Design tokens (apps/mobile/tokens)</strong><br/>
+          cream <code>#f3ebe2</code>, card <code>#fbf7f2</code>, sunken <code>#efe6db</code>, ink <code>#2a2520</code>, muted <code>#6e6458</code>,
+          border <code>#e3d8c9</code>. Accents: terracotta <code>#D97757</code> (primary), moss <code>#8fa571</code> (success/streaks), clay <code>#C19A7B</code> (warm accent).
+          Fonts: Fraunces (display + body prose), Inter (UI), JetBrains Mono (labels + metadata).
+        </div>
+        <div>
+          <strong style={{color:"rgba(40,30,20,0.92)"}}>Components to extract first</strong><br/>
+          <code>PhoneShell → AppShell</code> with bottom tabs + floating <code>CoachFab</code> + <code>CoachSheet</code>.
+          <code>TaskRow</code> (energy pill, tags, time estimate). <code>CBubble</code> coach/user bubbles. Rest are screen layouts composed of these three.
+        </div>
+      </div>
+    </div>
+  </DesignCanvas>
+);
+
+/* A phone with the coach panel pre-opened so you can see the ball's behavior inline */
+const PhoneWithPanelOpen = () => {
+  const [open, setOpen] = React.useState(true);
+  return (
+    <div style={{position:"relative"}}>
+      <div style={{
+        width: 390, height: 844, borderRadius:52, overflow:"hidden",
+        position:"relative", background: MT.cream,
+        boxShadow:"0 40px 80px rgba(60,40,20,0.22), 0 0 0 1px rgba(0,0,0,0.1)",
+        fontFamily:MT.sans, color:MT.ink,
+      }}>
+        <div style={{position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:104, height:30, borderRadius:20, background:"#000", zIndex:50}}/>
+        <div style={{position:"absolute", top:0, left:0, right:0, zIndex:30}}>
+          <TimeLabel/>
+        </div>
+        <div style={{position:"absolute", inset:0, paddingTop:44, paddingBottom:80, display:"flex", flexDirection:"column", overflow:"hidden"}}>
+          <MobileToday/>
+        </div>
+        <TabBar active="today" onChange={()=>{}}/>
+        <ChatBall open={open} onToggle={()=>setOpen(o=>!o)}/>
+        {open && <CoachPanel onClose={()=>setOpen(false)}/>}
+        <div style={{position:"absolute", bottom:0, left:0, right:0, height:22, display:"flex", justifyContent:"center", alignItems:"flex-end", paddingBottom:7, pointerEvents:"none", zIndex:60}}>
+          <div style={{width:120, height:4, borderRadius:99, background:"rgba(0,0,0,0.28)"}}/>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

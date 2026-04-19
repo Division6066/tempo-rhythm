@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tempo Flow — A gentle planner for messy brains</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+<link rel="stylesheet" href="shell.css"/>
+<style>
+  body { background: var(--surface-page); color: var(--fg); font-family: var(--font-sans); }
+  /* Marketing scale */
+  .m-wrap { max-width: 1240px; margin: 0 auto; padding: 0 var(--space-8); }
+  .m-nav { display: flex; align-items: center; padding: var(--space-6) var(--space-8); max-width: 1240px; margin: 0 auto; gap: var(--space-8); }
+  .m-nav .links { display: flex; gap: var(--space-6); margin-left: auto; font-size: 14px; color: var(--fg-soft); }
+  .m-nav .links a { color: inherit; text-decoration: none; }
+  .m-nav .links a:hover { color: var(--fg); }
+  .hero { padding: var(--space-12) 0 var(--space-16); position: relative; overflow: hidden; }
+  .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 99px; background: var(--surface-card); border: 1px solid var(--border); font-size: 13px; color: var(--fg-muted); margin-bottom: var(--space-6); }
+  .hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--tempo-orange); }
+  .hero h1 { font-family: var(--font-serif); font-weight: 400; font-size: clamp(44px, 6.8vw, 92px); line-height: 1.02; letter-spacing: -0.03em; max-width: 12ch; margin-bottom: var(--space-6); }
+  .hero h1 em { font-style: italic; color: var(--tempo-orange); }
+  .hero p.lede { font-family: var(--font-serif); font-size: clamp(18px, 1.8vw, 24px); line-height: 1.55; color: var(--fg-soft); max-width: 54ch; margin-bottom: var(--space-8); }
+  .hero-ctas { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+  .btn-xl { padding: 14px 24px; font-size: 15px; border-radius: 99px; }
+  .hero-proof { margin-top: var(--space-10); display: flex; gap: var(--space-10); flex-wrap: wrap; }
+  .hero-proof .stat strong { display: block; font-family: var(--font-serif); font-size: 28px; font-weight: 500; }
+  .hero-proof .stat span { font-size: 13px; color: var(--fg-muted); }
+
+  /* Hero decoration */
+  .hero-deco { position: absolute; right: -120px; top: 0; bottom: 0; width: 48%; opacity: 0.9; pointer-events: none; }
+  .hero-card { position: absolute; background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: var(--space-4); box-shadow: var(--shadow-lift); font-size: 14px; transform-origin: center; }
+  .hero-card .tag { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--tempo-orange); margin-bottom: 6px; }
+  .hero-card h3 { font-family: var(--font-serif); font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+  .hero-card p { font-size: 13px; color: var(--fg-muted); line-height: 1.5; }
+
+  /* Section shells */
+  section { padding: var(--space-16) 0; }
+  .sec-eyebrow { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--tempo-orange); font-weight: 600; margin-bottom: var(--space-3); font-family: var(--font-mono); }
+  .sec-h2 { font-family: var(--font-serif); font-weight: 400; font-size: clamp(32px, 4.4vw, 58px); line-height: 1.08; letter-spacing: -0.02em; max-width: 18ch; margin-bottom: var(--space-5); }
+  .sec-sub { font-family: var(--font-serif); font-size: 20px; line-height: 1.55; color: var(--fg-soft); max-width: 62ch; }
+
+  .feat-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-6); margin-top: var(--space-10); }
+  .feat-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: var(--space-6); min-height: 260px; position: relative; overflow: hidden; }
+  .feat-card h3 { font-family: var(--font-serif); font-size: 26px; font-weight: 500; margin: var(--space-4) 0 var(--space-2); letter-spacing: -0.01em; }
+  .feat-card p { font-size: 15px; line-height: 1.6; color: var(--fg-soft); }
+  .feat-tall { grid-column: span 7; min-height: 420px; background: var(--mkt-feat-warm); }
+  .feat-tall .mock { position: absolute; bottom: -20px; right: -20px; width: 60%; background: var(--surface-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lift); padding: var(--space-4); }
+  .feat-sq { grid-column: span 5; }
+  .feat-wide { grid-column: span 12; min-height: 260px; background: var(--mkt-dark-bg); color: var(--mkt-dark-fg); }
+  .feat-wide h3, .feat-wide p { color: inherit; }
+  .feat-wide p { color: var(--mkt-dark-fg-muted); }
+  .feat-third { grid-column: span 4; }
+
+  /* Coach quotes */
+  .coach-strip { background: var(--mkt-dark-bg); color: var(--mkt-dark-fg); padding: var(--space-16) 0; }
+  .coach-strip h2 { color: inherit; }
+  .coach-samples { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); margin-top: var(--space-8); }
+  .coach-bubble { background: var(--mkt-dark-bubble); border: 1px solid var(--mkt-dark-border); border-radius: var(--radius-lg); padding: var(--space-5); font-family: var(--font-serif); font-size: 18px; line-height: 1.55; color: var(--mkt-dark-fg); }
+  .coach-bubble .who { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mkt-dark-fg-subtle); margin-top: var(--space-4); }
+
+  /* Pricing */
+  .price-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-10); }
+  .price-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: var(--space-8); }
+  .price-card.hero { background: linear-gradient(145deg, var(--mkt-dark-bg) 0%, var(--mkt-dark-bg-2) 100%); color: var(--mkt-dark-fg); position: relative; }
+  .price-card.hero .pill { position: absolute; top: 20px; right: 20px; background: var(--tempo-orange); color: #fff; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .price-title { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: var(--space-4); opacity: 0.7; }
+  .price-num { font-family: var(--font-serif); font-size: 64px; font-weight: 500; line-height: 1; margin-bottom: var(--space-2); }
+  .price-num em { font-style: normal; font-size: 18px; color: var(--fg-muted); font-family: var(--font-sans); }
+  .price-card.hero .price-num em { color: var(--mkt-dark-fg-subtle); }
+  .price-desc { font-size: 15px; line-height: 1.6; margin-bottom: var(--space-6); }
+  .price-list { list-style: none; padding: 0; margin: 0 0 var(--space-6); font-size: 14px; line-height: 2; }
+  .price-list li::before { content: "→ "; color: var(--tempo-orange); }
+
+  /* Testimonials */
+  .t-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-top: var(--space-8); }
+  .t-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); }
+  .t-card blockquote { font-family: var(--font-serif); font-size: 18px; line-height: 1.55; margin-bottom: var(--space-4); }
+  .t-meta { display: flex; gap: 10px; align-items: center; font-size: 13px; }
+  .t-avatar { width: 36px; height: 36px; border-radius: 99px; background: var(--gradient-tempo); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-weight: 500; }
+  .t-meta .who { font-weight: 500; }
+  .t-meta .who span { display: block; font-size: 11px; font-weight: 400; color: var(--fg-muted); }
+
+  /* Founder letter */
+  .letter { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-2xl); padding: var(--space-12); max-width: 780px; margin: 0 auto; }
+  .letter p { font-family: var(--font-serif); font-size: 19px; line-height: 1.7; margin-bottom: var(--space-4); color: var(--fg); }
+  .letter .sig { font-family: "Fraunces", serif; font-style: italic; font-size: 28px; margin-top: var(--space-6); }
+
+  /* Footer */
+  footer { background: var(--mkt-dark-bg); color: var(--mkt-dark-fg); padding: var(--space-12) 0 var(--space-8); }
+  footer .cols { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: var(--space-8); }
+  footer h5 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mkt-dark-fg-subtle); margin-bottom: var(--space-4); font-family: var(--font-mono); font-weight: 600; }
+  footer a { display: block; color: var(--mkt-dark-fg-muted); text-decoration: none; font-size: 14px; line-height: 2; }
+  footer a:hover { color: var(--mkt-dark-fg); }
+  footer .tagline { font-family: var(--font-serif); font-size: 18px; line-height: 1.5; color: var(--mkt-dark-fg-muted); max-width: 30ch; }
+  .legal { border-top: 1px solid var(--mkt-dark-border); margin-top: var(--space-10); padding-top: var(--space-6); display: flex; justify-content: space-between; font-size: 12px; color: var(--mkt-dark-fg-subtle); font-family: var(--font-mono); }
+
+  @media (max-width: 900px) {
+    .feat-tall, .feat-sq, .feat-third, .feat-wide { grid-column: span 12; }
+    .hero-deco { display: none; }
+    .price-wrap, .t-grid, .coach-samples, footer .cols { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="m-nav">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <svg width="36" height="32" viewBox="0 0 64 56" fill="none" aria-hidden>
+      <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D97757"/><stop offset="100%" stop-color="#E8A87C"/></linearGradient></defs>
+      <path d="M14 16 H50" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M32 16 V46" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <circle cx="42" cy="44" r="6" fill="url(#bm)"/>
+    </svg>
+    <span style="font-family: var(--font-serif); font-weight: 500; font-size: 22px; letter-spacing: -0.02em;">Tempo<em style="font-style:normal; font-family: var(--font-sans); font-weight: 600;">Flow</em></span>
+  </div>
+  <div class="links">
+    <a href="#features">Features</a>
+    <a href="#coach">Coach</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#letter">Manifesto</a>
+    <a href="changelog.html">Changelog</a>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button id="themeToggle" class="icon-btn" aria-label="Toggle theme" title="Toggle theme" style="width:36px; height:36px; border:1px solid var(--border); background:var(--surface-card); border-radius:99px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; color:var(--fg);">
+      <svg id="themeIconLight" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>
+      <svg id="themeIconDark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+    <a href="app.html?screen=sign-in" class="btn btn-ghost" style="text-decoration:none;">Sign in</a>
+    <a href="app.html?screen=onboarding" class="btn btn-primary" style="text-decoration:none;">Start your $1 week</a>
+  </div>
+</nav>
+
+<script>
+  (function(){
+    var t = localStorage.getItem("tf-theme") || "light";
+    document.documentElement.setAttribute("data-theme", t);
+    function paint(){
+      var d = document.documentElement.getAttribute("data-theme") === "dark";
+      document.getElementById("themeIconLight").style.display = d ? "none" : "";
+      document.getElementById("themeIconDark").style.display  = d ? "" : "none";
+    }
+    document.addEventListener("DOMContentLoaded", function(){
+      paint();
+      document.getElementById("themeToggle").addEventListener("click", function(){
+        var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("tf-theme", next);
+        paint();
+      });
+    });
+  })();
+</script>
+
+<header class="hero">
+  <div class="m-wrap" style="position: relative; z-index: 2;">
+    <div class="hero-eyebrow"><span class="dot"></span> <span>1.0 ships April 23 · Closed beta open now</span></div>
+    <h1>A planner that won't <em>shame</em><br/>your nervous system.</h1>
+    <p class="lede">Tempo Flow is a calm, AI-gentle planner for ADHD brains, autistic brains, anxious brains, and anyone who's tried seventeen productivity apps and bounced off all of them. Dump your thoughts. We'll help you find the next doable thing.</p>
+    <div class="hero-ctas">
+      <a href="app.html?screen=onboarding" class="btn btn-gradient btn-xl" style="text-decoration:none;">Start your seven-day week · $1</a>
+      <a href="app.html?screen=daily-note" class="btn btn-ghost btn-xl" style="text-decoration:none;">Try the daily note →</a>
+    </div>
+    <div class="hero-proof">
+      <div class="stat"><strong>42</strong><span>handcrafted screens</span></div>
+      <div class="stat"><strong>1</strong><span>person, one year</span></div>
+      <div class="stat"><strong>$1</strong><span>week-long trial</span></div>
+      <div class="stat"><strong>0</strong><span>guilt trips, ever</span></div>
+    </div>
+  </div>
+  <div class="hero-deco" aria-hidden>
+    <div class="hero-card" style="top: 40px; left: 20px; width: 280px; transform: rotate(-3deg);">
+      <div class="tag">Brain Dump · 09:41</div>
+      <p style="font-family: var(--font-serif); font-size: 15px; line-height: 1.5; color: var(--fg);">Finish landing copy. Book dentist. Ask Sam about Convex. Pick up groceries. Am I shipping fast enough?</p>
+    </div>
+    <div class="hero-card" style="top: 180px; left: 180px; width: 300px; transform: rotate(2deg); background: linear-gradient(135deg, #D97757 0%, #E8A87C 100%); color: #fff;">
+      <div class="tag" style="color: rgba(255,255,255,0.85);">Coach</div>
+      <h3 style="color:#fff;">Three things look doable this afternoon.</h3>
+      <p style="color: rgba(255,255,255,0.85);">I pulled them from your dump. The worry I left on the side — we'll look at it tomorrow.</p>
+    </div>
+    <div class="hero-card" style="top: 380px; left: 60px; width: 260px; transform: rotate(-2deg);">
+      <div class="tag">Today · 5-day streak</div>
+      <div style="display:flex; gap: 6px; margin: 8px 0;">
+        <div style="width:28px; height:28px; background: var(--moss-600); border-radius: 6px;"></div>
+        <div style="width:28px; height:28px; background: var(--moss-600); border-radius: 6px;"></div>
+        <div style="width:28px; height:28px; background: var(--moss-600); border-radius: 6px;"></div>
+        <div style="width:28px; height:28px; background: var(--moss-600); border-radius: 6px;"></div>
+        <div style="width:28px; height:28px; background: var(--moss-600); border-radius: 6px;"></div>
+        <div style="width:28px; height:28px; background: var(--surface-sunken); border-radius: 6px;"></div>
+        <div style="width:28px; height:28px; background: var(--surface-sunken); border-radius: 6px;"></div>
+      </div>
+      <p style="font-size: 13px;">Morning pages — five days running. Nice.</p>
+    </div>
+  </div>
+</header>
+
+<section id="features" style="padding-top: var(--space-10);">
+  <div class="m-wrap">
+    <div class="sec-eyebrow">What's inside</div>
+    <h2 class="sec-h2">Tasks, notes, and calendar — one markdown page per day.</h2>
+    <p class="sec-sub">Every feature below started as a frustration with another app. Dump, sort, plan, do, reflect — in a single plaintext file you actually own. Linked, searchable, yours forever.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-6); margin-top: var(--space-8);">
+      <div style="grid-column: span 12; background: var(--mkt-dark-bg); color: var(--mkt-dark-fg); border-radius: var(--radius-xl); padding: var(--space-8); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8); align-items: center;">
+        <div>
+          <div class="sec-eyebrow" style="color: var(--tempo-orange);">★ Daily Note</div>
+          <h3 style="font-family: var(--font-serif); font-size: 36px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; margin: 12px 0 16px; color: inherit;">Markdown-native. Bi-directionally linked. Gently animated.</h3>
+          <p style="font-size: 16px; line-height: 1.6; color: var(--mkt-dark-fg-muted); margin-bottom: 20px;">Inspired by the clarity of tools like NotePlan — but warmer, quieter, and tuned for brains that need a little help staying on the page. A focus ring that breathes. Task completes that gently delight. Time blocks that pulse where you are right now.</p>
+          <div style="display: flex; gap: 20px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mkt-dark-fg-subtle);">
+            <span>[[ bi-di links ]]</span><span>⌘K command bar</span><span>#tags · @people</span>
+          </div>
+        </div>
+        <div style="background: var(--surface-card); color: var(--fg); border-radius: var(--radius-lg); padding: 20px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.9; box-shadow: var(--shadow-lift);">
+          <div style="color: var(--fg-muted); margin-bottom: 6px;"># ☀️ Thursday · April 23</div>
+          <div style="color: var(--tempo-orange);">## Intentions</div>
+          <div>Ship launch post by noon. Protect the afternoon.</div>
+          <div style="color: var(--tempo-orange); margin-top: 8px;">## Tasks</div>
+          <div>* [x] Morning pages — [[Journal]]</div>
+          <div>* [ ] Draft launch post @09:30 #writing</div>
+          <div>* [ ] Ten-minute walk @12:30</div>
+          <div style="color: var(--tempo-orange); margin-top: 8px;">## Notes</div>
+          <div style="color: var(--fg-soft);">Sam replied on [[Convex migration]]...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-card feat-tall">
+        <div class="sec-eyebrow" style="color: var(--amber-600);">01 — Brain Dump</div>
+        <h3>Empty your head onto the page. We'll do the sorting.</h3>
+        <p>Write everything — tasks, worries, ideas, grocery items — in one messy stream. Our AI untangles it into tasks, notes, journal fragments, and quiet "let's sit with this" items. No format to learn, no tags to choose.</p>
+        <div class="mock">
+          <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--fg-muted); margin-bottom: 8px;">SORTED · 6 ITEMS</div>
+          <div style="display:flex; flex-direction: column; gap: 6px;">
+            <div style="padding: 8px 10px; background: var(--surface-sunken); border-radius: 8px; font-size: 13px;">✓ Finish landing copy <span style="float:right; font-family: var(--font-mono); font-size: 10px; color: var(--tempo-orange);">TASK</span></div>
+            <div style="padding: 8px 10px; background: var(--surface-sunken); border-radius: 8px; font-size: 13px;">✓ Book dentist <span style="float:right; font-family: var(--font-mono); font-size: 10px; color: var(--tempo-orange);">TASK</span></div>
+            <div style="padding: 8px 10px; background: var(--surface-sunken); border-radius: 8px; font-size: 13px;">◉ Am I shipping fast enough? <span style="float:right; font-family: var(--font-mono); font-size: 10px; color: var(--amber-600);">WORRY</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feat-card feat-sq">
+        <div class="sec-eyebrow">02 — Coach</div>
+        <h3>A voice that checks in, not checks up.</h3>
+        <p>Tap a warmth dial from 0 (businesslike) to 10 (your kindest friend). The coach reads your dump, suggests a plan, and stays quiet when you don't need it.</p>
+        <div style="margin-top: var(--space-5); padding: var(--space-3); background: var(--surface-sunken); border-radius: 10px; font-family: var(--font-serif); font-size: 14px; line-height: 1.5; font-style: italic;">"Three doable things. The rest can wait."</div>
+      </div>
+
+      <div class="feat-card feat-wide">
+        <div class="sec-eyebrow" style="color: var(--tempo-orange);">03 — First Plan</div>
+        <h3 style="max-width: 24ch;">A three-block day, already scheduled. You can still say no.</h3>
+        <p style="max-width: 54ch;">On launch mornings, the plan is waiting. Drag to rearrange. Tap to skip. The calendar respects your energy — high-focus before noon, soft blocks after three, zero guilt if you close the laptop.</p>
+      </div>
+
+      <div class="feat-card feat-third">
+        <div class="sec-eyebrow">04 — Journal</div>
+        <h3>Prompts that fit your day.</h3>
+        <p>Encrypted at rest, prompts that shift with your mood, and never, ever a red streak warning.</p>
+      </div>
+      <div class="feat-card feat-third">
+        <div class="sec-eyebrow">05 — Routines</div>
+        <h3>Guided, not gamified.</h3>
+        <p>Run a morning routine like a meditation — one step at a time, with gentle audio cues. Skip anything.</p>
+      </div>
+      <div class="feat-card feat-third">
+        <div class="sec-eyebrow">06 — Weekly</div>
+        <h3>Sunday, softly.</h3>
+        <p>A weekly recap written in the coach's voice — proud of what got done, gentle about what didn't.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="coach-strip" id="coach">
+  <div class="m-wrap">
+    <div class="sec-eyebrow" style="color: var(--tempo-orange);">The coach</div>
+    <h2 class="sec-h2">It sounds like a person who's met you before.</h2>
+    <p class="sec-sub" style="color: var(--mkt-dark-fg-muted);">Warmth dial set to 6 by default. Moves lower when you're heads-down, higher when the dump feels anxious. Below: actual lines from actual days.</p>
+    <div class="coach-samples">
+      <div class="coach-bubble">"You finished two of three yesterday. That counts. Want to start with the unfinished one, or a lighter warm-up?"<span class="who">Monday · 09:12 · warmth 6</span></div>
+      <div class="coach-bubble">"The dump looks heavy today. Three items feel like worries, not tasks. Want to park them, or look at one?"<span class="who">Wednesday · 08:40 · warmth 7</span></div>
+      <div class="coach-bubble">"You protected the afternoon yesterday. That was a hard call. Noting it."<span class="who">Friday · evening recap · warmth 5</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="m-wrap">
+    <div class="sec-eyebrow">Pricing</div>
+    <h2 class="sec-h2">One dollar for a week. Then a fair price, forever.</h2>
+    <p class="sec-sub">No free tier — free planners become abandoned planners. A dollar is enough of a commitment to matter, and small enough that it can't be the reason you quit.</p>
+    <div class="price-wrap">
+      <div class="price-card">
+        <div class="price-title">The seven-day week</div>
+        <div class="price-num">$1<em> · once</em></div>
+        <p class="price-desc">Seven full days of every feature. If it doesn't fit, you've lost a dollar and a Tuesday, not a month's subscription.</p>
+        <ul class="price-list">
+          <li>All 42 screens, unlocked</li>
+          <li>AI coach · warmth dial · voice</li>
+          <li>Web + iOS + Android</li>
+          <li>No auto-enrollment</li>
+        </ul>
+        <a href="app.html?screen=onboarding" class="btn btn-primary btn-xl" style="text-decoration:none; display:inline-flex;">Start my week →</a>
+      </div>
+      <div class="price-card hero">
+        <div class="pill">After your week</div>
+        <div class="price-title" style="color: var(--mkt-dark-fg-subtle);">Tempo Pro</div>
+        <div class="price-num">$9<em style="color: var(--mkt-dark-fg-muted);"> / month · or $72/year</em></div>
+        <p class="price-desc">The full thing, forever. Cancel from inside the app in two taps. Student and unemployed tiers available — just ask.</p>
+        <ul class="price-list">
+          <li>Everything in the trial</li>
+          <li>Unlimited journal + templates</li>
+          <li>Cloud sync across devices</li>
+          <li>Email the founder any time</li>
+        </ul>
+        <a href="app.html?screen=billing" class="btn btn-gradient btn-xl" style="text-decoration:none; display:inline-flex;">See billing →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="m-wrap">
+    <div class="sec-eyebrow">Beta testers</div>
+    <h2 class="sec-h2">Thirty people used it for four weeks. Here's what they said.</h2>
+    <div class="t-grid">
+      <div class="t-card">
+        <blockquote>"It's the first planner that didn't make me feel like a broken version of a neurotypical person. I used it for 23 out of 28 days. That's a record."</blockquote>
+        <div class="t-meta"><div class="t-avatar">M</div><div class="who">Mira K.<span>Designer · ADHD</span></div></div>
+      </div>
+      <div class="t-card">
+        <blockquote>"I pay for Notion and Sunsama and Things. I'd cancel all three for this. The coach understood when I was having a hard week without me having to spell it out."</blockquote>
+        <div class="t-meta"><div class="t-avatar">J</div><div class="who">Jonah R.<span>Engineer · autistic</span></div></div>
+      </div>
+      <div class="t-card">
+        <blockquote>"The brain dump is genuinely unreasonable. I've written 3000 words into it in two weeks and none of them are wasted."</blockquote>
+        <div class="t-meta"><div class="t-avatar">S</div><div class="who">Sana P.<span>Writer</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="letter" style="background: var(--surface-sunken);">
+  <div class="m-wrap">
+    <div class="letter">
+      <div class="sec-eyebrow">A letter from Amit</div>
+      <h2 class="sec-h2" style="font-size: 36px; max-width: none;">Why I built this alone.</h2>
+      <p>I've had sixteen planners. I've paid for eight. I was diagnosed with ADHD at thirty-four, and the thing that surprised me most was not the diagnosis — it was how much software in my life had quietly been shaming me for not being a person I wasn't.</p>
+      <p>Tempo Flow is one person's answer to that. It's small. It doesn't try to be your operating system. It tries to be the friend who texts "what are you doing today?" without judgment.</p>
+      <p>If it works for you, the dollar keeps the lights on. If it doesn't — you've lost a dollar and a week, not a year. That seems fair.</p>
+      <p class="sig">— Amit</p>
+    </div>
+  </div>
+</section>
+
+<section style="background: var(--gradient-tempo); color: #fff; text-align: center; padding: var(--space-16) 0;">
+  <div class="m-wrap">
+    <h2 class="sec-h2" style="color: #fff; margin: 0 auto var(--space-4); max-width: 20ch;">One dollar. Seven days. One gentle week.</h2>
+    <p class="sec-sub" style="color: rgba(255,255,255,0.88); margin: 0 auto var(--space-8);">No credit card surprises. No newsletter enrollment. No growth loops. Just the app, for a week.</p>
+    <a href="app.html?screen=onboarding" class="btn btn-xl" style="background: #fff; color: var(--tempo-orange); text-decoration: none; font-weight: 600;">Start my week →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="m-wrap">
+    <div class="cols">
+      <div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom: var(--space-4);">
+          <svg width="32" height="28" viewBox="0 0 64 56" fill="none" aria-hidden>
+            <defs><linearGradient id="bmf" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D97757"/><stop offset="100%" stop-color="#E8A87C"/></linearGradient></defs>
+            <path d="M14 16 H50" stroke="url(#bmf)" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M32 16 V46" stroke="url(#bmf)" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <circle cx="42" cy="44" r="6" fill="url(#bmf)"/>
+          </svg>
+          <span style="font-family: var(--font-serif); font-weight: 500; font-size: 22px; letter-spacing: -0.02em; color: var(--mkt-dark-fg);">Tempo<em style="font-style:normal; font-family: var(--font-sans); font-weight: 600;">Flow</em></span>
+        </div>
+        <p class="tagline">A gentle planner for messy brains. Made in Tel Aviv by one person.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <a href="#features">Features</a>
+        <a href="#coach">The Coach</a>
+        <a href="#pricing">Pricing</a>
+        <a href="app.html">Try the app</a>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <a href="about.html">About</a>
+        <a href="changelog.html">Changelog</a>
+        <a href="canvas.html">Design canvas</a>
+        <a href="app.html?screen=ask-founder">Ask the founder</a>
+      </div>
+      <div>
+        <h5>Legal</h5>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Security</a>
+        <a href="mailto:amit@tempoflow.app">amit@tempoflow.app</a>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© 2026 Tempo Flow · BUSL-1.1</span>
+      <span>v1.0.0 · Shipped April 23</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

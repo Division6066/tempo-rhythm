@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tempo Flow · Screen index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+<link rel="stylesheet" href="shell.css"/>
+<style>
+  body { background: var(--surface-page); color: var(--fg); font-family: var(--font-sans); }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: var(--space-10) var(--space-8) var(--space-16); }
+  .head { max-width: 720px; margin-bottom: var(--space-10); }
+  .head h1 { font-family: var(--font-serif); font-size: 56px; letter-spacing: -0.02em; line-height: 1.05; font-weight: 400; margin-bottom: var(--space-4); }
+  .head h1 em { color: var(--tempo-orange); font-style: italic; }
+  .head p { font-family: var(--font-serif); font-size: 19px; line-height: 1.55; color: var(--fg-soft); }
+  .section { margin-top: var(--space-12); }
+  .section h2 { font-family: var(--font-serif); font-size: 28px; letter-spacing: -0.01em; margin-bottom: var(--space-2); font-weight: 500; }
+  .section .count { font-family: var(--font-mono); font-size: 12px; color: var(--fg-muted); letter-spacing: 0.08em; }
+  .section p.lead { font-size: 15px; color: var(--fg-muted); margin-bottom: var(--space-6); max-width: 60ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-5); }
+  .card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; text-decoration: none; color: inherit; transition: transform 200ms, box-shadow 200ms; display: block; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .preview { aspect-ratio: 16 / 10; background: var(--surface-sunken); position: relative; overflow: hidden; }
+  .preview iframe { position: absolute; top: 0; left: 0; width: 200%; height: 200%; transform: scale(0.5); transform-origin: top left; border: none; pointer-events: none; }
+  .meta { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .meta strong { font-size: 14px; font-weight: 500; }
+  .meta .num { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+  .top-nav { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-8); border-bottom: 1px solid var(--border-soft); }
+  .top-nav a { color: inherit; text-decoration: none; font-size: 13px; color: var(--fg-muted); }
+  .top-nav a:hover { color: var(--fg); }
+  .top-nav .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-serif); font-size: 20px; }
+  .legend { display: flex; gap: var(--space-4); margin-top: var(--space-6); font-size: 13px; color: var(--fg-muted); font-family: var(--font-mono); }
+  .legend span::before { content: "●"; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html" class="brand">
+    <svg width="28" height="24" viewBox="0 0 64 56" fill="none"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D97757"/><stop offset="100%" stop-color="#E8A87C"/></linearGradient></defs><path d="M14 16 H50" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M32 16 V46" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="42" cy="44" r="6" fill="url(#bm)"/></svg>
+    <span>Tempo<em style="font-style:normal; font-family: var(--font-sans); font-weight: 600;">Flow</em></span>
+  </a>
+  <div style="display:flex; gap: var(--space-6);">
+    <a href="landing.html">Landing</a>
+    <a href="app.html">Open app</a>
+    <a href="about.html">About</a>
+    <a href="changelog.html">Changelog</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="head">
+    <div style="font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--tempo-orange); margin-bottom: 16px;">The screen index</div>
+    <h1>Forty-two screens, <em>one gentle system</em>.</h1>
+    <p>Every surface in Tempo Flow 1.0 — organized the way a person actually uses the app. Click any tile to open it live; each one is the real component, pulled from the real prototype at 50% scale.</p>
+    <div class="legend">
+      <span style="color: var(--tempo-orange);">Flow — the daily loop (5)</span>
+      <span style="color: var(--moss-600);">Library — your stuff (15)</span>
+      <span style="color: var(--amber-600);">You — system & self (9)</span>
+      <span style="color: #6B7280;">Settings & Marketing (13)</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex; align-items: baseline; gap: 12px; margin-bottom: 6px;">
+      <h2>Flow</h2><span class="count">THE DAILY LOOP · 5 SCREENS</span>
+    </div>
+    <p class="lead">Dump, decide, do. The loop the app is built around — everything else is in service of these.</p>
+    <div class="grid" id="grid-flow"></div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex; align-items: baseline; gap: 12px; margin-bottom: 6px;">
+      <h2>Onboarding & Auth</h2><span class="count">FIRST IMPRESSIONS · 2 SCREENS</span>
+    </div>
+    <p class="lead">How someone becomes a user. The onboarding is the longest single flow in the app — five steps, fully deep.</p>
+    <div class="grid" id="grid-onb"></div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex; align-items: baseline; gap: 12px; margin-bottom: 6px;">
+      <h2>Library</h2><span class="count">YOUR STUFF · 15 SCREENS</span>
+    </div>
+    <p class="lead">Everything the app is holding for you — tasks, notes, journal, calendar, habits, routines, goals, projects.</p>
+    <div class="grid" id="grid-lib"></div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex; align-items: baseline; gap: 12px; margin-bottom: 6px;">
+      <h2>You</h2><span class="count">SYSTEM + SELF · 8 SCREENS</span>
+    </div>
+    <p class="lead">Insights, templates, search, command bar — the meta-surfaces that help you find what's already there.</p>
+    <div class="grid" id="grid-you"></div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex; align-items: baseline; gap: 12px; margin-bottom: 6px;">
+      <h2>Settings</h2><span class="count">ACCOUNT + PREFS · 7 SCREENS</span>
+    </div>
+    <p class="lead">Profile, preferences (theme / density / accessibility), integrations, billing, notifications, and the direct line to the founder.</p>
+    <div class="grid" id="grid-settings"></div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex; align-items: baseline; gap: 12px; margin-bottom: 6px;">
+      <h2>Mobile & Marketing</h2><span class="count">OFF-APP · 3 SCREENS</span>
+    </div>
+    <p class="lead">The mobile pattern, plus the marketing surfaces that live on the tempoflow.app domain.</p>
+    <div class="grid" id="grid-mobile"></div>
+  </div>
+</div>
+
+<script>
+const SCREENS = {
+  flow: [
+    ["daily-note","01","Daily Note · markdown ★"],
+    ["today","02","Today · Dashboard"],
+    ["brain-dump","02","Brain Dump"],
+    ["coach","03","Coach conversation"],
+    ["plan","04","Daily planning"],
+    ["tasks","05","Tasks"],
+  ],
+  onb: [
+    ["sign-in","06","Sign in"],
+    ["onboarding","07","Onboarding · 5 steps"],
+  ],
+  lib: [
+    ["notes","08","Notes"],
+    ["note-detail","09","Note editor"],
+    ["journal","10","Journal"],
+    ["calendar","11","Calendar"],
+    ["habits","12","Habits"],
+    ["habit-detail","13","Habit detail"],
+    ["routines","14","Routines"],
+    ["routine-detail","15","Guided routine"],
+    ["goals","16","Goals"],
+    ["goal-detail","17","Goal detail"],
+    ["goals-progress","18","Progress chart"],
+    ["projects","19","Projects"],
+    ["project-detail","20","Project detail"],
+    ["project-kanban","21","Kanban board"],
+    ["templates","22","Templates"],
+  ],
+  you: [
+    ["template-editor","23","Template editor"],
+    ["template-sketch","24","Sketch → template"],
+    ["empty-states","25","Empty states"],
+    ["search","26","Search"],
+    ["command","27","Command bar"],
+    ["analytics","28","Insights"],
+    ["activity","29","Recent activity"],
+    ["ask-founder","30","Ask the founder"],
+  ],
+  settings: [
+    ["settings","31","Profile"],
+    ["settings-prefs","32","Preferences"],
+    ["settings-integrations","33","Integrations"],
+    ["notifications","34","Notifications"],
+    ["billing","35","Billing"],
+    ["trial-end","36","Trial ended"],
+  ],
+  mobile: [
+    ["mobile-today","37","Mobile · Today + Dump"],
+    ["about","38","About page"],
+    ["changelog","39","Changelog"],
+  ],
+};
+
+function renderGroup(key) {
+  const root = document.getElementById("grid-" + key);
+  SCREENS[key].forEach(([id, num, label]) => {
+    const card = document.createElement("a");
+    card.className = "card";
+    card.href = "app.html?screen=" + id;
+    card.innerHTML = `
+      <div class="preview"><iframe src="app.html?screen=${id}" loading="lazy"></iframe></div>
+      <div class="meta"><strong>${label}</strong><span class="num">${num} · ${id}</span></div>
+    `;
+    root.appendChild(card);
+  });
+}
+Object.keys(SCREENS).forEach(renderGroup);
+</script>
+</body>
+</html>

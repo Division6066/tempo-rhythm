@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tempo Flow · Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+<link rel="stylesheet" href="shell.css"/>
+<script src="theme-controller.js"></script>
+<style>
+  body { background: var(--surface-page); }
+  .workspace { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .screen-area { flex: 1; min-height: 0; overflow-y: auto; }
+  /* Screen router banner (transient cue) */
+  .route-banner { position: fixed; bottom: 20px; right: 20px; background: var(--fg); color: var(--surface-card); padding: 8px 14px; border-radius: 99px; font-size: 12px; font-family: var(--font-mono); opacity: 0; pointer-events: none; transition: opacity 200ms; z-index: 100; }
+  .route-banner.visible { opacity: 0.85; }
+  /* Screen picker (command-K style) */
+  .picker-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: flex-start; justify-content: center; padding-top: 15vh; }
+  .picker { width: min(640px, 90vw); background: var(--surface-card); border-radius: var(--radius-xl); box-shadow: var(--shadow-lift); overflow: hidden; border: 1px solid var(--border); }
+  .picker-search { padding: 14px 18px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 10px; align-items: center; }
+  .picker-search input { flex: 1; border: none; outline: none; background: transparent; font-size: 16px; font-family: var(--font-sans); color: var(--fg); }
+  .picker-list { max-height: 50vh; overflow-y: auto; padding: 6px; }
+  .picker-item { padding: 10px 14px; border-radius: 10px; display: flex; gap: 12px; align-items: center; cursor: pointer; font-size: 14px; }
+  .picker-item:hover, .picker-item.focused { background: var(--surface-sunken); }
+  .picker-item .picker-meta { margin-left: auto; font-size: 11px; color: var(--fg-muted); font-family: var(--font-mono); }
+  .picker-item .picker-cat { font-size: 11px; color: var(--fg-muted); padding: 2px 8px; border-radius: 99px; background: var(--surface-sunken); }
+  .picker-foot { padding: 10px 18px; border-top: 1px solid var(--border-soft); display: flex; gap: 16px; font-size: 11px; color: var(--fg-muted); font-family: var(--font-mono); }
+  kbd { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="screens-1.jsx"></script>
+<script type="text/babel" src="screens-2.jsx"></script>
+<script type="text/babel" src="screens-3.jsx"></script>
+<script type="text/babel" src="screens-4.jsx"></script>
+<script type="text/babel" src="screens-5.jsx"></script>
+<script type="text/babel" src="screens-6.jsx"></script>
+<script type="text/babel" src="screens-7.jsx"></script>
+<script type="text/babel" src="screens-templates.jsx"></script>
+<script type="text/babel" src="screens-template-builder.jsx"></script>
+<script type="text/babel" src="screens-template-builder-ui.jsx"></script>
+<script type="text/babel" src="screens-template-builder-slash.jsx"></script>
+<script type="text/babel" src="screens-template-run.jsx"></script>
+<script type="text/babel" src="voice-chat.jsx"></script>
+<script type="text/babel" src="coach-dock.jsx"></script>
+
+<script type="text/babel">
+/* ================= Router map ================= */
+const SCREENS = {
+  // Flow
+  "daily-note":         { comp: () => <ScreenDailyNote/>,          title: "Daily Note",          cat: "Flow", bare: true },
+  "today":              { comp: () => <ScreenToday/>,              title: "Today",               cat: "Flow" },
+  "brain-dump":         { comp: () => <ScreenBrainDump/>,          title: "Brain Dump",          cat: "Flow" },
+  "coach":              { comp: () => <ScreenCoach/>,              title: "Coach",               cat: "Flow" },
+  "plan":               { comp: () => <ScreenPlan/>,               title: "Planning",            cat: "Flow" },
+  // Library
+  "tasks":              { comp: () => <ScreenTasks/>,              title: "Tasks",               cat: "Library" },
+  "notes":              { comp: () => <ScreenNotes/>,              title: "Notes",               cat: "Library" },
+  "note-detail":        { comp: () => <ScreenNoteDetail/>,         title: "Note · editor",       cat: "Library" },
+  "journal":            { comp: () => <ScreenJournal/>,            title: "Journal",             cat: "Library" },
+  "calendar":           { comp: () => <ScreenCalendar/>,           title: "Calendar",            cat: "Library" },
+  "habits":             { comp: () => <ScreenHabits/>,             title: "Habits",              cat: "Library" },
+  "habit-detail":       { comp: () => <ScreenHabitDetail/>,        title: "Habit detail",        cat: "Library" },
+  "routines":           { comp: () => <ScreenRoutines/>,           title: "Routines",            cat: "Library" },
+  "routine-detail":     { comp: () => <ScreenRoutineDetail/>,      title: "Routine · guided",    cat: "Library" },
+  "goals":              { comp: () => <ScreenGoals/>,              title: "Goals",               cat: "Library" },
+  "goal-detail":        { comp: () => <ScreenGoalDetail/>,         title: "Goal detail",         cat: "Library" },
+  "goals-progress":     { comp: () => <ScreenGoalsProgress/>,      title: "Goals · chart",       cat: "Library" },
+  "projects":           { comp: () => <ScreenProjects/>,           title: "Projects",            cat: "Library" },
+  "project-detail":     { comp: () => <ScreenProjectDetail/>,      title: "Project detail",      cat: "Library" },
+  "project-kanban":     { comp: () => <ScreenProjectKanban/>,      title: "Project · kanban",    cat: "Library" },
+  // You
+  "analytics":          { comp: () => <ScreenAnalytics/>,          title: "Insights",            cat: "You" },
+  "activity":           { comp: () => <ScreenActivity/>,           title: "Recent activity",     cat: "You" },
+  "templates":          { comp: () => <ScreenTemplatesV2/>,        title: "Templates",           cat: "You" },
+  "template-builder":   { comp: () => <ScreenTemplateBuilder/>,    title: "Template · builder",  cat: "You", bare: true },
+  "template-run":       { comp: () => <ScreenTemplateRun/>,        title: "Template · run",      cat: "You", bare: true },
+  "template-editor":    { comp: () => <ScreenTemplateEditor/>,     title: "Template · editor (legacy)",   cat: "You" },
+  "template-sketch":    { comp: () => <ScreenTemplateSketch/>,     title: "Template · sketch",   cat: "You" },
+  "search":             { comp: () => <ScreenSearch/>,             title: "Search",              cat: "You" },
+  "command":            { comp: () => <ScreenCommand/>,            title: "Command bar",         cat: "You" },
+  "empty-states":       { comp: () => <ScreenEmptyStates/>,        title: "Empty states",        cat: "You" },
+  // Settings
+  "settings":           { comp: () => <ScreenSettingsProfile/>,    title: "Settings · profile",  cat: "Settings" },
+  "settings-prefs":     { comp: () => <ScreenSettingsPreferences/>,title: "Settings · prefs",    cat: "Settings" },
+  "settings-integrations":{comp: () => <ScreenSettingsIntegrations/>,title:"Settings · sync",    cat: "Settings" },
+  "billing":            { comp: () => <ScreenBilling/>,            title: "Trial & billing",     cat: "Settings" },
+  "trial-end":          { comp: () => <ScreenTrialEnd/>,           title: "Trial ended",         cat: "Settings" },
+  "ask-founder":        { comp: () => <ScreenAskFounder/>,         title: "Ask the founder",     cat: "Settings" },
+  "notifications":      { comp: () => <ScreenNotifications/>,      title: "Notifications",       cat: "Settings" },
+  // Mobile + Marketing
+  "mobile-today":       { comp: () => <ScreenMobileToday/>,        title: "Mobile",              cat: "Mobile" },
+  "about":              { comp: () => <ScreenAbout/>,              title: "About",               cat: "Marketing" },
+  "changelog":          { comp: () => <ScreenChangelog/>,          title: "Changelog",           cat: "Marketing" },
+  // Onboarding
+  "sign-in":            { comp: () => <ScreenSignIn/>,             title: "Sign in",             cat: "Onboarding", bare: true },
+  "onboarding":         { comp: () => <ScreenOnboarding/>,         title: "Onboarding",          cat: "Onboarding", bare: true },
+};
+window.SCREENS = SCREENS;
+
+/* ================= Screen picker (Cmd-K) ================= */
+const ScreenPicker = ({ open, onClose }) => {
+  const { setScreen } = useApp();
+  const [q, setQ] = useState("");
+  const [idx, setIdx] = useState(0);
+  const inputRef = useRef(null);
+  useEffect(() => { if (open) { setQ(""); setIdx(0); setTimeout(()=>inputRef.current?.focus(), 10); } }, [open]);
+
+  const items = useMemo(() => {
+    const list = Object.entries(SCREENS).map(([id, s]) => ({ id, ...s }));
+    if (!q) return list;
+    const ql = q.toLowerCase();
+    return list.filter(x => x.title.toLowerCase().includes(ql) || x.id.includes(ql) || x.cat.toLowerCase().includes(ql));
+  }, [q]);
+
+  useEffect(() => {
+    const h = (e) => {
+      if (!open) return;
+      if (e.key === "Escape") { onClose(); }
+      if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => Math.min(items.length-1, i+1)); }
+      if (e.key === "ArrowUp") { e.preventDefault(); setIdx(i => Math.max(0, i-1)); }
+      if (e.key === "Enter" && items[idx]) { setScreen(items[idx].id); onClose(); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [open, items, idx]);
+
+  if (!open) return null;
+  return (
+    <div className="picker-backdrop" onClick={onClose}>
+      <div className="picker" onClick={e => e.stopPropagation()}>
+        <div className="picker-search">
+          <I.Search size={18}/>
+          <input ref={inputRef} placeholder="Jump to any screen…" value={q} onChange={e => { setQ(e.target.value); setIdx(0); }}/>
+          <span className="caption mono">{items.length}</span>
+        </div>
+        <div className="picker-list">
+          {items.map((it, i) => (
+            <div key={it.id} className={"picker-item" + (i===idx ? " focused" : "")}
+                 onMouseEnter={() => setIdx(i)}
+                 onClick={() => { setScreen(it.id); onClose(); }}>
+              <span className="picker-cat">{it.cat}</span>
+              <span>{it.title}</span>
+              <span className="picker-meta">{it.id}</span>
+            </div>
+          ))}
+        </div>
+        <div className="picker-foot">
+          <span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span>
+          <span style={{ marginLeft: "auto" }}>42 screens</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ================= Shell ================= */
+const App = () => {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  useEffect(() => {
+    const h = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setPickerOpen(o => !o); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+  const { screen, setScreen } = useApp();
+  // expose setter so the global Coach dock can jump to the full coach screen
+  useEffect(() => { window.__tempoSetScreen = setScreen; }, [setScreen]);
+  const S = SCREENS[screen] || SCREENS.today;
+  const [banner, setBanner] = useState("");
+  useEffect(() => { setBanner(S.title); const t = setTimeout(()=>setBanner(""), 1200); return () => clearTimeout(t); }, [screen]);
+
+  // Screens where we DON'T show the coach FAB (pre-auth surfaces)
+  const suppressCoach = screen === "sign-in" || screen === "onboarding";
+
+  if (S.bare) {
+    return (<>
+      <S.comp/>
+      <ScreenPicker open={pickerOpen} onClose={() => setPickerOpen(false)}/>
+      <button onClick={() => setPickerOpen(true)} style={{ position: "fixed", bottom: 24, left: 24, background: "var(--fg)", color: "var(--surface-card)", border: "none", padding: "8px 14px", borderRadius: 99, fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer", boxShadow: "var(--shadow-lift)", display: "flex", gap: 8, alignItems: "center", zIndex: 50 }}>
+        <I.Command size={12}/> jump to screen · ⌘K
+      </button>
+      {!suppressCoach && <CoachDock/>}
+      <ReadAloudIndicator/>
+    </>);
+  }
+
+  return (
+    <div className="workspace">
+      <Sidebar/>
+      <div className="main">
+        <div className="screen-area">
+          <S.comp/>
+        </div>
+      </div>
+      <div className={"route-banner " + (banner ? "visible" : "")}>→ {banner}</div>
+      <ScreenPicker open={pickerOpen} onClose={() => setPickerOpen(false)}/>
+      <button onClick={() => setPickerOpen(true)} style={{ position: "fixed", bottom: 24, left: 24, background: "var(--fg)", color: "var(--surface-card)", border: "none", padding: "8px 14px", borderRadius: 99, fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer", boxShadow: "var(--shadow-lift)", display: "flex", gap: 8, alignItems: "center", zIndex: 50 }}>
+        <I.Command size={12}/> ⌘K
+      </button>
+      {!suppressCoach && <CoachDock/>}
+      <ReadAloudIndicator/>
+    </div>
+  );
+};
+
+const params = new URLSearchParams(location.search);
+const initial = params.get("screen") || "today";
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <AppProvider initialScreen={initial}><App/></AppProvider>
+);
+</script>
+</body>
+</html>

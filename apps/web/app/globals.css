@@ -1,86 +1,318 @@
 @import "tailwindcss";
 
-/* 
-  קובץ העיצוב הגלובלי (Global CSS)
-  מגדיר משתני צבעים (CSS Variables) עבור מצב בהיר (Light) ומצב כהה (Dark).
-  משתמש ב-Tailwind CSS v4 (@theme).
-*/
+/* ==========================================================================
+   Tempo Flow — design tokens
+   Ported from: docs/design/claude-export/design-system/tokens.css
+   Phase 1 MVP — Tailwind v4 @theme block.
+   ========================================================================== */
 
 @theme {
-  /* Soft Editorial — light */
-  --color-background: #f3ebe2;
-  --color-foreground: #131312;
+  /* ---- Core palette ---------------------------------------- */
+  --color-ink: #131312;
+  --color-cream: #f3ebe2;
+  --color-cream-raised: #faf6f0;
+  --color-cream-deep: #ebe0d2;
+  --color-tempo-orange: #d97757;
+  --color-soft-orange: #e8a87c;
+  --color-dust-grey: #6b6864;
+  --color-dust-grey-soft: #9a968f;
+  --color-line: #d7cec2;
+  --color-line-soft: #e6ddd1;
 
+  /* ---- Semantic status colours ----------------------------- */
+  --color-moss: #4a7c59;
+  --color-brick: #c8553d;
+  --color-amber: #d4a44c;
+  --color-slate-blue: #6e88a7;
+
+  /* ---- Semantic surfaces (light defaults) ------------------ */
+  --color-background: #f3ebe2; /* cream */
+  --color-foreground: #131312; /* ink */
   --color-card: #faf6f0;
   --color-card-foreground: #131312;
-
   --color-popover: #faf6f0;
   --color-popover-foreground: #131312;
+  --color-surface-sunken: #ebe0d2;
+  --color-surface-inverse: #131312;
 
   --color-primary: #d97757;
   --color-primary-foreground: #fafaf9;
-
-  --color-secondary: #ede4d8;
+  --color-secondary: #ebe0d2;
   --color-secondary-foreground: #131312;
-
-  --color-muted: #e8dfd3;
-  --color-muted-foreground: #5c5348;
-
+  --color-muted: #ebe0d2;
+  --color-muted-foreground: #6b6864;
+  --color-subtle-foreground: #9a968f;
   --color-accent: #e8a87c;
   --color-accent-foreground: #131312;
-
-  --color-destructive: #c45c4a;
+  --color-destructive: #c8553d;
   --color-destructive-foreground: #fafaf9;
-
-  --color-border: #d4c9bc;
-  --color-input: #d4c9bc;
+  --color-border: #d7cec2;
+  --color-border-soft: #e6ddd1;
+  --color-input: #d7cec2;
   --color-ring: #d97757;
 
-  /* רדיוסים לפינות (Radius) */
-  --radius-lg: 0.5rem;
-  --radius-md: calc(0.5rem - 2px);
-  --radius-sm: calc(0.5rem - 4px);
+  /* ---- Marketing surfaces (dark strips on landing) --------- */
+  --color-mkt-dark-bg: #1e1d1b;
+  --color-mkt-dark-bg-2: #2a2826;
+  --color-mkt-dark-fg: #f7f0e8;
+  --color-mkt-dark-fg-muted: rgba(247, 240, 232, 0.75);
+  --color-mkt-dark-fg-subtle: rgba(247, 240, 232, 0.55);
+  --color-mkt-dark-border: rgba(247, 240, 232, 0.12);
+  --color-mkt-dark-bubble: rgba(247, 240, 232, 0.06);
+
+  /* ---- Type scale ------------------------------------------ */
+  --font-serif:
+    var(--font-newsreader), "Iowan Old Style", "Georgia", serif;
+  --font-sans:
+    var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono:
+    var(--font-ibm-mono), "SFMono-Regular", "JetBrains Mono", monospace;
+
+  --text-display: 56px;
+  --text-h1: 32px;
+  --text-h2: 24px;
+  --text-h3: 20px;
+  --text-body: 16px;
+  --text-small: 14px;
+  --text-caption: 12px;
+
+  /* ---- 8-pt spacing ---------------------------------------- */
+  --spacing: 4px; /* Tailwind uses this as base unit */
+
+  /* ---- Radii ----------------------------------------------- */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* ---- Shadows (extreme restraint per brand doc) ----------- */
+  --shadow-whisper: 0 1px 1px 0 rgba(19, 19, 18, 0.04);
+  --shadow-card:
+    0 1px 2px 0 rgba(19, 19, 18, 0.05), 0 0 0 1px rgba(19, 19, 18, 0.04);
+  --shadow-lift:
+    0 6px 16px -8px rgba(19, 19, 18, 0.1),
+    0 0 0 1px rgba(19, 19, 18, 0.04);
+  --shadow-modal: 0 30px 60px -30px rgba(19, 19, 18, 0.35);
+
+  /* ---- Motion ---------------------------------------------- */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-snap: 120ms;
+  --duration-default: 220ms;
+  --duration-hero: 420ms;
+
+  /* ---- Layout ---------------------------------------------- */
+  --container-tempo: 1200px;
+  --sidebar-w: 256px;
+  --topbar-h: 56px;
 }
 
-/* הגדרות עבור מצב כהה (Dark Mode) */
+/* ---- Dark mode (data attribute driven, user override wins) - */
+[data-theme="dark"] {
+  --color-background: #131312;
+  --color-foreground: #f3ebe2;
+  --color-card: #1c1c1a;
+  --color-card-foreground: #f3ebe2;
+  --color-popover: #1c1c1a;
+  --color-popover-foreground: #f3ebe2;
+  --color-surface-sunken: #161615;
+  --color-surface-inverse: #f3ebe2;
+
+  --color-primary: #d97757;
+  --color-primary-foreground: #131312;
+  --color-secondary: #2c2b28;
+  --color-secondary-foreground: #f3ebe2;
+  --color-muted: #2c2b28;
+  --color-muted-foreground: #a8a49f;
+  --color-subtle-foreground: #7a7672;
+  --color-accent: #e8a87c;
+  --color-accent-foreground: #131312;
+  --color-destructive: #c8553d;
+  --color-destructive-foreground: #f3ebe2;
+  --color-border: #2c2b28;
+  --color-border-soft: #242320;
+  --color-input: #2c2b28;
+  --color-ring: #e8a87c;
+
+  --color-mkt-dark-bg: #1f1e1c;
+  --color-mkt-dark-bg-2: #26241f;
+  --color-mkt-dark-fg: #f3ebe2;
+
+  --shadow-whisper: 0 1px 1px 0 rgba(0, 0, 0, 0.22);
+  --shadow-card:
+    0 1px 2px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-lift:
+    0 6px 20px -8px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ---- System fallback: only applies when user hasn't set a theme ---- */
 @media (prefers-color-scheme: dark) {
-  @theme {
+  :root:not([data-theme]) {
     --color-background: #131312;
-    --color-foreground: #f5f3ef;
+    --color-foreground: #f3ebe2;
     --color-card: #1c1c1a;
-    --color-card-foreground: #f5f3ef;
+    --color-card-foreground: #f3ebe2;
     --color-popover: #1c1c1a;
-    --color-popover-foreground: #f5f3ef;
+    --color-popover-foreground: #f3ebe2;
+    --color-surface-sunken: #161615;
+    --color-surface-inverse: #f3ebe2;
     --color-primary: #d97757;
     --color-primary-foreground: #131312;
-    --color-secondary: #2a2926;
-    --color-secondary-foreground: #f5f3ef;
-    --color-muted: #2a2926;
-    --color-muted-foreground: #a89f94;
+    --color-secondary: #2c2b28;
+    --color-secondary-foreground: #f3ebe2;
+    --color-muted: #2c2b28;
+    --color-muted-foreground: #a8a49f;
+    --color-subtle-foreground: #7a7672;
     --color-accent: #e8a87c;
     --color-accent-foreground: #131312;
-    --color-destructive: #b54a3c;
-    --color-destructive-foreground: #fafaf9;
-    --color-border: #3a3834;
-    --color-input: #3a3834;
+    --color-destructive: #c8553d;
+    --color-destructive-foreground: #f3ebe2;
+    --color-border: #2c2b28;
+    --color-border-soft: #242320;
+    --color-input: #2c2b28;
     --color-ring: #e8a87c;
   }
 }
 
-/* הגדרות בסיסיות */
-* {
-  @apply border-border; /* החלת צבע גבול ברירת מחדל על כל האלמנטים */
+/* ---- OpenDyslexic toggle --------------------------------- */
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff")
+    format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Bold.woff")
+    format("woff");
+  font-weight: 500 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+[data-dyslexia="on"] {
+  --font-serif: "OpenDyslexic", var(--font-newsreader), Georgia, serif;
+  --font-sans: "OpenDyslexic", var(--font-inter), system-ui, sans-serif;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+/* ---- Base reset + body ----------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  @apply bg-background text-foreground antialiased;
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  background-image:
-    radial-gradient(ellipse 120% 80% at 15% 10%, rgba(217, 119, 87, 0.12), transparent 50%),
-    radial-gradient(ellipse 100% 60% at 85% 90%, rgba(232, 168, 124, 0.1), transparent 45%);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv01";
 }
 
-/* Subtle paper grain (Soft Editorial) */
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+h1 {
+  font-size: var(--text-h1);
+}
+h2 {
+  font-size: var(--text-h2);
+}
+h3 {
+  font-size: var(--text-h3);
+}
+p {
+  margin: 0;
+}
+
+/* ---- Typography utilities (replaces shell.css helpers) --- */
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: var(--text-display);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.font-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Focus ring ------------------------------------------ */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* ---- Subtle scrollbars ---------------------------------- */
+.scroll-subtle::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-subtle::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 99px;
+  border: 2px solid var(--color-background);
+}
+.scroll-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- Motion prefs ----------------------------------------
+ * prefers-reduced-motion needs `!important` to override inline transition
+ * styles from third-party libs (Radix, framer-motion). WCAG-recommended.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: override third-party inline transitions */
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---- Paper grain + gradient text (kept from previous) ---- */
 .grain-bg {
   position: relative;
 }
@@ -99,16 +331,38 @@ body {
   z-index: 1;
 }
 
+.tempo-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--color-tempo-orange) 0%,
+    var(--color-soft-orange) 100%
+  );
+}
+.tempo-gradient-text {
+  background: linear-gradient(
+    135deg,
+    var(--color-tempo-orange) 0%,
+    var(--color-soft-orange) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ---- Legacy aliases for pre-existing pages (Soft Editorial) - */
 .font-heading {
-  font-family: var(--font-newsreader), ui-serif, Georgia, "Times New Roman", serif;
+  font-family: var(--font-serif);
 }
-
 .font-code {
-  font-family: var(--font-ibm-mono), ui-monospace, monospace;
+  font-family: var(--font-mono);
 }
-
 .text-gradient-primary {
-  background-image: linear-gradient(135deg, #d97757 0%, #e8a87c 100%);
+  background-image: linear-gradient(
+    135deg,
+    var(--color-tempo-orange) 0%,
+    var(--color-soft-orange) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

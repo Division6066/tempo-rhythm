@@ -1,62 +1,67 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { IBM_Plex_Mono, Inter, Newsreader } from "next/font/google";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
 import { Providers } from "@/components/providers/providers";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { themeInitScript } from "@/lib/theme-script";
 
 const inter = Inter({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-inter",
   display: "swap",
 });
 
 const newsreader = Newsreader({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-newsreader",
   display: "swap",
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   variable: "--font-ibm-mono",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Tempo Rhythm",
-  description: "Tempo Rhythm - Find Your Rhythm",
+  title: "Tempo Flow — your brain's operating system",
+  description:
+    "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
 };
 
-// רכיב ה-Layout הראשי של האפליקציה
-// עוטף את כל העמודים ומספק את ההגדרות הגלובליות (RTL, פונטים, ספקים)
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3ebe2" },
+    { media: "(prefers-color-scheme: dark)", color: "#131312" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    // ספק האימות של Convex בצד השרת
     <ConvexAuthNextjsServerProvider>
-      {/* הגדרת כיוון האתר לימין-לשמאל (RTL) ושפה לעברית */}
       <html
-        dir="rtl"
-        lang="he"
+        lang="en"
+        dir="ltr"
         className={`${inter.variable} ${newsreader.variable} ${ibmPlexMono.variable}`}
+        suppressHydrationWarning
       >
+        <head>
+          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input */}
+          <Script id="tempo-theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
+        </head>
         <body className="antialiased">
-          {/* ספקי הקונטקסט של האפליקציה (Convex Client, וכו') */}
-          <Providers>
-            {/* סרגל הניווט העליון */}
-            <Navbar />
-            {/* תוכן העמוד הספציפי */}
-            {children}
-            {/* כותרת תחתונה */}
-            <Footer />
-          </Providers>
+          <ThemeProvider>
+            <Providers>{children}</Providers>
+          </ThemeProvider>
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>
