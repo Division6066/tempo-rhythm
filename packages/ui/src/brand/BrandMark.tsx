@@ -11,13 +11,15 @@ export function BrandMark({ size = 28, className }: Props) {
   const id = `bm${size}`;
   return (
     <svg
-      aria-label="Tempo Flow"
+      role="img"
+      aria-labelledby={`${id}-title`}
       width={size}
       height={size}
       viewBox="0 0 64 64"
       className={className}
       style={{ display: "block" }}
     >
+      <title id={`${id}-title`}>Tempo Flow</title>
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#D97757" />
