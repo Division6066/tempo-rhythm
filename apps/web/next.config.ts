@@ -5,6 +5,7 @@ import type { NextConfig } from "next";
 const workspaceRoot = path.join(__dirname, "../..");
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@tempo/ui", "@tempo/mock-data", "@tempo/types", "@tempo/utils"],
   async redirects() {
     return [
       { source: "/page1", destination: "/dashboard", permanent: false },

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>About · Tempo Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/><link rel="stylesheet" href="shell.css"/>
+<style>body{background:var(--surface-page);color:var(--fg);font-family:var(--font-sans)}
+.top{display:flex;justify-content:space-between;padding:var(--space-5) var(--space-8);border-bottom:1px solid var(--border-soft)}
+.top a{color:var(--fg-muted);text-decoration:none;font-size:13px;margin-left:var(--space-5)}
+.top a:hover{color:var(--fg)}
+.wrap{max-width:820px;margin:0 auto;padding:var(--space-12) var(--space-8)}
+h1{font-family:var(--font-serif);font-size:64px;font-weight:400;letter-spacing:-0.025em;line-height:1.05;margin:var(--space-8) 0 var(--space-6)}
+h1 em{color:var(--tempo-orange);font-style:italic}
+p{font-family:var(--font-serif);font-size:20px;line-height:1.7;margin-bottom:var(--space-5);color:var(--fg-soft)}
+.facts{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-6);margin:var(--space-8) 0;display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-4)}
+.facts .f strong{display:block;font-family:var(--font-serif);font-size:22px;margin-bottom:2px;color:var(--fg)}
+.facts .f span{font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-muted);font-family:var(--font-mono)}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tempo-orange)}
+</style></head><body>
+<nav class="top"><a href="index.html" style="display:flex;align-items:center;gap:10px;color:var(--fg)">
+<svg width="28" height="24" viewBox="0 0 64 56" fill="none"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D97757"/><stop offset="100%" stop-color="#E8A87C"/></linearGradient></defs><path d="M14 16 H50" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M32 16 V46" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="42" cy="44" r="6" fill="url(#bm)"/></svg>
+<span style="font-family:var(--font-serif);font-size:20px">Tempo<em style="font-style:normal;font-family:var(--font-sans);font-weight:600">Flow</em></span></a>
+<div><a href="landing.html">Product</a><a href="app.html">Open app</a><a href="changelog.html">Changelog</a></div></nav>
+
+<div class="wrap">
+<div class="eyebrow">About</div>
+<h1>A planner, by one person, <em>for other brains</em>.</h1>
+<p>Tempo Flow was started in the winter of 2024 by Amit Levin, after another productivity app politely shamed him for missing three days of journaling in a row. It has been built slowly, alone, in a small apartment in Tel Aviv.</p>
+<p>It is built for ADHD brains, autistic brains, anxious brains, burned-out brains, and anyone who has ever felt that the calendar was a cathedral they could not enter. It does not aspire to be an operating system. It aspires to be a friend who asks, gently, what today could look like.</p>
+<p>It is dogfooded before it is shipped. It is patent-held at the workflow layer and otherwise source-available under BUSL-1.1. The commitment is a dollar. The filter is intention.</p>
+
+<div class="facts">
+<div class="f"><strong>December 2024</strong><span>Founded</span></div>
+<div class="f"><strong>1 person</strong><span>Team size</span></div>
+<div class="f"><strong>Tel Aviv</strong><span>HQ</span></div>
+<div class="f"><strong>BUSL-1.1</strong><span>License</span></div>
+<div class="f"><strong>Next.js · Convex · Expo</strong><span>Stack</span></div>
+<div class="f"><strong>30 beta testers</strong><span>Pre-launch</span></div>
+</div>
+
+<p>If you'd like to reach Amit — or send a long email about what would make the app better for your brain — he is at <a href="mailto:amit@tempoflow.app" style="color:var(--tempo-orange)">amit@tempoflow.app</a>, and he reads everything.</p>
+</div></body></html>

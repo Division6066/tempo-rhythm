@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Changelog · Tempo Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/><link rel="stylesheet" href="shell.css"/>
+<style>body{background:var(--surface-page);color:var(--fg);font-family:var(--font-sans)}
+.top{display:flex;justify-content:space-between;padding:var(--space-5) var(--space-8);border-bottom:1px solid var(--border-soft)}
+.top a{color:var(--fg-muted);text-decoration:none;font-size:13px;margin-left:var(--space-5)}
+.top a:hover{color:var(--fg)}
+.wrap{max-width:820px;margin:0 auto;padding:var(--space-12) var(--space-8)}
+h1{font-family:var(--font-serif);font-size:56px;font-weight:400;letter-spacing:-0.02em;margin:var(--space-6) 0 var(--space-10);line-height:1.05}
+h1 em{color:var(--tempo-orange);font-style:italic}
+.rel{border-left:2px solid var(--border);padding:var(--space-2) 0 var(--space-8) var(--space-6);margin-left:var(--space-3);position:relative}
+.rel::before{content:"";position:absolute;left:-7px;top:8px;width:12px;height:12px;border-radius:99px;background:var(--tempo-orange);border:3px solid var(--surface-page)}
+.rel.past::before{background:var(--border-strong)}
+.rel .date{font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;color:var(--fg-muted);margin-bottom:8px}
+.rel h2{font-family:var(--font-serif);font-size:28px;letter-spacing:-0.01em;margin-bottom:var(--space-4);font-weight:500}
+.rel ul{margin:0;padding-left:18px;font-size:15px;line-height:1.8;color:var(--fg-soft)}
+.rel li{margin-bottom:4px}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tempo-orange)}
+</style></head><body>
+<nav class="top"><a href="index.html" style="display:flex;align-items:center;gap:10px;color:var(--fg)">
+<svg width="28" height="24" viewBox="0 0 64 56" fill="none"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D97757"/><stop offset="100%" stop-color="#E8A87C"/></linearGradient></defs><path d="M14 16 H50" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M32 16 V46" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="42" cy="44" r="6" fill="url(#bm)"/></svg>
+<span style="font-family:var(--font-serif);font-size:20px">Tempo<em style="font-style:normal;font-family:var(--font-sans);font-weight:600">Flow</em></span></a>
+<div><a href="landing.html">Product</a><a href="app.html">Open app</a><a href="about.html">About</a></div></nav>
+
+<div class="wrap">
+<div class="eyebrow">Changelog</div>
+<h1>Quiet shipping <em>notes</em>.</h1>
+
+<div class="rel">
+<div class="date">Apr 23 · v1.0.0 · foundation</div>
+<h2>Tempo 1.0 — a beginning.</h2>
+<ul>
+<li>All 42 screens live on web PWA, iOS, and Android.</li>
+<li>$1 seven-day trial via RevenueCat. No auto-renewal, no dark patterns.</li>
+<li>Coach warmth dial (0 through 10) with a default of 6 — gentle-but-not-saccharine.</li>
+<li>Onboarding now captures pronouns, one wobble, and one thing you'd like to hold onto this week.</li>
+<li>First-run brain dump gets sorted into three doable things before the app asks anything else of you.</li>
+</ul>
+</div>
+
+<div class="rel past">
+<div class="date">Apr 14 · v0.9.5 · beta polish</div>
+<h2>Closed beta polish.</h2>
+<ul>
+<li>Brain Dump sorts by energy on low-spoons days.</li>
+<li>Fixed a case where the streak banner read too sharp on missed days.</li>
+<li>Added OpenDyslexic as a single toggle in Preferences.</li>
+<li>Journal prompts now vary with detected mood — no more "what are you grateful for" at 11pm on a bad Tuesday.</li>
+</ul>
+</div>
+
+<div class="rel past">
+<div class="date">Apr 02 · v0.9.0 · closed beta</div>
+<h2>Thirty people, four weeks.</h2>
+<ul>
+<li>Thirty users, thirty letters, thirty gentle bug reports.</li>
+<li>Journal entries now encrypted at rest with per-user keys.</li>
+<li>First weekly recap generation — the coach writes it, you can edit it.</li>
+<li>Two-pane layout settled: sidebar + main content. Mobile gets its own set of frames.</li>
+</ul>
+</div>
+
+<div class="rel past">
+<div class="date">Feb 14 · v0.6.0 · first internal build</div>
+<h2>A founder dogfoods.</h2>
+<ul>
+<li>Core flow complete — dump → coach → plan → do.</li>
+<li>Amit runs his own day through it for thirty consecutive mornings before telling anyone about it.</li>
+<li>The "nothing" button makes its first appearance: close the laptop, the day ends well.</li>
+</ul>
+</div>
+
+</div></body></html>
