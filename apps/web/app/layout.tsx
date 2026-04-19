@@ -55,7 +55,13 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <head>
-          {/* Pre-hydration theme script: prevents FOUC. */}
+          {/*
+            Pre-hydration theme script: prevents FOUC.
+            The script body is generated locally (no user input), so injecting
+            as inner HTML is safe and necessary — it must run before React
+            hydrates to set data-theme / data-dyslexia in the same frame.
+          */}
+          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: inline script required for pre-hydration theme. */}
           <Script
             id="tempo-theme-init"
             strategy="beforeInteractive"

@@ -294,6 +294,12 @@ p {
 }
 
 /* ---- Motion prefs ---------------------------------------- */
+/*
+ * prefers-reduced-motion needs `!important` to override inline transition
+ * styles from third-party libs (Radix, framer-motion, etc). This is the
+ * WCAG-recommended pattern; suppressing biome's noImportantStyles here.
+ */
+/* biome-ignore lint/complexity/noImportantStyles: required to override third-party inline transitions. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

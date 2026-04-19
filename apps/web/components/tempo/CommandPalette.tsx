@@ -94,44 +94,45 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             />
           </div>
 
-          <ul
+          <div
             className="max-h-[50vh] overflow-y-auto scroll-subtle p-1.5"
             role="listbox"
             aria-label="Screens"
           >
             {items.length === 0 ? (
-              <li className="px-3.5 py-8 text-center text-muted-foreground text-small">
+              <div className="px-3.5 py-8 text-center text-muted-foreground text-small">
                 Nothing matches. Try a different word.
-              </li>
+              </div>
             ) : (
               items.map((s, i) => (
-                <li key={s.slug} role="option" aria-selected={i === focused}>
-                  <button
-                    type="button"
-                    ref={(el) => {
-                      itemRefs.current[i] = el;
-                    }}
-                    onClick={() => pick(i)}
-                    onMouseEnter={() => setFocused(i)}
-                    className={[
-                      "w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-small",
-                      i === focused
-                        ? "bg-surface-sunken"
-                        : "hover:bg-surface-sunken",
-                    ].join(" ")}
-                  >
-                    <span className="text-caption font-tabular px-2 py-0.5 rounded-full bg-surface-sunken text-muted-foreground">
-                      {s.category}
-                    </span>
-                    <span className="flex-1 text-foreground">{s.title}</span>
-                    <span className="text-caption font-tabular text-muted-foreground opacity-60">
-                      {s.route}
-                    </span>
-                  </button>
-                </li>
+                <button
+                  key={s.slug}
+                  type="button"
+                  role="option"
+                  aria-selected={i === focused}
+                  ref={(el) => {
+                    itemRefs.current[i] = el;
+                  }}
+                  onClick={() => pick(i)}
+                  onMouseEnter={() => setFocused(i)}
+                  className={[
+                    "w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-small",
+                    i === focused
+                      ? "bg-surface-sunken"
+                      : "hover:bg-surface-sunken",
+                  ].join(" ")}
+                >
+                  <span className="text-caption font-tabular px-2 py-0.5 rounded-full bg-surface-sunken text-muted-foreground">
+                    {s.category}
+                  </span>
+                  <span className="flex-1 text-foreground">{s.title}</span>
+                  <span className="text-caption font-tabular text-muted-foreground opacity-60">
+                    {s.route}
+                  </span>
+                </button>
               ))
             )}
-          </ul>
+          </div>
 
           <div className="flex items-center gap-4 px-4 py-2.5 border-t border-border-soft text-caption text-muted-foreground font-tabular">
             <span>↑↓ navigate</span>
