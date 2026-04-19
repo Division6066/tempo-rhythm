@@ -1,0 +1,16 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Tempo Flow mark">
+  <defs>
+    <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D97757"></stop>
+      <stop offset="100%" stop-color="#E8A87C"></stop>
+    </linearGradient>
+  </defs>
+  
+  <g fill="none" stroke="url(#tg)" stroke-width="5" stroke-linecap="round">
+    
+    <path d="M14 16 H50"></path>
+    
+    <path d="M32 16 V46"></path>
+  </g>
+  <circle cx="42" cy="44" r="6" fill="url(#tg)"></circle>
+</svg>

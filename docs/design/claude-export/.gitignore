@@ -1,0 +1,5 @@
+# The source archive + self-contained prototype are redundant with the
+# unpacked `design-system/` directory. Keep them out of the repo to avoid
+# tracking 4MB of duplicated/binary bytes.
+Tempo Flow Design System.zip
+TempoFlow Prototype.html

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tempo Flow · Design package</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+<link rel="stylesheet" href="shell.css"/>
+<style>
+  body { background: var(--surface-page); color: var(--fg); font-family: var(--font-sans); min-height: 100vh; display: flex; align-items: center; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: var(--space-12) var(--space-8); }
+  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: var(--space-8); }
+  .brand-name { font-family: var(--font-serif); font-weight: 500; font-size: 32px; letter-spacing: -0.02em; }
+  .brand-name em { font-style: normal; font-family: var(--font-sans); font-weight: 600; }
+  h1 { font-family: var(--font-serif); font-size: clamp(44px, 6vw, 76px); line-height: 1.04; letter-spacing: -0.025em; font-weight: 400; margin-bottom: var(--space-5); max-width: 14ch; }
+  h1 em { color: var(--tempo-orange); font-style: italic; }
+  .lede { font-family: var(--font-serif); font-size: 20px; line-height: 1.55; color: var(--fg-soft); max-width: 56ch; margin-bottom: var(--space-10); }
+  .links { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); max-width: 720px; }
+  .tile { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: var(--space-6); text-decoration: none; color: inherit; display: block; transition: transform 200ms, box-shadow 200ms; }
+  .tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .tile .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tempo-orange); margin-bottom: 8px; }
+  .tile h3 { font-family: var(--font-serif); font-size: 22px; font-weight: 500; margin-bottom: 6px; letter-spacing: -0.01em; }
+  .tile p { font-size: 14px; color: var(--fg-muted); line-height: 1.55; }
+  .tile.primary { background: linear-gradient(145deg, #1E1D1B 0%, #2A2826 100%); color: #F7F0E8; border-color: transparent; grid-column: span 2; }
+  .tile.primary h3 { color: inherit; font-size: 28px; }
+  .tile.primary p { color: rgba(247,240,232,0.72); font-size: 15px; }
+  .tile.primary .k { color: var(--tempo-orange); }
+  .foot { margin-top: var(--space-10); font-size: 12px; font-family: var(--font-mono); color: var(--fg-muted); letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <svg width="44" height="38" viewBox="0 0 64 56" fill="none"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D97757"/><stop offset="100%" stop-color="#E8A87C"/></linearGradient></defs><path d="M14 16 H50" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M32 16 V46" stroke="url(#bm)" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="42" cy="44" r="6" fill="url(#bm)"/></svg>
+    <span class="brand-name">Tempo<em>Flow</em></span>
+  </div>
+  <div style="font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tempo-orange); margin-bottom: 16px;">The 1.0 package · 42 screens · one person</div>
+  <h1>A gentle planner, <em>in full fidelity</em>.</h1>
+  <p class="lede">Everything you need to evaluate Tempo Flow at launch: the marketing site, the full interactive prototype (with a ⌘K jump-to-screen picker), and a design canvas that lays every surface out at a glance.</p>
+
+  <div class="links">
+    <a class="tile primary" href="app.html">
+      <div class="k">Interactive · recommended</div>
+      <h3>Open the app prototype →</h3>
+      <p>All 42 screens, fully clickable. Sidebar + ⌘K to jump anywhere. Sign-in and onboarding wired through. State persists.</p>
+    </a>
+    <a class="tile" href="mobile.html">
+      <div class="k">Mobile · iOS</div>
+      <h3>Open the mobile app →</h3>
+      <p>12 screens on a pannable canvas, bottom tab bar, capture-first composer, coach on a ball.</p>
+    </a>
+    <a class="tile" href="landing.html">
+      <div class="k">Marketing</div>
+      <h3>Landing page →</h3>
+      <p>Hero, features, coach samples, pricing, founder letter, testimonials, footer.</p>
+    </a>
+    <a class="tile" href="canvas.html">
+      <div class="k">Overview</div>
+      <h3>Design canvas →</h3>
+      <p>Live 50%-scale previews of every screen, grouped by product area.</p>
+    </a>
+    <a class="tile" href="app.html?screen=onboarding">
+      <div class="k">Deep flow</div>
+      <h3>Onboarding walkthrough →</h3>
+      <p>Five-step new-user flow: welcome → personalization → template → first brain dump → first plan.</p>
+    </a>
+    <a class="tile" href="about.html">
+      <div class="k">Context</div>
+      <h3>About + Changelog →</h3>
+      <p>Founder bio, facts, and the quiet shipping notes from 0.9.0 through 1.0.</p>
+    </a>
+  </div>
+  <div class="foot">v1.0.0 · built April 2026 · Fraunces + Inter + JetBrains Mono · 1 brand, 1 palette, 42 surfaces</div>
+</div>
+</body>
+</html>
