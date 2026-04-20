@@ -1,4 +1,4 @@
-import { mockAtUtcHour, MOCK_REFERENCE_MS } from "./constants";
+import { mockAtUtcHour } from "./constants";
 import type { MockCoachMessage } from "./types";
 
 export const mockCoachWarmthLevel = 6;

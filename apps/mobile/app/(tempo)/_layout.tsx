@@ -9,6 +9,13 @@ export default function TempoLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="capture" options={{ presentation: "modal" }} />
+      <Stack.Screen name="plan" />
+      <Stack.Screen name="journal" />
+      <Stack.Screen name="habits" />
+      <Stack.Screen name="calendar" />
+      <Stack.Screen name="routines" />
+      <Stack.Screen name="templates" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

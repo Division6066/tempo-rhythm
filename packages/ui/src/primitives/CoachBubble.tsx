@@ -11,7 +11,8 @@ import type { ReactNode } from "react";
 export type CoachBubbleRole = "coach" | "user" | "system";
 
 export type CoachBubbleProps = {
-  role?: CoachBubbleRole;
+  /** Visual variant — named `bubbleRole` so we never forward invalid `role` to the DOM. */
+  bubbleRole?: CoachBubbleRole;
   children: ReactNode;
   actions?: ReactNode;
   timestamp?: string;
@@ -27,7 +28,7 @@ const roleMap: Record<CoachBubbleRole, string> = {
 };
 
 export function CoachBubble({
-  role = "coach",
+  bubbleRole = "coach",
   children,
   actions,
   timestamp,
@@ -37,7 +38,7 @@ export function CoachBubble({
     <div
       className={[
         "flex max-w-[85%] flex-col gap-2 rounded-2xl border px-4 py-3 shadow-whisper",
-        roleMap[role],
+        roleMap[bubbleRole],
         className,
       ].join(" ")}
     >

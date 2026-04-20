@@ -1,23 +1,39 @@
 /**
- * @generated-by: T-F008 scaffold — replace with T-F009* port.
  * @screen: notes
  * @platform: mobile
  * @source: docs/design/claude-export/design-system/mobile/mobile-screens-a.jsx
- * @summary: Notes list.
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @queries: notes.listByUser @index by_userId_deletedAt
+ * @navigate: note detail (Long Run 2 stack)
+ * @auth: required
+ * @env: NEXT_PUBLIC_CONVEX_URL
  */
-import { Text, View } from "react-native";
+import { mockNotes } from "@tempo/mock-data";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Screen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6 gap-3">
-        <Text className="text-2xl font-semibold text-foreground">Notes</Text>
-        <Text className="text-sm text-muted-foreground">Notes list.</Text>
-        <Text className="text-xs text-muted-foreground font-mono">
-          scaffold · port from mobile/mobile-screens-a.jsx
-        </Text>
+      <View className="flex-1 gap-2 p-4">
+        <Text className="text-xl font-semibold text-foreground">Notes</Text>
+        <FlatList
+          data={mockNotes}
+          keyExtractor={(n) => n.id}
+          renderItem={({ item }) => (
+            <Pressable
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={`Open note ${item.title}`}
+              hitSlop={6}
+              className="rounded-lg border border-border bg-card p-3"
+            >
+              <Text className="font-medium text-foreground">{item.title}</Text>
+              <Text className="mt-1 text-xs text-muted-foreground" numberOfLines={2}>
+                {item.body}
+              </Text>
+            </Pressable>
+          )}
+        />
       </View>
     </SafeAreaView>
   );

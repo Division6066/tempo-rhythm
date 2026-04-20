@@ -1,4 +1,3 @@
-import { MOCK_REFERENCE_MS } from "./constants";
 import type { MockJournalEntry } from "./types";
 
 export const mockJournalTodayDraft =

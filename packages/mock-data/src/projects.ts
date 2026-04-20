@@ -1,4 +1,3 @@
-import { MOCK_REFERENCE_MS } from "./constants";
 import type { MockProject } from "./types";
 
 /** Library · Projects — screens-3.jsx */

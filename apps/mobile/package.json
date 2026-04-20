@@ -31,6 +31,7 @@
     "@react-navigation/native": "^7.1.8",
     "@rn-primitives/slot": "^1.2.0",
     "@rn-primitives/types": "^1.2.0",
+    "@tempo/mock-data": "workspace:*",
     "@tempo/ui": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
