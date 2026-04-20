@@ -11,10 +11,11 @@ artifacts in April 2026. The canonical source is `design-system/`.
 - `design-system/uploads/Tempo_Flow_Master_Document.md` — consolidated
   13k-line document (PRD, roadmap, rules). Historical reference only;
   canonical versions of those documents live under `docs/brain/`.
-- `TempoFlow Prototype.html` *(git-ignored)* — standalone 2.7 MB bundler
-  artefact. Open locally in a browser for a click-through preview. Not
-  checked in because it duplicates the unpacked source.
-- `Tempo Flow Design System.zip` *(git-ignored)* — original archive.
+- `TempoFlow Prototype.html` — standalone bundler artefact (~2.7 MB). Open
+  locally in a browser for a click-through preview. Tracked for reference
+  alongside the unpacked JSX/CSS source.
+- `Tempo Flow Design System.zip` — original archive of the export. Tracked
+  for reproducibility and handoff.
 
 ## How this powers the port
 
@@ -22,6 +23,8 @@ artifacts in April 2026. The canonical source is `design-system/`.
   route + the source JSX file/line range.
 - `docs/design/pseudo-code-conventions.md` documents the `@action` /
   `@mutation` / `@query` tag set that every ported component uses.
+- `docs/design/component-map/` — per-screen PRD + pseudocode labels (see
+  `_INDEX.md`).
 - Scaffold routes across `apps/web` + `apps/mobile` cite their origin via
   an `@generated-by: T-F004 scaffold` / `T-F008 scaffold` marker.
 
