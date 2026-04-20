@@ -3,6 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
+    "types": ["react", "react-native"],
     "paths": {
       "@/convex/*": ["../../convex/*"],
       "@/*": ["./*"]
@@ -16,9 +17,5 @@
     "nativewind-env.d.ts",
     ".expo/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".expo",
-    "scripts"
-  ]
+  "exclude": ["node_modules", ".expo", "scripts"]
 }

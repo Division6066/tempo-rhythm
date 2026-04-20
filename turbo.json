@@ -12,10 +12,27 @@
       "persistent": true
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^typecheck"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "tsconfig*.json",
+        "**/*.ts",
+        "**/*.tsx"
+      ],
+      "outputs": []
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "biome.json",
+        "**/*.{ts,tsx,js,jsx,json,css,md}"
+      ],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": []
     },
     "check": {
       "dependsOn": ["^check"]

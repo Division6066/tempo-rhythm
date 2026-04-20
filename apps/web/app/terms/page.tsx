@@ -50,7 +50,9 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-4">6. יצירת קשר</h2>
-            <p>לשאלות או הבהרות בנוגע לתנאי השימוש, ניתן ליצור קשר בכתובת: support@temporhythm.app</p>
+            <p>
+              לשאלות או הבהרות בנוגע לתנאי השימוש, ניתן ליצור קשר בכתובת: support@temporhythm.app
+            </p>
           </section>
         </div>
 

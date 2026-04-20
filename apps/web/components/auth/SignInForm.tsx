@@ -2,9 +2,9 @@
 
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import type React from "react";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 const REMEMBERED_EMAIL_KEY = "remembered_email";
 
@@ -70,7 +70,9 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
     ? "w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground placeholder:text-muted-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] focus:outline-none focus:ring-2 focus:ring-primary"
     : "w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition";
 
-  const labelClass = isPage ? "mb-2 block text-sm font-medium text-foreground" : "block text-sm font-medium text-gray-300 mb-2";
+  const labelClass = isPage
+    ? "mb-2 block text-sm font-medium text-foreground"
+    : "block text-sm font-medium text-gray-300 mb-2";
 
   return (
     <div className={isPage ? "w-full max-w-md" : ""} dir="rtl">
@@ -145,7 +147,10 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
             }
             disabled={isLoading}
           />
-          <label htmlFor="remember-me-signin" className={`cursor-pointer text-sm ${isPage ? "text-foreground" : "text-gray-300"}`}>
+          <label
+            htmlFor="remember-me-signin"
+            className={`cursor-pointer text-sm ${isPage ? "text-foreground" : "text-gray-300"}`}
+          >
             זכור אותי
           </label>
         </div>
@@ -182,7 +187,9 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
         </button>
       </form>
 
-      <p className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
+      <p
+        className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}
+      >
         עדיין אין לכם חשבון?{" "}
         {isPage ? (
           <Link href="/sign-up" className="font-semibold text-primary hover:underline">

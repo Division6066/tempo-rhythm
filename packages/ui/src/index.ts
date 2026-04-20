@@ -10,14 +10,15 @@
  *   - `@tempo/ui/theme`       → design tokens as TypeScript constants
  *   - `@tempo/ui/native`      → RN-native primitives
  */
-export * from "./primitives";
+
 export { BrandMark, Wordmark } from "./brand";
+export * from "./primitives";
 export {
+  type TempoColorToken,
   tempoColors,
   tempoColorsDark,
   tempoFonts,
+  tempoMotion,
   tempoRadii,
   tempoSpacing,
-  tempoMotion,
-  type TempoColorToken,
 } from "./theme/tokens";

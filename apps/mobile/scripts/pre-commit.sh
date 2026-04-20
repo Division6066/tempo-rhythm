@@ -13,13 +13,13 @@ bun run check-deps || {
 # Run linting
 echo "🔍 Running linter..."
 bun run lint || {
-  echo "❌ Linting failed. Run 'bun run check:fix' to auto-fix issues."
+  echo "❌ Linting failed. Run 'bun run check' to auto-fix issues."
   exit 1
 }
 
 # Run type check
 echo "🔍 Running type check..."
-bun run type-check || {
+bun run typecheck || {
   echo "❌ Type check failed. Please fix TypeScript errors."
   exit 1
 }

@@ -9,87 +9,206 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Admin — branch protection (Settings → Branches → rule for `master`):
+#   Require these status checks (exact `name:` values below):
+#     Typecheck
+#     Lint
+#     Test
+#     Scans (forbidden-tech, ram-only-audit, design-tokens)
+# Solo maintainer: with CODEOWNERS + 1 review, merge own PRs via admin bypass
+# if needed; do not remove protections without explicit instruction.
+#
 # Package manager is `bun` for all CI steps (per HARD_RULES §2).
 # Root package.json declares `packageManager: "bun@1.3.9"` and `bun.lock` is committed.
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  DO_NOT_TRACK: 1
+  FORCE_COLOR: 3
 
 jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun install
+        uses: actions/cache@v4
         with:
-          bun-version: latest
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-typecheck-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-typecheck-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-typecheck-${{ runner.os }}-master-
+            turbo-typecheck-${{ runner.os }}-
+
+      - name: Print tool versions
+        run: |
+          echo "node=$(node -v)"
+          echo "bun=$(bun -v)"
+          bun x turbo --version | sed 's/^/turbo=/'
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Run typecheck
-        run: bun run typecheck
+
+      - name: Run typecheck (bun run typecheck)
+        run: |
+          echo "command=bun run typecheck"
+          bun run typecheck
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun install
+        uses: actions/cache@v4
         with:
-          bun-version: latest
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-lint-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-lint-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-lint-${{ runner.os }}-master-
+            turbo-lint-${{ runner.os }}-
+
+      - name: Print tool versions
+        run: |
+          echo "node=$(node -v)"
+          echo "bun=$(bun -v)"
+          bun x turbo --version | sed 's/^/turbo=/'
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Run lint
-        run: bun run lint
+
+      - name: Run lint (bun run lint)
+        run: |
+          echo "command=bun run lint"
+          bun run lint
 
   test:
     name: Test
     runs-on: ubuntu-latest
-    # TODO(Phase 3): root `test` script not yet defined in package.json.
-    # Keeping continue-on-error until the script lands so CI does not block
-    # unrelated PRs. Remove `continue-on-error` once `bun run test` exists.
-    continue-on-error: true
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun install
+        uses: actions/cache@v4
         with:
-          bun-version: latest
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-test-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-test-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-test-${{ runner.os }}-master-
+            turbo-test-${{ runner.os }}-
+
+      - name: Print tool versions
+        run: |
+          echo "node=$(node -v)"
+          echo "bun=$(bun -v)"
+          bun x turbo --version | sed 's/^/turbo=/'
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Run tests (best-effort until script exists)
+
+      - name: Run tests (bun run test)
         run: |
-          if node -e "process.exit(require('./package.json').scripts?.test ? 0 : 1)" 2>/dev/null; then
-            bun run test
-          else
-            echo "::notice::root 'test' script not yet implemented — Phase 3 will add it"
-          fi
+          echo "command=bun run test"
+          bun run test
 
   scan:
     name: Scans (forbidden-tech, ram-only-audit, design-tokens)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun install
+        uses: actions/cache@v4
         with:
-          bun-version: latest
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Print tool versions
+        run: |
+          echo "node=$(node -v)"
+          echo "bun=$(bun -v)"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # TODO(Phase 3): each scan script below is referenced by HARD_RULES
-      # (§2 forbidden tech, §5 schema RAM-only, §7 design tokens) but is not
-      # yet implemented in package.json. When a script is missing we log a
-      # notice and succeed; when it exists we run it and fail on non-zero.
+      # Each scan script is referenced by HARD_RULES (§2, §5, §7). When missing
+      # we log a notice and succeed; when present we run it and fail on non-zero.
+      - name: List implemented scan scripts
+        run: |
+          echo "Checking which scan:* scripts are implemented in package.json:"
+          node -e 'const s=require("./package.json").scripts||{};for (const k of ["scan:forbidden-tech","scan:ram-only-audit","scan:design-tokens"])console.log(k+"="+(s[k]?"yes":"no (notice only)"))'
+
       - name: Forbidden-tech scan
         run: |
+          echo "command=scan:forbidden-tech (if present)"
           if grep -q '"scan:forbidden-tech"' package.json; then
             bun run scan:forbidden-tech
           else
@@ -98,6 +217,7 @@ jobs:
 
       - name: RAM-only audit
         run: |
+          echo "command=scan:ram-only-audit (if present)"
           if grep -q '"scan:ram-only-audit"' package.json; then
             bun run scan:ram-only-audit
           else
@@ -106,6 +226,7 @@ jobs:
 
       - name: Design-tokens scan
         run: |
+          echo "command=scan:design-tokens (if present)"
           if grep -q '"scan:design-tokens"' package.json; then
             bun run scan:design-tokens
           else

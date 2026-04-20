@@ -47,9 +47,7 @@ export default function Footer() {
           </div>
           <div>
             <h3 className="font-bold text-lg mb-4">יצירת קשר</h3>
-            <p className="text-sm text-muted-foreground">
-              support@temporhythm.app
-            </p>
+            <p className="text-sm text-muted-foreground">support@temporhythm.app</p>
           </div>
         </div>
         <div className="pt-8 border-t text-center text-sm text-muted-foreground">

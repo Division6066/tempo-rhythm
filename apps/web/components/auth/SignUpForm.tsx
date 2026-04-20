@@ -249,7 +249,9 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
         </button>
       </form>
 
-      <p className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
+      <p
+        className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}
+      >
         כבר יש לכם חשבון?{" "}
         {isPage ? (
           <Link href="/sign-in" className="font-semibold text-primary hover:underline">

@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "node scripts/ensure-biome-windows-cli.mjs",
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=tempo-rhythm-web",
     "dev:mobile": "turbo run dev --filter=tempo-rhythm-mobile",
@@ -15,7 +16,8 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "check": "turbo run check",
-    "clean": "turbo run clean && rm -rf node_modules",
+    "test": "turbo run test",
+    "clean": "turbo run clean && bun x rimraf node_modules .turbo apps/*/node_modules apps/*/.next apps/*/.turbo apps/*/.expo packages/*/node_modules packages/*/.turbo",
     "convex:dev": "bun x convex dev",
     "convex:deploy": "bun x convex deploy",
     "convex:codegen": "bun x convex codegen"

@@ -11,21 +11,11 @@ export type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
   trailing?: ReactNode;
 };
 
-export function Field({
-  label,
-  helper,
-  error,
-  trailing,
-  id,
-  className = "",
-  ...rest
-}: FieldProps) {
+export function Field({ label, helper, error, trailing, id, className = "", ...rest }: FieldProps) {
   const fieldId = id ?? rest.name;
   return (
     <label className="flex w-full flex-col gap-1.5" htmlFor={fieldId}>
-      {label ? (
-        <span className="font-eyebrow text-muted-foreground">{label}</span>
-      ) : null}
+      {label ? <span className="font-eyebrow text-muted-foreground">{label}</span> : null}
       <span
         className={[
           "flex items-center gap-2 rounded-lg border border-border bg-card px-3 h-10",
@@ -46,9 +36,7 @@ export function Field({
       {helper && !error ? (
         <span className="text-caption text-muted-foreground">{helper}</span>
       ) : null}
-      {error ? (
-        <span className="text-caption text-destructive">{error}</span>
-      ) : null}
+      {error ? <span className="text-caption text-destructive">{error}</span> : null}
     </label>
   );
 }

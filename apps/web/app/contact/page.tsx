@@ -155,9 +155,7 @@ export default function ContactPage() {
                   <MapPin className="w-6 h-6 text-primary mt-1" />
                   <div>
                     <h3 className="font-semibold mb-1">כתובת</h3>
-                    <p className="text-muted-foreground">
-                      ישראל
-                    </p>
+                    <p className="text-muted-foreground">ישראל</p>
                   </div>
                 </div>
               </CardContent>

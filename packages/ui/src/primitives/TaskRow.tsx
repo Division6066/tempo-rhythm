@@ -74,9 +74,7 @@ export function TaskRow({
         >
           {title}
         </span>
-        {meta ? (
-          <span className="text-caption text-muted-foreground">{meta}</span>
-        ) : null}
+        {meta ? <span className="text-caption text-muted-foreground">{meta}</span> : null}
       </button>
 
       {trailing}
