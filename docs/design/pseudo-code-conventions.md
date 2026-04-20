@@ -41,6 +41,13 @@ Use **only these tags**. Grep-able, machine-readable, no synonyms.
 | `@todo` | Known gap for the backend-wire run | `@todo: wire optimistic reorder` |
 | `@confirm` | Needs user confirm/undo per HARD_RULES | `@confirm: undoable 5s` |
 | `@streaming` | Streamed response (coach, AI) | `@streaming: token stream via action` |
+| `@convex-mutation-needed` | UI implies a Convex mutation not yet wired | `@convex-mutation-needed: tasks.complete` |
+| `@convex-action-needed` | UI implies a Convex Node-runtime action not yet wired | `@convex-action-needed: voice.transcribe` |
+| `@convex-query-needed` | UI depends on a Convex reactive read not yet wired | `@convex-query-needed: tasks.listToday` |
+| `@provider-needed` | External provider required for this control | `@provider-needed: openrouter` |
+| `@schema-delta` | UI implies schema field/table missing in `convex/schema.ts` | `@schema-delta: voiceSessions.mode` |
+| `@tier-caps` | Tier cap/limits that must be enforced client + server | `@tier-caps: basic 30 min/day, pro 2h/day` |
+| `@behavior` | Plain-language pseudocode for control behavior | `@behavior: Press and hold to record, release to transcribe, append transcript.` |
 
 ## Header per route
 
@@ -86,6 +93,10 @@ Shared atoms in `packages/ui` carry a short JSDoc only — no runtime annotation
 - Unwired mutations: `rg "@mutation:" apps | rg "@todo:"`
 - Queries by vertical: `rg "@query: tasks\." apps`
 - Source-trace a screen: open the `@source` line in the zip export.
+- Convex wiring backlog: `rg "@convex-(mutation|action|query)-needed:" apps`
+- Provider dependencies: `rg "@provider-needed:" apps`
+- Schema deltas to review against `convex/schema.ts`: `rg "@schema-delta:" apps`
+- Pseudocode quality pass: `rg "@behavior:" apps`
 
 ## What agents must NOT do
 
