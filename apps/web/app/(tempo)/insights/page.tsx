@@ -1,23 +1,32 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: analytics
- * @category: You
+ * @tier: A
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 43, §17
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Personal analytics & trends.
- * @queries: insights.summary
- * @mutations: (none)
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @summary: Tier-A mock-data scaffold for backend handoff only.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
 
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Insights"
-      category="You"
-      source="screens-5.jsx"
-      summary="Personal analytics & trends."
-    />
-  );
+import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
+import { getWebScreenFixture } from "@tempo/mock-data";
+
+/*
+ * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
+ * @convex-query-needed: analytics.readModel
+ * @navigate: /analytics
+ * @prd: PRD §4 Screen 43, §17
+ * @source: docs/design/claude-export/design-system/screens-5.jsx
+ */
+/*
+ * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
+ * @convex-mutation-needed: analytics.primaryMutation
+ * @convex-action-needed: analytics.primaryAction
+ * @prd: PRD §4 Screen 43, §17
+ * @source: docs/design/claude-export/design-system/screens-5.jsx
+ */
+
+export default function ScreenPage() {
+  const fixture = getWebScreenFixture("analytics");
+
+  return <TempoScreenScaffold fixture={fixture} />;
 }

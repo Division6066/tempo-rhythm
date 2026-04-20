@@ -1,30 +1,40 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: goal-detail
- * @category: Library
+ * @tier: A
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 15, §7
  * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Goal detail view with milestones.
- * @queries: goals.get
- * @mutations: goals.update, goals.logMilestone
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @summary: Tier-A mock-data scaffold for backend handoff only.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
 
-type Params = { id: string };
+import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
+import { getWebScreenFixture } from "@tempo/mock-data";
 
-export default async function Page({
+/*
+ * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
+ * @convex-query-needed: goal-detail.readModel
+ * @navigate: /goal-detail
+ * @prd: PRD §4 Screen 15, §7
+ * @source: docs/design/claude-export/design-system/screens-4.jsx
+ */
+/*
+ * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
+ * @convex-mutation-needed: goal-detail.primaryMutation
+ * @convex-action-needed: goal-detail.primaryAction
+ * @prd: PRD §4 Screen 15, §7
+ * @source: docs/design/claude-export/design-system/screens-4.jsx
+ */
+
+
+type RouteParams = { id: string };
+
+export default async function ScreenPage({
   params,
 }: {
-  params: Promise<Params>;
+  params: Promise<RouteParams>;
 }) {
   const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Goal detail"
-      category="Library"
-      source="screens-4.jsx"
-      summary={`Goal detail view with milestones. (id: ${id})`}
-    />
-  );
+  const fixture = getWebScreenFixture("goal-detail");
+
+  return <TempoScreenScaffold fixture={fixture} routeParams={{ id }} />;
 }

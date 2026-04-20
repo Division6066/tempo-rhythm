@@ -1,23 +1,32 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: empty-states
- * @category: You
+ * @tier: A
+ * @owner: cursor-cloud-1
+ * @prd: PRD §1, §14
  * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Gallery of anti-shame empty states.
- * @queries: (none)
- * @mutations: (none)
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @summary: Tier-A mock-data scaffold for backend handoff only.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
 
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Empty states gallery"
-      category="You"
-      source="screens-6.jsx"
-      summary="Gallery of anti-shame empty states."
-    />
-  );
+import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
+import { getWebScreenFixture } from "@tempo/mock-data";
+
+/*
+ * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
+ * @convex-query-needed: empty-states.readModel
+ * @navigate: /empty-states
+ * @prd: PRD §1, §14
+ * @source: docs/design/claude-export/design-system/screens-6.jsx
+ */
+/*
+ * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
+ * @convex-mutation-needed: empty-states.primaryMutation
+ * @convex-action-needed: empty-states.primaryAction
+ * @prd: PRD §1, §14
+ * @source: docs/design/claude-export/design-system/screens-6.jsx
+ */
+
+export default function ScreenPage() {
+  const fixture = getWebScreenFixture("empty-states");
+
+  return <TempoScreenScaffold fixture={fixture} />;
 }

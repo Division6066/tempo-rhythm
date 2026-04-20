@@ -1,23 +1,33 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: brain-dump
- * @category: Flow
+ * @tier: A
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 11, §6
  * @source: docs/design/claude-export/design-system/screens-1.jsx
- * @summary: Rapid capture with auto-sort suggestions.
- * @queries: inbox.list
- * @mutations: inbox.capture, inbox.sort
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @summary: Tier-A mock-data scaffold for backend handoff only.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
 
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Brain dump"
-      category="Flow"
-      source="screens-1.jsx"
-      summary="Rapid capture with auto-sort suggestions."
-    />
-  );
+import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
+import { getWebScreenFixture } from "@tempo/mock-data";
+
+/*
+ * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
+ * @convex-query-needed: brain-dump.readModel
+ * @navigate: /brain-dump
+ * @prd: PRD §4 Screen 11, §6
+ * @source: docs/design/claude-export/design-system/screens-1.jsx
+ */
+/*
+ * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
+ * @convex-mutation-needed: brain-dump.primaryMutation
+ * @convex-action-needed: brain-dump.primaryAction
+ * @provider-needed: openrouter
+ * @prd: PRD §4 Screen 11, §6
+ * @source: docs/design/claude-export/design-system/screens-1.jsx
+ */
+
+export default function ScreenPage() {
+  const fixture = getWebScreenFixture("brain-dump");
+
+  return <TempoScreenScaffold fixture={fixture} />;
 }

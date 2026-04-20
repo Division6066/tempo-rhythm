@@ -1,23 +1,32 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: routines
- * @category: Library
+ * @tier: A
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 42, §13
  * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Routine library.
- * @queries: routines.list
- * @mutations: routines.create
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @summary: Tier-A mock-data scaffold for backend handoff only.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
 
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Routines"
-      category="Library"
-      source="screens-3.jsx"
-      summary="Routine library."
-    />
-  );
+import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
+import { getWebScreenFixture } from "@tempo/mock-data";
+
+/*
+ * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
+ * @convex-query-needed: routines.readModel
+ * @navigate: /routines
+ * @prd: PRD §4 Screen 42, §13
+ * @source: docs/design/claude-export/design-system/screens-3.jsx
+ */
+/*
+ * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
+ * @convex-mutation-needed: routines.primaryMutation
+ * @convex-action-needed: routines.primaryAction
+ * @prd: PRD §4 Screen 42, §13
+ * @source: docs/design/claude-export/design-system/screens-3.jsx
+ */
+
+export default function ScreenPage() {
+  const fixture = getWebScreenFixture("routines");
+
+  return <TempoScreenScaffold fixture={fixture} />;
 }

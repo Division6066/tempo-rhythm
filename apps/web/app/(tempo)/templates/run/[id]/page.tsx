@@ -1,9 +1,9 @@
 /**
- * @screen: note-detail
+ * @screen: template-run
  * @tier: A
  * @owner: cursor-cloud-1
- * @prd: PRD §4 Screen 5, §13
- * @source: docs/design/claude-export/design-system/screens-2.jsx
+ * @prd: PRD §4 Screen 23, §10
+ * @source: docs/design/claude-export/design-system/screens-template-run.jsx
  * @summary: Tier-A mock-data scaffold for backend handoff only.
  */
 
@@ -12,17 +12,17 @@ import { getWebScreenFixture } from "@tempo/mock-data";
 
 /*
  * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: note-detail.readModel
- * @navigate: /note-detail
- * @prd: PRD §4 Screen 5, §13
- * @source: docs/design/claude-export/design-system/screens-2.jsx
+ * @convex-query-needed: template-run.readModel
+ * @navigate: /template-run
+ * @prd: PRD §4 Screen 23, §10
+ * @source: docs/design/claude-export/design-system/screens-template-run.jsx
  */
 /*
  * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: note-detail.primaryMutation
- * @convex-action-needed: note-detail.primaryAction
- * @prd: PRD §4 Screen 5, §13
- * @source: docs/design/claude-export/design-system/screens-2.jsx
+ * @convex-mutation-needed: template-run.primaryMutation
+ * @convex-action-needed: template-run.primaryAction
+ * @prd: PRD §4 Screen 23, §10
+ * @source: docs/design/claude-export/design-system/screens-template-run.jsx
  */
 
 
@@ -34,7 +34,7 @@ export default async function ScreenPage({
   params: Promise<RouteParams>;
 }) {
   const { id } = await params;
-  const fixture = getWebScreenFixture("note-detail");
+  const fixture = getWebScreenFixture("template-run");
 
   return <TempoScreenScaffold fixture={fixture} routeParams={{ id }} />;
 }

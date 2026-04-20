@@ -412,3 +412,6 @@ export const mockOnboarding = {
   ],
   templateOptions: ["Student", "Builder", "Daily Life", "Start blank"],
 };
+
+export * from "./screens";
+export * from "./types";
