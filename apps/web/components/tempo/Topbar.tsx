@@ -1,9 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { findScreen, TEMPO_SCREENS } from "@/lib/tempo-nav";
 import { Command, Moon, Search, Sun } from "@tempo/ui/icons";
+import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { findScreen, TEMPO_SCREENS } from "@/lib/tempo-nav";
 
 type Props = {
   onOpenPalette: () => void;
@@ -24,9 +24,7 @@ export function Topbar({ onOpenPalette }: Props) {
 
   return (
     <header className="flex items-center h-14 px-5 border-b border-border-soft bg-background sticky top-0 z-10">
-      <h1 className="text-small font-medium text-foreground">
-        {screen?.title ?? "Tempo Flow"}
-      </h1>
+      <h1 className="text-small font-medium text-foreground">{screen?.title ?? "Tempo Flow"}</h1>
 
       <div className="ml-auto flex items-center gap-2">
         {/* @action openCommandPalette */}

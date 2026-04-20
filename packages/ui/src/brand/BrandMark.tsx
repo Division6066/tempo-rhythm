@@ -26,8 +26,20 @@ export function BrandMark({ size = 28, className }: Props) {
           <stop offset="100%" stopColor="#E8A87C" />
         </linearGradient>
       </defs>
-      <path d="M14 16 H50" stroke={`url(#${id})`} strokeWidth="5" strokeLinecap="round" fill="none" />
-      <path d="M32 16 V46" stroke={`url(#${id})`} strokeWidth="5" strokeLinecap="round" fill="none" />
+      <path
+        d="M14 16 H50"
+        stroke={`url(#${id})`}
+        strokeWidth="5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M32 16 V46"
+        stroke={`url(#${id})`}
+        strokeWidth="5"
+        strokeLinecap="round"
+        fill="none"
+      />
       <circle cx="42" cy="44" r="6" fill={`url(#${id})`} />
     </svg>
   );

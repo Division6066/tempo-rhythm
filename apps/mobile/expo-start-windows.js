@@ -23,11 +23,10 @@ const proc = spawn('npx', args, {
   env: {
     ...process.env,
     // Override any ESM preferences
-    NODE_NO_WARNINGS: '1'
-  }
+    NODE_NO_WARNINGS: '1',
+  },
 });
 
-proc.on('exit', code => {
+proc.on('exit', (code) => {
   process.exit(code || 0);
 });
-

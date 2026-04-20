@@ -1,6 +1,6 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
-import { IBM_Plex_Mono, Inter, Newsreader } from "next/font/google";
 import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Mono, Inter, Newsreader } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/providers/providers";
@@ -30,8 +30,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Tempo Flow — your brain's operating system",
-  description:
-    "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
+  description: "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
 };
 
 export const viewport: Viewport = {
@@ -55,8 +54,12 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <head>
-          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input */}
-          <Script id="tempo-theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
+          <Script
+            id="tempo-theme-init"
+            strategy="beforeInteractive"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input
+            dangerouslySetInnerHTML={{ __html: themeInitScript() }}
+          />
         </head>
         <body className="antialiased">
           <ThemeProvider>

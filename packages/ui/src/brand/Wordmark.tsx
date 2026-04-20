@@ -8,11 +8,7 @@ type Props = {
  * Wordmark — Tempo + Flow composite.
  * @source docs/design/claude-export/design-system/components.jsx:L106-L110
  */
-export function Wordmark({
-  size = 22,
-  color = "var(--color-foreground)",
-  className,
-}: Props) {
+export function Wordmark({ size = 22, color = "var(--color-foreground)", className }: Props) {
   return (
     <span
       className={className}

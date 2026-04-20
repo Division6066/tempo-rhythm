@@ -14,7 +14,7 @@ Learn more at [ultracite.ai](https://www.ultracite.ai/preset/core)
 
 - `bun ultracite fix` - Auto-fix all issues
 - `bun ultracite check` - Check for issues without fixing
-- `bun run check:fix` - Run via npm script
+- `bun run check` - Biome check with auto-fix (this app’s `check` script)
 
 ---
 

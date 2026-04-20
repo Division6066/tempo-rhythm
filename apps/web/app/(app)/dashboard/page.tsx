@@ -90,7 +90,9 @@ export default function DashboardPage() {
                 <ListTodo className="h-5 w-5" aria-hidden />
               </div>
               <div>
-                <h2 className="font-heading text-2xl font-semibold text-foreground">משימות להיום</h2>
+                <h2 className="font-heading text-2xl font-semibold text-foreground">
+                  משימות להיום
+                </h2>
                 <p className="text-sm text-muted-foreground">לפי תאריך יעד היום</p>
               </div>
             </div>
@@ -106,7 +108,10 @@ export default function DashboardPage() {
           {todayTasks.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center text-muted-foreground">
               אין משימות עם יעד להיום.{" "}
-              <Link href="/tasks" className="font-semibold text-primary underline-offset-4 hover:underline">
+              <Link
+                href="/tasks"
+                className="font-semibold text-primary underline-offset-4 hover:underline"
+              >
                 הוסיפו משימה
               </Link>
             </p>
@@ -123,27 +128,34 @@ export default function DashboardPage() {
                   key={task._id}
                   className={cn(
                     "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-background/50 px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]",
-                    task.status === "done" && "opacity-70",
+                    task.status === "done" && "opacity-70"
                   )}
                 >
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(
                         "font-medium text-foreground",
-                        task.status === "done" && "line-through",
+                        task.status === "done" && "line-through"
                       )}
                     >
                       {task.title}
                     </p>
                     {task.description ? (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{task.description}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        {task.description}
+                      </p>
                     ) : null}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
                       {statusLabel[task.status] ?? task.status}
                     </span>
-                    <span className={cn("text-xs font-semibold uppercase", priorityClass[task.priority])}>
+                    <span
+                      className={cn(
+                        "text-xs font-semibold uppercase",
+                        priorityClass[task.priority]
+                      )}
+                    >
                       {task.priority}
                     </span>
                   </div>
@@ -195,7 +207,10 @@ export default function DashboardPage() {
             {habits.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground">
                 עדיין אין הרגלים.{" "}
-                <Link href="/habits" className="font-semibold text-primary underline-offset-4 hover:underline">
+                <Link
+                  href="/habits"
+                  className="font-semibold text-primary underline-offset-4 hover:underline"
+                >
                   צרו הרגל ראשון
                 </Link>
               </p>
@@ -208,7 +223,9 @@ export default function DashboardPage() {
                     <li key={h._id}>
                       <div className="mb-2 flex justify-between text-sm">
                         <span className="font-medium text-foreground">{h.name}</span>
-                        <span className="tabular-nums text-muted-foreground">{h.currentStreak} ימים</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {h.currentStreak} ימים
+                        </span>
                       </div>
                       <div className="h-2.5 overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_3px_rgba(0,0,0,0.12)]">
                         <div

@@ -13,18 +13,11 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
  *   - inverse  : ink fill, cream text
  *   - destructive : brick fill
  */
-export type ButtonVariant =
-  | "primary"
-  | "soft"
-  | "ghost"
-  | "subtle"
-  | "inverse"
-  | "destructive";
+export type ButtonVariant = "primary" | "soft" | "ghost" | "subtle" | "inverse" | "destructive";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const variantMap: Record<ButtonVariant, string> = {
-  primary:
-    "bg-primary text-primary-foreground hover:brightness-105 active:brightness-95",
+  primary: "bg-primary text-primary-foreground hover:brightness-105 active:brightness-95",
   soft: "bg-card text-foreground border border-border hover:bg-surface-sunken",
   ghost: "bg-transparent text-foreground hover:bg-surface-sunken",
   subtle: "bg-surface-sunken text-muted-foreground hover:text-foreground",

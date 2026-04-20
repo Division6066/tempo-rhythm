@@ -4,7 +4,11 @@ const Module = require('node:module');
 const originalResolveFilename = Module.prototype._resolveFilename;
 
 Module.prototype._resolveFilename = function (request, parent, isMain) {
-  if (request?.startsWith && !request.startsWith('.') && !request.startsWith('/')) {
+  if (
+    request?.startsWith &&
+    !request.startsWith('.') &&
+    !request.startsWith('/')
+  ) {
     try {
       return originalResolveFilename.call(this, request, parent, isMain);
     } catch {
@@ -25,8 +29,12 @@ const config = getDefaultConfig(projectRoot);
 
 // Merge with Expo's default watchFolders so we keep defaults AND add the
 // workspace root (needed to pick up the shared convex/ directory).
-const defaultWatchFolders = Array.isArray(config.watchFolders) ? config.watchFolders : [];
-config.watchFolders = Array.from(new Set([...defaultWatchFolders, workspaceRoot]));
+const defaultWatchFolders = Array.isArray(config.watchFolders)
+  ? config.watchFolders
+  : [];
+config.watchFolders = Array.from(
+  new Set([...defaultWatchFolders, workspaceRoot])
+);
 
 // Resolve modules from workspace root (shared convex/) as well
 config.resolver.nodeModulesPaths = [

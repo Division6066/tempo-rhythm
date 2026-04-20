@@ -28,8 +28,21 @@ export type TempoScreen = {
 export const TEMPO_SCREENS: readonly TempoScreen[] = [
   // ---- Flow ----------------------------------------------------------------
   { slug: "today", title: "Today", route: "/today", category: "Flow", icon: "Home" },
-  { slug: "daily-note", title: "Daily note", route: "/daily-note", category: "Flow", bare: true, icon: "Notebook" },
-  { slug: "brain-dump", title: "Brain dump", route: "/brain-dump", category: "Flow", icon: "Sparkles" },
+  {
+    slug: "daily-note",
+    title: "Daily note",
+    route: "/daily-note",
+    category: "Flow",
+    bare: true,
+    icon: "Notebook",
+  },
+  {
+    slug: "brain-dump",
+    title: "Brain dump",
+    route: "/brain-dump",
+    category: "Flow",
+    icon: "Sparkles",
+  },
   { slug: "coach", title: "Coach", route: "/coach", category: "Flow", icon: "Heart" },
   { slug: "plan", title: "Planning", route: "/plan", category: "Flow", icon: "Layout" },
 
@@ -37,7 +50,13 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
   { slug: "tasks", title: "Tasks", route: "/tasks", category: "Library", icon: "CheckSquare" },
   { slug: "notes", title: "Notes", route: "/notes", category: "Library", icon: "BookOpen" },
   { slug: "journal", title: "Journal", route: "/journal", category: "Library", icon: "Book" },
-  { slug: "calendar", title: "Calendar", route: "/calendar", category: "Library", icon: "Calendar" },
+  {
+    slug: "calendar",
+    title: "Calendar",
+    route: "/calendar",
+    category: "Library",
+    icon: "Calendar",
+  },
   { slug: "habits", title: "Habits", route: "/habits", category: "Library", icon: "Flame" },
   { slug: "routines", title: "Routines", route: "/routines", category: "Library", icon: "Repeat" },
   { slug: "goals", title: "Goals", route: "/goals", category: "Library", icon: "Target" },
@@ -45,25 +64,97 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
 
   // ---- You -----------------------------------------------------------------
   { slug: "analytics", title: "Insights", route: "/insights", category: "You", icon: "Chart" },
-  { slug: "activity", title: "Recent activity", route: "/activity", category: "You", icon: "Clock" },
+  {
+    slug: "activity",
+    title: "Recent activity",
+    route: "/activity",
+    category: "You",
+    icon: "Clock",
+  },
   { slug: "templates", title: "Templates", route: "/templates", category: "You", icon: "Layers" },
   { slug: "search", title: "Search", route: "/search", category: "You", icon: "Search" },
-  { slug: "empty-states", title: "Empty states", route: "/empty-states", category: "You", icon: "Leaf" },
+  {
+    slug: "empty-states",
+    title: "Empty states",
+    route: "/empty-states",
+    category: "You",
+    icon: "Leaf",
+  },
 
   // ---- Settings ------------------------------------------------------------
-  { slug: "settings", title: "Profile", route: "/settings/profile", category: "Settings", icon: "User" },
-  { slug: "settings-prefs", title: "Preferences", route: "/settings/preferences", category: "Settings", icon: "Settings" },
-  { slug: "settings-integrations", title: "Integrations", route: "/settings/integrations", category: "Settings", icon: "Link" },
-  { slug: "billing", title: "Trial & billing", route: "/billing", category: "Settings", icon: "Star" },
-  { slug: "notifications", title: "Notifications", route: "/notifications", category: "Settings", icon: "Bell" },
-  { slug: "ask-founder", title: "Ask the founder", route: "/ask-founder", category: "Settings", icon: "Mail" },
+  {
+    slug: "settings",
+    title: "Profile",
+    route: "/settings/profile",
+    category: "Settings",
+    icon: "User",
+  },
+  {
+    slug: "settings-prefs",
+    title: "Preferences",
+    route: "/settings/preferences",
+    category: "Settings",
+    icon: "Settings",
+  },
+  {
+    slug: "settings-integrations",
+    title: "Integrations",
+    route: "/settings/integrations",
+    category: "Settings",
+    icon: "Link",
+  },
+  {
+    slug: "billing",
+    title: "Trial & billing",
+    route: "/billing",
+    category: "Settings",
+    icon: "Star",
+  },
+  {
+    slug: "notifications",
+    title: "Notifications",
+    route: "/notifications",
+    category: "Settings",
+    icon: "Bell",
+  },
+  {
+    slug: "ask-founder",
+    title: "Ask the founder",
+    route: "/ask-founder",
+    category: "Settings",
+    icon: "Mail",
+  },
 
   // ---- Bare routes (no shell) ---------------------------------------------
   { slug: "sign-in", title: "Sign in", route: "/sign-in", category: "Onboarding", bare: true },
-  { slug: "onboarding", title: "Onboarding", route: "/onboarding", category: "Onboarding", bare: true },
-  { slug: "template-builder", title: "Template builder", route: "/templates/builder", category: "You", bare: true },
-  { slug: "template-run", title: "Template run", route: "/templates/run", category: "You", bare: true },
-  { slug: "trial-end", title: "Trial ended", route: "/billing/trial-end", category: "Settings", bare: true },
+  {
+    slug: "onboarding",
+    title: "Onboarding",
+    route: "/onboarding",
+    category: "Onboarding",
+    bare: true,
+  },
+  {
+    slug: "template-builder",
+    title: "Template builder",
+    route: "/templates/builder",
+    category: "You",
+    bare: true,
+  },
+  {
+    slug: "template-run",
+    title: "Template run",
+    route: "/templates/run",
+    category: "You",
+    bare: true,
+  },
+  {
+    slug: "trial-end",
+    title: "Trial ended",
+    route: "/billing/trial-end",
+    category: "Settings",
+    bare: true,
+  },
 
   // ---- Marketing (bare: own layout) ---------------------------------------
   { slug: "landing", title: "Landing", route: "/", category: "Marketing", bare: true },
@@ -71,17 +162,10 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
   { slug: "changelog", title: "Changelog", route: "/changelog", category: "Marketing", bare: true },
 ];
 
-export const CATEGORIES: readonly TempoCategory[] = [
-  "Flow",
-  "Library",
-  "You",
-  "Settings",
-];
+export const CATEGORIES: readonly TempoCategory[] = ["Flow", "Library", "You", "Settings"];
 
 export function screensByCategory(category: TempoCategory): TempoScreen[] {
-  return TEMPO_SCREENS.filter(
-    (s) => s.category === category && !s.bare,
-  );
+  return TEMPO_SCREENS.filter((s) => s.category === category && !s.bare);
 }
 
 export function findScreen(slug: string): TempoScreen | undefined {

@@ -1,14 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { BrandMark, Wordmark } from "@tempo/ui/brand";
 import { TempoIcon } from "@tempo/ui/icons";
-import {
-  CATEGORIES,
-  screensByCategory,
-  type TempoCategory,
-} from "@/lib/tempo-nav";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { CATEGORIES, screensByCategory, type TempoCategory } from "@/lib/tempo-nav";
 
 /**
  * Sidebar — Tempo Flow primary navigation.
@@ -30,9 +26,7 @@ export function Sidebar() {
             <div className="font-eyebrow px-2 pb-1.5">{cat}</div>
             {screensByCategory(cat).map((screen) => {
               const Icon = screen.icon ? TempoIcon[screen.icon] : null;
-              const active =
-                pathname === screen.route ||
-                pathname?.startsWith(`${screen.route}/`);
+              const active = pathname === screen.route || pathname?.startsWith(`${screen.route}/`);
               return (
                 <Link
                   key={screen.slug}

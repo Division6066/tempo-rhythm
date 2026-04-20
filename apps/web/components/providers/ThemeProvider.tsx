@@ -9,11 +9,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  DYSLEXIA_STORAGE_KEY,
-  THEME_STORAGE_KEY,
-  type ThemePreference,
-} from "@/lib/theme-script";
+import { DYSLEXIA_STORAGE_KEY, THEME_STORAGE_KEY, type ThemePreference } from "@/lib/theme-script";
 
 /**
  * Tempo Flow theme + dyslexia controller.
@@ -41,9 +37,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function detectSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -53,9 +47,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const storedTheme = localStorage.getItem(
-        THEME_STORAGE_KEY,
-      ) as ThemePreference | null;
+      const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemePreference | null;
       if (storedTheme === "light" || storedTheme === "dark") {
         setThemeState(storedTheme);
       }
@@ -102,8 +94,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const resolvedTheme: "light" | "dark" =
-    theme === "system" ? systemTheme : theme;
+  const resolvedTheme: "light" | "dark" = theme === "system" ? systemTheme : theme;
 
   const value = useMemo<ThemeContextValue>(
     () => ({
@@ -113,12 +104,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       dyslexia,
       setDyslexia,
     }),
-    [theme, resolvedTheme, setTheme, dyslexia, setDyslexia],
+    [theme, resolvedTheme, setTheme, dyslexia, setDyslexia]
   );
 
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {

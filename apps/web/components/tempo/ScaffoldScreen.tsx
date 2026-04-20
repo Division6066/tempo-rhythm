@@ -1,5 +1,4 @@
-import { SoftCard } from "@tempo/ui/primitives";
-import { Pill } from "@tempo/ui/primitives";
+import { Pill, SoftCard } from "@tempo/ui/primitives";
 
 /**
  * ScaffoldScreen — placeholder body every T-F004 route renders
@@ -24,9 +23,7 @@ export function ScaffoldScreen({ title, category, source, summary }: Props) {
       </div>
       <h1 className="text-h1 font-serif">{title}</h1>
       {summary ? (
-        <p className="text-body text-muted-foreground leading-relaxed">
-          {summary}
-        </p>
+        <p className="text-body text-muted-foreground leading-relaxed">{summary}</p>
       ) : null}
       <SoftCard tone="sunken" padding="md">
         <div className="flex flex-col gap-2">
@@ -36,7 +33,8 @@ export function ScaffoldScreen({ title, category, source, summary }: Props) {
             <code className="rounded bg-card px-1.5 py-0.5 border border-border-soft">
               {source}
             </code>
-            . See <code className="rounded bg-card px-1.5 py-0.5 border border-border-soft">
+            . See{" "}
+            <code className="rounded bg-card px-1.5 py-0.5 border border-border-soft">
               docs/design/pseudo-code-conventions.md
             </code>{" "}
             for annotation rules.

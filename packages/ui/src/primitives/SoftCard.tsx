@@ -31,12 +31,7 @@ export function SoftCard({
   className = "",
   ...rest
 }: SoftCardProps) {
-  const classes = [
-    "rounded-xl border shadow-whisper",
-    toneMap[tone],
-    padMap[padding],
-    className,
-  ]
+  const classes = ["rounded-xl border shadow-whisper", toneMap[tone], padMap[padding], className]
     .filter(Boolean)
     .join(" ");
   return <Tag className={classes} {...rest} />;

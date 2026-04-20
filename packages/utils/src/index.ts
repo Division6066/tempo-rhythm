@@ -25,7 +25,9 @@ export function clamp(value: number, min: number, max: number): number {
  * Generate a random string ID (not cryptographically secure — use Convex IDs for DB)
  */
 export function randomId(length = 8): string {
-  return Math.random().toString(36).substring(2, 2 + length);
+  return Math.random()
+    .toString(36)
+    .substring(2, 2 + length);
 }
 
 /**

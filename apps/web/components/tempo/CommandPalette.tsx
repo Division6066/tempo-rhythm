@@ -1,9 +1,9 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
+import { Search } from "@tempo/ui/icons";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search } from "@tempo/ui/icons";
 import { TEMPO_SCREENS } from "@/lib/tempo-nav";
 
 type Props = {
@@ -38,7 +38,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
       (s) =>
         s.title.toLowerCase().includes(q) ||
         s.slug.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q),
+        s.category.toLowerCase().includes(q)
     );
   }, [query]);
 
@@ -117,9 +117,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                   onMouseEnter={() => setFocused(i)}
                   className={[
                     "w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-small",
-                    i === focused
-                      ? "bg-surface-sunken"
-                      : "hover:bg-surface-sunken",
+                    i === focused ? "bg-surface-sunken" : "hover:bg-surface-sunken",
                   ].join(" ")}
                 >
                   <span className="text-caption font-tabular px-2 py-0.5 rounded-full bg-surface-sunken text-muted-foreground">

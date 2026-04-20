@@ -1,6 +1,6 @@
-import { Tabs } from "expo-router";
-import { BookOpen, CheckSquare, Heart, Home } from "lucide-react-native";
-import { tempoColors } from "@tempo/ui/theme";
+import { tempoColors } from '@tempo/ui/theme';
+import { Tabs } from 'expo-router';
+import { BookOpen, CheckSquare, Heart, Home } from 'lucide-react-native';
 
 /**
  * Tempo Flow bottom tab bar.
@@ -23,14 +23,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="today"
         options={{
-          title: "Today",
+          title: 'Today',
           tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="tasks"
         options={{
-          title: "Tasks",
+          title: 'Tasks',
           tabBarIcon: ({ color, size }) => (
             <CheckSquare size={size} color={color} />
           ),
@@ -39,7 +39,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="notes"
         options={{
-          title: "Notes",
+          title: 'Notes',
           tabBarIcon: ({ color, size }) => (
             <BookOpen size={size} color={color} />
           ),
@@ -48,7 +48,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="coach"
         options={{
-          title: "Coach",
+          title: 'Coach',
           tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
         }}
       />
