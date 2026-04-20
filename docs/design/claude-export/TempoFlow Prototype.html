@@ -19,6 +19,82 @@
   </noscript>
 </head>
 <body>
+  <!--
+    tempo-screen-manifest — PRD + component-map refs (T-0022 closeout)
+    Canonical pseudocode + controls: docs/design/component-map/*.md
+    Screen list: docs/design/screen-inventory.md | PRD: docs/brain/PRDs/PRD_Phase_1_MVP.md
+
+    WEB — Flow → web-flow.md
+    @screen daily-note @map web-flow.md @prd §4 §6 §11 §13
+    @screen today @map web-flow.md @prd §4 §6 §7 §8 §12
+    @screen brain-dump @map web-flow.md @prd §4 §6 §7 §16
+    @screen coach @map web-flow.md @prd §6 §8 §9 §11
+    @screen plan @map web-flow.md @prd §4 §6 §8
+
+    WEB — Library → web-library.md
+    @screen tasks @map web-library.md @prd §4 §7 §12 §13
+    @screen notes @map web-library.md @prd §13
+    @screen note-detail @map web-library.md @prd §13
+    @screen journal @map web-library.md @prd §4
+    @screen calendar @map web-library.md @prd §4
+    @screen habits @map web-library.md @prd §4
+    @screen habit-detail @map web-library.md @prd §4
+    @screen routines @map web-library.md @prd §13
+    @screen routine-detail @map web-library.md @prd §13
+    @screen goals @map web-library.md @prd §4
+    @screen goal-detail @map web-library.md @prd §4
+    @screen goals-progress @map web-library.md @prd §4
+    @screen projects @map web-library.md @prd §13
+    @screen project-detail @map web-library.md @prd §13
+    @screen project-kanban @map web-library.md @prd §13
+
+    WEB — You → web-you.md
+    @screen analytics @map web-you.md @prd §17
+    @screen activity @map web-you.md @prd §4 §17
+    @screen templates @map web-you.md @prd §10
+    @screen template-builder @map web-you.md @prd §6 §10
+    @screen template-run @map web-you.md @prd §10
+    @screen template-editor @map web-you.md @prd §10
+    @screen template-sketch @map web-you.md @prd §10
+    @screen search @map web-you.md @prd §11
+    @screen command @map web-you.md @prd §4 §6
+    @screen empty-states @map web-you.md @prd §14
+
+    WEB — Settings → web-settings.md
+    @screen settings @map web-settings.md @prd §15 §16
+    @screen settings-prefs @map web-settings.md @prd §15 §16
+    @screen settings-integrations @map web-settings.md @prd §15 §16
+    @screen billing @map web-settings.md @prd §15
+    @screen trial-end @map web-settings.md @prd §15
+    @screen ask-founder @map web-settings.md @prd §4 §16
+    @screen notifications @map web-settings.md @prd §4
+
+    WEB — Marketing → web-marketing.md
+    @screen landing @map web-marketing.md @prd §18
+    @screen about @map web-marketing.md @prd §18
+    @screen changelog @map web-marketing.md @prd §18
+
+    WEB — Auth → web-onboarding-auth.md
+    @screen sign-in @map web-onboarding-auth.md @prd §16
+    @screen onboarding @map web-onboarding-auth.md @prd §4 §16
+
+    MOBILE — mobile.md (12)
+    @screen today @map mobile.md @prd §4
+    @screen capture @map mobile.md @prd §4 §6
+    @screen coach @map mobile.md @prd §6 §8 §9
+    @screen tasks @map mobile.md @prd §4 §12
+    @screen notes @map mobile.md @prd §13
+    @screen journal @map mobile.md @prd §4
+    @screen habits @map mobile.md @prd §4
+    @screen calendar @map mobile.md @prd §4
+    @screen routines @map mobile.md @prd §13
+    @screen templates @map mobile.md @prd §10
+    @screen settings @map mobile.md @prd §15 §16
+    @screen onboarding @map mobile.md @prd §4 §16
+
+    SHARED — shared-primitives.md (shell, TaskRow, CoachDock, voice-chat, …)
+    @component shell @map shared-primitives.md @prd §14
+  -->
   <div id="__bundler_thumbnail">
   <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
     <defs>

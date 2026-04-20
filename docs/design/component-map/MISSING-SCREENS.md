@@ -1,6 +1,6 @@
 # Screen coverage — PRD inventory vs component-map
 
-**Purpose (program task 7):** Checklist of every web + mobile slug from [`../screen-inventory.md`](../screen-inventory.md) with **where** it is documented and **depth** (tier A vs B). Use [`MISSING-SCREENS.md`](MISSING-SCREENS.md) to open follow-up tickets for **deeper** tier-A passes or **HTML** inline comments.
+**Purpose (program task 7):** Checklist of every web + mobile slug from [`../screen-inventory.md`](../screen-inventory.md) with **where** it is documented and **depth** (tier A vs B). Use this table to spot gaps; open follow-up tickets for **deeper** tier-A passes per vertical.
 
 **Legend**
 
@@ -8,7 +8,7 @@
 |--------|---------|
 | **tier-A** | Full `@action` / `@mutation` / `@query` per control in `web-flow.md` (Flow) or `shared-primitives.md` (shell) |
 | **tier-B** | Screen header + stub affordances in category `*.md` |
-| **HTML optional** | Not duplicated inside `TempoFlow Prototype.html` comments — markdown is source of truth unless T-0022 HTML pass is done |
+| **HTML manifest** | `<!-- tempo-screen-manifest -->` at top of [`TempoFlow Prototype.html`](../claude-export/TempoFlow%20Prototype.html) lists all slugs + `@prd`; markdown remains canonical for control-level detail |
 
 ---
 
@@ -96,9 +96,9 @@
 
 ## HTML labelling
 
-- **Canonical:** Markdown under `component-map/` (grep-friendly).  
-- **Bundled preview:** [`../claude-export/TempoFlow Prototype.html`](../claude-export/TempoFlow%20Prototype.html).  
-- **Optional:** inject `<!-- @screen ... @prd ... -->` per route — track under **T-0022** if prioritized.
+- **Canonical (controls):** Markdown under `component-map/` (grep-friendly per button/field).  
+- **Bundled preview + manifest:** [`../claude-export/TempoFlow Prototype.html`](../claude-export/TempoFlow%20Prototype.html) — after `<body>`, a **`tempo-screen-manifest`** block lists every `@screen` slug with `@map` (target `.md`) and `@prd` (PRD §).  
+- **Status:** manifest shipped — **T-0022** complete for HTML pass.
 
 ---
 
@@ -108,5 +108,5 @@
 |------------|--------|
 | Program (7 tasks, incl. this gap list) | **T-0021-cluster** |
 | Artefacts + Flow tier-A (done) | **T-0021** |
-| Tier-B sweep + PRD index (this commit) | **T-0022** → set **in-review** / **done** when merged |
+| Tier-B sweep + PRD index + HTML manifest | **T-0022** — **done** (merged on branch; open PR → `master`) |
 | Deeper tier-A per screen | Split into future `T-03xx` per vertical as needed |

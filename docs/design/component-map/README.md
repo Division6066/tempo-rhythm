@@ -13,4 +13,4 @@ Every screen in the design export is documented here with:
 **Routes + sources:** [`../screen-inventory.md`](../screen-inventory.md)  
 **PRD:** [`../../brain/PRDs/PRD_Phase_1_MVP.md`](../../brain/PRDs/PRD_Phase_1_MVP.md)
 
-**HTML:** PRD/pseudocode labels are maintained in these markdown files for grep. The bundled preview is [`../claude-export/TempoFlow Prototype.html`](../claude-export/TempoFlow%20Prototype.html); optional inline `<!-- -->` comments are tracked under **T-0022**.
+**HTML:** Markdown remains the detailed control map. The bundled preview [`../claude-export/TempoFlow Prototype.html`](../claude-export/TempoFlow%20Prototype.html) includes an inline **`tempo-screen-manifest`** HTML comment (all web + mobile slugs + `@prd` refs) immediately after `<body>` — ship requirement for **T-0022** closeout.
