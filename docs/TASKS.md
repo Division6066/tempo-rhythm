@@ -70,6 +70,7 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 
 ### 2026-04-20 — Design export + T-0021 closed
 - **`T-0021` done** (`docs/brain/TASKS.md`, ticket file `docs/brain/tickets/T-0021.md`): tracked `docs/design/claude-export/TempoFlow Prototype.html` + `Tempo Flow Design System.zip`; added `docs/design/component-map/` (`README.md`, `web-flow.md` tier-A Flow pseudocode). Landed commit [`a526444`](https://github.com/Division6066/tempo-rhythm/commit/a526444) on branch `cursor/ticket-sweep-brain-bump-0f1a` (merge to `master` pending).
+- **Program + gap list:** `docs/brain/tickets/T-0021-cluster.md` (7 tasks), `T-0022` (finish all screen maps), `docs/design/component-map/_INDEX.md`, `docs/design/component-map/MISSING-SCREENS.md` (every unmapped web/mobile slug). Submodule commits track `docs/brain`; see latest PR/branch for SHA.
 
 ### 2026-04-18 — "Phase 3 rails" session (evening)
 - **Atomic ticket queue generated:** 59 ticket files across 13 cluster parents covering Phase 0 + M0 + M1 in `docs/brain/tickets/`. Each ticket sized ~30 min, with `product` / `assignee` / `execution` / `cluster` / `parallelizable` / `blocked-by` / `blocks` frontmatter and full acceptance criteria + implementation guidance. See `docs/brain/tickets/_INDEX.md` (by time / parallelizability / dependency / cluster / assignee / fallback log) and `docs/brain/tickets/CLUSTERS.md` (parent → child split rationale).
