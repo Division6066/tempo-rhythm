@@ -1,23 +1,24 @@
+import { SettingsIntegrationsScreen } from "@/components/tempo/screens/SettingsIntegrationsScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: settings-integrations
  * @category: Settings
+ * @owner: cursor-cloud-3
+ * @prd: PRD §4 Screen 34
  * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Google Calendar & other integrations.
- * @queries: integrations.list
- * @mutations: integrations.connect, integrations.disconnect
+ * @summary: Integrations list for calendars + RAM-only capture imports.
+ * @queries:
+ *   - integrations.listConnected
+ * @actions:
+ *   - integrations.connect
+ * @mutations:
+ *   - integrations.revoke
+ * @providers:
+ *   - google-calendar
+ *   - apple-calendar
+ *   - notion
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Integrations"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Google Calendar & other integrations."
-    />
-  );
+export default function SettingsIntegrationsPage() {
+  return <SettingsIntegrationsScreen />;
 }

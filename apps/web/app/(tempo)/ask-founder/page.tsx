@@ -1,23 +1,19 @@
+import { AskFounderScreen } from "@/components/tempo/screens/AskFounderScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: ask-founder
  * @category: Settings
+ * @owner: cursor-cloud-3
+ * @prd: PRD §14
  * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Direct channel to send feedback.
- * @queries: (none)
- * @mutations: feedback.send
+ * @summary: Direct message form to the founder inbox.
+ * @mutations:
+ *   - founderInbox.createDraft
+ *   - founderInbox.updateDraft
+ * @actions:
+ *   - founderInbox.sendMessage
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Ask the founder"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Direct channel to send feedback."
-    />
-  );
+export default function AskFounderPage() {
+  return <AskFounderScreen />;
 }

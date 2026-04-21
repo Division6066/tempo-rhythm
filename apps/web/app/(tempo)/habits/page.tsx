@@ -1,23 +1,21 @@
+import { HabitsScreen } from "@/components/tempo/screens/HabitsScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: habits
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Habit rings with weekly progress.
- * @queries: habits.list
- * @mutations: habits.logComplete
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 14, §12
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenHabits)
+ * @summary: Habit library with streak rings + quick check-in.
+ * @queries:
+ *   - habits.listAll
+ *   - habits.getTodayChecks
+ * @mutations:
+ *   - habits.logCompletion
+ *   - habits.undoCompletion
+ *   - habits.createHabit
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Habits"
-      category="Library"
-      source="screens-3.jsx"
-      summary="Habit rings with weekly progress."
-    />
-  );
+export default function HabitsPage() {
+  return <HabitsScreen />;
 }

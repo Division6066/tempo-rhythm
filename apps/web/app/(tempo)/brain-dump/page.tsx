@@ -1,23 +1,27 @@
+import { BrainDumpScreen } from "@/components/tempo/screens/BrainDumpScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: brain-dump
  * @category: Flow
- * @source: docs/design/claude-export/design-system/screens-1.jsx
- * @summary: Rapid capture with auto-sort suggestions.
- * @queries: inbox.list
- * @mutations: inbox.capture, inbox.sort
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 11, §6
+ * @source: docs/design/claude-export/design-system/screens-1.jsx (ScreenBrainDump)
+ * @summary: Low-friction thought capture + AI extraction. Accept/reject preview
+ * keeps raw content in memory until the user approves.
+ * @queries:
+ *   - brainDumps.listRecent
+ * @mutations:
+ *   - brainDumps.acceptProposal
+ *   - brainDumps.discardProposal
+ *   - brainDumps.acceptAllProposals
+ * @actions:
+ *   - brainDumps.processCapture
+ *   - voice.transcribeWalkieTalkie
+ * @providers:
+ *   - openrouter (extraction + STT)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @notes: Raw dump text is RAM-only per HARD_RULES §3.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Brain dump"
-      category="Flow"
-      source="screens-1.jsx"
-      summary="Rapid capture with auto-sort suggestions."
-    />
-  );
+export default function BrainDumpPage() {
+  return <BrainDumpScreen />;
 }

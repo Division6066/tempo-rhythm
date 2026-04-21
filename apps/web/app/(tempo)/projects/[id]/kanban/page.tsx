@@ -1,30 +1,23 @@
+import { ProjectKanbanScreen } from "@/components/tempo/screens/ProjectKanbanScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: project-kanban
  * @category: Library
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 18, §12
  * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Project kanban board.
- * @queries: projects.get, projects.tasks
- * @mutations: tasks.moveColumn
+ * @summary: Four-lane kanban board for a single project. Advance cards via
+ * right-arrow button in demo mode; drag will be wired with dnd-kit later.
+ * @queries:
+ *   - projects.byId
+ *   - kanban.listCardsForProject
+ * @mutations:
+ *   - kanban.moveCard
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-type Params = { id: string };
-
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function ProjectKanbanPage({ params }: PageProps) {
   const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Project kanban"
-      category="Library"
-      source="screens-4.jsx"
-      summary={`Project kanban board. (id: ${id})`}
-    />
-  );
+  return <ProjectKanbanScreen projectId={id} />;
 }

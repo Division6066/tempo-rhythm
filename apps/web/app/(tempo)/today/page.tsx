@@ -1,24 +1,27 @@
+import { TodayScreen } from "@/components/tempo/screens/TodayScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: today
  * @category: Flow
- * @source: docs/design/claude-export/design-system/screens-1.jsx
- * @summary: Single-column daily canvas. Brain-dump composer + staged plan + coach suggestion.
- * @queries: tasks.listToday, calendar.listToday, coach.latestSuggestion
- * @mutations: tasks.capture, tasks.complete, tasks.stage
- * @routes-to: /brain-dump, /coach
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 1, §8, §14
+ * @source: docs/design/claude-export/design-system/screens-1.jsx (ScreenToday)
+ * @summary: Daily command center with coach guidance, top priorities, habits,
+ * up-next list, and an energy check-in. Demo-wired with @tempo/mock-data.
+ * @queries:
+ *   - tasks.listToday
+ *   - calendar.listToday
+ *   - coach.latestSuggestion
+ *   - habits.listDaily
+ *   - plans.getTodayPlan
+ * @mutations:
+ *   - tasks.complete
+ *   - tasks.rescheduleToToday
+ *   - plans.setEnergyCheckIn
+ *   - coach.dismissSuggestion
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @notes: Copy is Claude placeholder; a later copy pass will refine.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Today"
-      category="Flow"
-      source="screens-1.jsx"
-      summary="Single-column daily canvas. Brain-dump composer + staged plan + coach suggestion."
-    />
-  );
+export default function TodayPage() {
+  return <TodayScreen />;
 }

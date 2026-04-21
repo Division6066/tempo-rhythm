@@ -1,23 +1,23 @@
+import { CalendarScreen } from "@/components/tempo/screens/CalendarScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: calendar
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Week + month calendar with task overlay.
- * @queries: calendar.list
- * @mutations: calendar.schedule
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 8, §4 Screen 9, §4 Screen 10
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenCalendar)
+ * @summary: Day / week / month calendar with scheduled + unscheduled intake lanes.
+ * @queries:
+ *   - calendar.listRange
+ *   - calendar.listForDate
+ * @mutations:
+ *   - calendar.createEvent
+ *   - calendar.updateEvent
+ *   - calendar.scheduleFromIntake
+ * @providers:
+ *   - google-calendar / apple-calendar (Integrations page)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Calendar"
-      category="Library"
-      source="screens-3.jsx"
-      summary="Week + month calendar with task overlay."
-    />
-  );
+export default function CalendarPage() {
+  return <CalendarScreen />;
 }

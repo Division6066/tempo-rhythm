@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Changelog · web preview</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: Inter, Arial, sans-serif; margin: 0; padding: 24px; background: #f5f5f4; color: #1f2937; }
+      main { margin: 0 auto; max-width: 960px; display: grid; gap: 16px; }
+      header, .control { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+      h1, h2, p, ul { margin: 0; }
+      h1 { font-family: Newsreader, Georgia, serif; margin-bottom: 8px; }
+      h2 { font-size: 16px; margin-bottom: 6px; }
+      p { margin-bottom: 8px; line-height: 1.45; }
+      ul { padding-left: 18px; display: grid; gap: 4px; }
+      code { font-family: "IBM Plex Mono", Consolas, monospace; font-size: 12px; }
+      .meta { font-size: 13px; color: #4b5563; display: grid; gap: 4px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Changelog</h1>
+        <div class="meta">
+          <div><strong>Screen ID:</strong> changelog</div>
+          <div><strong>Platform:</strong> web</div>
+          <div><strong>Category:</strong> Marketing</div>
+          <div><strong>Route:</strong> /changelog</div>
+          <div><strong>Summary:</strong> Product update feed for public users.</div>
+          <div><strong>PRD refs:</strong> PRD §14</div>
+          <div><strong>Source refs:</strong> docs/design/claude-export/design-system/changelog.html</div>
+        </div>
+      </header>
+      
+        <section class="control">
+          <h2>Subscribe</h2>
+          <p>Save changelog updates preference.</p>
+          <ul><li><code>@behavior</code>: Capture user email preference for changelog updates.</li><li><code>@convex-mutation-needed</code>: profiles.subscribeToChangelog</li><li><code>@prd</code>: PRD §14</li><li><code>@source</code>: docs/design/claude-export/design-system/changelog.html</li></ul>
+        </section>
+      
+    </main>
+  </body>
+</html>

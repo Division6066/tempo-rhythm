@@ -1,23 +1,33 @@
+import { CoachScreen } from "@/components/tempo/screens/CoachScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: coach
  * @category: Flow
+ * @owner: cursor-cloud-2
+ * @prd: PRD §4 Screen 12, §8, §9
  * @source: docs/design/claude-export/design-system/screens-1.jsx + coach-dock.jsx
- * @summary: Conversational AI coach surface. Accept / tweak / skip suggestions.
- * @queries: coach.thread
- * @mutations: coach.accept, coach.tweak, coach.skip
+ * @summary: Persistent coach conversation with text + walkie-talkie input,
+ * warmth dial, scope list, and accept/tweak/skip proposal cards.
+ * @queries:
+ *   - coach.messagesByConversation
+ *   - coach.latestSuggestion
+ *   - profiles.getVoiceUsageToday
+ * @mutations:
+ *   - coach.acceptSuggestion
+ *   - coach.dismissSuggestion
+ *   - profiles.setCoachDial
+ * @actions:
+ *   - coach.sendMessage
+ *   - coach.requestRevision
+ *   - voice.transcribePushToTalk
+ * @providers:
+ *   - openrouter (LLM + STT)
+ * @schema-deltas:
+ *   - voiceSessions.mode
+ *   - profiles.coachDial
+ * @tier-caps: basic 30 min/day, pro 90 min/day, max 180 min/day
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Coach"
-      category="Flow"
-      source="screens-1.jsx + coach-dock.jsx"
-      summary="Conversational AI coach surface. Accept / tweak / skip suggestions."
-    />
-  );
+export default function CoachPage() {
+  return <CoachScreen />;
 }

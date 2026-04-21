@@ -1,30 +1,26 @@
+import { TemplateEditorScreen } from "@/components/tempo/screens/TemplateEditorScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: template-editor
  * @category: You
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 23, §10
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Legacy template editor.
- * @queries: (none)
- * @mutations: (none)
+ * @summary: Lightweight editor for title/summary/section list of existing
+ * template. Full structural edits happen in /templates/builder.
+ * @queries:
+ *   - templates.byId
+ *   - templates.listSections
+ * @mutations:
+ *   - templates.renameTitle
+ *   - templates.updateSummary
+ *   - templates.addSection
+ *   - templates.saveEditorChanges
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-type Params = { id: string };
-
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function TemplateEditorPage({ params }: PageProps) {
   const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Template editor (legacy)"
-      category="You"
-      source="screens-5.jsx"
-      summary={`Legacy template editor. (id: ${id})`}
-    />
-  );
+  return <TemplateEditorScreen templateId={id} />;
 }

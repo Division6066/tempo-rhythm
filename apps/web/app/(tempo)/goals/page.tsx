@@ -1,23 +1,22 @@
+import { GoalsScreen } from "@/components/tempo/screens/GoalsScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: goals
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Goals list with progress.
- * @queries: goals.list
- * @mutations: goals.create
+ * @owner: cursor-cloud-2
+ * @prd: PRD §4 Screen 15, §7
+ * @source: docs/design/claude-export/design-system/screens-4.jsx (ScreenGoals)
+ * @summary: Goals index with progress rings and coach-assisted decomposition.
+ * @queries:
+ *   - goals.listAll
+ * @mutations:
+ *   - goals.create
+ * @actions:
+ *   - goals.coachDecompose
+ * @providers:
+ *   - openrouter
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Goals"
-      category="Library"
-      source="screens-4.jsx"
-      summary="Goals list with progress."
-    />
-  );
+export default function GoalsPage() {
+  return <GoalsScreen />;
 }

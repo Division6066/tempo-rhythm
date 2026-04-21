@@ -1,23 +1,27 @@
+import { PlanScreen } from "@/components/tempo/screens/PlanScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: plan
  * @category: Flow
- * @source: docs/design/claude-export/design-system/screens-1.jsx
- * @summary: Week / month planning grid.
- * @queries: plan.week
- * @mutations: plan.stage
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 13, §6
+ * @source: docs/design/claude-export/design-system/screens-1.jsx (ScreenPlan)
+ * @summary: Staged planning flow. Drag-style intake → today's plan with
+ * calendar context. Coach can draft a proposal with accept/reject cards.
+ * @queries:
+ *   - plans.getTodayPlan
+ *   - tasks.listUnstaged
+ *   - calendar.listToday
+ * @mutations:
+ *   - plans.stageTask
+ *   - plans.unstageTask
+ *   - plans.commitPlan
+ * @actions:
+ *   - coach.proposePlan
+ * @providers:
+ *   - openrouter (coach-drafted plans)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Planning"
-      category="Flow"
-      source="screens-1.jsx"
-      summary="Week / month planning grid."
-    />
-  );
+export default function PlanPage() {
+  return <PlanScreen />;
 }

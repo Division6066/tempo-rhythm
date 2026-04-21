@@ -1,30 +1,25 @@
+import { RoutineDetailScreen } from "@/components/tempo/screens/RoutineDetailScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: routine-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Guided run of a routine.
- * @queries: routines.get
- * @mutations: routines.logRun
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 42, §13
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenRoutineRun)
+ * @summary: Guided routine execution with step progress, skip, pause.
+ * @queries:
+ *   - routines.byId
+ *   - routines.listSteps
+ * @mutations:
+ *   - routines.logStepComplete
+ *   - routines.skipStep
+ *   - routines.pauseRun
+ *   - routines.endRun
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-type Params = { id: string };
-
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function RoutineDetailPage({ params }: PageProps) {
   const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Routine guided"
-      category="Library"
-      source="screens-3.jsx"
-      summary={`Guided run of a routine. (id: ${id})`}
-    />
-  );
+  return <RoutineDetailScreen routineId={id} />;
 }

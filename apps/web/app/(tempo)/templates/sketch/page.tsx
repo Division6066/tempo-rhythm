@@ -1,23 +1,19 @@
+import { TemplateSketchScreen } from "@/components/tempo/screens/TemplateSketchScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: template-sketch
  * @category: You
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 23, §10
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Template sketch playground.
- * @queries: (none)
- * @mutations: (none)
+ * @summary: Upload a hand sketch and preview AI-parsed template structure.
+ * @actions:
+ *   - templates.parseSketch
+ *   - templates.createFromSketch
+ * @providers:
+ *   - openrouter (vision)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Template sketch"
-      category="You"
-      source="screens-5.jsx"
-      summary="Template sketch playground."
-    />
-  );
+export default function TemplateSketchPage() {
+  return <TemplateSketchScreen />;
 }

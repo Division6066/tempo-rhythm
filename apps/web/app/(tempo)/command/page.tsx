@@ -1,23 +1,16 @@
+import { CommandScreen } from "@/components/tempo/screens/CommandScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: command
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Command bar landing page.
- * @queries: (none)
- * @mutations: (none)
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 27
+ * @source: docs/design/claude-export/design-system/screens-5.jsx (ScreenCommand)
+ * @summary: Full-screen index of every route, grouped by category.
+ * @queries:
+ *   - screens.listAll (static config)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Command bar"
-      category="You"
-      source="screens-5.jsx"
-      summary="Command bar landing page."
-    />
-  );
+export default function CommandPage() {
+  return <CommandScreen />;
 }

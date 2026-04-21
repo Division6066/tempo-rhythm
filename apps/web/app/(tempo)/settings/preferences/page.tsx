@@ -1,23 +1,22 @@
+import { SettingsPreferencesScreen } from "@/components/tempo/screens/SettingsPreferencesScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: settings-prefs
  * @category: Settings
+ * @owner: cursor-cloud-3
+ * @prd: PRD §4 Screen 33, §10
  * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Theme, dyslexia font, language, motion preferences.
- * @queries: users.preferences
- * @mutations: users.updatePreferences
+ * @summary: Notifications, coach nudges, quiet hours, theme.
+ * @queries:
+ *   - profiles.getMyPreferences
+ * @mutations:
+ *   - profiles.setNotificationPreference
+ *   - profiles.setCoachNudges
+ *   - profiles.setQuietHours
+ *   - profiles.setThemePreference
+ *   - profiles.savePreferences
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Preferences"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Theme, dyslexia font, language, motion preferences."
-    />
-  );
+export default function SettingsPreferencesPage() {
+  return <SettingsPreferencesScreen />;
 }

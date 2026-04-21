@@ -1,23 +1,31 @@
+import { SettingsProfileScreen } from "@/components/tempo/screens/SettingsProfileScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: settings
  * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: User profile settings.
- * @queries: users.me
- * @mutations: users.updateProfile
+ * @owner: cursor-cloud-3
+ * @prd: PRD §4 Screen 32, §10
+ * @source: docs/design/claude-export/design-system/screens-6.jsx (ScreenSettingsProfile)
+ * @summary: Profile settings with name, email, timezone, OpenDyslexic toggle,
+ * data export, sign-out, and account deletion.
+ * @queries:
+ *   - profiles.getMyProfile
+ * @mutations:
+ *   - profiles.updateDisplayName
+ *   - profiles.setTimezone
+ *   - profiles.setTypographyPreference
+ *   - profiles.saveProfile
+ * @actions:
+ *   - auth.changeEmail
+ *   - auth.signOut
+ *   - account.exportAllData
+ *   - account.requestDeletion
+ * @providers:
+ *   - convex-auth
+ * @schema-deltas:
+ *   - profiles.typographyPreference
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Profile"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="User profile settings."
-    />
-  );
+export default function SettingsProfilePage() {
+  return <SettingsProfileScreen />;
 }

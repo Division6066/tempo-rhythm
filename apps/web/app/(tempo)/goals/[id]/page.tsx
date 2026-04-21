@@ -1,30 +1,28 @@
+import { GoalDetailScreen } from "@/components/tempo/screens/GoalDetailScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: goal-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Goal detail view with milestones.
- * @queries: goals.get
- * @mutations: goals.update, goals.logMilestone
+ * @owner: cursor-cloud-2
+ * @prd: PRD §4 Screen 15, §7
+ * @source: docs/design/claude-export/design-system/screens-4.jsx (ScreenGoalDetail)
+ * @summary: Goal milestones with inline toggle + linked tasks + coach plan proposal.
+ * @queries:
+ *   - goals.byId
+ *   - goals.listMilestones
+ *   - goals.linkedTasks
+ * @mutations:
+ *   - goals.addMilestone
+ *   - goals.toggleMilestoneDone
+ * @actions:
+ *   - coach.proposeGoalPlan
+ * @providers:
+ *   - openrouter
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-type Params = { id: string };
-
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function GoalDetailPage({ params }: PageProps) {
   const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Goal detail"
-      category="Library"
-      source="screens-4.jsx"
-      summary={`Goal detail view with milestones. (id: ${id})`}
-    />
-  );
+  return <GoalDetailScreen goalId={id} />;
 }

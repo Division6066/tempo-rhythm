@@ -1,23 +1,19 @@
+import { RoutinesScreen } from "@/components/tempo/screens/RoutinesScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: routines
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Routine library.
- * @queries: routines.list
- * @mutations: routines.create
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 42, §13
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenRoutines)
+ * @summary: Routine library with schedule + step count + start-now.
+ * @queries:
+ *   - routines.listAll
+ * @mutations:
+ *   - routines.createBlank
+ *   - routines.startRun
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Routines"
-      category="Library"
-      source="screens-3.jsx"
-      summary="Routine library."
-    />
-  );
+export default function RoutinesPage() {
+  return <RoutinesScreen />;
 }

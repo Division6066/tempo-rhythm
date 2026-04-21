@@ -1,30 +1,25 @@
+import { HabitDetailScreen } from "@/components/tempo/screens/HabitDetailScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: habit-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Single-habit detail with streak history.
- * @queries: habits.get
- * @mutations: habits.logComplete, habits.update
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 14, §12
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenHabitDetail)
+ * @summary: Habit deep-dive with streak, 28-day heatmap, settings, notes.
+ * @queries:
+ *   - habits.byId
+ *   - habits.completionsLast28Days
+ * @mutations:
+ *   - habits.logCompletion
+ *   - habits.undoCompletion
+ *   - habits.snoozeToday
+ *   - habits.updateSettings
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-type Params = { id: string };
-
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function HabitDetailPage({ params }: PageProps) {
   const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Habit detail"
-      category="Library"
-      source="screens-3.jsx"
-      summary={`Single-habit detail with streak history. (id: ${id})`}
-    />
-  );
+  return <HabitDetailScreen habitId={id} />;
 }

@@ -1,23 +1,20 @@
+import { InsightsScreen } from "@/components/tempo/screens/InsightsScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: analytics
  * @category: You
+ * @owner: cursor-cloud-2
+ * @prd: PRD §4 Screen 43, §17
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Personal analytics & trends.
- * @queries: insights.summary
- * @mutations: (none)
+ * @summary: Analytics dashboard with weekly completion, focus time, habit
+ * adherence, energy histogram, and gentle-not-shaming flags.
+ * @queries:
+ *   - analytics.tasksCompletedByDay
+ *   - analytics.focusTimeByWeek
+ *   - analytics.habitAdherenceThisMonth
+ *   - analytics.energyHistogram
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Insights"
-      category="You"
-      source="screens-5.jsx"
-      summary="Personal analytics & trends."
-    />
-  );
+export default function InsightsPage() {
+  return <InsightsScreen />;
 }

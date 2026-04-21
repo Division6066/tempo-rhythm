@@ -1,23 +1,16 @@
+import { SearchScreen } from "@/components/tempo/screens/SearchScreen";
+
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: search
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Global search with previews.
- * @queries: search.everything
- * @mutations: (none)
+ * @owner: cursor-cloud-2
+ * @prd: PRD §4 Screen 26
+ * @source: docs/design/claude-export/design-system/screens-5.jsx (ScreenSearch)
+ * @summary: Single-box full-text search across tasks, notes, habits, journal, projects.
+ * @queries:
+ *   - search.unified
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
-
-export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Search"
-      category="You"
-      source="screens-5.jsx"
-      summary="Global search with previews."
-    />
-  );
+export default function SearchPage() {
+  return <SearchScreen />;
 }
