@@ -1,57 +1,114 @@
+import Link from "next/link";
+import { BrandMark, Wordmark } from "@tempo/ui/brand";
+import { Button, Pill, SoftCard } from "@tempo/ui/primitives";
+
 /**
  * @screen: changelog
- * @owner: cursor-cloud-1
+ * @category: Marketing
+ * @owner: cursor-cloud-3
  * @prd: PRD §14
  * @source: docs/design/claude-export/design-system/changelog.html
- * @summary: Public shipping notes feed with optional subscription call-to-action.
+ * @summary: Public product update feed.
+ * @auth: public
  */
-export default function Page() {
+const ENTRIES = [
+  {
+    id: "0-2-0",
+    version: "v0.2.0",
+    date: "Apr 21, 2026",
+    title: "Demoable frontend on 42 web + 12 mobile routes",
+    body: "You can now click through the whole app without a backend. Every control carries pseudocode tags for the backend-wire run.",
+    tone: "orange" as const,
+  },
+  {
+    id: "0-1-0",
+    version: "v0.1.0",
+    date: "Apr 14, 2026",
+    title: "Frontend design port",
+    body: "Imported the Claude design system into Next 16 + Expo 54. First 42 web + 12 mobile scaffold routes landed.",
+    tone: "slate" as const,
+  },
+  {
+    id: "0-0-1",
+    version: "v0.0.1",
+    date: "Apr 7, 2026",
+    title: "Repo setup",
+    body: "Monorepo (Next + Expo + Convex + shared packages). Biome + Ultracite. CI pipeline.",
+    tone: "neutral" as const,
+  },
+];
+
+export default function ChangelogPage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-6 bg-background px-6 py-10 text-foreground">
-      <header className="flex flex-col gap-2">
-        <p className="font-eyebrow">Tempo changelog</p>
-        <h1 className="text-h1 font-serif">Quiet updates, shipped often.</h1>
-        <p className="text-body text-muted-foreground">
-          Major and minor product updates for web and mobile.
-        </p>
-      </header>
+    <main className="min-h-screen bg-background text-foreground">
+      <nav className="mx-auto flex max-w-[var(--container-tempo)] items-center justify-between px-6 py-5">
+        <Link href="/" className="flex items-center gap-2">
+          <BrandMark size={28} />
+          <Wordmark size={20} />
+        </Link>
+        <div className="flex items-center gap-2">
+          {/*
+           * @behavior: Back to landing.
+           * @navigate: /
+           */}
+          <Link href="/">
+            <Button variant="ghost" size="sm">
+              ← Back to home
+            </Button>
+          </Link>
+        </div>
+      </nav>
 
-      <section className="rounded-xl border border-border-soft bg-card p-4">
-        <h2 className="text-h4 font-serif">v1.0.0</h2>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-small text-muted-foreground">
-          <li>42 web screens and 12 mobile screens mapped to PRD inventory.</li>
-          <li>Tier-A pseudocode tags added for backend handoff.</li>
-          <li>Generated HTML preview set for cross-platform review.</li>
-        </ul>
+      <section className="mx-auto max-w-[var(--container-tempo)] px-6 pb-20 pt-12">
+        <div className="flex max-w-3xl flex-col gap-5">
+          <Pill tone="orange">Changelog</Pill>
+          <h1 className="font-display leading-[1.04]">
+            What's new, and what just landed.
+          </h1>
+          <p className="font-serif text-h3 text-muted-foreground">
+            Public, honest, and updated as we ship.
+          </p>
+        </div>
+
+        <div className="mt-12 flex flex-col gap-5">
+          {ENTRIES.map((entry) => (
+            <SoftCard key={entry.id} tone="default" padding="md">
+              <div className="flex items-center justify-between">
+                <Pill tone={entry.tone}>{entry.version}</Pill>
+                <span className="font-tabular text-caption text-muted-foreground">
+                  {entry.date}
+                </span>
+              </div>
+              <h3 className="mt-3 font-serif text-h3">{entry.title}</h3>
+              <p className="mt-2 text-body text-muted-foreground">
+                {entry.body}
+              </p>
+            </SoftCard>
+          ))}
+        </div>
+
+        <SoftCard tone="sunken" padding="md" className="mt-12 max-w-2xl">
+          <div className="font-eyebrow mb-2">Subscribe</div>
+          <p className="text-small text-muted-foreground">
+            Get one monthly email summarising changes. No marketing.
+          </p>
+          {/*
+           * @behavior: Subscribe visitor email to monthly changelog digest.
+           * @convex-mutation-needed: profiles.subscribeToChangelog
+           */}
+          <form className="mt-3 flex items-center gap-2">
+            <input
+              type="email"
+              placeholder="you@domain.com"
+              className="flex-1 rounded-lg border border-border-soft bg-card px-3 py-2 text-body focus:border-primary focus:outline-none"
+              aria-label="Email for changelog subscription"
+            />
+            <Button variant="primary" size="md" type="submit">
+              Subscribe
+            </Button>
+          </form>
+        </SoftCard>
       </section>
-
-      <section className="rounded-xl border border-border-soft bg-card p-4">
-        <h2 className="text-h4 font-serif">Stay in the loop</h2>
-        {/* @component: SubscribeToChangelogButton
-            @behavior: Save user preference to receive changelog updates by email.
-            @convex-mutation-needed: profiles.subscribeToChangelog
-            @schema-delta: profiles.changelogSubscribedAt
-            @confirm: none
-            @prd: PRD §14
-            @source: docs/design/claude-export/design-system/changelog.html */}
-        <button
-          type="button"
-          className="mt-3 rounded-full bg-foreground px-4 py-2 text-small font-medium text-background"
-        >
-          Subscribe to updates
-        </button>
-      </section>
-
-      <footer className="pt-2">
-        {/* @component: BackToLandingLink
-            @behavior: Navigate user back to public landing page.
-            @navigate: /
-            @prd: PRD §14
-            @source: docs/design/claude-export/design-system/changelog.html */}
-        <a href="/" className="text-small text-muted-foreground underline-offset-4 hover:underline">
-          Back to home
-        </a>
-      </footer>
     </main>
   );
 }
