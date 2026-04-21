@@ -1,40 +1,26 @@
+import { TemplateEditorScreen } from "@/components/tempo/screens/TemplateEditorScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
  * @screen: template-editor
- * @tier: A
+ * @category: You
  * @owner: cursor-cloud-1
  * @prd: PRD §4 Screen 23, §10
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @summary: Lightweight editor for title/summary/section list of existing
+ * template. Full structural edits happen in /templates/builder.
+ * @queries:
+ *   - templates.byId
+ *   - templates.listSections
+ * @mutations:
+ *   - templates.renameTitle
+ *   - templates.updateSummary
+ *   - templates.addSection
+ *   - templates.saveEditorChanges
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: template-editor.readModel
- * @navigate: /template-editor
- * @prd: PRD §4 Screen 23, §10
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: template-editor.primaryMutation
- * @convex-action-needed: template-editor.primaryAction
- * @prd: PRD §4 Screen 23, §10
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- */
-
-
-type RouteParams = { id: string };
-
-export default async function ScreenPage({
-  params,
-}: {
-  params: Promise<RouteParams>;
-}) {
+export default async function TemplateEditorPage({ params }: PageProps) {
   const { id } = await params;
-  const fixture = getWebScreenFixture("template-editor");
-
-  return <TempoScreenScaffold fixture={fixture} routeParams={{ id }} />;
+  return <TemplateEditorScreen templateId={id} />;
 }

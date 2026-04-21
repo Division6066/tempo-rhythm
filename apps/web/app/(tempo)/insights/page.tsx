@@ -1,32 +1,20 @@
+import { InsightsScreen } from "@/components/tempo/screens/InsightsScreen";
+
 /**
  * @screen: analytics
- * @tier: A
- * @owner: cursor-cloud-1
+ * @category: You
+ * @owner: cursor-cloud-2
  * @prd: PRD §4 Screen 43, §17
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @summary: Analytics dashboard with weekly completion, focus time, habit
+ * adherence, energy histogram, and gentle-not-shaming flags.
+ * @queries:
+ *   - analytics.tasksCompletedByDay
+ *   - analytics.focusTimeByWeek
+ *   - analytics.habitAdherenceThisMonth
+ *   - analytics.energyHistogram
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: analytics.readModel
- * @navigate: /analytics
- * @prd: PRD §4 Screen 43, §17
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: analytics.primaryMutation
- * @convex-action-needed: analytics.primaryAction
- * @prd: PRD §4 Screen 43, §17
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- */
-
-export default function ScreenPage() {
-  const fixture = getWebScreenFixture("analytics");
-
-  return <TempoScreenScaffold fixture={fixture} />;
+export default function InsightsPage() {
+  return <InsightsScreen />;
 }

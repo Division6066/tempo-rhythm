@@ -1,34 +1,19 @@
+import { TemplateSketchScreen } from "@/components/tempo/screens/TemplateSketchScreen";
+
 /**
  * @screen: template-sketch
- * @tier: A
+ * @category: You
  * @owner: cursor-cloud-1
  * @prd: PRD §4 Screen 23, §10
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @summary: Upload a hand sketch and preview AI-parsed template structure.
+ * @actions:
+ *   - templates.parseSketch
+ *   - templates.createFromSketch
+ * @providers:
+ *   - openrouter (vision)
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: template-sketch.readModel
- * @navigate: /template-sketch
- * @prd: PRD §4 Screen 23, §10
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: template-sketch.primaryMutation
- * @convex-action-needed: template-sketch.primaryAction
- * @provider-needed: openrouter
- * @schema-delta: templates.sourceImageRef
- * @prd: PRD §4 Screen 23, §10
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- */
-
-export default function ScreenPage() {
-  const fixture = getWebScreenFixture("template-sketch");
-
-  return <TempoScreenScaffold fixture={fixture} />;
+export default function TemplateSketchPage() {
+  return <TemplateSketchScreen />;
 }

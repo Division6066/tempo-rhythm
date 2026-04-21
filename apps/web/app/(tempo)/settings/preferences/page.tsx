@@ -1,32 +1,22 @@
+import { SettingsPreferencesScreen } from "@/components/tempo/screens/SettingsPreferencesScreen";
+
 /**
  * @screen: settings-prefs
- * @tier: A
- * @owner: cursor-cloud-1
- * @prd: PRD §4 Screen 32-34, §8
+ * @category: Settings
+ * @owner: cursor-cloud-3
+ * @prd: PRD §4 Screen 33, §10
  * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @summary: Notifications, coach nudges, quiet hours, theme.
+ * @queries:
+ *   - profiles.getMyPreferences
+ * @mutations:
+ *   - profiles.setNotificationPreference
+ *   - profiles.setCoachNudges
+ *   - profiles.setQuietHours
+ *   - profiles.setThemePreference
+ *   - profiles.savePreferences
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: settings-prefs.readModel
- * @navigate: /settings-prefs
- * @prd: PRD §4 Screen 32-34, §8
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: settings-prefs.primaryMutation
- * @convex-action-needed: settings-prefs.primaryAction
- * @prd: PRD §4 Screen 32-34, §8
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- */
-
-export default function ScreenPage() {
-  const fixture = getWebScreenFixture("settings-prefs");
-
-  return <TempoScreenScaffold fixture={fixture} />;
+export default function SettingsPreferencesPage() {
+  return <SettingsPreferencesScreen />;
 }
