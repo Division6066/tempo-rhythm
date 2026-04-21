@@ -1,32 +1,21 @@
+import { JournalScreen } from "@/components/tempo/screens/JournalScreen";
+
 /**
  * @screen: journal
- * @tier: A
+ * @category: Library
  * @owner: cursor-cloud-1
  * @prd: PRD §4 Screen 6, §16
- * @source: docs/design/claude-export/design-system/screens-2.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @source: docs/design/claude-export/design-system/screens-2.jsx (ScreenJournal)
+ * @summary: Journal feed with today composer, mood tags, gentle prompt, and streak.
+ * @queries:
+ *   - journalEntries.listRecent
+ *   - journalEntries.getDailyPrompt
+ * @mutations:
+ *   - journalEntries.saveDraft
+ *   - journalEntries.setMood
+ *   - journalEntries.commitEntry
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: journal.readModel
- * @navigate: /journal
- * @prd: PRD §4 Screen 6, §16
- * @source: docs/design/claude-export/design-system/screens-2.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: journal.primaryMutation
- * @convex-action-needed: journal.primaryAction
- * @prd: PRD §4 Screen 6, §16
- * @source: docs/design/claude-export/design-system/screens-2.jsx
- */
-
-export default function ScreenPage() {
-  const fixture = getWebScreenFixture("journal");
-
-  return <TempoScreenScaffold fixture={fixture} />;
+export default function JournalPage() {
+  return <JournalScreen />;
 }

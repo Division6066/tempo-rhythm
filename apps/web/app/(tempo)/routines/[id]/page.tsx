@@ -1,40 +1,25 @@
+import { RoutineDetailScreen } from "@/components/tempo/screens/RoutineDetailScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
  * @screen: routine-detail
- * @tier: A
+ * @category: Library
  * @owner: cursor-cloud-1
  * @prd: PRD §4 Screen 42, §13
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenRoutineRun)
+ * @summary: Guided routine execution with step progress, skip, pause.
+ * @queries:
+ *   - routines.byId
+ *   - routines.listSteps
+ * @mutations:
+ *   - routines.logStepComplete
+ *   - routines.skipStep
+ *   - routines.pauseRun
+ *   - routines.endRun
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: routine-detail.readModel
- * @navigate: /routine-detail
- * @prd: PRD §4 Screen 42, §13
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: routine-detail.primaryMutation
- * @convex-action-needed: routine-detail.primaryAction
- * @prd: PRD §4 Screen 42, §13
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- */
-
-
-type RouteParams = { id: string };
-
-export default async function ScreenPage({
-  params,
-}: {
-  params: Promise<RouteParams>;
-}) {
+export default async function RoutineDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const fixture = getWebScreenFixture("routine-detail");
-
-  return <TempoScreenScaffold fixture={fixture} routeParams={{ id }} />;
+  return <RoutineDetailScreen routineId={id} />;
 }

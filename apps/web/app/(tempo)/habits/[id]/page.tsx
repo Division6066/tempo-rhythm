@@ -1,40 +1,25 @@
+import { HabitDetailScreen } from "@/components/tempo/screens/HabitDetailScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
  * @screen: habit-detail
- * @tier: A
+ * @category: Library
  * @owner: cursor-cloud-1
  * @prd: PRD §4 Screen 14, §12
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenHabitDetail)
+ * @summary: Habit deep-dive with streak, 28-day heatmap, settings, notes.
+ * @queries:
+ *   - habits.byId
+ *   - habits.completionsLast28Days
+ * @mutations:
+ *   - habits.logCompletion
+ *   - habits.undoCompletion
+ *   - habits.snoozeToday
+ *   - habits.updateSettings
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: habit-detail.readModel
- * @navigate: /habit-detail
- * @prd: PRD §4 Screen 14, §12
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: habit-detail.primaryMutation
- * @convex-action-needed: habit-detail.primaryAction
- * @prd: PRD §4 Screen 14, §12
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- */
-
-
-type RouteParams = { id: string };
-
-export default async function ScreenPage({
-  params,
-}: {
-  params: Promise<RouteParams>;
-}) {
+export default async function HabitDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const fixture = getWebScreenFixture("habit-detail");
-
-  return <TempoScreenScaffold fixture={fixture} routeParams={{ id }} />;
+  return <HabitDetailScreen habitId={id} />;
 }

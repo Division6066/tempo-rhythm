@@ -1,40 +1,28 @@
+import { GoalDetailScreen } from "@/components/tempo/screens/GoalDetailScreen";
+
+type PageProps = { params: Promise<{ id: string }> };
+
 /**
  * @screen: goal-detail
- * @tier: A
- * @owner: cursor-cloud-1
+ * @category: Library
+ * @owner: cursor-cloud-2
  * @prd: PRD §4 Screen 15, §7
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @source: docs/design/claude-export/design-system/screens-4.jsx (ScreenGoalDetail)
+ * @summary: Goal milestones with inline toggle + linked tasks + coach plan proposal.
+ * @queries:
+ *   - goals.byId
+ *   - goals.listMilestones
+ *   - goals.linkedTasks
+ * @mutations:
+ *   - goals.addMilestone
+ *   - goals.toggleMilestoneDone
+ * @actions:
+ *   - coach.proposeGoalPlan
+ * @providers:
+ *   - openrouter
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: goal-detail.readModel
- * @navigate: /goal-detail
- * @prd: PRD §4 Screen 15, §7
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: goal-detail.primaryMutation
- * @convex-action-needed: goal-detail.primaryAction
- * @prd: PRD §4 Screen 15, §7
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- */
-
-
-type RouteParams = { id: string };
-
-export default async function ScreenPage({
-  params,
-}: {
-  params: Promise<RouteParams>;
-}) {
+export default async function GoalDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const fixture = getWebScreenFixture("goal-detail");
-
-  return <TempoScreenScaffold fixture={fixture} routeParams={{ id }} />;
+  return <GoalDetailScreen goalId={id} />;
 }
