@@ -1,32 +1,23 @@
+import { CalendarScreen } from "@/components/tempo/screens/CalendarScreen";
+
 /**
  * @screen: calendar
- * @tier: A
+ * @category: Library
  * @owner: cursor-cloud-1
- * @prd: PRD §4 Screen 8-10, §13
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @prd: PRD §4 Screen 8, §4 Screen 9, §4 Screen 10
+ * @source: docs/design/claude-export/design-system/screens-3.jsx (ScreenCalendar)
+ * @summary: Day / week / month calendar with scheduled + unscheduled intake lanes.
+ * @queries:
+ *   - calendar.listRange
+ *   - calendar.listForDate
+ * @mutations:
+ *   - calendar.createEvent
+ *   - calendar.updateEvent
+ *   - calendar.scheduleFromIntake
+ * @providers:
+ *   - google-calendar / apple-calendar (Integrations page)
+ * @auth: required
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: calendar.readModel
- * @navigate: /calendar
- * @prd: PRD §4 Screen 8-10, §13
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: calendar.primaryMutation
- * @convex-action-needed: calendar.primaryAction
- * @prd: PRD §4 Screen 8-10, §13
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- */
-
-export default function ScreenPage() {
-  const fixture = getWebScreenFixture("calendar");
-
-  return <TempoScreenScaffold fixture={fixture} />;
+export default function CalendarPage() {
+  return <CalendarScreen />;
 }

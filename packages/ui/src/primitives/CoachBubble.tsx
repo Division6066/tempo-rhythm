@@ -11,7 +11,11 @@ import type { ReactNode } from "react";
 export type CoachBubbleRole = "coach" | "user" | "system";
 
 export type CoachBubbleProps = {
-  role?: CoachBubbleRole;
+  /**
+   * Logical speaker: coach, user, or system. Named `speaker` (not `role`) so
+   * downstream linters don't flag it as an ARIA role attribute.
+   */
+  speaker?: CoachBubbleRole;
   children: ReactNode;
   actions?: ReactNode;
   timestamp?: string;
@@ -27,7 +31,7 @@ const roleMap: Record<CoachBubbleRole, string> = {
 };
 
 export function CoachBubble({
-  role = "coach",
+  speaker = "coach",
   children,
   actions,
   timestamp,
@@ -37,7 +41,7 @@ export function CoachBubble({
     <div
       className={[
         "flex max-w-[85%] flex-col gap-2 rounded-2xl border px-4 py-3 shadow-whisper",
-        roleMap[role],
+        roleMap[speaker],
         className,
       ].join(" ")}
     >

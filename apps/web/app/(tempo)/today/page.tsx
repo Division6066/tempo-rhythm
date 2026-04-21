@@ -1,32 +1,27 @@
+import { TodayScreen } from "@/components/tempo/screens/TodayScreen";
+
 /**
  * @screen: today
- * @tier: A
+ * @category: Flow
  * @owner: cursor-cloud-1
  * @prd: PRD §4 Screen 1, §8, §14
- * @source: docs/design/claude-export/design-system/screens-1.jsx
- * @summary: Tier-A mock-data scaffold for backend handoff only.
+ * @source: docs/design/claude-export/design-system/screens-1.jsx (ScreenToday)
+ * @summary: Daily command center with coach guidance, top priorities, habits,
+ * up-next list, and an energy check-in. Demo-wired with @tempo/mock-data.
+ * @queries:
+ *   - tasks.listToday
+ *   - calendar.listToday
+ *   - coach.latestSuggestion
+ *   - habits.listDaily
+ *   - plans.getTodayPlan
+ * @mutations:
+ *   - tasks.complete
+ *   - tasks.rescheduleToToday
+ *   - plans.setEnergyCheckIn
+ *   - coach.dismissSuggestion
+ * @auth: required
+ * @notes: Copy is Claude placeholder; a later copy pass will refine.
  */
-
-import { TempoScreenScaffold } from "@/components/tempo/TempoScreenScaffold";
-import { getWebScreenFixture } from "@tempo/mock-data";
-
-/*
- * @behavior: Render primary control state from @tempo/mock-data fixture metadata.
- * @convex-query-needed: today.readModel
- * @navigate: /brain-dump
- * @prd: PRD §4 Screen 1, §8, §14
- * @source: docs/design/claude-export/design-system/screens-1.jsx
- */
-/*
- * @behavior: Trigger primary mutation/action placeholder from fixture control metadata.
- * @convex-mutation-needed: today.primaryMutation
- * @convex-action-needed: today.primaryAction
- * @prd: PRD §4 Screen 1, §8, §14
- * @source: docs/design/claude-export/design-system/screens-1.jsx
- */
-
 export default function TodayPage() {
-  const fixture = getWebScreenFixture("today");
-
-  return <TempoScreenScaffold fixture={fixture} />;
+  return <TodayScreen />;
 }
