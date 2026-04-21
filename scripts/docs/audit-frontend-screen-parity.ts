@@ -101,6 +101,56 @@ function slugToMobileHtml(slug: string): string {
   return resolve("docs/design/generated-html/mobile", `${slug}.html`);
 }
 
+const SCREEN_IMPORT_ROOTS = [
+  resolve("apps/web"),
+  resolve("apps/mobile"),
+  resolve("packages/ui/src"),
+];
+
+/**
+ * Resolve a `@/...` or `../something` import path used inside a Next.js or
+ * Expo route file. Mirrors the behavior of `tsconfig.json` path aliases.
+ */
+function resolveImportSpecifier(fromFile: string, specifier: string): string | null {
+  if (specifier.startsWith("@/")) {
+    // Next.js default alias → apps/web/ for web, apps/mobile/ for mobile.
+    const bareFrom = fromFile.includes("/apps/mobile/")
+      ? resolve("apps/mobile")
+      : resolve("apps/web");
+    return `${resolve(bareFrom, specifier.slice(2))}.tsx`;
+  }
+  if (specifier.startsWith("./") || specifier.startsWith("../")) {
+    const abs = resolve(fromFile, "..", specifier);
+    return `${abs}.tsx`;
+  }
+  return null;
+}
+
+function gatherScreenSourceContent(filePath: string): string {
+  if (!existsSync(filePath)) {
+    return "";
+  }
+  const pageSource = readFileSync(filePath, "utf8");
+  let aggregate = pageSource;
+  // Find local imports whose specifier mentions a component under components/tempo/** or packages/ui/** .
+  const importRegex = /from\s+["']([^"']+)["']/g;
+  let match: RegExpExecArray | null;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex iteration
+  while ((match = importRegex.exec(pageSource)) !== null) {
+    const specifier = match[1];
+    if (!specifier) continue;
+    const resolved = resolveImportSpecifier(filePath, specifier);
+    if (!resolved) continue;
+    // Only include files under one of the app/package source roots.
+    if (!SCREEN_IMPORT_ROOTS.some((root) => resolved.startsWith(root))) continue;
+    if (existsSync(resolved)) {
+      aggregate += "\n";
+      aggregate += readFileSync(resolved, "utf8");
+    }
+  }
+  return aggregate;
+}
+
 function auditFile(slug: string, filePath: string): FileAuditRow {
   if (!existsSync(filePath)) {
     return {
@@ -113,7 +163,9 @@ function auditFile(slug: string, filePath: string): FileAuditRow {
     };
   }
 
-  const content = readFileSync(filePath, "utf8");
+  // Include the route file plus any local screen component it imports so
+  // we don't force duplicate tag blocks in thin page shells.
+  const content = gatherScreenSourceContent(filePath);
   return {
     slug,
     path: filePath,
