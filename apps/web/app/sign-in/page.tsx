@@ -16,6 +16,7 @@ export default function SignInPage() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
   const [isAuthCheckDelayed, setIsAuthCheckDelayed] = useState(false);
+  const isBackendAuthConfigured = Boolean(process.env.NEXT_PUBLIC_CONVEX_URL);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -37,7 +38,7 @@ export default function SignInPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  const isAuthUnavailable = !isLoading && !isAuthenticated && !process.env.NEXT_PUBLIC_CONVEX_URL;
+  const isAuthUnavailable = !isBackendAuthConfigured;
 
   if (isAuthUnavailable) {
     return (

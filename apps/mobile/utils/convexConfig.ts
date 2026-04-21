@@ -14,9 +14,7 @@
 export function getConvexUrl(): string {
   const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL;
 
-  if (!convexUrl) {
-    throw new Error('חסרה כתובת Convex. הגדר EXPO_PUBLIC_CONVEX_URL ב-.env');
-  }
-
-  return convexUrl;
+  // Fail-open for frontend-only demos when env vars aren't configured.
+  // This mirrors the web preview fallback and keeps UI navigation usable.
+  return convexUrl ?? 'http://127.0.0.1:3210';
 }
