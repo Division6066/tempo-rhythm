@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings · mobile preview</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: Inter, Arial, sans-serif; margin: 0; padding: 24px; background: #f5f5f4; color: #1f2937; }
+      main { margin: 0 auto; max-width: 960px; display: grid; gap: 16px; }
+      header, .control { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+      h1, h2, p, ul { margin: 0; }
+      h1 { font-family: Newsreader, Georgia, serif; margin-bottom: 8px; }
+      h2 { font-size: 16px; margin-bottom: 6px; }
+      p { margin-bottom: 8px; line-height: 1.45; }
+      ul { padding-left: 18px; display: grid; gap: 4px; }
+      code { font-family: "IBM Plex Mono", Consolas, monospace; font-size: 12px; }
+      .meta { font-size: 13px; color: #4b5563; display: grid; gap: 4px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Settings</h1>
+        <div class="meta">
+          <div><strong>Screen ID:</strong> settings</div>
+          <div><strong>Platform:</strong> mobile</div>
+          <div><strong>Category:</strong> Mobile</div>
+          <div><strong>Route:</strong> (tempo)/settings</div>
+          <div><strong>Summary:</strong> Generated static HTML preview for mobile design and wiring tags.</div>
+          <div><strong>PRD refs:</strong> PRD §4, PRD §9</div>
+          <div><strong>Source refs:</strong> mobile/mobile-screens-b.jsx</div>
+        </div>
+      </header>
+      
+        <section class="control">
+          <h2>Mobile primary action</h2>
+          <p>Primary mobile control placeholder for backend handoff.</p>
+          <ul><li><code>@behavior</code>: Run mobile primary control intent from fixture-driven scaffold state.</li><li><code>@convex-query-needed</code>: settings.mobileReadModel</li><li><code>@convex-mutation-needed</code>: settings.mobileMutation</li><li><code>@navigate</code>: /(tempo)/settings</li><li><code>@prd</code>: PRD §4, §9</li><li><code>@source</code>: docs/design/claude-export/design-system/mobile/*.jsx</li></ul>
+        </section>
+      
+    </main>
+  </body>
+</html>

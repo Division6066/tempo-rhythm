@@ -5,6 +5,8 @@ import { Button, SoftCard } from "@tempo/ui/primitives";
 /**
  * @generated-by: T-F004 scaffold — replace with T-F005f (landing port).
  * @screen: landing
+ * @owner: cursor-cloud-1
+ * @prd: PRD §4 Screen 37, PRD §14
  * @category: Marketing
  * @source: docs/design/claude-export/design-system/landing.html
  * @summary: Marketing landing page (hero, features, coach samples, pricing, founder letter, testimonials, footer).
@@ -20,11 +22,18 @@ export default function Landing() {
           <Wordmark size={20} />
         </div>
         <div className="flex items-center gap-2">
+          {/* @behavior: Open sign-in flow for returning users from the landing top nav. */}
+          {/* @navigate: /sign-in */}
+          {/* @convex-query-needed: auth.getSessionState */}
           <Link href="/sign-in">
             <Button variant="ghost" size="sm">
               Sign in
             </Button>
           </Link>
+          {/* @behavior: Start onboarding from top nav CTA. */}
+          {/* @navigate: /onboarding */}
+          {/* @convex-mutation-needed: users.startOnboardingSession */}
+          {/* @provider-needed: revenuecat (trial gating after onboarding) */}
           <Link href="/onboarding">
             <Button variant="primary" size="sm">
               Start your $1 walk
@@ -44,11 +53,18 @@ export default function Landing() {
             neurodivergent brains. Never shaming. Always gentle.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
+            {/* @behavior: Start onboarding from hero CTA with trial-first messaging. */}
+            {/* @navigate: /onboarding */}
+            {/* @convex-mutation-needed: users.startOnboardingSession */}
+            {/* @provider-needed: revenuecat */}
             <Link href="/onboarding">
               <Button variant="primary" size="lg">
                 Start your seven-day walk — $1
               </Button>
             </Link>
+            {/* @behavior: Enter the app preview on mobile or desktop web without native install. */}
+            {/* @navigate: /today */}
+            {/* @convex-query-needed: users.canAccessWebAppPreview */}
             <Link href="/today">
               <Button variant="soft" size="lg">
                 Preview the app

@@ -36,10 +36,58 @@ function parseMarkdownRows(markdown: string): WiringRow[] {
       continue;
     }
     const parts = line.split("|").slice(1, -1).map((part) => normalizeCell(part));
-    if (parts.length !== 10) {
+    if (parts.length !== 10 && parts.length !== 12) {
       continue;
     }
-    const [sourceFile, screen, component, tagType, slugOrValue, behaviorSummary, prdRef, schemaDelta, provider, notes] = parts;
+
+    const tuple =
+      parts.length === 12
+        ? (() => {
+            const [, sourceFile, screen, component, tagType, slugOrValue, behaviorSummary, prdRef, schemaDelta, provider, , notes] =
+              parts;
+            return {
+              sourceFile,
+              screen,
+              component,
+              tagType,
+              slugOrValue,
+              behaviorSummary,
+              prdRef,
+              schemaDelta,
+              provider,
+              notes,
+            };
+          })()
+        : (() => {
+            const [sourceFile, screen, component, tagType, slugOrValue, behaviorSummary, prdRef, schemaDelta, provider, notes] =
+              parts;
+            return {
+              sourceFile,
+              screen,
+              component,
+              tagType,
+              slugOrValue,
+              behaviorSummary,
+              prdRef,
+              schemaDelta,
+              provider,
+              notes,
+            };
+          })();
+
+    const {
+      sourceFile,
+      screen,
+      component,
+      tagType,
+      slugOrValue,
+      behaviorSummary,
+      prdRef,
+      schemaDelta,
+      provider,
+      notes,
+    } = tuple;
+
     if (sourceFile === "source_file" || sourceFile.length === 0) {
       continue;
     }

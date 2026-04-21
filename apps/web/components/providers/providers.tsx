@@ -4,8 +4,9 @@ import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
 import { ConvexReactClient } from "convex/react";
 import type React from "react";
 
-// אתחול לקוח Convex עם כתובת השרת
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const fallbackConvexUrl = "http://127.0.0.1:3210";
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? fallbackConvexUrl;
+const convex = new ConvexReactClient(convexUrl);
 
 interface ProvidersProps {
   children: React.ReactNode;

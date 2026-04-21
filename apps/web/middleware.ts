@@ -8,8 +8,11 @@ import type { NextRequest } from "next/server";
 // הגדרת נתיבים ציבוריים (שלא דורשים אימות)
 const isPublicRoute = createRouteMatcher([
   "/",
+  "/about",
+  "/changelog",
   "/sign-in",
   "/sign-up",
+  "/onboarding",
   "/terms",
   "/privacy",
   "/contact",
