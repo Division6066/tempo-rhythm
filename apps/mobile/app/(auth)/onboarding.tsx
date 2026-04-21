@@ -8,11 +8,13 @@
  * @summary: Five-step onboarding flow with personalization, template pick, first brain dump, and first plan.
  */
 import { mockOnboarding, mockTasks, mockTodayScreen } from "@tempo/mock-data";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Screen() {
+  const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([
     mockOnboarding.profileTags[0] ?? "ADHD",
@@ -56,7 +58,16 @@ export default function Screen() {
     if (!canContinue) {
       return;
     }
-    setStepIndex((prev) => Math.min(mockOnboarding.steps.length - 1, prev + 1));
+    /*
+     * @behavior: Advance onboarding step, or on the last step finalize and route into Today.
+     * @convex-mutation-needed: users.completeOnboarding
+     * @navigate: /(tempo)/(tabs)/today (on final step)
+     */
+    if (stepIndex >= mockOnboarding.steps.length - 1) {
+      router.replace("/(tempo)/(tabs)/today");
+      return;
+    }
+    setStepIndex((prev) => prev + 1);
   };
 
   const stepTitle = mockOnboarding.steps[stepIndex] ?? "Onboarding";
