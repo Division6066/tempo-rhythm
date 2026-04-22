@@ -53,7 +53,7 @@ export function TodayScreen() {
     <div className="container mx-auto max-w-5xl px-6 py-12">
       <div className="space-y-8">
         <TodayGreeting greetingName={profile.greetingName} />
-        <TodayQuickAdd dueAt={bounds.endMs - 1} />
+        <TodayQuickAdd dueAt={bounds.dueTo - 1} />
         <TodayTaskList tasks={todayTasks} />
       </div>
     </div>
