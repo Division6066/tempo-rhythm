@@ -6,11 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./icons": "./src/icons/index.tsx",
-    "./icons/native": "./src/icons/native.tsx",
     "./brand": "./src/brand/index.ts",
-    "./brand/native": "./src/brand/native.tsx",
     "./primitives": "./src/primitives/index.ts",
-    "./native": "./src/native/index.ts",
     "./theme": "./src/theme/tokens.ts"
   },
   "scripts": {

@@ -1,5 +1,12 @@
 // @tempo/utils — shared utility exports
 
+export { getLocalDayBoundsMs } from "./date/get-local-day-bounds";
+export {
+  greetingFor,
+  type GreetingData,
+  type GreetingWindow,
+} from "./time/greeting";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */

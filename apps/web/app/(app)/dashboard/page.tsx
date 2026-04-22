@@ -8,23 +8,24 @@ import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
+import type { TaskPriority, TaskStatus } from "@tempo/types";
+import { getLocalDayBoundsMs, greetingFor } from "@tempo/utils";
 
 function useTodayDueBounds() {
   return useMemo(() => {
-    const n = new Date();
-    const start = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
-    return { dueFrom: start, dueTo: start + 24 * 60 * 60 * 1000 };
+    const { startMs, endMs } = getLocalDayBoundsMs();
+    return { dueFrom: startMs, dueTo: endMs };
   }, []);
 }
 
-const statusLabel: Record<string, string> = {
+const statusLabel: Record<TaskStatus, string> = {
   todo: "לביצוע",
   in_progress: "בתהליך",
   done: "בוצע",
   cancelled: "בוטל",
 };
 
-const priorityClass: Record<string, string> = {
+const priorityClass: Record<TaskPriority, string> = {
   high: "text-destructive",
   medium: "text-primary",
   low: "text-muted-foreground",
@@ -36,6 +37,10 @@ export default function DashboardPage() {
   const todayTasks = useQuery(api.tasks.list, bounds);
   const streaks = useQuery(api.streaks.getCurrent);
   const habits = useQuery(api.habits.list);
+  const greeting = useMemo(
+    () => greetingFor(new Date(), profile?.greetingName),
+    [profile?.greetingName],
+  );
 
   const loading =
     profile === undefined ||
@@ -75,7 +80,13 @@ export default function DashboardPage() {
       <header className="mb-12">
         <p className="text-sm font-medium text-muted-foreground">לוח בקרה</p>
         <h1 className="font-heading mt-2 text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
-          שלום, <span className="text-gradient-primary">{profile.greetingName}</span>
+          {greeting.greeting}
+          {greeting.displayName ? (
+            <>
+              {" "}
+              <span className="text-gradient-primary">{greeting.displayName}</span>
+            </>
+          ) : null}
         </h1>
         <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
           סיכום היום, משימות ומעקב הרגלים במקום אחד.

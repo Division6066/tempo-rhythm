@@ -77,8 +77,8 @@ export default function PaywallScreen() {
     try {
       const success = await purchasePackage(packageId);
       if (success) {
-        // ניווט לאזור המאומת לאחר רכישה מוצלחת
-        router.replace('/(authenticated)');
+        // ניווט לאזור Tempo לאחר רכישה מוצלחת
+        router.replace('/(tempo)/(tabs)/today');
       }
     } finally {
       setIsPurchasing(false);
@@ -94,8 +94,8 @@ export default function PaywallScreen() {
     try {
       const success = await restorePurchases();
       if (success) {
-        // ניווט לאזור המאומת לאחר שחזור מוצלח
-        router.replace('/(authenticated)');
+        // ניווט לאזור Tempo לאחר שחזור מוצלח
+        router.replace('/(tempo)/(tabs)/today');
       }
     } finally {
       setIsRestoring(false);

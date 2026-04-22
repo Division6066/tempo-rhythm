@@ -23,6 +23,12 @@
       }
     ],
     "paths": {
+      "@tempo/types": [
+        "../../packages/types/src/index.ts"
+      ],
+      "@tempo/utils": [
+        "../../packages/utils/src/index.ts"
+      ],
       "@/convex/*": [
         "../../convex/*"
       ],

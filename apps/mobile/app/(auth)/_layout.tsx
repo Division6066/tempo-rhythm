@@ -29,7 +29,7 @@ export default function AuthRoutesLayout() {
   // זה מונע ממשתמשים מחוברים לגשת למסכי התחברות/הרשמה
   // אבל מאפשר להם לגשת דרך הגדרות/דיבאג במצב preview
   if (isAuthenticated && !isAllowedForAuthenticated) {
-    return <Redirect href="/(authenticated)" />;
+    return <Redirect href="/(tempo)/(tabs)/today" />;
   }
 
   // שימוש ב-Slot כדי לעבד את המסכים הפנימיים (sign-in, sign-up, paywall)
