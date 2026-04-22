@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,19 @@ import { TodayTaskList } from "./TodayTaskList";
 
 export function TodayScreen() {
   const bounds = getLocalDayBoundsMs();
-  const profile = useQuery(api.users.getProfile);
-  const todayTasks = useQuery(api.tasks.listToday, bounds);
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const profile = useQuery(
+    api.users.getProfile,
+    isAuthenticated ? {} : "skip",
+  );
+  const todayTasks = useQuery(
+    api.tasks.listToday,
+    isAuthenticated ? bounds : "skip",
+  );
 
-  const isLoading = profile === undefined || todayTasks === undefined;
+  const isLoading =
+    isAuthLoading ||
+    (isAuthenticated && (profile === undefined || todayTasks === undefined));
 
   if (isLoading) {
     return (
@@ -29,7 +38,7 @@ export function TodayScreen() {
     );
   }
 
-  if (!profile) {
+  if (!isAuthenticated || !profile || !todayTasks) {
     return (
       <div className="container mx-auto max-w-5xl px-6 py-16 text-center" dir="rtl">
         <SoftCard className="mx-auto max-w-xl">
