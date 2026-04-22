@@ -15,6 +15,7 @@ import type * as conversations from "../conversations.js";
 import type * as goals from "../goals.js";
 import type * as habits from "../habits.js";
 import type * as http from "../http.js";
+import type * as journal from "../journal.js";
 import type * as lib_requireUser from "../lib/requireUser.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   goals: typeof goals;
   habits: typeof habits;
   http: typeof http;
+  journal: typeof journal;
   "lib/requireUser": typeof lib_requireUser;
   memories: typeof memories;
   messages: typeof messages;
