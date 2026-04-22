@@ -19,16 +19,12 @@ const isPublicRoute = createRouteMatcher([
 // Middleware לבדיקת אימות והפניות
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   const { convexAuth } = ctx;
-  const token = await convexAuth.getToken();
-  const isAuthenticated =
-    Boolean(token) ||
-    (await (async () => {
-      try {
-        return await convexAuth.isAuthenticated();
-      } catch {
-        return false;
-      }
-    })());
+  let isAuthenticated = false;
+  try {
+    isAuthenticated = await convexAuth.isAuthenticated();
+  } catch {
+    isAuthenticated = false;
+  }
 
   // אם הנתיב אינו ציבורי והמשתמש לא מחובר -> הפניה לדף התחברות
   if (!(isPublicRoute(request) || isAuthenticated)) {
