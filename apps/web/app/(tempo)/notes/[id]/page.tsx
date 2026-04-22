@@ -1,30 +1,23 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: note-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-2.jsx
- * @summary: Rich-text note editor with slash commands.
+ * @summary: Rich-text note editor — auto-saves on blur / 1s debounce.
  * @queries: notes.get
  * @mutations: notes.update
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @status: live
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+"use client";
 
-type Params = { id: string };
+import { useParams } from "next/navigation";
+import { NoteEditor } from "@/components/notes/NoteEditor";
+import type { Id } from "@/convex/_generated/dataModel";
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
-  const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Note editor"
-      category="Library"
-      source="screens-2.jsx"
-      summary={`Rich-text note editor with slash commands. (id: ${id})`}
-    />
-  );
+export default function Page() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+  if (!id) {
+    return null;
+  }
+  return <NoteEditor noteId={id as Id<"notes">} />;
 }
