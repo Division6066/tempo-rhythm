@@ -35,12 +35,49 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
 
 export const getCurrentUser = query({
   args: {},
+  returns: v.union(
+    v.object({
+      _id: v.id("users"),
+      _creationTime: v.number(),
+      email: v.string(),
+      emailVerificationTime: v.optional(v.number()),
+      emailVerified: v.optional(v.boolean()),
+      fullName: v.optional(v.string()),
+      name: v.optional(v.string()),
+      role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
+      userType: v.optional(v.union(v.literal("free"), v.literal("paid"))),
+      isActive: v.optional(v.boolean()),
+      createdAt: v.optional(v.number()),
+      updatedAt: v.optional(v.number()),
+      deletedAt: v.optional(v.number()),
+    }),
+    v.null(),
+  ),
   handler: async (ctx) => fetchCurrentUser(ctx),
 });
 
 /** Profile for dashboard greeting and header; extends user with `greetingName`. */
 export const getProfile = query({
   args: {},
+  returns: v.union(
+    v.object({
+      _id: v.id("users"),
+      _creationTime: v.number(),
+      email: v.string(),
+      emailVerificationTime: v.optional(v.number()),
+      emailVerified: v.optional(v.boolean()),
+      fullName: v.optional(v.string()),
+      name: v.optional(v.string()),
+      role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
+      userType: v.optional(v.union(v.literal("free"), v.literal("paid"))),
+      isActive: v.optional(v.boolean()),
+      createdAt: v.optional(v.number()),
+      updatedAt: v.optional(v.number()),
+      deletedAt: v.optional(v.number()),
+      greetingName: v.string(),
+    }),
+    v.null(),
+  ),
   handler: async (ctx) => {
     const user = await fetchCurrentUser(ctx);
     if (!user) return null;

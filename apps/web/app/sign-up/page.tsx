@@ -11,7 +11,7 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace("/dashboard");
+      router.replace("/today");
     }
   }, [isAuthenticated, isLoading, router]);
 

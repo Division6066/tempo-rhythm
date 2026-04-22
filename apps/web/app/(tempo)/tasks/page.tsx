@@ -1,5 +1,5 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
+ * @generated-by: T-F004 scaffold — preserved during first backend slice.
  * @screen: tasks
  * @category: Library
  * @source: docs/design/claude-export/design-system/screens-2.jsx
