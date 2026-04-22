@@ -2,24 +2,30 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 
+/**
+ * Template-only coach replies. Used as a graceful fallback when OpenRouter is
+ * unavailable, and as the source of the historical `sendMessage` behaviour.
+ * Real AI replies live in `convex/coachActions.ts#respond`.
+ */
 const REPLIES: Record<string, string> = {
   pomodoro:
-    "נסה מקטע של 25 דקות עם טיימר אחד בלבד. אחרי הפסקה של 5 דקות, החלט אם להמשיך עוד מקטע או לעבור למשימה הבאה.",
+    "Try a 25-minute block with a single timer. After a 5-minute break, decide whether to run another block or move on.",
   body_double:
-    "עבוד לצד מישהו (או בשיחת וידאו שקטה) בלי לדבר על המשימה — הנוכחות לבד מורידה הסחות דעת.",
+    "Work next to someone — in person or on a quiet video call — without talking about the task. The shared presence alone reduces pull to distract.",
   eat_the_frog:
-    "בחר את המשימה הכי כבדה היום והתחל ממנה לפני כל השאר. רק צעד ראשון קטן עכשיו.",
+    "Pick the heaviest task of the day and start with it before anything else. Just one small first step, right now.",
   time_blocking:
-    "חסום ביומן חלון קצר לכל משימה והגדר התראה אחת לסוף החלון — לא לשינוי תוכנית באמצע.",
+    "Block a short window on your calendar for the task and set one alert for the end of the window. Don't renegotiate the plan mid-block.",
   two_minute:
-    "אם זה באמת מתחת לשתי דקות — עשה עכשיו. אם לא, הפוך את זה לצעד קטן שמתחיל בשנייה אחת.",
+    "If it's honestly under two minutes, do it now. If not, reshape it into a tiny step that begins in one second.",
   general:
-    "מה הצעד הקטן ביותר שאפשר לעשות בלי התנגדות? התחל משם בלבד.",
+    "What's the smallest step that would move with zero resistance? Start there and nowhere else.",
 };
 
 /**
  * Append a user message and a coach reply (template by conversation technique).
- * Does not silently change tasks or notes — only chat rows.
+ * Does not silently change tasks or notes — only chat rows. Real AI lives in
+ * `coachActions.respond`; this mutation is kept for the offline demo surface.
  */
 export const sendMessage = mutation({
   args: {
@@ -46,8 +52,7 @@ export const sendMessage = mutation({
     });
 
     const technique = conv.technique ?? "general";
-    const assistantBody =
-      REPLIES[technique] ?? REPLIES.general;
+    const assistantBody = REPLIES[technique] ?? REPLIES.general;
 
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
