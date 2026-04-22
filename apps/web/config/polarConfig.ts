@@ -1,14 +1,13 @@
 // ============================================================================
-// קונפיגורציית Polar (Checkout)
+// Polar (Checkout) configuration
 // ============================================================================
-// קובץ זה מכיל את כל ההגדרות הקשורות ל-Polar Checkout.
-// מזהי מוצרים, סביבת עבודה, וכו'.
+// All settings related to Polar Checkout: product IDs, environment, etc.
 
-// סביבת Polar: sandbox לבדיקות, production לייצור
+// Polar environment: sandbox for testing, production for live.
 export const POLAR_SERVER: "sandbox" | "production" = "sandbox";
 
-// מזהי מוצר (Product IDs) ב-Polar עבור תוכניות בתשלום
-// מומלץ להגדיר דרך משתני סביבה ולהשאיר כאן fallback ריק.
+// Polar product IDs for paid plans.
+// Prefer setting these via environment variables; leave the fallback empty.
 export const POLAR_MONTHLY_PRODUCT_ID = process.env.NEXT_PUBLIC_POLAR_MONTHLY_PRODUCT_ID || "";
 
 export const POLAR_YEARLY_PRODUCT_ID = process.env.NEXT_PUBLIC_POLAR_YEARLY_PRODUCT_ID || "";

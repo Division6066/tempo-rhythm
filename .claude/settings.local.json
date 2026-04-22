@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(gh repo *)",
+      "Bash(gh pr *)",
+      "Read(//c/Users/User/.claude/plugins/cache/claude-plugins-official/playwright/61c0597779bd/**)",
+      "Read(//c/Users/User/.claude/plugins/cache/claude-plugins-official/playwright/61c0597779bd//**)"
+    ]
+  }
+}

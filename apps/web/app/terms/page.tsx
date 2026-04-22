@@ -1,62 +1,63 @@
 import Link from "next/link";
 
-// דף תנאי שימוש: הסכם משפטי בין בעל האתר למשתמשים
+// Terms of Use page — a plain-language summary. Customise as needed.
 export default function TermsPage() {
   return (
     <div className="min-h-screen py-20 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-5xl font-bold mb-8">תנאי שימוש</h1>
+        <h1 className="text-5xl font-bold mb-8">Terms of Use</h1>
 
         <div className="space-y-6 text-muted-foreground">
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">1. קבלת התנאים</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">1. Accepting these terms</h2>
             <p>
-              על ידי גישה לאתר זה ושימוש בו, אתם מסכימים לכל התנאים וההגבלות המפורטים כאן. אם אינכם
-              מסכימים לתנאים אלה, אנא הימנעו משימוש באתר.
+              By accessing and using this site you agree to everything laid out here. If any of it
+              doesn't sit right, please don't use the site.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">2. שימוש באתר</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">2. Using the site</h2>
             <p>
-              השימוש באתר מותר למטרות חוקיות בלבד. אתם מתחייבים שלא לעשות שימוש באתר בכל דרך שעלולה
-              לפגוע בתפקודו, או לגרום נזק לאתר או לצדדים שלישיים.
+              The site is for lawful use only. You agree not to use it in any way that harms its
+              operation or causes damage to us or to third parties.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">3. קניין רוחני</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">3. Intellectual property</h2>
             <p>
-              כל התכנים באתר זה, לרבות טקסטים, גרפיקה, לוגואים ותמונות, הינם רכושנו או רכוש ספקי
-              התוכן שלנו ומוגנים על פי חוקי זכויות היוצרים.
+              All content on this site — text, graphics, logos, images — belongs to us or to our
+              content providers and is protected under applicable copyright law.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">4. הגבלת אחריות</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">4. Liability</h2>
             <p>
-              השירותים והמידע באתר מסופקים &quot;כמות שהם&quot;. איננו מתחייבים לדיוק, שלמות או
-              התאמה למטרה מסוימת של המידע המוצג באתר.
+              Services and information on this site are provided &quot;as is&quot;. We do not
+              guarantee accuracy, completeness, or fitness for a particular purpose.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">5. שינויים בתנאים</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">5. Changes to these terms</h2>
             <p>
-              אנו שומרים לעצמנו את הזכות לשנות את תנאי השימוש בכל עת. השינויים ייכנסו לתוקף מיד עם
-              פרסומם באתר.
+              We may update these terms over time. Updates take effect as soon as they are posted.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">6. יצירת קשר</h2>
-            <p>לשאלות או הבהרות בנוגע לתנאי השימוש, ניתן ליצור קשר בכתובת: support@temporhythm.app</p>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">6. Contact</h2>
+            <p>
+              Questions about these terms? Reach us at support@temporhythm.app.
+            </p>
           </section>
         </div>
 
         <div className="mt-12">
           <Link href="/" className="text-primary hover:underline">
-            ← חזרה לדף הבית
+            ← Back to home
           </Link>
         </div>
       </div>

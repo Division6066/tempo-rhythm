@@ -36,7 +36,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!consentAccepted) {
-      setError("אנא קראו ואשרו קודם את תנאי השימוש ומדיניות הפרטיות");
+      setError("Please accept the Terms of Service and Privacy Policy to continue.");
       return;
     }
     setIsLoading(true);
@@ -56,15 +56,15 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
         errorMessage.includes("already exists") ||
         errorMessage.includes("AccountAlreadyExists")
       ) {
-        setError("כתובת הדואר האלקטרוני כבר רשומה במערכת");
+        setError("An account with that email already exists. Try signing in instead.");
       } else if (errorMessage.includes("password") && errorMessage.includes("weak")) {
-        setError("הסיסמה חלשה מדי. אנא בחרו סיסמה חזקה יותר");
+        setError("Password is too weak. Please choose a stronger password.");
       } else if (errorMessage.includes("TooManyRequests")) {
-        setError("יותר מדי ניסיונות. אנא נסו שוב מאוחר יותר");
+        setError("Too many attempts. Please try again later.");
       } else if (errorMessage.includes("invalid") && errorMessage.includes("email")) {
-        setError("כתובת הדואר האלקטרוני אינה תקינה");
+        setError("That email address doesn't look valid. Please check it.");
       } else {
-        setError("הרשמה נכשלה. אנא בדקו את הפרטים ונסו שוב");
+        setError("Sign-up failed. Please check your details and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -82,20 +82,20 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
     : "block text-sm font-medium text-gray-300 mb-2";
 
   return (
-    <div className={isPage ? "w-full max-w-md" : ""} dir="rtl">
+    <div className={isPage ? "w-full max-w-md" : ""}>
       {isPage && (
         <div className="mb-8 text-center">
           <h1 className="font-heading text-4xl font-semibold tracking-tight text-gradient-primary">
-            הרשמה
+            Create account
           </h1>
-          <p className="mt-2 text-muted-foreground">צרו חשבון והצטרפו ל-Tempo Flow</p>
+          <p className="mt-2 text-muted-foreground">Join Tempo Flow — free to start</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label htmlFor="signup-email" className={labelClass}>
-            דואר אלקטרוני
+            Email
           </label>
           <input
             id="signup-email"
@@ -103,7 +103,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
-            placeholder="support@temporhythm.app"
+            placeholder="you@example.com"
             required={true}
             disabled={isLoading}
             autoComplete="email"
@@ -112,7 +112,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
 
         <div>
           <label htmlFor="signup-password" className={labelClass}>
-            סיסמה
+            Password
           </label>
           <div className="relative">
             <input
@@ -120,7 +120,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={isPage ? `${inputClass} pl-12` : `${inputClass} pl-12`}
+              className={isPage ? `${inputClass} pr-12` : `${inputClass} pr-12`}
               placeholder="••••••••"
               required={true}
               disabled={isLoading}
@@ -131,10 +131,11 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
               onClick={() => setShowPassword(!showPassword)}
               className={
                 isPage
-                  ? "absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  : "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
+                  ? "absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  : "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
               }
               tabIndex={-1}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
@@ -158,7 +159,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
             htmlFor="remember-me-signup"
             className={`cursor-pointer text-sm ${isPage ? "text-foreground" : "text-gray-300"}`}
           >
-            זכור אותי
+            Remember me
           </label>
         </div>
 
@@ -182,6 +183,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
               type="button"
               onClick={() => setConsentAccepted(!consentAccepted)}
               disabled={isLoading}
+              aria-label="Accept terms and privacy policy"
               className={`flex h-5 w-5 items-center justify-center rounded border-2 transition ${
                 consentAccepted
                   ? "border-primary bg-primary"
@@ -194,25 +196,25 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
             </button>
           </div>
           <label htmlFor="signup-consent" className="flex-1 cursor-pointer text-sm text-foreground">
-            אני מסכים ל
+            I agree to the{" "}
             <Link
               href={TERMS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mx-1 font-semibold text-primary hover:underline"
+              className="font-semibold text-primary hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
-              תנאי השימוש
-            </Link>
-            ול
+              Terms of Service
+            </Link>{" "}
+            and{" "}
             <Link
               href={PRIVACY_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mr-1 font-semibold text-primary hover:underline"
+              className="font-semibold text-primary hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
-              מדיניות הפרטיות
+              Privacy Policy
             </Link>
           </label>
         </div>
@@ -224,6 +226,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
                 ? "rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
                 : "bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm"
             }
+            role="alert"
           >
             {error}
           </div>
@@ -241,19 +244,19 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              יוצר חשבון...
+              Creating account…
             </span>
           ) : (
-            "צור חשבון"
+            "Create account"
           )}
         </button>
       </form>
 
       <p className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
-        כבר יש לכם חשבון?{" "}
+        Already have an account?{" "}
         {isPage ? (
           <Link href="/sign-in" className="font-semibold text-primary hover:underline">
-            התחברו כאן
+            Sign in
           </Link>
         ) : (
           <button
@@ -261,7 +264,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
             onClick={() => onSwitchToSignIn?.()}
             className="font-semibold text-orange-500 transition hover:text-orange-400"
           >
-            התחברו כאן
+            Sign in
           </button>
         )}
       </p>

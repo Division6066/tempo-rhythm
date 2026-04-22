@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { CheckCircle2, Flame, ListTodo, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -18,10 +18,10 @@ function useTodayDueBounds() {
 }
 
 const statusLabel: Record<string, string> = {
-  todo: "לביצוע",
-  in_progress: "בתהליך",
-  done: "בוצע",
-  cancelled: "בוטל",
+  todo: "To do",
+  in_progress: "In progress",
+  done: "Done",
+  cancelled: "Cancelled",
 };
 
 const priorityClass: Record<string, string> = {
@@ -31,17 +31,21 @@ const priorityClass: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const profile = useQuery(api.users.getProfile);
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const bounds = useTodayDueBounds();
-  const todayTasks = useQuery(api.tasks.list, bounds);
-  const streaks = useQuery(api.streaks.getCurrent);
-  const habits = useQuery(api.habits.list);
+
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const todayTasks = useQuery(api.tasks.list, isAuthenticated ? bounds : "skip");
+  const streaks = useQuery(api.streaks.getCurrent, isAuthenticated ? {} : "skip");
+  const habits = useQuery(api.habits.list, isAuthenticated ? {} : "skip");
 
   const loading =
-    profile === undefined ||
-    todayTasks === undefined ||
-    streaks === undefined ||
-    habits === undefined;
+    isAuthLoading ||
+    (isAuthenticated &&
+      (profile === undefined ||
+        todayTasks === undefined ||
+        streaks === undefined ||
+        habits === undefined));
 
   if (loading) {
     return (
@@ -57,28 +61,31 @@ export default function DashboardPage() {
     );
   }
 
-  if (!profile) {
+  if (!isAuthenticated || !profile) {
     return (
       <div className="container mx-auto max-w-6xl px-6 py-16 text-center">
-        <p className="text-muted-foreground">לא נמצא פרופיל משתמש. נסו להתחבר מחדש.</p>
+        <p className="text-muted-foreground">No profile found. Please sign in again.</p>
         <Button asChild className="mt-6">
-          <Link href="/sign-in">התחברות</Link>
+          <Link href="/sign-in">Sign in</Link>
         </Button>
       </div>
     );
   }
 
-  const openToday = todayTasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
+  const openToday = (todayTasks ?? []).filter(
+    (t) => t.status !== "done" && t.status !== "cancelled",
+  );
 
   return (
-    <div className="container mx-auto max-w-6xl px-6 py-12" dir="rtl">
+    <div className="container mx-auto max-w-6xl px-6 py-12">
       <header className="mb-12">
-        <p className="text-sm font-medium text-muted-foreground">לוח בקרה</p>
+        <p className="text-sm font-medium text-muted-foreground">Dashboard</p>
         <h1 className="font-heading mt-2 text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
-          שלום, <span className="text-gradient-primary">{profile.greetingName}</span>
+          Hello,{" "}
+          <span className="text-gradient-primary">{profile.greetingName ?? profile.fullName}</span>
         </h1>
         <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-          סיכום היום, משימות ומעקב הרגלים במקום אחד.
+          Your day at a glance — tasks, habits, and streaks in one place.
         </p>
       </header>
 
@@ -90,8 +97,10 @@ export default function DashboardPage() {
                 <ListTodo className="h-5 w-5" aria-hidden />
               </div>
               <div>
-                <h2 className="font-heading text-2xl font-semibold text-foreground">משימות להיום</h2>
-                <p className="text-sm text-muted-foreground">לפי תאריך יעד היום</p>
+                <h2 className="font-heading text-2xl font-semibold text-foreground">
+                  Today&apos;s tasks
+                </h2>
+                <p className="text-sm text-muted-foreground">Due today</p>
               </div>
             </div>
             <Button
@@ -99,15 +108,18 @@ export default function DashboardPage() {
               variant="outline"
               className="rounded-xl border-border bg-card/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
             >
-              <Link href="/tasks">כל המשימות</Link>
+              <Link href="/tasks">All tasks</Link>
             </Button>
           </div>
 
-          {todayTasks.length === 0 ? (
+          {(todayTasks ?? []).length === 0 ? (
             <p className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center text-muted-foreground">
-              אין משימות עם יעד להיום.{" "}
-              <Link href="/tasks" className="font-semibold text-primary underline-offset-4 hover:underline">
-                הוסיפו משימה
+              Nothing due today.{" "}
+              <Link
+                href="/tasks"
+                className="font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Add a task
               </Link>
             </p>
           ) : (
@@ -115,10 +127,10 @@ export default function DashboardPage() {
               {openToday.length === 0 ? (
                 <li className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-primary">
                   <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />
-                  <span>כל משימות היום הושלמו — כל הכבוד!</span>
+                  <span>All tasks done for today — great work!</span>
                 </li>
               ) : null}
-              {todayTasks.map((task) => (
+              {(todayTasks ?? []).map((task) => (
                 <li
                   key={task._id}
                   className={cn(
@@ -136,14 +148,18 @@ export default function DashboardPage() {
                       {task.title}
                     </p>
                     {task.description ? (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{task.description}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        {task.description}
+                      </p>
                     ) : null}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
                       {statusLabel[task.status] ?? task.status}
                     </span>
-                    <span className={cn("text-xs font-semibold uppercase", priorityClass[task.priority])}>
+                    <span
+                      className={cn("text-xs font-semibold uppercase", priorityClass[task.priority])}
+                    >
                       {task.priority}
                     </span>
                   </div>
@@ -160,15 +176,15 @@ export default function DashboardPage() {
                 <Flame className="h-5 w-5" aria-hidden />
               </div>
               <div>
-                <h2 className="font-heading text-xl font-semibold">רצף נוכחי</h2>
-                <p className="text-sm text-muted-foreground">מקסימום בין ההרגלים</p>
+                <h2 className="font-heading text-xl font-semibold">Current streak</h2>
+                <p className="text-sm text-muted-foreground">Best across all habits</p>
               </div>
             </div>
             <p className="mt-6 font-heading text-5xl font-bold text-gradient-primary tabular-nums">
-              {streaks.streakCount}
+              {streaks?.streakCount ?? 0}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              רצף ארוך ביותר: {streaks.longestAmongHabits} · {streaks.habitCount} הרגלים
+              Longest: {streaks?.longestAmongHabits ?? 0} · {streaks?.habitCount ?? 0} habits
             </p>
           </SoftCard>
 
@@ -179,8 +195,8 @@ export default function DashboardPage() {
                   <Sparkles className="h-5 w-5" aria-hidden />
                 </div>
                 <div>
-                  <h2 className="font-heading text-xl font-semibold">הרגלים</h2>
-                  <p className="text-sm text-muted-foreground">התקדמות רצף</p>
+                  <h2 className="font-heading text-xl font-semibold">Habits</h2>
+                  <p className="text-sm text-muted-foreground">Streak progress</p>
                 </div>
               </div>
               <Button
@@ -188,27 +204,32 @@ export default function DashboardPage() {
                 variant="ghost"
                 className="text-primary hover:bg-primary/10 hover:text-primary"
               >
-                <Link href="/habits">ניהול</Link>
+                <Link href="/habits">Manage</Link>
               </Button>
             </div>
 
-            {habits.length === 0 ? (
+            {(habits ?? []).length === 0 ? (
               <p className="text-center text-sm text-muted-foreground">
-                עדיין אין הרגלים.{" "}
-                <Link href="/habits" className="font-semibold text-primary underline-offset-4 hover:underline">
-                  צרו הרגל ראשון
+                No habits yet.{" "}
+                <Link
+                  href="/habits"
+                  className="font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                  Create your first habit
                 </Link>
               </p>
             ) : (
               <ul className="space-y-5">
-                {habits.slice(0, 5).map((h) => {
+                {(habits ?? []).slice(0, 5).map((h) => {
                   const cap = Math.max(h.longestStreak, h.currentStreak, 1);
                   const pct = Math.min(100, Math.round((h.currentStreak / cap) * 100));
                   return (
                     <li key={h._id}>
                       <div className="mb-2 flex justify-between text-sm">
                         <span className="font-medium text-foreground">{h.name}</span>
-                        <span className="tabular-nums text-muted-foreground">{h.currentStreak} ימים</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {h.currentStreak} days
+                        </span>
                       </div>
                       <div className="h-2.5 overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_3px_rgba(0,0,0,0.12)]">
                         <div

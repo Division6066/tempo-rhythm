@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-// דף יצירת קשר: טופס לשליחת הודעות ופרטי התקשרות נוספים
+// Contact page — message form + extra contact details.
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",
@@ -32,28 +32,28 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-5xl font-bold mb-4 text-center">צור קשר</h1>
+        <h1 className="text-5xl font-bold mb-4 text-center">Get in touch</h1>
         <p className="text-xl text-muted-foreground text-center mb-16">
-          נשמח לשמוע ממך! מלא את הטופס ונחזור אליך בהקדם
+          We'd love to hear from you. Drop us a note and we'll get back to you.
         </p>
 
         <div className="grid md:grid-cols-2 gap-12">
           <div>
             <Card className="border-2">
               <CardHeader>
-                <CardTitle className="text-2xl">שלח לנו הודעה</CardTitle>
+                <CardTitle className="text-2xl">Send us a message</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium mb-2">
-                      שם מלא *
+                      Full name *
                     </label>
                     <Input
                       id="name"
                       name="name"
                       type="text"
-                      placeholder="השם המלא שלך"
+                      placeholder="Your full name"
                       value={formData.name}
                       onChange={handleChange}
                       required={true}
@@ -63,13 +63,13 @@ export default function ContactPage() {
 
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium mb-2">
-                      אימייל *
+                      Email *
                     </label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder="you@example.com"
                       value={formData.email}
                       onChange={handleChange}
                       required={true}
@@ -79,13 +79,13 @@ export default function ContactPage() {
 
                   <div>
                     <label htmlFor="subject" className="block text-sm font-medium mb-2">
-                      נושא *
+                      Subject *
                     </label>
                     <Input
                       id="subject"
                       name="subject"
                       type="text"
-                      placeholder="נושא הפנייה"
+                      placeholder="What's this about?"
                       value={formData.subject}
                       onChange={handleChange}
                       required={true}
@@ -95,12 +95,12 @@ export default function ContactPage() {
 
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium mb-2">
-                      הודעה *
+                      Message *
                     </label>
                     <textarea
                       id="message"
                       name="message"
-                      placeholder="ספר לנו איך נוכל לעזור..."
+                      placeholder="Tell us how we can help…"
                       value={formData.message}
                       onChange={handleChange}
                       required={true}
@@ -110,7 +110,7 @@ export default function ContactPage() {
                   </div>
 
                   <Button type="submit" size="lg" className="w-full text-lg py-6">
-                    שלח הודעה
+                    Send message
                   </Button>
                 </form>
               </CardContent>
@@ -119,9 +119,9 @@ export default function ContactPage() {
 
           <div className="space-y-8">
             <div>
-              <h2 className="text-3xl font-bold mb-6">פרטי התקשרות</h2>
+              <h2 className="text-3xl font-bold mb-6">Other ways to reach us</h2>
               <p className="text-muted-foreground mb-8">
-                ניתן ליצור קשר איתנו גם באמצעות הערוצים הבאים:
+                Prefer email or another channel? Pick whichever works for you.
               </p>
             </div>
 
@@ -130,7 +130,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <Mail className="w-6 h-6 text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">אימייל</h3>
+                    <h3 className="font-semibold mb-1">Email</h3>
                     <p className="text-muted-foreground">support@temporhythm.app</p>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <Phone className="w-6 h-6 text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">טלפון</h3>
+                    <h3 className="font-semibold mb-1">Phone</h3>
                     <p className="text-muted-foreground">support@temporhythm.app</p>
                   </div>
                 </div>
@@ -154,10 +154,8 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <MapPin className="w-6 h-6 text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">כתובת</h3>
-                    <p className="text-muted-foreground">
-                      ישראל
-                    </p>
+                    <h3 className="font-semibold mb-1">Location</h3>
+                    <p className="text-muted-foreground">Remote-first, worldwide</p>
                   </div>
                 </div>
               </CardContent>
@@ -165,10 +163,10 @@ export default function ContactPage() {
 
             <Card className="border-2 bg-primary/5">
               <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">זמני תגובה</h3>
+                <h3 className="font-semibold mb-2">Response time</h3>
                 <p className="text-muted-foreground text-sm">
-                  אנו שואפים להגיב לכל פניה תוך 24 שעות בימי עבודה. בסופי שבוע וחגים, זמני התגובה
-                  עשויים להיות ארוכים יותר.
+                  We aim to reply within 24 hours on weekdays. On weekends and holidays response
+                  times may be a bit longer.
                 </p>
               </CardContent>
             </Card>
@@ -177,7 +175,7 @@ export default function ContactPage() {
 
         <div className="mt-12 text-center">
           <Link href="/" className="text-primary hover:underline">
-            ← חזרה לדף הבית
+            ← Back to home
           </Link>
         </div>
       </div>

@@ -153,4 +153,21 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  // One-row-per-day journal entries. `dateKey` is the user's local date as
+  // YYYY-MM-DD — derived client-side so the boundary respects the user's
+  // timezone. HARD_RULES §5: soft-delete only, by_userId index mandatory.
+  journalEntries: defineTable({
+    userId: v.id("users"),
+    dateKey: v.string(),
+    body: v.string(),
+    mood: v.optional(
+      v.union(v.literal("low"), v.literal("ok"), v.literal("good")),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_dateKey", ["userId", "dateKey"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 });

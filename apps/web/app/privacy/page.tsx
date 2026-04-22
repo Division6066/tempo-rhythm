@@ -1,81 +1,81 @@
 import Link from "next/link";
 
-// דף מדיניות פרטיות: מסמך משפטי המסביר כיצד נאסף ומנוהל המידע באתר
+// Privacy Policy page — plain-language summary. Customise as needed.
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen py-20 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-5xl font-bold mb-8">מדיניות פרטיות</h1>
+        <h1 className="text-5xl font-bold mb-8">Privacy Policy</h1>
 
         <div className="space-y-6 text-muted-foreground">
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">1. איסוף מידע</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">1. What we collect</h2>
             <p>
-              אנו אוספים מידע אישי שאתם מספקים לנו ביודעין, כגון שם וכתובת דואר אלקטרוני, כאשר אתם
-              נרשמים לשירותים שלנו או יוצרים קשר איתנו.
+              We collect the personal information you share with us — things like your name and
+              email — when you sign up for our services or get in touch.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">2. שימוש במידע</h2>
-            <p>המידע שאנו אוספים משמש אותנו למטרות הבאות:</p>
-            <ul className="list-disc list-inside mr-6 mt-2 space-y-2">
-              <li>מתן ושיפור השירותים שלנו</li>
-              <li>שליחת עדכונים ומידע רלוונטי</li>
-              <li>מענה לפניות שירות לקוחות</li>
-              <li>שיפור חווית המשתמש באתר</li>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">2. How we use it</h2>
+            <p>We use the information to:</p>
+            <ul className="list-disc list-inside ml-6 mt-2 space-y-2">
+              <li>Provide and improve our services</li>
+              <li>Send updates and relevant information</li>
+              <li>Respond to support requests</li>
+              <li>Make your experience with the product smoother</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">3. אבטחת מידע</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">3. Security</h2>
             <p>
-              אנו מיישמים אמצעי אבטחה טכניים וארגוניים מתקדמים כדי להגן על המידע האישי שלכם מפני
-              גישה, שימוש או גילוי בלתי מורשים.
+              We apply modern technical and organisational safeguards to protect your personal
+              information from unauthorised access, use, or disclosure.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">4. שיתוף מידע</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">4. Sharing</h2>
             <p>
-              אנו לא מוכרים, משכירים או משתפים את המידע האישי שלכם עם צדדים שלישיים למטרות שיווק,
-              אלא אם כן קיבלנו הסכמה מפורשת מכם לכך.
+              We don't sell, rent, or share your personal information with third parties for
+              marketing purposes unless you've explicitly opted in.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">5. קובצי Cookie</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">5. Cookies</h2>
             <p>
-              האתר שלנו משתמש בקובצי Cookie כדי לשפר את חווית המשתמש ולנתח את השימוש באתר. אתם
-              יכולים לבחור לדחות קובצי Cookie דרך הגדרות הדפדפן שלכם.
+              Our site uses cookies to improve your experience and understand how the site is used.
+              You can block cookies in your browser settings at any time.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">6. זכויותיכם</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">6. Your rights</h2>
             <p>
-              יש לכם זכות לגשת למידע האישי שלכם, לבקש תיקון או מחיקה שלו, ולבטל את הסכמתכם לשימוש
-              במידע בכל עת.
+              You can request access to your personal information, ask us to correct or delete it,
+              or withdraw consent to its use at any time.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">7. שינויים במדיניות</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">7. Changes to this policy</h2>
             <p>
-              אנו שומרים לעצמנו את הזכות לעדכן את מדיניות הפרטיות מעת לעת. שינויים משמעותיים יפורסמו
-              באתר ויכללו תאריך עדכון.
+              We may update this policy from time to time. Significant changes will be posted on the
+              site with an updated date.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">8. יצירת קשר</h2>
-            <p>לשאלות או בקשות הנוגעות לפרטיות שלכם, אנא צרו קשר: support@temporhythm.app</p>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">8. Contact</h2>
+            <p>Questions about privacy? Reach us at support@temporhythm.app.</p>
           </section>
         </div>
 
         <div className="mt-12">
           <Link href="/" className="text-primary hover:underline">
-            ← חזרה לדף הבית
+            ← Back to home
           </Link>
         </div>
       </div>

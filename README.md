@@ -98,6 +98,41 @@ Tempo Flow is developed by one person. If it helps you, consider supporting deve
 - **Founder vlog:** `https://www.youtube.com/@<channel>` (placeholder — techno-optimism, future-proofing, building with AI)
 - **Ask the Founder:** built into the app — Settings → Ask the Founder. Submissions land in a private queue; opt-in transcripts may be published as part of the 1.1 release.
 
+## Linting
+
+Tempo Flow is **Biome-only** — no ESLint, no Prettier anywhere in the repo.
+
+### Shared config approach
+
+A root shared config lives at [`packages/config/biome.json`](./packages/config/biome.json). Each app extends it:
+
+| File | Extends | App-level overrides |
+|------|---------|---------------------|
+| `apps/web/biome.json` | `../../packages/config/biome.json` | CSS parser (`tailwindDirectives`, `cssModules`) |
+| `apps/mobile/biome.json` | `../../packages/config/biome.json` | `lineWidth: 80`, `quoteStyle: "single"` |
+
+### Common rule highlights
+
+- `recommended: true` base + explicit error/warn escalations for key correctness and suspicious rules.
+- `noConsole: "warn"` — console calls allowed during development, surfaced in CI.
+- `noExplicitAny: "off"` — pragmatic; tighten per-file when possible.
+- `useExhaustiveDependencies: "warn"` on all `.tsx/.ts/.jsx/.js` files.
+
+### Tailwind class sorting
+
+Tailwind class sorting is **intentionally disabled** in Biome. `apps/web` uses Tailwind v4 (shadcn/ui conventions) and `apps/mobile` uses NativeWind (different class ordering expectations). A shared sort order cannot be enforced without false positives across both targets.
+
+### Running the linter
+
+```bash
+# Lint all workspaces via Turborepo
+bun run lint
+
+# Lint a single workspace
+cd apps/web && bun run lint
+cd apps/mobile && bun run lint
+```
+
 ## Contributing
 
 See `CONTRIBUTING.md` (published alongside the Tempo 1.1 release). Until then, open an issue before starting work on a significant change, and follow [`docs/HARD_RULES.md`](./docs/HARD_RULES.md) rigorously.

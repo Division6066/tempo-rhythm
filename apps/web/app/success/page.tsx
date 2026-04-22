@@ -1,13 +1,13 @@
 // ============================================================================
-// דף הצלחה לאחר Checkout
+// Post-checkout success page
 // ============================================================================
-// Polar מפנה לכאן לאחר תשלום מוצלח (לפי POLAR_SUCCESS_URL).
+// Polar redirects here after a successful purchase (POLAR_SUCCESS_URL).
 //
-// כרגע הדף מציג אישור בסיסי בלבד.
-// כדי להפוך את זה ל"מערכת תשלומים מלאה", יש להוסיף:
-// - Webhook מ-Polar
-// - אימות התשלום בצד שרת
-// - עדכון userType ל-'paid' ב-Convex
+// Right now this page shows a basic confirmation. To make it a full payment
+// system you'd want to add:
+// - A webhook from Polar
+// - Server-side payment verification
+// - A Convex mutation bumping userType to 'paid'
 
 type SuccessPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -20,17 +20,17 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
   return (
     <div className="min-h-screen p-8">
-      <main className="container mx-auto" dir="rtl">
-        <h1 className="mb-4 font-bold text-4xl">התשלום התקבל בהצלחה</h1>
+      <main className="container mx-auto">
+        <h1 className="mb-4 font-bold text-4xl">Payment received</h1>
         <p className="text-lg text-foreground/80 leading-relaxed">
-          תודה! אם תרצו, ניתן להשתמש ב-Checkout ID כדי לאמת את הרכישה מול Polar ולעדכן את סטטוס
-          המשתמש.
+          Thanks! You can use the Checkout ID below to verify the purchase with Polar and sync the
+          user's subscription status.
         </p>
 
         <div className="mt-6 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
           <div className="text-sm text-gray-500">Checkout ID</div>
           <div className="mt-1 font-mono text-sm text-gray-200 break-all">
-            {checkoutId || "(לא התקבל Checkout ID)"}
+            {checkoutId || "(no Checkout ID received)"}
           </div>
         </div>
       </main>

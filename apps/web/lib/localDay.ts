@@ -1,3 +1,8 @@
+/**
+ * Local calendar-day helpers. These respect the user's browser timezone so
+ * "today" means the user's local today, not UTC.
+ */
+
 /** Start of local calendar day (ms). */
 export function startOfLocalDayMs(d = new Date()): number {
   const x = new Date(d);
@@ -20,6 +25,19 @@ export function startOfLocalWeekMondayMs(d = new Date()): number {
   return x.getTime();
 }
 
-export function endOfLocalWeekMondayMs(d = new Date()): number {
-  return startOfLocalWeekMondayMs(d) + 7 * 24 * 60 * 60 * 1000;
+/** YYYY-MM-DD string for the given local date (default: now). */
+export function getLocalDateKey(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Human-friendly heading for a date — e.g. "Wednesday, April 22". */
+export function formatLongDate(d = new Date()): string {
+  return d.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }

@@ -11,10 +11,13 @@
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as coach from "../coach.js";
+import type * as coachActions from "../coachActions.js";
 import type * as conversations from "../conversations.js";
 import type * as goals from "../goals.js";
 import type * as habits from "../habits.js";
 import type * as http from "../http.js";
+import type * as journal from "../journal.js";
+import type * as lib_ai from "../lib/ai.js";
 import type * as lib_requireUser from "../lib/requireUser.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
@@ -34,10 +37,13 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   auth: typeof auth;
   coach: typeof coach;
+  coachActions: typeof coachActions;
   conversations: typeof conversations;
   goals: typeof goals;
   habits: typeof habits;
   http: typeof http;
+  journal: typeof journal;
+  "lib/ai": typeof lib_ai;
   "lib/requireUser": typeof lib_requireUser;
   memories: typeof memories;
   messages: typeof messages;

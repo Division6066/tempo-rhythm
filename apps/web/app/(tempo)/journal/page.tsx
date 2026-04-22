@@ -1,23 +1,16 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: journal
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-2.jsx
- * @summary: Dated journal entries.
- * @queries: journal.list
- * @mutations: journal.create
+ * @summary: Today's journal entry — auto-saves on blur / 1s debounce.
+ * @queries: journal.getByDate
+ * @mutations: journal.upsertByDate
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @status: live
+ * @notes: Schema adds a `journalEntries` table; requires Convex push before the
+ *         query/mutation resolve at runtime.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { JournalScreen } from "@/components/journal/JournalScreen";
 
 export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Journal"
-      category="Library"
-      source="screens-2.jsx"
-      summary="Dated journal entries."
-    />
-  );
+  return <JournalScreen />;
 }

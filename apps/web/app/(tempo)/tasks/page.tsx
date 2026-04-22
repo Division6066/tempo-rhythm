@@ -1,23 +1,14 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: tasks
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-2.jsx
- * @summary: Tasks inbox with filters and grouping.
+ * @summary: All tasks — list, quick-add, toggle complete.
  * @queries: tasks.list
- * @mutations: tasks.complete, tasks.create
+ * @mutations: tasks.createQuick, tasks.toggleCompletion
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @status: live
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { TasksScreen } from "@/components/tasks/TasksScreen";
 
 export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Tasks"
-      category="Library"
-      source="screens-2.jsx"
-      summary="Tasks inbox with filters and grouping."
-    />
-  );
+  return <TasksScreen />;
 }

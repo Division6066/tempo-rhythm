@@ -1,22 +1,22 @@
 // ============================================================================
-// טקסטים לתצוגת תוכניות (Paywall)
+// Plan display strings (Paywall)
 // ============================================================================
-// קובץ זה מכיל את הטקסטים והמחירים לתצוגה בלבד עבור תוכניות התשלום.
-// הערה: המחיר בפועל נקבע ב-Polar Dashboard, הטקסט כאן הוא רק לתצוגה.
+// Display-only copy and pricing for the paid plans.
+// Note: the real price is set in the Polar dashboard; this is purely cosmetic.
 
 export const PLAN_DISPLAY = {
   free: {
-    title: "חינם",
-    subtitle: "כל מה שצריך כדי להתחיל",
+    title: "Free",
+    subtitle: "Everything you need to start.",
   },
   monthly: {
-    title: "חודשי",
-    priceLine: "₪29",
-    subtitle: "למשתמש לחודש",
+    title: "Monthly",
+    priceLine: "$9",
+    subtitle: "per user / month",
   },
   yearly: {
-    title: "שנתי",
-    priceLine: "₪290",
-    subtitle: "למשתמש לשנה",
+    title: "Yearly",
+    priceLine: "$90",
+    subtitle: "per user / year",
   },
 } as const;
