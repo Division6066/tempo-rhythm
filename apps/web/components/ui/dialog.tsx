@@ -28,7 +28,7 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
-// הוספת אפשרות להסתיר את כפתור הסגירה הברירת-מחדלי
+// Adds the option to hide the default close button.
 type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   hideCloseButton?: boolean;
 };

@@ -21,28 +21,27 @@ import {
 import { api } from "@/convex/_generated/api";
 
 export default function Navbar() {
-  const { isAuthenticated, isLoading } = useConvexAuth(); // סטטוס אימות
-  const { signOut } = useAuthActions(); // פעולת התנתקות
-  const user = useQuery(api.users.getCurrentUser); // פרטי המשתמש המחובר
-  const [isOpen, setIsOpen] = useState(false); // מצב תפריט המשתמש (Dropdown)
-  const [showSignInModal, setShowSignInModal] = useState(false); // הצגת מודל התחברות
-  const [showSignUpModal, setShowSignUpModal] = useState(false); // הצגת מודל הרשמה
-  const [showPaywallModal, setShowPaywallModal] = useState(false); // הצגת מודל Paywall (Preview)
-  const [isDebugOpen, setIsDebugOpen] = useState(false); // מצב קונסולת דיבאג
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false); // דיאלוג התנתקות/מחיקה
-  const [logoutStep, setLogoutStep] = useState<"main" | "deleteConfirm">("main"); // שלבי הדיאלוג
-  const [isDeleteLoading, setIsDeleteLoading] = useState(false); // מצב טעינה למחיקה
-  const dropdownRef = useRef<HTMLDivElement>(null); // Ref לזיהוי קליקים מחוץ לתפריט
-  const debugRef = useRef<HTMLDivElement>(null); // Ref לזיהוי קליקים מחוץ לקונסולה
+  const { isAuthenticated, isLoading } = useConvexAuth(); // Auth status
+  const { signOut } = useAuthActions(); // Sign-out action
+  const user = useQuery(api.users.getCurrentUser); // Current-user details
+  const [isOpen, setIsOpen] = useState(false); // User menu open state
+  const [showSignInModal, setShowSignInModal] = useState(false); // Sign-in modal
+  const [showSignUpModal, setShowSignUpModal] = useState(false); // Sign-up modal
+  const [showPaywallModal, setShowPaywallModal] = useState(false); // Paywall preview modal
+  const [isDebugOpen, setIsDebugOpen] = useState(false); // Debug console
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false); // Sign-out / delete dialog
+  const [logoutStep, setLogoutStep] = useState<"main" | "deleteConfirm">("main");
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const debugRef = useRef<HTMLDivElement>(null);
 
-  // סגירת התפריט בעת לחיצה מחוץ לו
+  // Close the menus when clicking outside them.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
 
-      // סגירת קונסולת דיבאג בעת לחיצה מחוץ לה
       if (debugRef.current && !debugRef.current.contains(event.target as Node)) {
         setIsDebugOpen(false);
       }
@@ -52,42 +51,38 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const displayName = user?.fullName || user?.email?.split("@")[0] || "משתמש";
-  const updateUserType = useMutation(api.users.updateUserType); // שינוי סטטוס משתמש (למצב בדיקה)
-  const deleteMyAccount = useMutation(api.users.deleteMyAccount); // מחיקת חשבון (Convex)
+  const displayName = user?.fullName || user?.email?.split("@")[0] || "friend";
+  const updateUserType = useMutation(api.users.updateUserType);
+  const deleteMyAccount = useMutation(api.users.deleteMyAccount);
 
-  // פתיחת דיאלוג התנתקות (במקום התנתקות מיידית)
   const openLogoutDialog = () => {
     setIsOpen(false);
     setLogoutStep("main");
     setShowLogoutDialog(true);
   };
 
-  // ביצוע התנתקות
   const confirmSignOut = async () => {
     await signOut();
     setShowLogoutDialog(false);
   };
 
-  // מעבר למסך אישור מחיקה
   const goToDeleteConfirm = () => {
-    setIsOpen(false); // סגירת ה-dropdown
+    setIsOpen(false);
     setLogoutStep("deleteConfirm");
-    setShowLogoutDialog(true); // פתיחת הדיאלוג עם שלב המחיקה
+    setShowLogoutDialog(true);
   };
 
-  // ביצוע מחיקת חשבון (2 שלבים — זהו השלב הסופי)
+  // Two-step account deletion — this is the final confirm step.
   const confirmDeleteAccount = async () => {
     setIsDeleteLoading(true);
     try {
       await deleteMyAccount();
-      // התנתקות אוטומטית לאחר מחיקת החשבון
+      // Sign out automatically after the account is deleted.
       await signOut();
       setShowLogoutDialog(false);
-      // הערה: בדפדפן, ההתנתקות תפנה את המשתמש אוטומטית, אז לא צריך הודעת הצלחה נפרדת
     } catch (_error) {
-      // במקרה של שגיאה, נשארים בדיאלוג כדי שהמשתמש יוכל לנסות שוב
-      // ניתן להוסיף כאן toast notification או הודעת שגיאה ב-UI
+      // On failure we stay in the dialog so the user can retry.
+      // TODO: surface a toast or inline error message.
     } finally {
       setIsDeleteLoading(false);
     }
@@ -97,25 +92,24 @@ export default function Navbar() {
     <nav className="border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-background/95">
       <div className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
-          {/* קישורי ניווט - צד ימין (RTL) */}
           <div className="flex max-w-[70vw] flex-wrap items-center gap-x-4 gap-y-2 sm:max-w-none sm:gap-x-6">
             <Link
               href="/"
               className="text-2xl hover:scale-110 transition-transform"
-              aria-label="דף הבית"
+              aria-label="Home"
             >
               <Home className="w-6 h-6 text-foreground" />
             </Link>
             {[
-              { href: "/dashboard", label: "לוח בית" },
-              { href: "/tasks", label: "משימות" },
-              { href: "/notes", label: "פתקים" },
-              { href: "/calendar", label: "יומן" },
-              { href: "/coach", label: "מאמן" },
-              { href: "/habits", label: "הרגלים" },
-              { href: "/goals", label: "מטרות" },
-              { href: "/settings", label: "הגדרות" },
-              { href: "/analytics", label: "נתונים" },
+              { href: "/today", label: "Today" },
+              { href: "/tasks", label: "Tasks" },
+              { href: "/notes", label: "Notes" },
+              { href: "/calendar", label: "Calendar" },
+              { href: "/coach", label: "Coach" },
+              { href: "/habits", label: "Habits" },
+              { href: "/goals", label: "Goals" },
+              { href: "/settings/profile", label: "Settings" },
+              { href: "/insights", label: "Insights" },
             ].map(({ href, label }) => (
               <Link
                 key={href}
@@ -127,81 +121,81 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* פרופיל משתמש או כפתור התחברות - צד שמאל (RTL) */}
-          <div className="mr-auto flex items-center gap-3">
-            {/* כפתור דיבאג (Dev בלבד) - אייקון באג בצד שמאל למעלה */}
+          <div className="ml-auto flex items-center gap-3">
             {IS_DEV_MODE && (
               <div className="relative" ref={debugRef}>
                 <Button
                   variant="ghost"
                   onClick={() => setIsDebugOpen((v) => !v)}
                   className="h-10 w-10 rounded-lg bg-yellow-500/20 border border-yellow-500/50 hover:bg-yellow-500/30 hover:border-yellow-500/70"
-                  aria-label="קונסולת דיבאג"
+                  aria-label="Debug console"
                 >
                   <Bug className="h-5 w-5 text-yellow-400" />
                 </Button>
 
-                {/* קונסולת דיבאג - popup שנפתח כלפי מטה */}
                 <div
                   className={[
-                    "absolute left-0 mt-2 w-80 overflow-hidden rounded-xl border border-orange-500/30 bg-gray-900/95 shadow-xl backdrop-blur-sm transition-all",
+                    "absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-orange-500/30 bg-gray-900/95 shadow-xl backdrop-blur-sm transition-all",
                     isDebugOpen ? "max-h-[480px] opacity-100" : "max-h-0 opacity-0",
                   ].join(" ")}
                 >
-                  <div className="p-4" dir="rtl">
+                  <div className="p-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <div className="text-sm font-bold text-white">קונסולת דיבאג</div>
+                      <div className="text-sm font-bold text-white">Debug console</div>
                       <div className="text-xs text-gray-400">{APP_ENV}</div>
                     </div>
 
-                    {/* שורות מצב */}
                     <div className="mb-4 space-y-1 text-xs text-gray-300">
-                      <DebugRow label="Paywall פעיל" value={PAYWALL_ENABLED ? "כן" : "לא"} />
+                      <DebugRow label="Paywall enabled" value={PAYWALL_ENABLED ? "yes" : "no"} />
                       <DebugRow
-                        label="תשלומים פעילים"
-                        value={PAYMENT_SYSTEM_ENABLED ? "כן" : "לא"}
+                        label="Payments enabled"
+                        value={PAYMENT_SYSTEM_ENABLED ? "yes" : "no"}
                       />
-                      <DebugRow label="Mock Payments" value={MOCK_PAYMENTS ? "כן" : "לא"} />
+                      <DebugRow label="Mock payments" value={MOCK_PAYMENTS ? "yes" : "no"} />
                       <DebugRow
-                        label="סטטוס משתמש"
-                        value={user ? (user.userType === "paid" ? "פרימיום" : "חינמי") : "לא מחובר"}
+                        label="User status"
+                        value={
+                          user
+                            ? user.userType === "paid"
+                              ? "premium"
+                              : "free"
+                            : "signed out"
+                        }
                       />
                     </div>
 
-                    {/* כפתורי Preview */}
                     <div className="space-y-2">
                       <button
                         type="button"
                         onClick={() => setShowSignInModal(true)}
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-right text-sm text-white transition hover:border-orange-500/40"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-left text-sm text-white transition hover:border-orange-500/40"
                       >
-                        פתח מודל התחברות (Preview)
+                        Open sign-in modal (preview)
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowSignUpModal(true)}
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-right text-sm text-white transition hover:border-orange-500/40"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-left text-sm text-white transition hover:border-orange-500/40"
                       >
-                        פתח מודל הרשמה (Preview)
+                        Open sign-up modal (preview)
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowPaywallModal(true)}
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-right text-sm text-white transition hover:border-orange-500/40"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-left text-sm text-white transition hover:border-orange-500/40"
                       >
-                        פתח Paywall (Preview)
+                        Open paywall (preview)
                       </button>
 
-                      {/* כפתור בדיקה: סימון המשתמש כ-paid (רק אם MOCK_PAYMENTS) */}
                       {MOCK_PAYMENTS && (
                         <button
                           type="button"
                           onClick={async () => {
                             await updateUserType({ userType: "paid" });
                           }}
-                          className="w-full rounded-lg border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-right text-sm text-orange-100 transition hover:bg-orange-500/15"
+                          className="w-full rounded-lg border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-left text-sm text-orange-100 transition hover:bg-orange-500/15"
                         >
-                          מצב בדיקה: שדרג אותי לפרימיום
+                          Dev test: upgrade me to premium
                         </button>
                       )}
                     </div>
@@ -222,12 +216,13 @@ export default function Navbar() {
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                     <User className="w-4 h-4 text-primary-foreground" />
                   </div>
-                  <span className="text-sm font-medium text-foreground">שלום, {displayName}</span>
+                  <span className="text-sm font-medium text-foreground">
+                    Hi, {displayName}
+                  </span>
                 </Button>
 
-                {/* תפריט נפתח (Dropdown) */}
                 {isOpen && (
-                  <Card className="absolute left-0 mt-2 w-72 shadow-lg border-border z-50">
+                  <Card className="absolute right-0 mt-2 w-72 shadow-lg border-border z-50">
                     <CardContent className="p-0">
                       <div className="px-4 py-4 border-b border-border bg-muted/50">
                         <p className="text-sm font-semibold text-foreground mb-1">{displayName}</p>
@@ -238,19 +233,19 @@ export default function Navbar() {
                         <Button
                           variant="ghost"
                           onClick={openLogoutDialog}
-                          className="w-full justify-start px-3 py-2 text-right hover:bg-destructive/10 text-destructive rounded-md"
+                          className="w-full justify-start px-3 py-2 text-left hover:bg-destructive/10 text-destructive rounded-md"
                         >
-                          <LogOut className="w-4 h-4 ml-2" />
-                          <span className="text-sm font-medium">התנתק</span>
+                          <LogOut className="w-4 h-4 mr-2" />
+                          <span className="text-sm font-medium">Sign out</span>
                         </Button>
 
                         <Button
                           variant="ghost"
                           onClick={goToDeleteConfirm}
-                          className="w-full justify-start px-3 py-2 text-right hover:bg-red-950/20 text-red-500 rounded-md border border-red-900/30"
+                          className="w-full justify-start px-3 py-2 text-left hover:bg-red-950/20 text-red-500 rounded-md border border-red-900/30"
                         >
-                          <Trash2 className="w-4 h-4 ml-2" />
-                          <span className="text-sm font-medium">מחק חשבון</span>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          <span className="text-sm font-medium">Delete account</span>
                         </Button>
                       </div>
                     </CardContent>
@@ -262,31 +257,27 @@ export default function Navbar() {
                 onClick={() => setShowSignInModal(true)}
                 className="bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-medium px-6 py-2 rounded-lg shadow-md transition-all"
               >
-                התחברות
+                Sign in
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      {/* מודל התחברות */}
       <SignInModal
         open={showSignInModal}
         onOpenChange={setShowSignInModal}
         onSwitchToSignUp={() => setShowSignUpModal(true)}
       />
 
-      {/* מודל הרשמה */}
       <SignUpModal
         open={showSignUpModal}
         onOpenChange={setShowSignUpModal}
         onSwitchToSignIn={() => setShowSignInModal(true)}
       />
 
-      {/* מודל Paywall (Preview לדיבאג) */}
       <PaywallModal open={showPaywallModal} onOpenChange={setShowPaywallModal} preview={true} />
 
-      {/* דיאלוג התנתקות + מחיקת חשבון */}
       <Dialog
         open={showLogoutDialog}
         onOpenChange={(open) => {
@@ -297,20 +288,20 @@ export default function Navbar() {
         }}
       >
         <DialogContent className="sm:max-w-lg bg-linear-to-br from-gray-900 via-gray-800 to-black border-gray-700 p-0">
-          <div className="rounded-2xl bg-gray-800/50 backdrop-blur-sm p-8" dir="rtl">
+          <div className="rounded-2xl bg-gray-800/50 backdrop-blur-sm p-8">
             {logoutStep === "main" ? (
               <>
                 <DialogHeader className="mb-6">
                   <DialogTitle className="text-2xl font-bold text-white text-center">
-                    התנתקות מהחשבון
+                    Sign out of your account
                   </DialogTitle>
                   <p className="text-gray-400 text-center mt-2">
-                    האם אתה בטוח שברצונך להתנתק? ניתן גם למחוק את החשבון לצמיתות.
+                    Ready to sign out? You can also delete your account permanently.
                   </p>
                 </DialogHeader>
 
-                <div className="mb-6 rounded-xl border border-gray-700 bg-gray-900/40 p-4 text-right">
-                  <div className="text-sm text-gray-400">מחובר בתור</div>
+                <div className="mb-6 rounded-xl border border-gray-700 bg-gray-900/40 p-4 text-left">
+                  <div className="text-sm text-gray-400">Signed in as</div>
                   <div className="mt-1 text-base font-semibold text-white">{displayName}</div>
                   <div className="mt-1 text-xs text-gray-500 truncate">{user?.email || ""}</div>
                 </div>
@@ -321,7 +312,7 @@ export default function Navbar() {
                     onClick={confirmSignOut}
                     className="w-full rounded-xl bg-linear-to-r from-orange-500 to-red-600 px-6 py-3 font-bold text-white shadow-md transition-all hover:from-orange-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800"
                   >
-                    התנתק
+                    Sign out
                   </button>
 
                   <button
@@ -329,7 +320,7 @@ export default function Navbar() {
                     onClick={goToDeleteConfirm}
                     className="w-full rounded-xl border-2 border-red-900 bg-red-950/30 px-6 py-3 font-bold text-red-200 transition hover:bg-red-950/40"
                   >
-                    מחיקת חשבון
+                    Delete account
                   </button>
 
                   <button
@@ -337,7 +328,7 @@ export default function Navbar() {
                     onClick={() => setShowLogoutDialog(false)}
                     className="w-full rounded-xl border border-gray-700 bg-gray-900/40 px-6 py-3 font-semibold text-gray-200 transition hover:border-orange-500/30"
                   >
-                    ביטול
+                    Cancel
                   </button>
                 </div>
               </>
@@ -345,12 +336,11 @@ export default function Navbar() {
               <>
                 <DialogHeader className="mb-6">
                   <DialogTitle className="text-2xl font-bold text-white text-center">
-                    אישור סופי למחיקת חשבון
+                    Confirm account deletion
                   </DialogTitle>
                   <p className="text-gray-300 text-center mt-2 leading-relaxed">
-                    פעולה זו תמחק לצמיתות את החשבון שלך ואת הנתונים המשויכים אליו.
-                    <br />
-                    לא ניתן לשחזר את הנתונים לאחר המחיקה.
+                    This moves your account to Recently deleted — you can restore it within 30
+                    days. After that it is permanently removed.
                   </p>
                 </DialogHeader>
 
@@ -361,7 +351,7 @@ export default function Navbar() {
                     disabled={isDeleteLoading}
                     className="w-full rounded-xl bg-red-600 px-6 py-3 font-bold text-white transition hover:bg-red-700 disabled:opacity-60"
                   >
-                    {isDeleteLoading ? "מוחק חשבון..." : "כן, מחק את החשבון"}
+                    {isDeleteLoading ? "Deleting account…" : "Yes, delete my account"}
                   </button>
 
                   <button
@@ -369,7 +359,7 @@ export default function Navbar() {
                     onClick={() => setLogoutStep("main")}
                     className="w-full rounded-xl border border-gray-700 bg-gray-900/40 px-6 py-3 font-semibold text-gray-200 transition hover:border-orange-500/30"
                   >
-                    חזור
+                    Back
                   </button>
                 </div>
               </>
@@ -381,12 +371,12 @@ export default function Navbar() {
   );
 }
 
-// שורת דיבאג קצרה להצגת ערך/תווית
+// Small label/value row for the debug console.
 function DebugRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <div className="text-gray-200">{value}</div>
       <div className="text-gray-500">{label}</div>
+      <div className="text-gray-200">{value}</div>
     </div>
   );
 }

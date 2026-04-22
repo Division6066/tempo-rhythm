@@ -1,57 +1,57 @@
 // ============================================================================
-// קונפיגורציית האפליקציה (Web)
+// App configuration (Web)
 // ============================================================================
-// קובץ קונפיגורציה מרכזי שמאפשר לשלוט בהתנהגות האפליקציה דרך דגלים.
-// המטרה: לאפשר להדליק/לכבות פיצ'רים (כמו Paywall ותשלומים) בצורה בטוחה.
+// Central config file that governs app behaviour through feature flags.
+// Goal: safely turn features (e.g. Paywall, payments) on or off.
 //
-// חשוב:
-// - אל תתן לאוטומציה לשנות ערכים "קריטיים" בלי פעולה מכוונת.
-// - שמור על שמות ברורים כדי שמפתחים ימצאו מהר את מה שהם מחפשים.
+// Important:
+// - Do not let automation change "critical" values without an intentional action.
+// - Keep names explicit so developers can find what they need quickly.
 
 // ============================================================================
-// מצב סביבה
+// Environment mode
 // ============================================================================
 
-// 🚨 קריטי: דגל זה מכריח מצב ייצור (Production)
-// ⚠️ אל תתן לאוטומציה לשנות את זה
-// 👤 נדרשת פעולת משתמש: הגדר ידנית ל-true/false לפי הצורך
+// 🚨 CRITICAL: forces production mode when true.
+// ⚠️ Do not let automation change this.
+// 👤 User action required: set manually to true/false as needed.
 export const FORCE_PROD_MODE = false;
 
-// דגל מצב פיתוח נגזר - מכבד את דריסת FORCE_PROD_MODE
+// Derived dev-mode flag — respects the FORCE_PROD_MODE override above.
 export const IS_DEV_MODE = FORCE_PROD_MODE ? false : process.env.NODE_ENV !== "production";
 
-// סוג סביבת האפליקציה
+// App environment type.
 export type AppEnv = "dev" | "prod";
 
-// סביבת האפליקציה הנוכחית
+// Current app environment.
 export const APP_ENV: AppEnv = IS_DEV_MODE ? "dev" : "prod";
 
 // ============================================================================
-// Paywall (מסך תשלום) ותשלומים
+// Paywall + payments
 // ============================================================================
 
-// 🚨 קריטי: דגל זה קובע האם ה-Paywall פעיל (נעילת עמודים והצגת מודל תשלום)
-// אם false: עמודים נעולים יוצגו רגיל (ללא Paywall)
-// אם true: Paywall יוצג למשתמשים חינמיים, והתנהגות התשלום תיקבע לפי הדגלים למטה
+// 🚨 CRITICAL: controls whether the paywall is active (locked pages + checkout modal).
+// false → locked pages render normally (no paywall).
+// true  → free users see the paywall; checkout behaviour follows the flags below.
 export const PAYWALL_ENABLED = true;
 
-// דגל תשלומים מדומים (רק לפיתוח)
-// אם true: לחיצה על "המשך" בתוכנית בתשלום תדמה שדרוג ל"בתשלום" בלי Polar Checkout
-// אם false: לחיצה על "המשך" תנסה לבצע Redirect ל-Polar Checkout (אם PAYMENT_SYSTEM_ENABLED דולק)
+// Mock-payments flag (development only).
+// true  → clicking "Continue" on a paid plan simulates an upgrade without Polar Checkout.
+// false → clicking "Continue" redirects to Polar Checkout (if PAYMENT_SYSTEM_ENABLED is on).
 export const MOCK_PAYMENTS = true;
 
-// 🚨 קריטי: דגל זה קובע האם מערכת התשלומים האמיתית פעילה
-// אם false: לחיצה על "המשך" תציג הודעת Preview (או תדמה שדרוג אם MOCK_PAYMENTS דולק)
-// אם true: לחיצה על "המשך" תבצע Redirect ל-Polar Checkout (דורש הגדרת Product IDs)
-// הערה: Paywall יוצג בכל מקרה אם PAYWALL_ENABLED דולק - הדגל הזה רק קובע מה קורה בלחיצה
+// 🚨 CRITICAL: controls whether the real payment system is active.
+// false → clicking "Continue" shows a Preview message (or mocks an upgrade if MOCK_PAYMENTS is on).
+// true  → clicking "Continue" redirects to Polar Checkout (requires Product IDs).
+// Note: the paywall still renders whenever PAYWALL_ENABLED is on — this flag only controls click behaviour.
 export const PAYMENT_SYSTEM_ENABLED = false;
 
 // ============================================================================
-// קישורי תנאי שימוש ומדיניות פרטיות
+// Terms & Privacy links
 // ============================================================================
 
-// 👤 נדרשת פעולת משתמש: עדכן את הקישורים לדפי תנאי השימוש ומדיניות הפרטיות שלך
-// הקישורים צריכים להוביל לדפי Landing Page שלך או לדפים באפליקציה
+// 👤 User action required: point these at your real Terms / Privacy pages.
+// They can resolve to landing-page URLs or internal app routes.
 export const TERMS_URL = process.env.NEXT_PUBLIC_TERMS_URL || "/terms";
 export const PRIVACY_URL = process.env.NEXT_PUBLIC_PRIVACY_URL || "/privacy";
 export const APP_NAME = "Tempo Rhythm";

@@ -16,18 +16,17 @@ interface SignUpModalProps {
   onSwitchToSignIn?: () => void;
 }
 
-// קומפוננטת מודל הרשמה
+// Sign-up modal component.
 export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: SignUpModalProps) {
-  const { signIn } = useAuthActions(); // פעולת הרשמה (משתמשת באותה פונקציה כמו התחברות)
+  const { signIn } = useAuthActions(); // Sign-up uses the same Convex Auth action as sign-in.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false); // זכור אותי
-  const [showPassword, setShowPassword] = useState(false); // הצגת סיסמה
-  const [consentAccepted, setConsentAccepted] = useState(false); // הסכמה לתנאי שימוש ופרטיות
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
 
-  // טעינת אימייל שמור
   useEffect(() => {
     const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
     if (rememberedEmail) {
@@ -39,9 +38,8 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // בדיקה שהמשתמש אישר את תנאי השימוש ומדיניות הפרטיות
     if (!consentAccepted) {
-      setError("אנא קראו ואשרו קודם את תנאי השימוש ומדיניות הפרטיות");
+      setError("Please read and accept the Terms and Privacy Policy to continue.");
       return;
     }
 
@@ -49,10 +47,8 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
     setError("");
 
     try {
-      // יצירת משתמש חדש והתחברות (flow: "signUp")
       await signIn("password", { email, password, flow: "signUp" });
 
-      // שמירה או מחיקה של האימייל מה-LocalStorage
       if (rememberMe) {
         localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
       } else {
@@ -64,20 +60,19 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
       const error = err as { message?: string };
       const errorMessage = error.message || "";
 
-      // מיפוי שגיאות Convex Auth להודעות בעברית
       if (
         errorMessage.includes("already exists") ||
         errorMessage.includes("AccountAlreadyExists")
       ) {
-        setError("כתובת הדואר האלקטרוני כבר רשומה במערכת");
+        setError("An account with that email already exists — try signing in.");
       } else if (errorMessage.includes("password") && errorMessage.includes("weak")) {
-        setError("הסיסמה חלשה מדי. אנא בחרו סיסמה חזקה יותר");
+        setError("That password is a bit light — try something stronger.");
       } else if (errorMessage.includes("TooManyRequests")) {
-        setError("יותר מדי ניסיונות. אנא נסו שוב מאוחר יותר");
+        setError("Too many attempts. Give it a minute and try again.");
       } else if (errorMessage.includes("invalid") && errorMessage.includes("email")) {
-        setError("כתובת הדואר האלקטרוני אינה תקינה");
+        setError("That email doesn't look right. Double-check it?");
       } else {
-        setError("הרשמה נכשלה. אנא בדקו את הפרטים ונסו שוב");
+        setError("Couldn't create your account. Check your details and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -92,10 +87,12 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-linear-to-br from-gray-900 via-gray-800 to-black border-gray-700 p-0">
-        <div className="rounded-2xl bg-gray-800/50 backdrop-blur-sm p-8" dir="rtl">
+        <div className="rounded-2xl bg-gray-800/50 backdrop-blur-sm p-8">
           <DialogHeader className="mb-6">
-            <DialogTitle className="text-3xl font-bold text-white text-center">הרשמה</DialogTitle>
-            <p className="text-gray-400 text-center mt-2">צרו חשבון חדש והצטרפו אלינו</p>
+            <DialogTitle className="text-3xl font-bold text-white text-center">
+              Create your account
+            </DialogTitle>
+            <p className="text-gray-400 text-center mt-2">A calm home for your plan, your way.</p>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -104,7 +101,7 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                 htmlFor="signup-modal-email"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                דואר אלקטרוני
+                Email
               </label>
               <input
                 id="signup-modal-email"
@@ -112,7 +109,7 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                placeholder="support@temporhythm.app"
+                placeholder="you@example.com"
                 required={true}
                 disabled={isLoading}
               />
@@ -123,7 +120,7 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                 htmlFor="signup-modal-password"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                סיסמה
+                Password
               </label>
               <div className="relative">
                 <input
@@ -131,7 +128,7 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pl-12 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 pr-12 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
                   placeholder="••••••••"
                   required={true}
                   disabled={isLoading}
@@ -139,15 +136,15 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
                   tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* תיבת סימון זכור אותי */}
             <div className="flex items-center gap-3">
               <input
                 id="signup-remember-me"
@@ -158,11 +155,10 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                 disabled={isLoading}
               />
               <label htmlFor="signup-remember-me" className="text-sm text-gray-300 cursor-pointer">
-                זכור אותי
+                Remember me
               </label>
             </div>
 
-            {/* תיבת סימון הסכמה לתנאי שימוש ומדיניות פרטיות */}
             <div className="flex items-start gap-3 p-4 bg-gray-900/30 rounded-lg border border-gray-700">
               <div className="relative flex-shrink-0 mt-0.5">
                 <input
@@ -182,6 +178,7 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                       ? "bg-orange-500 border-orange-500"
                       : "bg-transparent border-gray-600 hover:border-gray-500"
                   } ${isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  aria-label={consentAccepted ? "Consent granted" : "Accept terms"}
                 >
                   {consentAccepted && <Check className="w-3 h-3 text-black" />}
                 </button>
@@ -190,26 +187,27 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
                 htmlFor="signup-consent"
                 className="text-sm text-gray-300 flex-1 cursor-pointer"
               >
-                אני מסכים ל
+                I agree to the{" "}
                 <Link
                   href={TERMS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-orange-500 hover:text-orange-400 font-semibold mx-1"
+                  className="text-orange-500 hover:text-orange-400 font-semibold"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  תנאי השימוש
+                  Terms of Use
                 </Link>
-                ול
+                {" "}and{" "}
                 <Link
                   href={PRIVACY_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-orange-500 hover:text-orange-400 font-semibold mr-1"
+                  className="text-orange-500 hover:text-orange-400 font-semibold"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  מדיניות הפרטיות
+                  Privacy Policy
                 </Link>
+                .
               </label>
             </div>
 
@@ -226,23 +224,23 @@ export default function SignUpModal({ open, onOpenChange, onSwitchToSignIn }: Si
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  <span>יוצר חשבון...</span>
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Creating account…</span>
                 </div>
               ) : (
-                "צור חשבון"
+                "Create account"
               )}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-400">
-            כבר יש לכם חשבון?{" "}
+            Already have an account?{" "}
             <button
               type="button"
               onClick={handleSwitchToSignIn}
               className="text-orange-500 hover:text-orange-400 font-semibold transition"
             >
-              התחברו כאן
+              Sign in
             </button>
           </p>
         </div>

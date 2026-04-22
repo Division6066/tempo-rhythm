@@ -1,30 +1,30 @@
 // ============================================================================
-// Route של Checkout (Polar)
+// Checkout route (Polar)
 // ============================================================================
-// הקובץ הזה יוצר Session של Checkout דרך Polar ומחזיר Redirect ל-Checkout שלהם.
+// Creates a Polar Checkout session and returns a redirect to their checkout flow.
 //
-// איך זה עובד בקצרה:
-// - הלקוח ניגש ל-`/checkout?products=<PRODUCT_ID>`
-// - Polar יוצר Checkout לפי המוצר(ים) שהעברנו
-// - בסיום תשלום, Polar מפנה ל-`POLAR_SUCCESS_URL` עם `{CHECKOUT_ID}`
+// How it works in short:
+// - The client hits `/checkout?products=<PRODUCT_ID>`.
+// - Polar creates the checkout based on the product ID we send.
+// - After payment, Polar redirects to `POLAR_SUCCESS_URL` with `{CHECKOUT_ID}`.
 //
-// ⚠️ חשוב:
-// - NEVER לחשוף POLAR_ACCESS_TOKEN לצד לקוח.
-// - כרגע אנו עובדים ב-Sandbox כדי לאפשר בדיקות בטוחות.
+// ⚠️ Important:
+// - NEVER expose POLAR_ACCESS_TOKEN to the client.
+// - We currently run in sandbox to keep testing safe.
 
 import { Checkout } from "@polar-sh/nextjs";
 
 export const GET = Checkout({
-  // טוקן ארגוני (OAT) של Polar - נשמר אך ורק בשרת דרך משתני סביבה
+  // Organisation access token (OAT) for Polar — kept server-side via env var only.
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
 
-  // כתובת הצלחה שאליה Polar יפנה לאחר Checkout
-  // מומלץ לכלול `{CHECKOUT_ID}` כדי שנוכל לאמת/לעדכן סטטוס משתמש בהמשך.
+  // Polar redirects here after checkout completes.
+  // Include `{CHECKOUT_ID}` in the URL so we can verify / sync the user status later.
   successUrl: process.env.POLAR_SUCCESS_URL!,
 
-  // סביבת עבודה: sandbox לבדיקות (בייצור לשנות ל-production או להסיר)
+  // Environment: sandbox for testing (switch to production or remove when going live).
   server: "sandbox",
 
-  // עיצוב חשוך כדי להתאים לתבנית
+  // Dark theme to match the app.
   theme: "dark",
 });

@@ -14,17 +14,17 @@ interface SignInModalProps {
   onSwitchToSignUp?: () => void;
 }
 
-// קומפוננטת מודל התחברות
+// Sign-in modal component.
 export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: SignInModalProps) {
-  const { signIn } = useAuthActions(); // פעולת התחברות
+  const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false); // זכור אותי
-  const [showPassword, setShowPassword] = useState(false); // הצגת סיסמה
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // טעינת אימייל שמור בעת טעינת הקומפוננטה
+  // Restore remembered email on mount.
   useEffect(() => {
     const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
     if (rememberedEmail) {
@@ -40,33 +40,31 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
     setError("");
 
     try {
-      // ביצוע התחברות
       await signIn("password", { email, password, flow: "signIn" });
 
-      // שמירה או מחיקה של האימייל מה-LocalStorage
       if (rememberMe) {
         localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
       } else {
         localStorage.removeItem(REMEMBERED_EMAIL_KEY);
       }
 
-      onOpenChange(false); // סגירת המודל
+      onOpenChange(false);
     } catch (err: unknown) {
       const error = err as { message?: string };
       const errorMessage = error.message || "";
 
-      // מיפוי שגיאות Convex Auth להודעות בעברית
+      // Map Convex Auth errors to friendly copy.
       if (errorMessage.includes("InvalidSecret")) {
-        setError("הסיסמה שהוזנה שגויה");
+        setError("That password doesn't match. Try again?");
       } else if (
         errorMessage.includes("InvalidAccountId") ||
         errorMessage.includes("Could not find")
       ) {
-        setError("לא נמצא חשבון עם כתובת הדואר האלקטרוני הזו");
+        setError("We couldn't find an account with that email.");
       } else if (errorMessage.includes("TooManyRequests")) {
-        setError("יותר מדי ניסיונות התחברות. אנא נסו שוב מאוחר יותר");
+        setError("Too many attempts. Give it a minute and try again.");
       } else {
-        setError("התחברות נכשלה. אנא בדקו את הפרטים ונסו שוב");
+        setError("Couldn't sign in. Double-check your details and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -76,16 +74,16 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-linear-to-br from-gray-900 via-gray-800 to-black border-gray-700 p-0">
-        <div className="rounded-2xl bg-gray-800/50 backdrop-blur-sm p-8" dir="rtl">
+        <div className="rounded-2xl bg-gray-800/50 backdrop-blur-sm p-8">
           <DialogHeader className="mb-6">
-            <DialogTitle className="text-3xl font-bold text-white text-center">התחברות</DialogTitle>
-            <p className="text-gray-400 text-center mt-2">ברוכים השבים! אנא התחברו לחשבונכם</p>
+            <DialogTitle className="text-3xl font-bold text-white text-center">Sign in</DialogTitle>
+            <p className="text-gray-400 text-center mt-2">Welcome back — let's pick up where you left off.</p>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="modal-email" className="block text-sm font-medium text-gray-300 mb-2">
-                דואר אלקטרוני
+                Email
               </label>
               <input
                 id="modal-email"
@@ -93,7 +91,7 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                placeholder="support@temporhythm.app"
+                placeholder="you@example.com"
                 required={true}
                 disabled={isLoading}
               />
@@ -104,7 +102,7 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
                 htmlFor="modal-password"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                סיסמה
+                Password
               </label>
               <div className="relative">
                 <input
@@ -112,7 +110,7 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pl-12 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 pr-12 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
                   placeholder="••••••••"
                   required={true}
                   disabled={isLoading}
@@ -120,15 +118,15 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
                   tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* תיבת סימון זכור אותי */}
             <div className="flex items-center gap-3">
               <input
                 id="remember-me"
@@ -139,7 +137,7 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
                 disabled={isLoading}
               />
               <label htmlFor="remember-me" className="text-sm text-gray-300 cursor-pointer">
-                זכור אותי
+                Remember me
               </label>
             </div>
 
@@ -156,17 +154,17 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  <span>מתחבר...</span>
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Signing in…</span>
                 </div>
               ) : (
-                "התחבר"
+                "Sign in"
               )}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-400">
-            עדיין אין לכם חשבון?{" "}
+            New here?{" "}
             <button
               type="button"
               onClick={() => {
@@ -175,7 +173,7 @@ export default function SignInModal({ open, onOpenChange, onSwitchToSignUp }: Si
               }}
               className="text-orange-500 hover:text-orange-400 font-semibold transition"
             >
-              הירשמו כאן
+              Create an account
             </button>
           </p>
         </div>

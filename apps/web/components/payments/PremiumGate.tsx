@@ -3,15 +3,14 @@
 // ============================================================================
 // PremiumGate
 // ============================================================================
-// רכיב מעטפת שמאפשר "לנעול" תוכן למשתמשים חינמיים.
+// Wrapper that locks content behind a paywall for free users.
 //
-// מתי נציג Paywall?
-// - PAYWALL_ENABLED דולק
-// - המשתמש מחובר
-// - המשתמש אינו בתשלום (userType !== 'paid')
+// Paywall opens when:
+// - PAYWALL_ENABLED is on
+// - The user is signed in
+// - The user is not on a paid plan (userType !== 'paid')
 //
-// הערה:
-// - אם PAYWALL_ENABLED כבוי — אנחנו לא נפריע למשתמש ונציג את התוכן.
+// Note: if PAYWALL_ENABLED is off, we render the content without gating.
 
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
@@ -22,7 +21,7 @@ import { api } from "@/convex/_generated/api";
 
 type PremiumGateProps = {
   children: React.ReactNode;
-  // מאפשר Preview ידני (למשל מהדיבאג)
+  // Force preview mode (used by the dev console).
   forcePreview?: boolean;
 };
 
@@ -36,13 +35,13 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
     return user?.userType === "paid";
   }, [user?.userType]);
 
-  // פתיחה אוטומטית של Paywall כשהעמוד "נעול"
+  // Auto-open the paywall when the page is locked.
   useEffect(() => {
     if (!PAYWALL_ENABLED) {
       return;
     }
 
-    // forcePreview: לא תלוי בסטטוס משתמש (מטרת דיבאג)
+    // forcePreview: open regardless of user status (debug helper).
     if (forcePreview) {
       setPaywallOpen(true);
       return;
@@ -58,7 +57,7 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
       return;
     }
 
-    // מצב בדיקה: מאפשר לסמן את המשתמש כ-paid בלי Checkout אמיתי
+    // Dev-only: mark the user as paid without running checkout.
     await updateUserType({ userType: "paid" });
   };
 
@@ -66,17 +65,16 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
     return <>{children}</>;
   }
 
-  // אם המשתמש עדיין נטען, נמתין (לא נציג תוכן כדי למנוע "פלאש" של תוכן חינמי)
+  // Hold while the user is loading so free content doesn't flash.
   if (user === undefined) {
-    return <div className="min-h-[60vh]" />; // מצב טעינה
+    return <div className="min-h-[60vh]" />;
   }
 
-  // אם המשתמש לא מחובר, נציג את התוכן (ההגנה על נתיבים מתבצעת ב-middleware)
+  // Signed-out users see content — route protection happens in middleware.
   if (user === null) {
     return <>{children}</>;
   }
 
-  // אם המשתמש בתשלום, נציג את התוכן
   if (isPaid) {
     return <>{children}</>;
   }
@@ -90,7 +88,7 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
         preview={Boolean(forcePreview)}
       />
 
-      {/* במצב נעול אנחנו לא מציגים את התוכן מאחורי Paywall */}
+      {/* Content stays hidden behind the paywall until the user continues. */}
       <div className="min-h-[60vh]" />
     </>
   );
