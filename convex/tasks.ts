@@ -155,3 +155,63 @@ export const remove = mutation({
     return { success: true };
   },
 });
+
+/** Quick-add a task for today — minimal args, sensible defaults. */
+export const createQuick = mutation({
+  args: {
+    title: v.string(),
+    dueAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const now = Date.now();
+    return ctx.db.insert("tasks", {
+      userId: user._id,
+      title: args.title.trim(),
+      status: "todo",
+      priority: "medium",
+      dueAt: args.dueAt,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+/** Tasks due within a local-day window — used by the Today screen. */
+export const listToday = query({
+  args: {
+    dueFrom: v.number(),
+    dueTo: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const rows = await ctx.db
+      .query("tasks")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+    return rows
+      .filter(
+        (t) =>
+          t.dueAt !== undefined &&
+          t.dueAt >= args.dueFrom &&
+          t.dueAt < args.dueTo &&
+          t.status !== "cancelled",
+      )
+      .sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
+  },
+});
+
+/** Toggle a task between todo and done. */
+export const toggleCompletion = mutation({
+  args: { taskId: v.id("tasks") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== user._id) {
+      throw new Error("Task not found");
+    }
+    const next = task.status === "done" ? "todo" : "done";
+    await ctx.db.patch(args.taskId, { status: next, updatedAt: Date.now() });
+    return { taskId: args.taskId, status: next };
+  },
+});

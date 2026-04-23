@@ -14,10 +14,15 @@ const loaderPath = path.resolve(__dirname, 'metro-loader.mjs');
 const loaderUrl = pathToFileURL(loaderPath).href;
 process.env.NODE_OPTIONS = `--loader ${loaderUrl}`;
 
-// Also try with require module
+// Use bunx so this works whether launched via `bun run dev` or directly.
+// Falls back to npx if bunx is not available (e.g. pure Node environments).
+const hasBun = (() => {
+  try { require('node:child_process').execSync('bun --version', { stdio: 'ignore' }); return true; } catch { return false; }
+})();
+const runner = hasBun ? 'bunx' : 'npx';
 const args = ['expo', 'start', '--clear', ...process.argv.slice(2)];
 
-const proc = spawn('npx', args, {
+const proc = spawn(runner, args, {
   stdio: 'inherit',
   shell: true,
   env: {

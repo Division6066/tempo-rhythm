@@ -24,6 +24,18 @@ export default defineSchema({
     name: v.optional(v.string()),
     role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
     userType: v.optional(v.union(v.literal("free"), v.literal("paid"))),
+    betaAccess: v.optional(v.union(v.literal("none"), v.literal("tester"), v.literal("founder"))),
+    entitlementTier: v.optional(
+      v.union(
+        v.literal("none"),
+        v.literal("basic"),
+        v.literal("pro"),
+        v.literal("max"),
+        v.literal("god"),
+      ),
+    ),
+    isGodTier: v.optional(v.boolean()),
+    betaApprovedAt: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
@@ -32,7 +44,35 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_role", ["role"])
     .index("by_userType", ["userType"])
+    .index("by_betaAccess", ["betaAccess"])
     .index("by_deletedAt", ["deletedAt"]),
+
+  subscriptionStates: defineTable({
+    userId: v.id("users"),
+    plan: v.union(
+      v.literal("none"),
+      v.literal("trial"),
+      v.literal("basic"),
+      v.literal("pro"),
+      v.literal("max"),
+    ),
+    billingCycle: v.union(
+      v.literal("none"),
+      v.literal("monthly"),
+      v.literal("annual"),
+      v.literal("lifetime"),
+    ),
+    status: v.union(
+      v.literal("inactive"),
+      v.literal("active"),
+      v.literal("grace"),
+      v.literal("cancelled"),
+    ),
+    trialUsed: v.boolean(),
+    source: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
 
   conversations: defineTable({
     userId: v.id("users"),

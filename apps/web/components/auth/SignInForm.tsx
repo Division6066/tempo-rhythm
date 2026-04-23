@@ -23,6 +23,8 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mode, setMode] = useState<"password" | "magic-link">("password");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
     const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
@@ -32,7 +34,7 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
     }
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -48,21 +50,51 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
       const error = err as { message?: string };
       const errorMessage = error.message || "";
       if (errorMessage.includes("InvalidSecret")) {
-        setError("הסיסמה שהוזנה שגויה");
+        setError("That password doesn't match yet. Please try again.");
       } else if (
         errorMessage.includes("InvalidAccountId") ||
         errorMessage.includes("Could not find")
       ) {
-        setError("לא נמצא חשבון עם כתובת הדואר האלקטרוני הזו");
+        setError("We couldn't find an account for that email yet.");
       } else if (errorMessage.includes("TooManyRequests")) {
-        setError("יותר מדי ניסיונות התחברות. אנא נסו שוב מאוחר יותר");
+        setError("You've tried a few times. Please pause for a moment and try again.");
+      } else if (errorMessage.includes("Beta access is invite-only")) {
+        setError("Beta access is invite-only right now. Ask for an invite and we'll add you.");
+      } else if (errorMessage.includes("All beta seats are currently filled")) {
+        setError("All beta seats are currently filled. We can add you to the next wave.");
       } else {
-        setError("התחברות נכשלה. אנא בדקו את הפרטים ונסו שוב");
+        setError("We couldn't sign you in yet. Please check your details and try again.");
       }
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      await signIn("resend", { email });
+      setMagicLinkSent(true);
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      const errorMessage = error.message || "";
+      if (errorMessage.includes("TooManyRequests")) {
+        setError("You've tried a few times. Please pause for a moment and try again.");
+      } else if (errorMessage.includes("Beta access is invite-only")) {
+        setError("Beta access is invite-only right now. Ask for an invite and we'll add you.");
+      } else if (errorMessage.includes("All beta seats are currently filled")) {
+        setError("All beta seats are currently filled. We can add you to the next wave.");
+      } else {
+        setError("We couldn't send the link yet. Please check your email and try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = mode === "password" ? handlePasswordSubmit : handleMagicLinkSubmit;
 
   const isPage = variant === "page";
 
@@ -72,21 +104,45 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
 
   const labelClass = isPage ? "mb-2 block text-sm font-medium text-foreground" : "block text-sm font-medium text-gray-300 mb-2";
 
+  if (magicLinkSent) {
+    return (
+      <div className={isPage ? "w-full max-w-md text-center" : "text-center"}>
+        {isPage && (
+          <div className="mb-8 text-center">
+            <h1 className="font-heading text-4xl font-semibold tracking-tight text-gradient-primary">
+              Check your email
+            </h1>
+          </div>
+        )}
+        <p className={`mb-6 ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
+          We sent a sign-in link to <strong>{email}</strong>. Open it on any device to continue.
+        </p>
+        <button
+          type="button"
+          onClick={() => { setMagicLinkSent(false); setError(""); }}
+          className={`text-sm ${isPage ? "text-primary hover:underline" : "text-orange-500 hover:text-orange-400 transition"}`}
+        >
+          Use a different email
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className={isPage ? "w-full max-w-md" : ""} dir="rtl">
+    <div className={isPage ? "w-full max-w-md" : ""}>
       {isPage && (
         <div className="mb-8 text-center">
           <h1 className="font-heading text-4xl font-semibold tracking-tight text-gradient-primary">
-            התחברות
+            Welcome back
           </h1>
-          <p className="mt-2 text-muted-foreground">ברוכים השבים ל-Tempo Flow</p>
+          <p className="mt-2 text-muted-foreground">Sign in to Tempo Flow</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label htmlFor="signin-email" className={labelClass}>
-            דואר אלקטרוני
+            Email
           </label>
           <input
             id="signin-email"
@@ -94,61 +150,66 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
-            placeholder="support@temporhythm.app"
+            placeholder="you@example.com"
             required={true}
             disabled={isLoading}
             autoComplete="email"
           />
         </div>
 
-        <div>
-          <label htmlFor="signin-password" className={labelClass}>
-            סיסמה
-          </label>
-          <div className="relative">
-            <input
-              id="signin-password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={isPage ? `${inputClass} pl-12` : `${inputClass} pl-12`}
-              placeholder="••••••••"
-              required={true}
-              disabled={isLoading}
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className={
-                isPage
-                  ? "absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  : "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
-              }
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
+        {mode === "password" && (
+          <>
+            <div>
+              <label htmlFor="signin-password" className={labelClass}>
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="signin-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${inputClass} pr-12`}
+                  placeholder="••••••••"
+                  required={true}
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={
+                    isPage
+                      ? "absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      : "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
+                  }
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
 
-        <div className="flex items-center gap-3">
-          <input
-            id="remember-me-signin"
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className={
-              isPage
-                ? "h-4 w-4 cursor-pointer rounded border-border text-primary focus:ring-primary"
-                : "w-4 h-4 rounded border-gray-600 bg-gray-900/50 text-orange-500 focus:ring-orange-500 focus:ring-offset-gray-800 cursor-pointer"
-            }
-            disabled={isLoading}
-          />
-          <label htmlFor="remember-me-signin" className={`cursor-pointer text-sm ${isPage ? "text-foreground" : "text-gray-300"}`}>
-            זכור אותי
-          </label>
-        </div>
+            <div className="flex items-center gap-3">
+              <input
+                id="remember-me-signin"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className={
+                  isPage
+                    ? "h-4 w-4 cursor-pointer rounded border-border text-primary focus:ring-primary"
+                    : "w-4 h-4 rounded border-gray-600 bg-gray-900/50 text-orange-500 focus:ring-orange-500 focus:ring-offset-gray-800 cursor-pointer"
+                }
+                disabled={isLoading}
+              />
+              <label htmlFor="remember-me-signin" className={`cursor-pointer text-sm ${isPage ? "text-foreground" : "text-gray-300"}`}>
+                Remember me
+              </label>
+            </div>
+          </>
+        )}
 
         {error && (
           <div
@@ -157,6 +218,7 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
                 ? "rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
                 : "bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm"
             }
+            role="alert"
           >
             {error}
           </div>
@@ -174,19 +236,29 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              מתחבר...
+              {mode === "magic-link" ? "Sending link…" : "Signing in…"}
             </span>
           ) : (
-            "התחבר"
+            mode === "magic-link" ? "Send magic link" : "Sign in"
           )}
         </button>
       </form>
 
-      <p className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
-        עדיין אין לכם חשבון?{" "}
+      <div className={`mt-4 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
+        <button
+          type="button"
+          onClick={() => { setMode(mode === "password" ? "magic-link" : "password"); setError(""); }}
+          className={`${isPage ? "text-primary hover:underline" : "text-orange-500 hover:text-orange-400 transition"}`}
+        >
+          {mode === "password" ? "Use a magic link instead" : "Use password instead"}
+        </button>
+      </div>
+
+      <p className={`mt-4 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
+        Don&apos;t have an account?{" "}
         {isPage ? (
           <Link href="/sign-up" className="font-semibold text-primary hover:underline">
-            הירשמו כאן
+            Create one
           </Link>
         ) : (
           <button
@@ -194,7 +266,7 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
             onClick={() => onSwitchToSignUp?.()}
             className="font-semibold text-orange-500 transition hover:text-orange-400"
           >
-            הירשמו כאן
+            Create one
           </button>
         )}
       </p>

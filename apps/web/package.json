@@ -18,7 +18,7 @@
     "ultracite": "ultracite"
   },
   "dependencies": {
-    "@convex-dev/auth": "^0.0.90",
+    "@convex-dev/auth": "^0.0.91",
     "@polar-sh/nextjs": "^0.9.1",
     "@tempo/ui": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -28,7 +28,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "convex": "^1.31.0",
+    "convex": "^1.32.0",
     "lucide-react": "^0.546.0",
     "next": "^16.0.0",
     "react": "19.2.3",
@@ -44,8 +44,6 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.22",
-    "eslint": "^9.39.2",
-    "eslint-plugin-tailwind-canonical-classes": "^1.0.8",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
