@@ -174,7 +174,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
               : "flex items-start gap-3 p-4 bg-gray-900/30 rounded-lg border border-gray-700"
           }
         >
-          <div className="relative mt-0.5 flex-shrink-0">
+          <div className="relative mt-0.5 shrink-0">
             <input
               id="signup-consent"
               type="checkbox"
