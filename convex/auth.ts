@@ -12,13 +12,13 @@ function normalizeEmail(email: string | undefined | null): string {
 }
 
 function getFounderEmail() {
-  return normalizeEmail(process.env.BETA_FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL);
+  return normalizeEmail(String(process.env.BETA_FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL));
 }
 
 function getAllowlistedEmails() {
-  const fromEnv = (process.env.BETA_ALLOWLIST_EMAILS ?? "")
+  const fromEnv = (String(process.env.BETA_ALLOWLIST_EMAILS ?? ""))
     .split(",")
-    .map((item) => normalizeEmail(item))
+    .map((item: string) => normalizeEmail(item))
     .filter(Boolean);
   const allowlisted = new Set(fromEnv);
   allowlisted.add(getFounderEmail());
@@ -26,7 +26,7 @@ function getAllowlistedEmails() {
 }
 
 function getBetaMaxTesters() {
-  const parsed = Number(process.env.BETA_MAX_TESTERS ?? `${DEFAULT_BETA_MAX_TESTERS}`);
+  const parsed = Number(String(process.env.BETA_MAX_TESTERS ?? DEFAULT_BETA_MAX_TESTERS));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BETA_MAX_TESTERS;
 }
 
