@@ -20,6 +20,10 @@
     "check": {
       "dependsOn": ["^check"]
     },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": []
+    },
     "clean": {
       "cache": false
     }
