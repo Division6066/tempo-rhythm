@@ -56,15 +56,19 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
         errorMessage.includes("already exists") ||
         errorMessage.includes("AccountAlreadyExists")
       ) {
-        setError("An account with that email already exists. Try signing in instead.");
+        setError("That email already has an account. Try signing in instead.");
       } else if (errorMessage.includes("password") && errorMessage.includes("weak")) {
-        setError("Password is too weak. Please choose a stronger password.");
+        setError("Please choose a password with at least 8 characters.");
       } else if (errorMessage.includes("TooManyRequests")) {
-        setError("Too many attempts. Please try again later.");
+        setError("You've tried a few times. Please pause for a moment and try again.");
       } else if (errorMessage.includes("invalid") && errorMessage.includes("email")) {
-        setError("That email address doesn't look valid. Please check it.");
+        setError("That email address doesn't look right yet. Please check it.");
+      } else if (errorMessage.includes("Beta access is invite-only")) {
+        setError("Beta access is invite-only right now. Ask for an invite and we'll add you.");
+      } else if (errorMessage.includes("All beta seats are currently filled")) {
+        setError("All beta seats are currently filled. We can add you to the next wave.");
       } else {
-        setError("Sign-up failed. Please check your details and try again.");
+        setError("We couldn't create your account yet. Please check your details and try again.");
       }
     } finally {
       setIsLoading(false);

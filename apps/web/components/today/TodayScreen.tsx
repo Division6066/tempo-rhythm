@@ -15,7 +15,10 @@ export function TodayScreen() {
   const bounds = useMemo(() => getLocalDayBoundsMs(), []);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const todayTasks = useQuery(api.tasks.listToday, isAuthenticated ? bounds : "skip");
+  const todayTasks = useQuery(
+    api.tasks.listToday,
+    isAuthenticated ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip",
+  );
 
   const isLoading =
     isAuthLoading ||

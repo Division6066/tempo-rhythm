@@ -24,7 +24,7 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 | ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators + `defineSchema` |
 | Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
 | Payments | Stripe SDK direct | RevenueCat (wraps Stripe, App Store, Play Store) |
-| AI provider SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai` | OpenRouter via `fetch` against `https://openrouter.ai/api/v1/chat/completions` |
+| AI provider SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@mistralai/mistralai` | Mistral API via native `fetch` against `https://api.mistral.ai/v1/chat/completions` |
 | Client state | Redux, Zustand, Jotai, Recoil, MobX | Convex reactive queries are the state |
 | HTTP | Axios, ky, got | Native `fetch` |
 | Direct DB clients | `mongodb`, `pg`, `mysql2` | Convex queries / mutations / actions |
@@ -51,7 +51,7 @@ If you believe you need one of these, open an issue first with the specific just
 - React components: `PascalCase.tsx` (e.g. `TaskCard.tsx`, `CoachPanel.tsx`).
 - Hooks: `useThing.ts`.
 - Non-component TypeScript modules: `kebab-case.ts` (e.g. `parse-brain-dump.ts`, `confidence-router.ts`).
-- Convex files: `kebab-case.ts` inside `convex/` (e.g. `convex/tasks.ts`, `convex/coach.ts`).
+- Convex files: `kebab-case.ts` inside `convex/` (e.g. `convex/tasks.ts`, `convex/coach.ts`). **Exception:** multi-word modules must use `snake_case.ts` because the Convex platform rejects hyphens in module paths (e.g. `convex/lib/ai_router.ts`, not `ai-router.ts`).
 - Route files (Next.js app router): Next conventions (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`).
 
 ### Identifiers
@@ -120,11 +120,14 @@ Several tables today use **`userId: v.id("users")`** tied to Convex Auth. That i
 
 ### 6.1 Routing
 
-- **Target:** all LLM calls go through `packages/ai/src/router.ts` (or equivalent) calling OpenRouter. **Until that package exists**, implement OpenRouter calls inside Convex `action`s using native `fetch` — no `openai`, `@anthropic-ai/sdk`, or `@google/generative-ai` SDKs. Direct provider SDKs are forbidden.
-- Default models:
-  - **Fast path (Gemma 4 26B):** classification, extraction, tagging, short chat turns, accept-reject surfacing.
-  - **Reasoning path (Mistral Small 4):** planning sessions, template generation, complex rewrites, coach deep mode.
-- Route selection **target:** `packages/ai/src/route-by-task.ts`. Until that package exists, keep an explicit mapping in a Convex `lib` module (e.g. `convex/lib/ai-router.ts`).
+- All LLM calls go through `convex/lib/ai_router.ts` using native `fetch` against `https://api.mistral.ai/v1/chat/completions`. No vendor SDKs. When a second consumer appears outside `convex/`, migrate the router to `packages/ai/src/router.ts` (same API).
+- Three tiers, explicit at every call site:
+  - **`fast` → `mistral-small-latest`** — classification, extraction, tagging, short chat turns, accept-reject card copy, confidence scoring.
+  - **`balanced` → `mistral-medium-latest`** — coach conversations, planning sessions, brain-dump parsing, rewrites, journal reflection.
+  - **`deep` → `mistral-large-latest`** — hard multi-step reasoning, long-context synthesis, rare escalations.
+- Fallback policy: on `429 / 503 / timeout`, retry same tier once with 500 ms backoff, then surface a typed error. On `context_length_exceeded`, automatically escalate `fast → balanced → deep` and stop at the first that fits. No other silent escalation.
+- Rationale: direct Mistral (EU-hosted, GDPR-native, no training on paid API data by default) gives better privacy posture and lower cost than OpenRouter for our workload. OpenRouter is no longer used.
+- Default `safe_prompt: false` — accept-reject + confidence router already cover this; we don't need Mistral's additional opinionated filter.
 
 ### 6.2 Accept-reject flow
 
@@ -267,7 +270,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 - **No secrets in the repo.** Ever. Use `.env.local` locally (git-ignored) and Vercel / EAS env var config for deployed environments.
 - **`.env.example`** is the canonical list. Every new env var is added there with a placeholder and a one-line comment.
 - **Secret scanning** runs in CI (`pnpm scan:secrets`). Never merge a PR where the scan fires.
-- **OpenRouter keys** are scoped per environment and rotated quarterly.
+- **Mistral keys** are scoped per environment and rotated quarterly.
 - **RevenueCat** public keys are safe to ship client-side. Secret keys only in server-side Convex actions.
 
 ---

@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(bun x *)"
     ]
+  },
+  "enabledPlugins": {
+    "astronomer-data-agents@claude-plugins-official": true,
+    "expo@claude-plugins-official": true,
+    "revenuecat@claude-plugins-official": true,
+    "netlify-skills@claude-plugins-official": true,
+    "product-tracking-skills@claude-plugins-official": true,
+    "searchfit-seo@claude-plugins-official": true,
+    "chrome-devtools-mcp@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true
   }
 }
