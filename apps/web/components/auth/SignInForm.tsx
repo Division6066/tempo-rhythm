@@ -11,11 +11,17 @@ const REMEMBERED_EMAIL_KEY = "remembered_email";
 export type SignInFormProps = {
   /** Page layout uses Soft Editorial; modal keeps compact dark styling */
   variant?: "page" | "modal";
+  nextPath?: string;
   onSuccess?: () => void;
   onSwitchToSignUp?: () => void;
 };
 
-export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: SignInFormProps) {
+export function SignInForm({
+  variant = "modal",
+  nextPath,
+  onSuccess,
+  onSwitchToSignUp,
+}: SignInFormProps) {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -97,6 +103,9 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
   const handleSubmit = mode === "password" ? handlePasswordSubmit : handleMagicLinkSubmit;
 
   const isPage = variant === "page";
+  const signUpHref = nextPath
+    ? { pathname: "/sign-up", query: { next: nextPath } }
+    : "/sign-up";
 
   const inputClass = isPage
     ? "w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground placeholder:text-muted-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] focus:outline-none focus:ring-2 focus:ring-primary"
@@ -257,7 +266,7 @@ export function SignInForm({ variant = "modal", onSuccess, onSwitchToSignUp }: S
       <p className={`mt-4 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
         Don&apos;t have an account?{" "}
         {isPage ? (
-          <Link href="/sign-up" className="font-semibold text-primary hover:underline">
+          <Link href={signUpHref} className="font-semibold text-primary hover:underline">
             Create one
           </Link>
         ) : (

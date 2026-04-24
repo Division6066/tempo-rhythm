@@ -25,7 +25,9 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   }
 
   if (!(isPublicRoute(request) || isAuthenticated)) {
-    return nextjsMiddlewareRedirect(request, "/sign-in");
+    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    const params = new URLSearchParams({ next: nextPath });
+    return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
   }
 
   if (isPublicRoute(request) && isAuthenticated) {
