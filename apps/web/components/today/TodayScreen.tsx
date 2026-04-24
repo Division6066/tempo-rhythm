@@ -7,6 +7,7 @@ import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { getLocalDayBoundsMs } from "@/lib/todayBounds";
+import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
 import { TodayGreeting } from "./TodayGreeting";
 import { TodayQuickAdd } from "./TodayQuickAdd";
 import { TodayTaskList } from "./TodayTaskList";
@@ -57,6 +58,7 @@ export function TodayScreen() {
       <div className="space-y-8">
         <TodayGreeting greetingName={profile.greetingName} />
         <TodayQuickAdd dueAt={bounds.endMs - 1} />
+        <TodayBrainDumpPanel dueAt={bounds.endMs - 1} />
         <TodayTaskList tasks={todayTasks} />
       </div>
     </div>

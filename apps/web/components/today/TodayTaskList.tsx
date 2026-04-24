@@ -34,7 +34,9 @@ const priorityLabel: Record<TodayTask["priority"], string> = {
 export function TodayTaskList({ tasks }: TodayTaskListProps) {
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
 
-  const activeTasks = tasks.filter((task) => task.status !== "done");
+  const activeTasks = tasks.filter(
+    (task) => task.status === "todo" || task.status === "in_progress",
+  );
   const visibleTasks = activeTasks.slice(0, 3);
   const hiddenTaskCount = Math.max(activeTasks.length - visibleTasks.length, 0);
   const hasCompletedEverything = tasks.length > 0 && activeTasks.length === 0;
