@@ -54,7 +54,8 @@ pnpm dev:web
 pnpm dev:mobile
 ```
 
-Required environment variables are documented in `.env.example` at the repo root. Copy to `.env.local` and fill in values from your own Convex, OpenRouter, RevenueCat, and GetTerms accounts before running.
+Required environment variables are documented in `.env.example` at the repo root. Copy to `.env.local` and fill in values from your own Convex, Mistral, RevenueCat, and GetTerms accounts before running.
+- See [docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md) for the full four-mode contract and [docs/SHIP_STATE.md](docs/SHIP_STATE.md) for what's shipped vs planned.
 
 ## Documentation tree
 

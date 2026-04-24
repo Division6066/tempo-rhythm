@@ -48,3 +48,7 @@ Thumbs.db
 
 # local scratch / secrets
 .local.*
+
+# Workspace-level .env files (use .env.local instead — see docs/ENVIRONMENTS.md)
+apps/web/.env
+apps/mobile/.env

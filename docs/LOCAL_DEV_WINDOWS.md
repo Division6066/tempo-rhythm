@@ -53,6 +53,16 @@ Use **`bun install` only at the repo root** — the root [`bun.lock`](../bun.loc
 
 `convex` and `@convex-dev/auth` are aligned across the root workspace and `apps/web` / `apps/mobile` `package.json` files so local installs match tooling.
 
+## Which deployment am I talking to?
+
+This doc only covers **local development**. For the full four-mode contract (dev / test / preview / deployment) across Convex, Vercel, and the repo env files, see [docs/ENVIRONMENTS.md](./ENVIRONMENTS.md).
+
+Quick rule of thumb on your laptop:
+
+- `bun run convex:dev` → talks to **your own `dev:*` Convex deployment** (auto-generated, stored in `.env.local`).
+- `bun run dev:web` → talks to whatever Convex URL is set in `apps/web/.env.local`.
+- Nothing you run locally can deploy anything. Deployment is a dashboard action (see `docs/ENVIRONMENTS.md`).
+
 ## Typecheck: `Cannot find type definition file for 'babel__core'` (mobile)
 
 If `apps/mobile/node_modules/@types` contains **empty** folders (`babel__core`, `yargs`, etc.), TypeScript fails with TS2688. Remove those empty directories, then reinstall from the repo root:
