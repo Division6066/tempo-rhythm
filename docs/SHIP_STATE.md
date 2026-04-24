@@ -16,9 +16,9 @@ This document is the one-table source of truth for what is `shipped-and-running`
 
 | Feature | State | Evidence | Last verified |
 |---|---|---|---|
-| Convex Auth + beta gating | `locally-tested` | PR #19 merged; T-0010 done | 2026-04-24 |
-| /dashboard redirect after sign-in/sign-up | `locally-tested` | feat/T-0010 branch | 2026-04-24 |
-| /today route | `coded` | scaffold only | 2026-04-24 |
+| Convex Auth + beta gating | `locally-tested` | Password sign-in/sign-up succeeds locally after `NEXT_PUBLIC_CONVEX_URL` uses the full regional `https://<deployment>.<region>.convex.cloud` URL (legacy non-regional `*.convex.cloud` returned empty 404s from `/api/action`); see `docs/PHASE2_LOCALHOST_QA_2026-04-24.md` | 2026-04-24 |
+| /dashboard redirect after sign-in/sign-up | `locally-tested` | `apps/web/app/(app)/dashboard/page.tsx` redirects authenticated users to `/today`; verified with browser after regional Convex URL fix | 2026-04-24 |
+| /today route | `locally-tested` | `apps/web/app/(tempo)/today/page.tsx` mounts `TodayScreen`; authenticated load verified locally after auth fix; quick-add exercised where available | 2026-04-24 |
 | /tasks route | `coded` | scaffold only | 2026-04-24 |
 | /coach route | `coded` | scaffold only | 2026-04-24 |
 | /journal route | `coded` | scaffold only | 2026-04-24 |
