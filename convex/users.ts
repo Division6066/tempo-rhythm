@@ -25,7 +25,7 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
   if (identity.email) {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
       .unique();
     if (user) return user;
   }
@@ -78,7 +78,7 @@ export const createOrUpdateUser = mutation({
 
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
+      .withIndex("email", (q) => q.eq("email", email))
       .unique();
 
     const userData = {
@@ -135,7 +135,7 @@ export const updateUserType = mutation({
     if (!user && identity.email) {
       user = await ctx.db
         .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
+        .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
         .unique();
     }
 
@@ -161,7 +161,7 @@ export const updateSubscriptionStatus = mutation({
     // Try to find user by email (RevenueCat appUserId is typically the user's email)
     let user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", userId))
+      .withIndex("email", (q) => q.eq("email", userId))
       .unique();
 
     // Fallback: try to find by ID if userId looks like a Convex ID

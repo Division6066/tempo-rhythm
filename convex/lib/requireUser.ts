@@ -11,7 +11,7 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_email", (q) => q.eq("email", identity.email!))
+    .withIndex("email", (q) => q.eq("email", identity.email!))
     .unique();
 
   if (!user) {

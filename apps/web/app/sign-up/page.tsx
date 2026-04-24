@@ -28,27 +28,16 @@ function getPostAuthDestination(nextPath: string | null) {
 }
 
 export default function SignUpPage() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = getPostAuthDestination(searchParams.get("next"));
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (isAuthenticated) {
       router.replace(nextPath);
     }
-  }, [isAuthenticated, isLoading, nextPath, router]);
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
-        <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent"
-          aria-hidden
-        />
-      </div>
-    );
-  }
+  }, [isAuthenticated, nextPath, router]);
 
   if (isAuthenticated) {
     return null;

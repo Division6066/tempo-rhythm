@@ -12,7 +12,7 @@ export const list = query({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -42,7 +42,7 @@ export const get = query({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -72,7 +72,7 @@ export const create = mutation({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -106,7 +106,7 @@ export const updateTechnique = mutation({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -141,7 +141,7 @@ export const updateTitle = mutation({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -175,7 +175,7 @@ export const remove = mutation({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {

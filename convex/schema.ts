@@ -17,6 +17,12 @@ export default defineSchema({
   ...authTables,
 
   users: defineTable({
+    // Baseline fields expected by @convex-dev/auth (see authTables.users + labs schema guide).
+    // Keep these optional so internal auth flows can patch/link without schema violations.
+    image: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
     email: v.string(),
     emailVerificationTime: v.optional(v.number()),
     emailVerified: v.optional(v.boolean()),
@@ -41,7 +47,9 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
   })
-    .index("by_email", ["email"])
+    // Name must match convex-auth defaults so library helpers can use withIndex("email", ...).
+    .index("email", ["email"])
+    .index("phone", ["phone"])
     .index("by_role", ["role"])
     .index("by_userType", ["userType"])
     .index("by_betaAccess", ["betaAccess"])

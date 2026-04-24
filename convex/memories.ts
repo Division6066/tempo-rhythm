@@ -26,7 +26,7 @@ export const queryMemories = query({
     // Find user by email
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -85,7 +85,7 @@ export const addMemory = mutation({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -124,7 +124,7 @@ export const updateSalience = mutation({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -163,7 +163,7 @@ export const deleteMemory = mutation({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {
@@ -346,7 +346,7 @@ export const getMemoryStats = query({
 
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .withIndex('email', (q) => q.eq('email', identity.email!))
       .first();
 
     if (!user) {

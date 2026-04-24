@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Check, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -183,31 +183,19 @@ export function SignUpForm({
               : "flex items-start gap-3 p-4 bg-gray-900/30 rounded-lg border border-gray-700"
           }
         >
-          <div className="relative mt-0.5 shrink-0">
-            <input
-              id="signup-consent"
-              type="checkbox"
-              checked={consentAccepted}
-              onChange={(e) => setConsentAccepted(e.target.checked)}
-              className="sr-only"
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={() => setConsentAccepted(!consentAccepted)}
-              disabled={isLoading}
-              aria-label="Accept terms and privacy policy"
-              className={`flex h-5 w-5 items-center justify-center rounded border-2 transition ${
-                consentAccepted
-                  ? "border-primary bg-primary"
-                  : isPage
-                    ? "border-border bg-transparent hover:border-muted-foreground"
-                    : "bg-transparent border-gray-600 hover:border-gray-500"
-              } ${isLoading ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-            >
-              {consentAccepted && <Check className="h-3 w-3 text-primary-foreground" />}
-            </button>
-          </div>
+          <input
+            id="signup-consent"
+            type="checkbox"
+            checked={consentAccepted}
+            onChange={(e) => setConsentAccepted(e.target.checked)}
+            className={
+              isPage
+                ? "mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-border text-primary focus:ring-primary"
+                : "mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-gray-600 bg-gray-900/50 text-orange-500 focus:ring-orange-500 focus:ring-offset-gray-800"
+            }
+            disabled={isLoading}
+            aria-label="Accept terms and privacy policy"
+          />
           <label htmlFor="signup-consent" className="flex-1 cursor-pointer text-sm text-foreground">
             I agree to the{" "}
             <Link

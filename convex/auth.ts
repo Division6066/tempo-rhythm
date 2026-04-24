@@ -97,7 +97,11 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // (subscriptionStates, users indexes) that are outside the auth-only type.
       const db = ctx.db as unknown as GenericMutationCtx<DataModel>["db"];
       const now = Date.now();
-      const email = normalizeEmail(args.profile.email);
+      const rawEmail = args.profile?.email;
+      if (typeof rawEmail !== "string" || !rawEmail.trim()) {
+        throw new Error("Missing email for this sign-up attempt. Please check the email field.");
+      }
+      const email = normalizeEmail(rawEmail);
       const founderEmail = getFounderEmail();
       const allowlistedEmails = getAllowlistedEmails();
       const isFounder = email === founderEmail;
