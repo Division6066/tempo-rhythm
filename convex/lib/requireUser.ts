@@ -32,13 +32,14 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
     return subjectUser;
   }
 
-  if (!identity.email) {
+  const email = identity.email;
+  if (!email) {
     throw new Error("Not authenticated");
   }
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_email", (q) => q.eq("email", identity.email))
+    .withIndex("by_email", (q) => q.eq("email", email))
     .unique();
 
   if (!user) {
