@@ -12,7 +12,7 @@ Scope: Local validation + small auth fix + evidence update. No deploy, no merge.
 - Code fixes landed during this run before this evidence update:
   - `7e38cde fix(auth): use email provider for magic links`
   - `3a59b4b fix(tasks): resolve users from auth subject`
-- PR #21: OPEN, `mergeStateStatus=BLOCKED`, `mergeable=MERGEABLE`, checks green, blocked by `REVIEW_REQUIRED`
+- PR #21: OPEN, `mergeStateStatus=BLOCKED`, `mergeable=MERGEABLE`, blocked by `REVIEW_REQUIRED`
 - Current repo root mismatch from original prompt still exists outside the worktree (`master` + dirty `docs/brain` in the main workspace), so all execution/testing was isolated in the clean worktree
 
 ## Key blocker findings
@@ -151,9 +151,14 @@ Observed local runtime error before the fix:
    - PASS
 
 3. Preview founder auth  
-   - still BLOCKED
-   - prior validation + current runtime evidence indicate `POST /api/auth` 400 was the preview auth boundary before the new fixes
-   - after this run, the preview deployment updated successfully for the new auth-fix commits, but preview auth was not re-driven interactively end-to-end in this environment
+   - still BLOCKED / unproven
+   - prior validation + runtime evidence indicate `POST /api/auth` 400 was the preview auth boundary before the new fixes
+   - after this run, PR head advanced through:
+     - `7e38cde fix(auth): use email provider for magic links`
+     - `3a59b4b fix(tasks): resolve users from auth subject`
+     - `1631d4d fix(tasks): satisfy mobile typecheck guard`
+   - latest CI + Vercel checks on PR head were green when last checked
+   - preview route automation from this environment hit Vercel SSO protection even with a generated share link, so preview auth could not be re-driven interactively end-to-end here
    - exact remaining preview blocker is therefore still unproven, but Resend/Convex auth env remains the highest-probability external dependency
 
 4. Preview authenticated `/today` browser loop  
@@ -179,7 +184,8 @@ Observed local runtime error before the fix:
 - Vercel runtime logs confirm repeated:
   - `POST /api/auth` -> `400`
 - Preview `/today` signed-out redirect remains healthy
-- Preview authenticated flow remains unproven in this run
+- Latest PR head checks went green again after the final typecheck-safe follow-up (`1631d4d`)
+- Preview authenticated flow remains unproven in this run because browser automation hit Vercel SSO protection on interactive preview routes
 
 ## What is now proven
 
@@ -225,8 +231,8 @@ Observed local runtime error before the fix:
 
 - Branch/commit under test:
   - started at `eb3087a`
-  - code fixes validated locally in this run: `7e38cde`, `3a59b4b`
-- PR #21 state: OPEN, merge status `BLOCKED`, checks were green before this run
+  - code fixes validated locally in this run: `7e38cde`, `3a59b4b`, `1631d4d`
+- PR #21 state: OPEN, merge status `BLOCKED`, latest observed head `1631d4d`, checks green, still blocked by `REVIEW_REQUIRED`
 - Local browser QA: PARTIAL PASS
   - auth + `/today` + fallback + Add-to-Today proven locally
 - Preview browser QA: PARTIAL/BLOCKED
