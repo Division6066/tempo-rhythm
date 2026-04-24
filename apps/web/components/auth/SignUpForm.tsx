@@ -11,11 +11,17 @@ const REMEMBERED_EMAIL_KEY = "remembered_email";
 
 export type SignUpFormProps = {
   variant?: "page" | "modal";
+  nextPath?: string;
   onSuccess?: () => void;
   onSwitchToSignIn?: () => void;
 };
 
-export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: SignUpFormProps) {
+export function SignUpForm({
+  variant = "modal",
+  nextPath,
+  onSuccess,
+  onSwitchToSignIn,
+}: SignUpFormProps) {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,6 +82,9 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
   };
 
   const isPage = variant === "page";
+  const signInHref = nextPath
+    ? { pathname: "/sign-in", query: { next: nextPath } }
+    : "/sign-in";
 
   const inputClass = isPage
     ? "w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground placeholder:text-muted-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] focus:outline-none focus:ring-2 focus:ring-primary"
@@ -259,7 +268,7 @@ export function SignUpForm({ variant = "modal", onSuccess, onSwitchToSignIn }: S
       <p className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
         Already have an account?{" "}
         {isPage ? (
-          <Link href="/sign-in" className="font-semibold text-primary hover:underline">
+          <Link href={signInHref} className="font-semibold text-primary hover:underline">
             Sign in
           </Link>
         ) : (

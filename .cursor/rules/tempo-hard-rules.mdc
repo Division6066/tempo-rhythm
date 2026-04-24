@@ -11,7 +11,7 @@ Full rules: [`docs/HARD_RULES.md`](docs/HARD_RULES.md). If anything here looks o
 
 - Firebase, Supabase, any flavor of Prisma / Drizzle ORM.
 - Clerk, Auth0, NextAuth. Auth is **Convex Auth** only.
-- Direct provider SDKs: `openai`, `@anthropic-ai/*`, `@google/generative-ai`. All LLM calls go through **OpenRouter** via native `fetch` in a Convex action or `packages/ai`.
+- Direct provider SDKs: `openai`, `@anthropic-ai/*`, `@google/generative-ai`, `@mistralai/mistralai`. LLM calls flow through the Mistral API via native `fetch` (`https://api.mistral.ai/v1/chat/completions`) in Convex actions. OpenRouter is not used.
 - `axios`. Use native `fetch`.
 - Redux, Zustand, Jotai, any other app-state library. Use **Convex reactive queries**; local UI state stays in React state / `useReducer`.
 

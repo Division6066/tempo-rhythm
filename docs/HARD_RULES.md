@@ -267,11 +267,24 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 
 ## 13. Secrets and env vars
 
+See `docs/ENVIRONMENTS.md` for the full four-mode contract (dev / test / preview / deployment).
+
 - **No secrets in the repo.** Ever. Use `.env.local` locally (git-ignored) and Vercel / EAS env var config for deployed environments.
 - **`.env.example`** is the canonical list. Every new env var is added there with a placeholder and a one-line comment.
 - **Secret scanning** runs in CI (`pnpm scan:secrets`). Never merge a PR where the scan fires.
 - **Mistral keys** are scoped per environment and rotated quarterly.
 - **RevenueCat** public keys are safe to ship client-side. Secret keys only in server-side Convex actions.
+- **Four-mode contract.** Dev, test, preview, and deployment are different environments with different trust gates. See `docs/ENVIRONMENTS.md`.
+- **Env file precedence.** `.env.local` > Vercel/Convex/EAS dashboards > `.env.example` (names only, never values). Never create `.env` (without `.local`) in any app workspace.
+
+---
+
+## 13.5 Ship state
+
+- Every feature has exactly one state: `planned`, `coded`, `locally-tested`, `preview-tested`, or `shipped-and-running`.
+- An agent MUST NOT describe a feature as "ready", "done", or "shipped" unless it is `shipped-and-running` (live on production Vercel + production Convex).
+- Casual edits to a `shipped-and-running` feature either (a) re-verify the full ladder or (b) move the feature back to `coded`.
+- `docs/SHIP_STATE.md` is the one-table source of truth. Reality wins — the table updates to match reality, not the other way around.
 
 ---
 
