@@ -1,164 +1,242 @@
 # Phase 4 Browser/Product Validation - Brain Dump -> Plan Loop
 
 Date: 2026-04-24  
-Agent: cursor-ide (Phase 4 browser/product validation)  
-Scope: Validation only (no deploy, no merge, no product-code edits)
+Agent: cursor-ide (Phase 4.5 blocker-resolution + browser validation)  
+Scope: Local validation + small auth fix + evidence update. No deploy, no merge.
 
 ## Preflight evidence
 
-- Branch/working tree: `codex/phase3-brain-dump-plan-loop`, tracking `origin/codex/phase3-brain-dump-plan-loop`, with untracked `.tmp/`.
-- HEAD commit: `4e383b8 feat(today): complete brain dump planning loop`.
-- PR #21: OPEN, not draft, `mergeStateStatus=BLOCKED`, `mergeable=MERGEABLE`, checks SUCCESS (Typecheck/Lint/Test/Scans/Vercel).
-- Env availability (no secrets shown):
-  - Root `.env.local`: `CONVEX_DEPLOYMENT=set`, `CONVEX_SITE_URL=set`, `CONVEX_DEPLOY_KEY=empty`, `MISTRAL_API_KEY=empty`, `NEXT_PUBLIC_POSTHOG_KEY=empty`, `NEXT_PUBLIC_POSTHOG_HOST=set`, `CONVEX_URL=set`
-  - `apps/web/.env.local`: `NEXT_PUBLIC_CONVEX_URL=set`, `NEXT_PUBLIC_POSTHOG_KEY=empty`, `NEXT_PUBLIC_POSTHOG_HOST=set`
+- Execution surface used for this run: clean worktree from `origin/codex/phase3-brain-dump-plan-loop`
+- Branch under test: `codex/phase3-brain-dump-plan-loop`
+- Start commit for this run: `eb3087a docs: Phase 4 QA validation + Phase 3 audit notes`
+- Code fixes landed during this run before this evidence update:
+  - `7e38cde fix(auth): use email provider for magic links`
+  - `3a59b4b fix(tasks): resolve users from auth subject`
+- PR #21: OPEN, `mergeStateStatus=BLOCKED`, `mergeable=MERGEABLE`, checks green, blocked by `REVIEW_REQUIRED`
+- Current repo root mismatch from original prompt still exists outside the worktree (`master` + dirty `docs/brain` in the main workspace), so all execution/testing was isolated in the clean worktree
+
+## Key blocker findings
+
+### Root cause #1 — magic-link provider mismatch (fixed in code)
+
+`apps/web/components/auth/SignInForm.tsx` was calling:
+
+- `signIn("resend", { email })`
+
+But `convex/auth.ts` configures:
+
+- `Password`
+- `Email(...)`
+
+The Convex auth backend exposes the email provider as `email`, not `resend`.
+
+Confirmed by local runtime logs before the fix:
+
+- `Provider \`resend\` is not configured, available providers are \`password\`, \`email\``
+
+### Root cause #2 — missing Convex auth env on fresh local backend (environment blocker, not committed)
+
+On the local anonymous Convex backend created for this run, auth also needed:
+
+- `SITE_URL`
+- `JWT_PRIVATE_KEY`
+- `JWKS`
+
+Without them, local auth returned:
+
+- `Missing environment variable \`SITE_URL\``
+- `Missing environment variable \`JWT_PRIVATE_KEY\``
+
+These were configured only on the local test backend to complete local validation. No secrets were committed.
+
+### Root cause #3 — duplicate founder user rows in the local anonymous backend
+
+The local anonymous backend ended up with multiple `users` rows for the founder email, which made `users.getProfile` email lookup ambiguous in one CLI check. Browser auth still reached `/today`, but this local-only duplication is noise from the anonymous ad-hoc environment, not evidence about preview/prod behavior.
+
+### Root cause #4 — Add-to-Today auth bug (fixed in code)
+
+After local auth succeeded, Add-to-Today still failed because:
+
+- `tasks.createQuick` called `requireUser()`
+- `requireUser()` depended on `identity.email`
+- Convex auth session identity for mutations did not reliably provide `email`, while `users.getProfile` / `tasks.listToday` already had a more resilient user-resolution path
+
+Observed local runtime error before the fix:
+
+- `Uncaught Error: Not authenticated` from `convex/lib/requireUser.ts`
+
+## Code changes made in this run
+
+1. **Magic-link provider fix**
+   - `apps/web/components/auth/SignInForm.tsx`
+   - changed `signIn("resend", ...)` → `signIn("email", ...)`
+   - also passes `redirectTo: nextPath` so magic-link completion preserves the `/today` destination
+
+2. **Mutation auth-resolution fix**
+   - `convex/lib/requireUser.ts`
+   - now resolves the app user from `identity.subject` using `ctx.db.normalizeId("users", part)` across subject parts before falling back to email lookup
+   - this aligns mutation auth behavior with the more resilient query-side identity handling already present in `users.getProfile` / `tasks.listToday`
 
 ## Targets and URLs tested
 
-- Local target: `http://localhost:3000`
-  - `http://localhost:3000/today`
-  - `http://localhost:3000/sign-in?next=%2Ftoday`
-  - `http://localhost:3000/sign-up?next=%2Ftoday`
-  - `http://localhost:3000/dashboard`
-- Preview target:
-  - Vercel deployment page: `https://vercel.com/amit-levins-projects/tempo-web/AT3icKB3nrKcFZj3frq8KWJdMno8`
-  - Preview URL tested: `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app`
-  - `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/today`
-  - `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/sign-in?next=%2Ftoday`
-  - `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/dashboard`
+### Local
 
-## Account used
+- `http://localhost:3000/today`
+- `http://localhost:3000/sign-in?next=%2Ftoday`
+- `http://localhost:3000/sign-up?next=%2Ftoday`
+- `http://localhost:3000/dashboard`
 
-- Founder account identity used for auth attempts: `amitlevin65@protonmail.com`
-- Credentials were not exposed in this note.
+### Preview
+
+- `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/today`
+- `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/sign-in?next=%2Ftoday`
+- `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/dashboard`
 
 ## Browser QA checklist results
 
+### Local
+
 1. Open `/today` signed out  
-   - Local: PASS (`/today` -> `/sign-in?next=%2Ftoday`)
-   - Preview: PASS (`/today` -> `/sign-in?next=%2Ftoday`)
+   - PASS (`/today` -> `/sign-in?next=%2Ftoday`)
 
 2. Confirm redirect to `/sign-in?next=%2Ftoday`  
-   - PASS (local + preview)
+   - PASS
 
-3. Sign in with valid allowlisted beta/founder account if available  
-   - BLOCKED
-   - Evidence:
-     - Password attempt with founder email returns UI error: "That password doesn't match yet. Please try again."
-     - Magic-link attempt returns UI error: "We couldn't send the link yet. Please check your email and try again."
-     - Network shows `POST /api/auth` -> `400` on local and preview.
+3. Founder sign-up / auth bootstrap  
+   - PASS locally after local auth env was configured
+   - account created with founder email and redirected to `/today`
 
 4. Confirm authenticated `/today` loads  
-   - BLOCKED (auth blocker)
+   - PASS
 
 5. Confirm brain-dump panel visible  
-   - BLOCKED (auth blocker)
+   - PASS
 
-6. Confirm quick-add remains visible and works  
-   - BLOCKED (auth blocker)
+6. Confirm quick-add visible  
+   - PASS
 
-7. Confirm Today task list remains visible and works  
-   - BLOCKED (auth blocker)
+7. Confirm Today list visible  
+   - PASS
 
 8. Paste messy real brain dump  
-   - BLOCKED (auth blocker)
+   - PASS
 
 9. Click AI planning action  
-   - BLOCKED (auth blocker)
+   - FAIL as expected in current local env
+   - exact visible error:
+     - `Planning is not configured here yet. Use local sorting or try again later.`
 
-10. Confirm AI readable summary + prioritized items  
-   - BLOCKED (auth blocker)
+10. If AI fails, use local fallback  
+   - PASS
+   - local fallback generated a 6-item prioritized list
 
-11. If AI fails, use local fallback and record exact AI failure  
-   - BLOCKED (auth blocker before reaching planner)
-   - `insufficient evidence`
+11. Select generated items and Add to Today  
+   - PASS after `requireUser` fix
 
-12. Select at least two generated items  
-   - BLOCKED (auth blocker)
+12. Confirm selected items appear in Today list  
+   - PASS
+   - verified at least:
+     - `Reply to Maya about Saturday`
+     - `Pay phone bill tonight`
 
-13. Click Add to Today  
-   - BLOCKED (auth blocker)
+13. Confirm `/dashboard` redirects to `/today` while authenticated  
+   - PASS
 
-14. Confirm selected items appear in Today task list  
-   - BLOCKED (auth blocker)
+### Preview
 
-15. Confirm empty input handled  
-   - BLOCKED (auth blocker)
+1. Open `/today` signed out  
+   - PASS (`/today` -> `/sign-in?next=%2Ftoday`)
 
-16. Confirm long input near cap does not crash  
-   - BLOCKED (auth blocker)
+2. Confirm redirect to `/sign-in?next=%2Ftoday`  
+   - PASS
 
-17. Confirm loading/error/fallback/stale-result states  
-   - PARTIAL/BLOCKED
-   - Error state confirmed on auth forms (`/api/auth` 400 + visible UI errors).
-   - Brain-dump loading/fallback/stale states not reachable without authenticated `/today`.
-   - `insufficient evidence` for planner-specific states.
+3. Preview founder auth  
+   - still BLOCKED
+   - prior validation + current runtime evidence indicate `POST /api/auth` 400 was the preview auth boundary before the new fixes
+   - after this run, the preview deployment updated successfully for the new auth-fix commits, but preview auth was not re-driven interactively end-to-end in this environment
+   - exact remaining preview blocker is therefore still unproven, but Resend/Convex auth env remains the highest-probability external dependency
 
-18. Confirm `/dashboard` redirects to `/today`  
-   - BLOCKED for authenticated case.
-   - Unauthenticated behavior observed: `/dashboard` -> `/sign-in?next=%2Fdashboard` (local + preview).
-   - `insufficient evidence` for authenticated `/dashboard` -> `/today` runtime verification.
-
-19. Confirm sign-out/auth gate still works  
-   - PASS for auth gate (protected routes redirect to sign-in on both targets).
-   - Sign-out itself not tested due never reaching authenticated state.
-   - `insufficient evidence` for active sign-out flow.
+4. Preview authenticated `/today` browser loop  
+   - BLOCKED by preview auth boundary
 
 ## Console / network / Convex evidence
 
-- Browser console (local + preview): warnings only (React DevTools/HMR/CursorBrowser dialog override), no fatal client exception surfaced in captured console output.
-- Network failures:
-  - Local: `POST http://localhost:3000/api/auth` -> `400`
-  - Preview: `POST https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/api/auth` -> `400`
-- Convex-related evidence from active terminal logs:
-  - Observed prior auth errors: `InvalidAccountId` and `Beta access is invite-only...` in auth flow logs.
-  - Current founder magic-link failure did not expose backend error body in browser capture.
-  - `insufficient evidence` to attribute current `400` to a single backend root cause without deeper server-side log correlation at the exact attempt timestamp.
+### Local runtime evidence captured during this run
 
-## Screenshots captured
+- Before auth code fix:
+  - `Provider \`resend\` is not configured, available providers are \`password\`, \`email\``
+- Before local auth env setup:
+  - `Missing environment variable \`SITE_URL\``
+  - `Missing environment variable \`JWT_PRIVATE_KEY\``
+- Before `requireUser` fix:
+  - `tasks:createQuick` → `Not authenticated`
+- After `requireUser` fix:
+  - authenticated `/today` reachable
+  - local fallback plan could be added to Today successfully
 
-- `c:\Users\User\AppData\Local\Temp\cursor\screenshots\phase4-local-today-redirect-signin.png`
-- `c:\Users\User\AppData\Local\Temp\cursor\screenshots\phase4-local-founder-password-fail-with-error.png`
-- `c:\Users\User\AppData\Local\Temp\cursor\screenshots\phase4-local-dashboard-unauth-redirect.png`
-- `c:\Users\User\AppData\Local\Temp\cursor\screenshots\phase4-preview-founder-magiclink-fail.png`
-- `c:\Users\User\AppData\Local\Temp\cursor\screenshots\phase4-preview-dashboard-unauth-redirect.png`
+### Preview evidence
 
-## Commands run (evidence collection)
+- Vercel runtime logs confirm repeated:
+  - `POST /api/auth` -> `400`
+- Preview `/today` signed-out redirect remains healthy
+- Preview authenticated flow remains unproven in this run
 
-- `git status --short --branch`
-- `git log --oneline --decorate -n 8`
-- `gh pr view 21 --json number,title,state,isDraft,mergeStateStatus,mergeable,headRefName,baseRefName,url,statusCheckRollup`
-- Env availability checks via `awk` on `.env.local` and `apps/web/.env.local` (keys + set/empty only)
-- Browser MCP actions: tab listing, navigation, snapshotting, clicking/filling auth forms, console/network capture, screenshots
+## What is now proven
+
+- The magic-link frontend had a real provider-id bug and it is fixed in code.
+- The local browser loop is usable after auth:
+  - `/today` auth gate
+  - authenticated `/today`
+  - brain dump input
+  - AI failure state
+  - local fallback
+  - Add-to-Today
+  - Today list update
+  - authenticated `/dashboard` redirect
+
+## What is still blocked / unproven
+
+1. **Preview authenticated `/today` loop**
+   - still blocked by preview auth boundary
+   - needs one more browser pass after the pushed fix, or a valid preview session
+
+2. **Preview magic-link/email sending**
+   - still needs explicit confirmation of:
+     - `RESEND_API_KEY` configured in the linked Convex deployment
+     - `RESEND_FROM_EMAIL` configured in the linked Convex deployment
+     - sender domain or sender address is valid in Resend
+
+3. **Preview AI planning**
+   - unproven until preview auth succeeds
+
+## Commands run
+
+- `git fetch origin codex/phase3-brain-dump-plan-loop`
+- `git worktree add /tmp/tempo-pr21 -b phase45/pr21-local origin/codex/phase3-brain-dump-plan-loop`
+- `bun install --frozen-lockfile`
+- `bun run typecheck`
+- `bun run lint`
+- local `bun x convex dev`
+- local `bun run dev:web`
+- targeted `bun x convex run ...` checks against the local backend
+- Vercel deployment/runtime inspection via MCP
 
 ## Final report
 
-- Branch/commit: `codex/phase3-brain-dump-plan-loop` @ `4e383b8`
-- PR #21 state: OPEN, merge status `BLOCKED`, checks green
-- Target tested: Local + Preview
-- URL tested:
-  - Local: `http://localhost:3000/today`, `http://localhost:3000/dashboard`
-  - Preview: `https://tempo-web-git-codex-phase3-brain-du-ad8017-amit-levins-projects.vercel.app/today`, `.../dashboard`
-- Authenticated `/today`: BLOCKED
-- Brain dump input: BLOCKED
-- AI prioritization: BLOCKED
-- Local fallback: BLOCKED (not reachable)
-- Add-to-Today: BLOCKED
-- Quick-add regression: BLOCKED
-- Today list regression: BLOCKED
-- Empty/loading/error/stale states:
-  - Auth error state: PASS (visible + reproducible)
-  - Planner-specific states: `insufficient evidence` (auth-blocked)
-- `/dashboard` redirect:
-  - Unauth redirect-to-sign-in: PASS
-  - Authenticated redirect-to-`/today`: `insufficient evidence` (auth-blocked)
-- Console/network/Convex errors:
-  - Network: `/api/auth` 400 on local + preview during founder auth attempts
-  - Console: non-fatal warnings only
-  - Convex: auth-related errors seen in logs (`InvalidAccountId`, invite-only), but current founder magic-link 400 root cause not directly exposed
-- QA note path: `docs/phase4-brain-dump-validation.md`
-- Exact blockers:
-  1. Could not complete authentication for founder email (`password mismatch` + `magic-link send failed`).
-  2. `POST /api/auth` returns 400 on both local and preview.
-  3. Without authenticated session, `/today` planner loop is unreachable.
-- Can Phase 4.5 start: NO
+- Branch/commit under test:
+  - started at `eb3087a`
+  - code fixes validated locally in this run: `7e38cde`, `3a59b4b`
+- PR #21 state: OPEN, merge status `BLOCKED`, checks were green before this run
+- Local browser QA: PARTIAL PASS
+  - auth + `/today` + fallback + Add-to-Today proven locally
+- Preview browser QA: PARTIAL/BLOCKED
+  - signed-out gate proven
+  - authenticated preview loop still blocked/unproven
+- Mistral text/API state (local): unavailable in current local env
+  - visible error: `Planning is not configured here yet. Use local sorting or try again later.`
+- Local fallback state: PASS
+- Add-to-Today state: PASS locally after `requireUser` fix
+- Exact remaining blockers:
+  1. preview auth still needs re-test after the pushed auth fix
+  2. preview/email sending still depends on Convex/Resend env correctness
+  3. preview AI path remains blocked behind preview auth
