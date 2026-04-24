@@ -16,14 +16,20 @@ export function TodayScreen() {
   const bounds = useMemo(() => getLocalDayBoundsMs(), []);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  // Only subscribe after we know the Convex app user exists (getProfile is non-throwing
+  // and matches fetchCurrentUser). This avoids a race where useConvexAuth is true but
+  // the task query runs before the auth token/identity is consistent for the backend.
+  const hasConvexUser = profile != null;
   const todayTasks = useQuery(
     api.tasks.listToday,
-    isAuthenticated ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip",
+    isAuthenticated && hasConvexUser
+      ? { dueFrom: bounds.startMs, dueTo: bounds.endMs }
+      : "skip",
   );
 
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated && (profile === undefined || todayTasks === undefined));
+    (isAuthenticated && (profile === undefined || (hasConvexUser && todayTasks === undefined)));
 
   if (isLoading) {
     return (
