@@ -11,6 +11,7 @@
 import type * as ai_smoke from "../ai_smoke.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
+import type * as brain_dump from "../brain_dump.js";
 import type * as coach from "../coach.js";
 import type * as conversations from "../conversations.js";
 import type * as goals from "../goals.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   ai_smoke: typeof ai_smoke;
   analytics: typeof analytics;
   auth: typeof auth;
+  brain_dump: typeof brain_dump;
   coach: typeof coach;
   conversations: typeof conversations;
   goals: typeof goals;
