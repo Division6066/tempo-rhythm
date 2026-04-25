@@ -20,10 +20,8 @@ export type CoachBubbleProps = {
 
 const roleMap: Record<CoachBubbleRole, string> = {
   coach: "bg-card border-border-soft text-foreground self-start",
-  user:
-    "bg-surface-inverse text-cream border-transparent self-end",
-  system:
-    "bg-surface-sunken text-muted-foreground border-border-soft self-center",
+  user: "bg-surface-inverse text-cream border-transparent self-end",
+  system: "bg-surface-sunken text-muted-foreground border-border-soft self-center",
 };
 
 export function CoachBubble({
@@ -42,12 +40,8 @@ export function CoachBubble({
       ].join(" ")}
     >
       <div className="text-body leading-6">{children}</div>
-      {actions ? (
-        <div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div>
-      ) : null}
-      {timestamp ? (
-        <span className="text-caption font-tabular opacity-60">{timestamp}</span>
-      ) : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div> : null}
+      {timestamp ? <span className="text-caption font-tabular opacity-60">{timestamp}</span> : null}
     </div>
   );
 }
