@@ -130,6 +130,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
     setIsApplying(true);
     let added = 0;
     let failed = 0;
+    const addedIndices: number[] = [];
     const ordered = [...selected].sort((a, b) => a - b);
     for (const index of ordered) {
       const row = plan.priorities[index];
@@ -139,9 +140,17 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
       try {
         await createQuick({ title, dueAt });
         added += 1;
+        addedIndices.push(index);
       } catch {
         failed += 1;
       }
+    }
+    if (addedIndices.length > 0) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const i of addedIndices) next.delete(i);
+        return next;
+      });
     }
     setIsApplying(false);
     if (added > 0 && failed === 0) {
