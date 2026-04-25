@@ -44,7 +44,20 @@ function isUrgency(x: unknown): x is BrainDumpUrgency {
   return x === "now" || x === "soon" || x === "later";
 }
 
-function parsePlanFromModelContent(content: string): BrainDumpPlan {
+function sanitizeText(text: string): string {
+  // Strip C0/C1 control characters that could leak through from a malformed model
+  // response, then collapse internal whitespace. We do not change the visible
+  // characters, just remove ones that should never appear in a task title.
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping C0/C1 control chars is the intent
+  return text.replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, "").trim();
+}
+
+/**
+ * Exported for unit tests. Pure function that converts a model content string
+ * into a validated {@link BrainDumpPlan}. Throws a friendly Error on invalid
+ * shape. Strips C0/C1 control chars from string fields.
+ */
+export function parsePlanFromModelContent(content: string): BrainDumpPlan {
   const trimmed = content.trim();
   let parsed: unknown;
   try {
@@ -68,7 +81,7 @@ function parsePlanFromModelContent(content: string): BrainDumpPlan {
 
   const obj = parsed as Record<string, unknown>;
   const summary =
-    typeof obj.summary === "string" ? obj.summary.trim() : "";
+    typeof obj.summary === "string" ? sanitizeText(obj.summary) : "";
   if (!summary) {
     throw new Error("Plan response was incomplete. Try again?");
   }
@@ -83,8 +96,8 @@ function parsePlanFromModelContent(content: string): BrainDumpPlan {
     if (priorities.length >= 6) break;
     if (!item || typeof item !== "object" || Array.isArray(item)) continue;
     const row = item as Record<string, unknown>;
-    const title = typeof row.title === "string" ? row.title.trim() : "";
-    const reason = typeof row.reason === "string" ? row.reason.trim() : "";
+    const title = typeof row.title === "string" ? sanitizeText(row.title) : "";
+    const reason = typeof row.reason === "string" ? sanitizeText(row.reason) : "";
     const urgency = row.urgency;
     if (!title || !reason || !isUrgency(urgency)) continue;
     priorities.push({

@@ -89,7 +89,13 @@ function titleCaseFirst(text: string) {
 }
 
 function normalizeWhitespace(text: string) {
-  return text.replace(/\r\n/g, "\n").replace(/\t/g, " ").replace(/\s+/g, " ").trim();
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\t/g, " ")
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping C0/C1 control chars is the intent
+    .replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function trimFiller(text: string) {

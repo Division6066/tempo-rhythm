@@ -157,6 +157,8 @@ export const remove = mutation({
   },
 });
 
+const QUICK_TITLE_MAX = 280;
+
 /** Quick-add a task for today — minimal args, sensible defaults. */
 export const createQuick = mutation({
   args: {
@@ -165,10 +167,16 @@ export const createQuick = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+    const trimmed = args.title.trim();
+    if (!trimmed) {
+      throw new Error("Title cannot be empty.");
+    }
+    const title =
+      trimmed.length > QUICK_TITLE_MAX ? `${trimmed.slice(0, QUICK_TITLE_MAX - 3)}...` : trimmed;
     const now = Date.now();
     return ctx.db.insert("tasks", {
       userId: user._id,
-      title: args.title.trim(),
+      title,
       status: "todo",
       priority: "medium",
       dueAt: args.dueAt,
