@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { fetchCurrentUser } from "./users";
 
 export const list = query({
   args: {
@@ -184,7 +185,13 @@ export const listToday = query({
     dueTo: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
+    // Match `users.getProfile` (fetchCurrentUser), not requireUser: avoids throwing when
+    // the client auth race briefly has no `email` on the identity, and returns [] if
+    // there is no signed-in app user.
+    const user = await fetchCurrentUser(ctx);
+    if (!user) {
+      return [];
+    }
     const rows = await ctx.db
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))

@@ -7,6 +7,7 @@ import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { getLocalDayBoundsMs } from "@/lib/todayBounds";
+import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
 import { TodayGreeting } from "./TodayGreeting";
 import { TodayQuickAdd } from "./TodayQuickAdd";
 import { TodayTaskList } from "./TodayTaskList";
@@ -15,22 +16,31 @@ export function TodayScreen() {
   const bounds = useMemo(() => getLocalDayBoundsMs(), []);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  // Only subscribe after we know the Convex app user exists (getProfile is non-throwing
+  // and matches fetchCurrentUser). This avoids a race where useConvexAuth is true but
+  // the task query runs before the auth token/identity is consistent for the backend.
+  const hasConvexUser = profile != null;
   const todayTasks = useQuery(
     api.tasks.listToday,
-    isAuthenticated ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip",
+    isAuthenticated && hasConvexUser
+      ? { dueFrom: bounds.startMs, dueTo: bounds.endMs }
+      : "skip",
   );
 
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated && (profile === undefined || todayTasks === undefined));
+    (isAuthenticated && (profile === undefined || (hasConvexUser && todayTasks === undefined)));
 
   if (isLoading) {
     return (
       <div className="container mx-auto max-w-5xl px-6 py-12">
         <div className="space-y-6">
           <div className="h-12 w-64 animate-pulse rounded-xl bg-muted" />
-          <div className="h-32 animate-pulse rounded-2xl bg-muted" />
-          <div className="h-64 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-80 animate-pulse rounded-[2rem] bg-muted" />
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <div className="h-32 animate-pulse rounded-2xl bg-muted" />
+            <div className="h-64 animate-pulse rounded-2xl bg-muted" />
+          </div>
         </div>
       </div>
     );
@@ -56,8 +66,11 @@ export function TodayScreen() {
     <div className="container mx-auto max-w-5xl px-6 py-12">
       <div className="space-y-8">
         <TodayGreeting greetingName={profile.greetingName} />
-        <TodayQuickAdd dueAt={bounds.endMs - 1} />
-        <TodayTaskList tasks={todayTasks} />
+        <TodayBrainDumpPanel dueAt={bounds.endMs - 1} />
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:items-start">
+          <TodayQuickAdd dueAt={bounds.endMs - 1} />
+          <TodayTaskList tasks={todayTasks} />
+        </div>
       </div>
     </div>
   );

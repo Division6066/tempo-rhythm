@@ -18,7 +18,7 @@ This document is the one-table source of truth for what is `shipped-and-running`
 |---|---|---|---|
 | Convex Auth + beta gating | `locally-tested` | PR #19 merged; T-0010 done | 2026-04-24 |
 | /dashboard redirect after sign-in/sign-up | `locally-tested` | feat/T-0010 branch | 2026-04-24 |
-| /today route | `coded` | scaffold only | 2026-04-24 |
+| /today route | `locally-tested` | local auth + brain-dump fallback + Add-to-Today proven (2026-04-24 `docs/phase4-brain-dump-validation.md`); PR #21 still open at `ed39e45`; 2026-04-25 re-check: signed-out `/today` redirects to sign-in locally, but authenticated preview remains unproven | 2026-04-25 |
 | /tasks route | `coded` | scaffold only | 2026-04-24 |
 | /coach route | `coded` | scaffold only | 2026-04-24 |
 | /journal route | `coded` | scaffold only | 2026-04-24 |

@@ -81,7 +81,10 @@ export function SignInForm({
     setIsLoading(true);
     setError("");
     try {
-      await signIn("resend", { email });
+      await signIn("email", {
+        email,
+        ...(nextPath ? { redirectTo: nextPath } : {}),
+      });
       setMagicLinkSent(true);
     } catch (err: unknown) {
       const error = err as { message?: string };
