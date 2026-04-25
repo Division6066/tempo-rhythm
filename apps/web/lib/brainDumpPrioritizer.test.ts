@@ -95,7 +95,7 @@ describe("prioritizeBrainDump", () => {
 
   test("every priority has a non-empty title and reason", () => {
     const plan = prioritizeBrainDump(
-      "pay rent today, call mom tomorrow, finish report this week, schedule dentist appointment, plan the trip for sunday, fix the bug, pick up the kids",
+      "pay rent today, call mom tomorrow, finish report this week, schedule dentist appointment, plan the trip for sunday, fix the bug, pick up the kids"
     );
     for (const priority of plan.priorities) {
       expect(priority.title.trim().length).toBeGreaterThan(0);

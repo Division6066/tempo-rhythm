@@ -2,18 +2,20 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
-import { useMemo } from "react";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
-import { getLocalDayBoundsMs } from "@/lib/todayBounds";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
 import { TodayGreeting } from "./TodayGreeting";
 import { TodayQuickAdd } from "./TodayQuickAdd";
 import { TodayTaskList } from "./TodayTaskList";
 
 export function TodayScreen() {
-  const bounds = useMemo(() => getLocalDayBoundsMs(), []);
+  // Reactive bounds: refreshes across local midnight, on visibility change, and
+  // on window focus, so quick-add and brain-dump-to-Today never tag tasks with
+  // yesterday's `dueAt` after a tab is left open overnight.
+  const bounds = useLocalDayBounds();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   // Only subscribe after we know the Convex app user exists (getProfile is non-throwing
@@ -22,9 +24,7 @@ export function TodayScreen() {
   const hasConvexUser = profile != null;
   const todayTasks = useQuery(
     api.tasks.listToday,
-    isAuthenticated && hasConvexUser
-      ? { dueFrom: bounds.startMs, dueTo: bounds.endMs }
-      : "skip",
+    isAuthenticated && hasConvexUser ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip"
   );
 
   const isLoading =

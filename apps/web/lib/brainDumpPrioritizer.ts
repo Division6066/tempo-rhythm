@@ -89,19 +89,21 @@ function titleCaseFirst(text: string) {
 }
 
 function normalizeWhitespace(text: string) {
-  return text
-    .replace(/\r\n/g, "\n")
-    .replace(/\t/g, " ")
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping C0/C1 control chars is the intent
-    .replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    text
+      .replace(/\r\n/g, "\n")
+      .replace(/\t/g, " ")
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping C0/C1 control chars is the intent
+      .replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 function trimFiller(text: string) {
   return text.replace(
     /^(?:i need to|need to|i should|should|i have to|have to|must|remember to|don't forget to|dont forget to|please|pls|also|and|then|maybe|ugh|omg)\s+/i,
-    "",
+    ""
   );
 }
 
@@ -114,9 +116,7 @@ function shortenTitle(text: string, limit = 78) {
 
 function startsWithAction(text: string) {
   const lowered = text.toLowerCase();
-  return ACTION_HINTS.some(
-    (hint) => lowered.startsWith(`${hint} `) || lowered === hint,
-  );
+  return ACTION_HINTS.some((hint) => lowered.startsWith(`${hint} `) || lowered === hint);
 }
 
 function splitBrainDump(rawText: string) {
@@ -130,7 +130,7 @@ function splitBrainDump(rawText: string) {
     .split("\n")
     .flatMap((line) => line.split(/\s*;\s*/))
     .flatMap((line) =>
-      line.length > 90 ? line.split(/\s*,\s*(?=[a-zA-Z(])/).filter(Boolean) : [line],
+      line.length > 90 ? line.split(/\s*,\s*(?=[a-zA-Z(])/).filter(Boolean) : [line]
     )
     .map((line) => normalizeWhitespace(trimFiller(line)))
     .filter((line) => line.length >= 3);
