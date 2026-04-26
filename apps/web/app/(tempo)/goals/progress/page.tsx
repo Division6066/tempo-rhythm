@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: goals-progress
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
+ * @source: docs/design/claude-export/design-system/screens-3.jsx#ScreenGoalsProgress
  * @summary: Goals progress chart.
  * @queries: goals.progressSeries
  * @mutations: (none)
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Goals chart"
       category="Library"
-      source="screens-4.jsx"
+      source="screens-3.jsx#ScreenGoalsProgress"
       summary="Goals progress chart."
     />
   );

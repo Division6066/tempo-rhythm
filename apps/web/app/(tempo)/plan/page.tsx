@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: plan
  * @category: Flow
- * @source: docs/design/claude-export/design-system/screens-1.jsx
+ * @source: docs/design/claude-export/design-system/screens-1.jsx#ScreenPlan
  * @summary: Week / month planning grid.
  * @queries: plan.week
  * @mutations: plan.stage
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Planning"
       category="Flow"
-      source="screens-1.jsx"
+      source="screens-1.jsx#ScreenPlan"
       summary="Week / month planning grid."
     />
   );

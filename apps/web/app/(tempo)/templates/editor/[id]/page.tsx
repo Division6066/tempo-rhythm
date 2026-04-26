@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: template-editor
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-5.jsx
+ * @source: docs/design/claude-export/design-system/screens-3.jsx#ScreenTemplateEditor
  * @summary: Legacy template editor.
  * @queries: (none)
  * @mutations: (none)
@@ -23,7 +23,7 @@ export default async function Page({
     <ScaffoldScreen
       title="Template editor (legacy)"
       category="You"
-      source="screens-5.jsx"
+      source="screens-3.jsx#ScreenTemplateEditor"
       summary={`Legacy template editor. (id: ${id})`}
     />
   );

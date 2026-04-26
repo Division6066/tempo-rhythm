@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: coach
  * @category: Flow
- * @source: docs/design/claude-export/design-system/screens-1.jsx + coach-dock.jsx
+ * @source: docs/design/claude-export/design-system/screens-1.jsx#ScreenCoach + coach-dock.jsx
  * @summary: Conversational AI coach surface. Accept / tweak / skip suggestions.
  * @queries: coach.thread
  * @mutations: coach.accept, coach.tweak, coach.skip
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Coach"
       category="Flow"
-      source="screens-1.jsx + coach-dock.jsx"
+      source="screens-1.jsx#ScreenCoach + coach-dock.jsx"
       summary="Conversational AI coach surface. Accept / tweak / skip suggestions."
     />
   );

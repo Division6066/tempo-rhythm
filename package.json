@@ -16,6 +16,7 @@
     "lint": "turbo run lint",
     "check": "turbo run check",
     "test": "bun test",
+    "scan:ui-matrix": "node scripts/inventory-doctor.mjs",
     "clean": "turbo run clean && rm -rf node_modules",
     "convex:dev": "bun x convex dev",
     "convex:deploy": "bun x convex deploy",

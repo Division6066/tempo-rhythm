@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: habit-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
+ * @source: docs/design/claude-export/design-system/screens-2.jsx#ScreenHabitDetail
  * @summary: Single-habit detail with streak history.
  * @queries: habits.get
  * @mutations: habits.logComplete, habits.update
@@ -23,7 +23,7 @@ export default async function Page({
     <ScaffoldScreen
       title="Habit detail"
       category="Library"
-      source="screens-3.jsx"
+      source="screens-2.jsx#ScreenHabitDetail"
       summary={`Single-habit detail with streak history. (id: ${id})`}
     />
   );

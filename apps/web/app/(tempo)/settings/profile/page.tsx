@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: settings
  * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
+ * @source: docs/design/claude-export/design-system/screens-4.jsx#ScreenSettingsProfile
  * @summary: User profile settings.
  * @queries: users.me
  * @mutations: users.updateProfile
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Profile"
       category="Settings"
-      source="screens-6.jsx"
+      source="screens-4.jsx#ScreenSettingsProfile"
       summary="User profile settings."
     />
   );

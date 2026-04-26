@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: note-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-2.jsx
+ * @source: docs/design/claude-export/design-system/screens-2.jsx#ScreenNoteDetail
  * @summary: Rich-text note editor with slash commands.
  * @queries: notes.get
  * @mutations: notes.update
@@ -23,7 +23,7 @@ export default async function Page({
     <ScaffoldScreen
       title="Note editor"
       category="Library"
-      source="screens-2.jsx"
+      source="screens-2.jsx#ScreenNoteDetail"
       summary={`Rich-text note editor with slash commands. (id: ${id})`}
     />
   );

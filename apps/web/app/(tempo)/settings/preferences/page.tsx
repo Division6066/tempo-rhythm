@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: settings-prefs
  * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
+ * @source: docs/design/claude-export/design-system/screens-4.jsx#ScreenSettingsPreferences
  * @summary: Theme, dyslexia font, language, motion preferences.
  * @queries: users.preferences
  * @mutations: users.updatePreferences
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Preferences"
       category="Settings"
-      source="screens-6.jsx"
+      source="screens-4.jsx#ScreenSettingsPreferences"
       summary="Theme, dyslexia font, language, motion preferences."
     />
   );

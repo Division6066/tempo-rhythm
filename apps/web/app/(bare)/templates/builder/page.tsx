@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: template-builder
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-template-builder.jsx + -ui.jsx + -slash.jsx
+ * @source: docs/design/claude-export/design-system/screens-template-builder-ui.jsx#ScreenTemplateBuilderV2 (+ screens-template-builder.jsx + -slash.jsx)
  * @summary: Full-screen template builder with slash command DSL.
  * @queries: templates.get
  * @mutations: templates.save
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Template builder"
       category="You"
-      source="screens-template-builder.jsx + -ui.jsx + -slash.jsx"
+      source="screens-template-builder-ui.jsx#ScreenTemplateBuilderV2 (+ screens-template-builder.jsx + -slash.jsx)"
       summary="Full-screen template builder with slash command DSL."
     />
   );

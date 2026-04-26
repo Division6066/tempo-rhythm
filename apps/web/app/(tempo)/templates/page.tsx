@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: templates
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-templates.jsx
+ * @source: docs/design/claude-export/design-system/screens-templates.jsx#ScreenTemplatesV2
  * @summary: Template library.
  * @queries: templates.list
  * @mutations: (none)
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Templates"
       category="You"
-      source="screens-templates.jsx"
+      source="screens-templates.jsx#ScreenTemplatesV2"
       summary="Template library."
     />
   );

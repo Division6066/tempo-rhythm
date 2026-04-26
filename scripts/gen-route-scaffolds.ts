@@ -26,55 +26,62 @@ type WebScaffold = {
   dynamicParam?: string;
 };
 
+// Source-of-truth pointers verified against the prototype on 2026-04-26 by
+// the `claude/ui-prototype-route-inventory` run. See
+// `docs/design/implementation-matrix/screens.json` and the
+// "Source-file truth table" in
+// `docs/design/implementation-matrix/README.md` for the corrected mapping
+// (several entries previously pointed at the wrong screens-N.jsx file).
 const WEB: WebScaffold[] = [
   // Flow
-  { route: "(tempo)/today/page.tsx", slug: "today", title: "Today", category: "Flow", source: "screens-1.jsx", summary: "Single-column daily canvas. Brain-dump composer + staged plan + coach suggestion.", queries: ["tasks.listToday", "calendar.listToday", "coach.latestSuggestion"], mutations: ["tasks.capture", "tasks.complete", "tasks.stage"], navigates: ["/brain-dump", "/coach"] },
-  { route: "(bare)/daily-note/page.tsx", slug: "daily-note", title: "Daily note", category: "Flow", source: "screens-1.jsx", summary: "Distraction-free daily note surface.", queries: ["journal.getDaily"], mutations: ["journal.updateDaily"], bare: true },
-  { route: "(tempo)/brain-dump/page.tsx", slug: "brain-dump", title: "Brain dump", category: "Flow", source: "screens-1.jsx", summary: "Rapid capture with auto-sort suggestions.", queries: ["inbox.list"], mutations: ["inbox.capture", "inbox.sort"] },
-  { route: "(tempo)/coach/page.tsx", slug: "coach", title: "Coach", category: "Flow", source: "screens-1.jsx + coach-dock.jsx", summary: "Conversational AI coach surface. Accept / tweak / skip suggestions.", queries: ["coach.thread"], mutations: ["coach.accept", "coach.tweak", "coach.skip"] },
-  { route: "(tempo)/plan/page.tsx", slug: "plan", title: "Planning", category: "Flow", source: "screens-1.jsx", summary: "Week / month planning grid.", queries: ["plan.week"], mutations: ["plan.stage"] },
+  { route: "(tempo)/today/page.tsx", slug: "today", title: "Today", category: "Flow", source: "screens-1.jsx#ScreenToday", summary: "Single-column daily canvas. Brain-dump composer + staged plan + coach suggestion.", queries: ["tasks.listToday", "calendar.listToday", "coach.latestSuggestion"], mutations: ["tasks.capture", "tasks.complete", "tasks.stage"], navigates: ["/brain-dump", "/coach"] },
+  { route: "(bare)/daily-note/page.tsx", slug: "daily-note", title: "Daily note", category: "Flow", source: "screens-7.jsx#ScreenDailyNote", summary: "Distraction-free daily note surface.", queries: ["journal.getDaily"], mutations: ["journal.updateDaily"], bare: true },
+  { route: "(tempo)/brain-dump/page.tsx", slug: "brain-dump", title: "Brain dump", category: "Flow", source: "screens-1.jsx#ScreenBrainDump", summary: "Rapid capture with auto-sort suggestions.", queries: ["inbox.list"], mutations: ["inbox.capture", "inbox.sort"] },
+  { route: "(tempo)/coach/page.tsx", slug: "coach", title: "Coach", category: "Flow", source: "screens-1.jsx#ScreenCoach + coach-dock.jsx", summary: "Conversational AI coach surface. Accept / tweak / skip suggestions.", queries: ["coach.thread"], mutations: ["coach.accept", "coach.tweak", "coach.skip"] },
+  { route: "(tempo)/plan/page.tsx", slug: "plan", title: "Planning", category: "Flow", source: "screens-1.jsx#ScreenPlan", summary: "Week / month planning grid.", queries: ["plan.week"], mutations: ["plan.stage"] },
 
   // Library
-  { route: "(tempo)/tasks/page.tsx", slug: "tasks", title: "Tasks", category: "Library", source: "screens-2.jsx", summary: "Tasks inbox with filters and grouping.", queries: ["tasks.list"], mutations: ["tasks.complete", "tasks.create"] },
-  { route: "(tempo)/notes/page.tsx", slug: "notes", title: "Notes", category: "Library", source: "screens-2.jsx", summary: "Notes library — grid with backlinks.", queries: ["notes.list"], mutations: ["notes.create"] },
-  { route: "(tempo)/notes/[id]/page.tsx", slug: "note-detail", title: "Note editor", category: "Library", source: "screens-2.jsx", summary: "Rich-text note editor with slash commands.", queries: ["notes.get"], mutations: ["notes.update"], isDynamic: true, dynamicParam: "id" },
-  { route: "(tempo)/journal/page.tsx", slug: "journal", title: "Journal", category: "Library", source: "screens-2.jsx", summary: "Dated journal entries.", queries: ["journal.list"], mutations: ["journal.create"] },
-  { route: "(tempo)/calendar/page.tsx", slug: "calendar", title: "Calendar", category: "Library", source: "screens-3.jsx", summary: "Week + month calendar with task overlay.", queries: ["calendar.list"], mutations: ["calendar.schedule"] },
-  { route: "(tempo)/habits/page.tsx", slug: "habits", title: "Habits", category: "Library", source: "screens-3.jsx", summary: "Habit rings with weekly progress.", queries: ["habits.list"], mutations: ["habits.logComplete"] },
-  { route: "(tempo)/habits/[id]/page.tsx", slug: "habit-detail", title: "Habit detail", category: "Library", source: "screens-3.jsx", summary: "Single-habit detail with streak history.", queries: ["habits.get"], mutations: ["habits.logComplete", "habits.update"], isDynamic: true, dynamicParam: "id" },
-  { route: "(tempo)/routines/page.tsx", slug: "routines", title: "Routines", category: "Library", source: "screens-3.jsx", summary: "Routine library.", queries: ["routines.list"], mutations: ["routines.create"] },
-  { route: "(tempo)/routines/[id]/page.tsx", slug: "routine-detail", title: "Routine guided", category: "Library", source: "screens-3.jsx", summary: "Guided run of a routine.", queries: ["routines.get"], mutations: ["routines.logRun"], isDynamic: true, dynamicParam: "id" },
-  { route: "(tempo)/goals/page.tsx", slug: "goals", title: "Goals", category: "Library", source: "screens-4.jsx", summary: "Goals list with progress.", queries: ["goals.list"], mutations: ["goals.create"] },
-  { route: "(tempo)/goals/[id]/page.tsx", slug: "goal-detail", title: "Goal detail", category: "Library", source: "screens-4.jsx", summary: "Goal detail view with milestones.", queries: ["goals.get"], mutations: ["goals.update", "goals.logMilestone"], isDynamic: true, dynamicParam: "id" },
-  { route: "(tempo)/goals/progress/page.tsx", slug: "goals-progress", title: "Goals chart", category: "Library", source: "screens-4.jsx", summary: "Goals progress chart.", queries: ["goals.progressSeries"] },
-  { route: "(tempo)/projects/page.tsx", slug: "projects", title: "Projects", category: "Library", source: "screens-4.jsx", summary: "Projects directory.", queries: ["projects.list"], mutations: ["projects.create"] },
-  { route: "(tempo)/projects/[id]/page.tsx", slug: "project-detail", title: "Project detail", category: "Library", source: "screens-4.jsx", summary: "Project detail with tasks + notes.", queries: ["projects.get", "projects.tasks"], mutations: ["projects.update"], isDynamic: true, dynamicParam: "id" },
-  { route: "(tempo)/projects/[id]/kanban/page.tsx", slug: "project-kanban", title: "Project kanban", category: "Library", source: "screens-4.jsx", summary: "Project kanban board.", queries: ["projects.get", "projects.tasks"], mutations: ["tasks.moveColumn"], isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/tasks/page.tsx", slug: "tasks", title: "Tasks", category: "Library", source: "screens-1.jsx#ScreenTasks", summary: "Tasks inbox with filters and grouping.", queries: ["tasks.list"], mutations: ["tasks.complete", "tasks.create"] },
+  { route: "(tempo)/notes/page.tsx", slug: "notes", title: "Notes", category: "Library", source: "screens-2.jsx#ScreenNotes", summary: "Notes library — grid with backlinks.", queries: ["notes.list"], mutations: ["notes.create"] },
+  { route: "(tempo)/notes/[id]/page.tsx", slug: "note-detail", title: "Note editor", category: "Library", source: "screens-2.jsx#ScreenNoteDetail", summary: "Rich-text note editor with slash commands.", queries: ["notes.get"], mutations: ["notes.update"], isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/journal/page.tsx", slug: "journal", title: "Journal", category: "Library", source: "screens-2.jsx#ScreenJournal", summary: "Dated journal entries.", queries: ["journal.list"], mutations: ["journal.create"] },
+  { route: "(tempo)/calendar/page.tsx", slug: "calendar", title: "Calendar", category: "Library", source: "screens-2.jsx#ScreenCalendar", summary: "Week + month calendar with task overlay.", queries: ["calendar.list"], mutations: ["calendar.schedule"] },
+  { route: "(tempo)/habits/page.tsx", slug: "habits", title: "Habits", category: "Library", source: "screens-2.jsx#ScreenHabits", summary: "Habit rings with weekly progress.", queries: ["habits.list"], mutations: ["habits.logComplete"] },
+  { route: "(tempo)/habits/[id]/page.tsx", slug: "habit-detail", title: "Habit detail", category: "Library", source: "screens-2.jsx#ScreenHabitDetail", summary: "Single-habit detail with streak history.", queries: ["habits.get"], mutations: ["habits.logComplete", "habits.update"], isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/routines/page.tsx", slug: "routines", title: "Routines", category: "Library", source: "screens-2.jsx#ScreenRoutines", summary: "Routine library.", queries: ["routines.list"], mutations: ["routines.create"] },
+  { route: "(tempo)/routines/[id]/page.tsx", slug: "routine-detail", title: "Routine guided", category: "Library", source: "screens-2.jsx#ScreenRoutineDetail", summary: "Guided run of a routine.", queries: ["routines.get"], mutations: ["routines.logRun"], isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/goals/page.tsx", slug: "goals", title: "Goals", category: "Library", source: "screens-3.jsx#ScreenGoals", summary: "Goals list with progress.", queries: ["goals.list"], mutations: ["goals.create"] },
+  { route: "(tempo)/goals/[id]/page.tsx", slug: "goal-detail", title: "Goal detail", category: "Library", source: "screens-3.jsx#ScreenGoalDetail", summary: "Goal detail view with milestones.", queries: ["goals.get"], mutations: ["goals.update", "goals.logMilestone"], isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/goals/progress/page.tsx", slug: "goals-progress", title: "Goals chart", category: "Library", source: "screens-3.jsx#ScreenGoalsProgress", summary: "Goals progress chart.", queries: ["goals.progressSeries"] },
+  { route: "(tempo)/projects/page.tsx", slug: "projects", title: "Projects", category: "Library", source: "screens-3.jsx#ScreenProjects", summary: "Projects directory.", queries: ["projects.list"], mutations: ["projects.create"] },
+  { route: "(tempo)/projects/[id]/page.tsx", slug: "project-detail", title: "Project detail", category: "Library", source: "screens-3.jsx#ScreenProjectDetail", summary: "Project detail with tasks + notes.", queries: ["projects.get", "projects.tasks"], mutations: ["projects.update"], isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/projects/[id]/kanban/page.tsx", slug: "project-kanban", title: "Project kanban", category: "Library", source: "screens-3.jsx#ScreenProjectKanban", summary: "Project kanban board.", queries: ["projects.get", "projects.tasks"], mutations: ["tasks.moveColumn"], isDynamic: true, dynamicParam: "id" },
 
   // You
-  { route: "(tempo)/insights/page.tsx", slug: "analytics", title: "Insights", category: "You", source: "screens-5.jsx", summary: "Personal analytics & trends.", queries: ["insights.summary"] },
-  { route: "(tempo)/activity/page.tsx", slug: "activity", title: "Recent activity", category: "You", source: "screens-5.jsx", summary: "Activity feed of changes.", queries: ["activity.list"] },
-  { route: "(tempo)/templates/page.tsx", slug: "templates", title: "Templates", category: "You", source: "screens-templates.jsx", summary: "Template library.", queries: ["templates.list"] },
-  { route: "(bare)/templates/builder/page.tsx", slug: "template-builder", title: "Template builder", category: "You", source: "screens-template-builder.jsx + -ui.jsx + -slash.jsx", summary: "Full-screen template builder with slash command DSL.", queries: ["templates.get"], mutations: ["templates.save"], bare: true },
-  { route: "(bare)/templates/run/[id]/page.tsx", slug: "template-run", title: "Template run", category: "You", source: "screens-template-run.jsx", summary: "Runs a template step by step.", queries: ["templates.get"], mutations: ["templates.logRun"], bare: true, isDynamic: true, dynamicParam: "id" },
-  { route: "(tempo)/templates/editor/[id]/page.tsx", slug: "template-editor", title: "Template editor (legacy)", category: "You", source: "screens-5.jsx", summary: "Legacy template editor.", isDynamic: true, dynamicParam: "id" },
-  { route: "(tempo)/templates/sketch/page.tsx", slug: "template-sketch", title: "Template sketch", category: "You", source: "screens-5.jsx", summary: "Template sketch playground." },
-  { route: "(tempo)/search/page.tsx", slug: "search", title: "Search", category: "You", source: "screens-5.jsx", summary: "Global search with previews.", queries: ["search.everything"] },
-  { route: "(tempo)/command/page.tsx", slug: "command", title: "Command bar", category: "You", source: "screens-5.jsx", summary: "Command bar landing page." },
-  { route: "(tempo)/empty-states/page.tsx", slug: "empty-states", title: "Empty states gallery", category: "You", source: "screens-6.jsx", summary: "Gallery of anti-shame empty states." },
+  { route: "(tempo)/insights/page.tsx", slug: "analytics", title: "Insights", category: "You", source: "screens-3.jsx#ScreenAnalytics", summary: "Personal analytics & trends.", queries: ["insights.summary"] },
+  { route: "(tempo)/activity/page.tsx", slug: "activity", title: "Recent activity", category: "You", source: "screens-3.jsx#ScreenActivity", summary: "Activity feed of changes.", queries: ["activity.list"] },
+  { route: "(tempo)/templates/page.tsx", slug: "templates", title: "Templates", category: "You", source: "screens-templates.jsx#ScreenTemplatesV2", summary: "Template library.", queries: ["templates.list"] },
+  { route: "(bare)/templates/builder/page.tsx", slug: "template-builder", title: "Template builder", category: "You", source: "screens-template-builder-ui.jsx#ScreenTemplateBuilderV2 (+ screens-template-builder.jsx + -slash.jsx)", summary: "Full-screen template builder with slash command DSL.", queries: ["templates.get"], mutations: ["templates.save"], bare: true },
+  { route: "(bare)/templates/run/[id]/page.tsx", slug: "template-run", title: "Template run", category: "You", source: "screens-template-run.jsx#ScreenTemplateRunV2", summary: "Runs a template step by step.", queries: ["templates.get"], mutations: ["templates.logRun"], bare: true, isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/templates/editor/[id]/page.tsx", slug: "template-editor", title: "Template editor (legacy)", category: "You", source: "screens-3.jsx#ScreenTemplateEditor", summary: "Legacy template editor.", isDynamic: true, dynamicParam: "id" },
+  { route: "(tempo)/templates/sketch/page.tsx", slug: "template-sketch", title: "Template sketch", category: "You", source: "screens-3.jsx#ScreenTemplateSketch", summary: "Template sketch playground." },
+  { route: "(tempo)/search/page.tsx", slug: "search", title: "Search", category: "You", source: "screens-3.jsx#ScreenSearch", summary: "Global search with previews.", queries: ["search.everything"] },
+  { route: "(tempo)/command/page.tsx", slug: "command", title: "Command bar", category: "You", source: "screens-3.jsx#ScreenCommand", summary: "Command bar landing page." },
+  { route: "(tempo)/empty-states/page.tsx", slug: "empty-states", title: "Empty states gallery", category: "You", source: "screens-5.jsx#ScreenEmptyStates", summary: "Gallery of anti-shame empty states." },
 
   // Settings
-  { route: "(tempo)/settings/profile/page.tsx", slug: "settings", title: "Profile", category: "Settings", source: "screens-6.jsx", summary: "User profile settings.", queries: ["users.me"], mutations: ["users.updateProfile"] },
-  { route: "(tempo)/settings/preferences/page.tsx", slug: "settings-prefs", title: "Preferences", category: "Settings", source: "screens-6.jsx", summary: "Theme, dyslexia font, language, motion preferences.", queries: ["users.preferences"], mutations: ["users.updatePreferences"] },
-  { route: "(tempo)/settings/integrations/page.tsx", slug: "settings-integrations", title: "Integrations", category: "Settings", source: "screens-6.jsx", summary: "Google Calendar & other integrations.", queries: ["integrations.list"], mutations: ["integrations.connect", "integrations.disconnect"] },
-  { route: "(tempo)/billing/page.tsx", slug: "billing", title: "Trial & billing", category: "Settings", source: "screens-6.jsx", summary: "Trial countdown + RevenueCat entitlement status.", queries: ["billing.status"] },
-  { route: "(bare)/billing/trial-end/page.tsx", slug: "trial-end", title: "Trial ended", category: "Settings", source: "screens-6.jsx", summary: "Anti-shame trial-ended screen (continue / pause / walk-away).", bare: true },
-  { route: "(tempo)/ask-founder/page.tsx", slug: "ask-founder", title: "Ask the founder", category: "Settings", source: "screens-6.jsx", summary: "Direct channel to send feedback.", mutations: ["feedback.send"] },
-  { route: "(tempo)/notifications/page.tsx", slug: "notifications", title: "Notifications", category: "Settings", source: "screens-6.jsx", summary: "Quiet notification settings.", queries: ["users.notificationPrefs"], mutations: ["users.updateNotificationPrefs"] },
+  { route: "(tempo)/settings/profile/page.tsx", slug: "settings", title: "Profile", category: "Settings", source: "screens-4.jsx#ScreenSettingsProfile", summary: "User profile settings.", queries: ["users.me"], mutations: ["users.updateProfile"] },
+  { route: "(tempo)/settings/preferences/page.tsx", slug: "settings-prefs", title: "Preferences", category: "Settings", source: "screens-4.jsx#ScreenSettingsPreferences", summary: "Theme, dyslexia font, language, motion preferences.", queries: ["users.preferences"], mutations: ["users.updatePreferences"] },
+  { route: "(tempo)/settings/integrations/page.tsx", slug: "settings-integrations", title: "Integrations", category: "Settings", source: "screens-4.jsx#ScreenSettingsIntegrations", summary: "Google Calendar & other integrations.", queries: ["integrations.list"], mutations: ["integrations.connect", "integrations.disconnect"] },
+  { route: "(tempo)/billing/page.tsx", slug: "billing", title: "Trial & billing", category: "Settings", source: "screens-4.jsx#ScreenBilling", summary: "Trial countdown + RevenueCat entitlement status.", queries: ["billing.status"] },
+  { route: "(bare)/billing/trial-end/page.tsx", slug: "trial-end", title: "Trial ended", category: "Settings", source: "screens-4.jsx#ScreenTrialEnd", summary: "Anti-shame trial-ended screen (continue / pause / walk-away).", bare: true },
+  { route: "(tempo)/ask-founder/page.tsx", slug: "ask-founder", title: "Ask the founder", category: "Settings", source: "screens-4.jsx#ScreenAskFounder", summary: "Direct channel to send feedback.", mutations: ["feedback.send"] },
+  { route: "(tempo)/notifications/page.tsx", slug: "notifications", title: "Notifications", category: "Settings", source: "screens-4.jsx#ScreenNotifications", summary: "Quiet notification settings.", queries: ["users.notificationPrefs"], mutations: ["users.updateNotificationPrefs"] },
 
-  // Onboarding + Auth (bare)
-  { route: "(bare)/sign-in/page.tsx", slug: "sign-in", title: "Sign in", category: "Onboarding", source: "screens-7.jsx", summary: "Sign in — email + magic link.", mutations: ["auth.signIn"], bare: true },
-  { route: "(bare)/onboarding/page.tsx", slug: "onboarding", title: "Onboarding", category: "Onboarding", source: "screens-7.jsx", summary: "5-step onboarding (welcome → personalization → template → first brain dump → first plan).", mutations: ["users.completeOnboarding"], bare: true, navigates: ["/today"] },
+  // Onboarding + Auth — `(bare)/sign-in` intentionally omitted: the real
+  // implementation already lives at `apps/web/app/sign-in/page.tsx` and a
+  // duplicate at `(bare)/sign-in` would cause a Next.js route collision.
+  { route: "(bare)/onboarding/page.tsx", slug: "onboarding", title: "Onboarding", category: "Onboarding", source: "screens-5.jsx#ScreenOnboarding", summary: "5-step onboarding (welcome → personalization → template → first brain dump → first plan).", mutations: ["users.completeOnboarding"], bare: true, navigates: ["/today"] },
 ];
 
 type MobileScaffold = {

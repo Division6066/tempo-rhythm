@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: calendar
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
+ * @source: docs/design/claude-export/design-system/screens-2.jsx#ScreenCalendar
  * @summary: Week + month calendar with task overlay.
  * @queries: calendar.list
  * @mutations: calendar.schedule
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Calendar"
       category="Library"
-      source="screens-3.jsx"
+      source="screens-2.jsx#ScreenCalendar"
       summary="Week + month calendar with task overlay."
     />
   );

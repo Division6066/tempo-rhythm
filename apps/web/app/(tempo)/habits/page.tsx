@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: habits
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
+ * @source: docs/design/claude-export/design-system/screens-2.jsx#ScreenHabits
  * @summary: Habit rings with weekly progress.
  * @queries: habits.list
  * @mutations: habits.logComplete
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Habits"
       category="Library"
-      source="screens-3.jsx"
+      source="screens-2.jsx#ScreenHabits"
       summary="Habit rings with weekly progress."
     />
   );

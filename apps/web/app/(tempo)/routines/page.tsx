@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: routines
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
+ * @source: docs/design/claude-export/design-system/screens-2.jsx#ScreenRoutines
  * @summary: Routine library.
  * @queries: routines.list
  * @mutations: routines.create
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Routines"
       category="Library"
-      source="screens-3.jsx"
+      source="screens-2.jsx#ScreenRoutines"
       summary="Routine library."
     />
   );

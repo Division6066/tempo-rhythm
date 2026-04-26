@@ -1,0 +1,457 @@
+{
+  "$schema": "./schema/components.schema.json",
+  "version": "1.0.0",
+  "generated": "2026-04-26",
+  "generatedBy": "claude/ui-prototype-route-inventory",
+  "sources": {
+    "designSystem": "docs/design/claude-export/design-system/",
+    "tempoUiPackage": "packages/ui/src/",
+    "appShell": "apps/web/components/tempo/",
+    "todayParts": "apps/web/components/today/"
+  },
+  "statusLegend": {
+    "missing": "no implementation in repo",
+    "ported": "implementation exists in packages/ui or apps/web",
+    "partial": "exists but missing variants/props from prototype",
+    "shipped": "stable + used in production paths"
+  },
+  "ownerLegend": {
+    "claude-web-1": "this agent — inventory only, no component changes",
+    "claude-ui-pkg": "agent owning packages/ui shared primitives",
+    "claude-shell": "app shell (Sidebar, Topbar, CommandPalette, providers)",
+    "claude-coach": "coach + voice components",
+    "claude-mobile-ui": "packages/ui/src/native/* RN equivalents"
+  },
+  "components": {
+    "primitives": [
+      {
+        "name": "Icon (set)",
+        "sourceFiles": ["components.jsx#I (L13-L91)"],
+        "targetPath": "packages/ui/src/icons/index.tsx",
+        "exportNames": ["TempoIcon", "Home", "Check", "CheckSquare", "Notebook", "BookOpen", "Calendar", "Sparkles", "Flame", "Target", "Folder", "Repeat", "Chart", "Settings", "Plus", "Search", "Mic", "Command", "Sun", "Moon", "Laptop", "Monitor", "Ear", "Type", "Volume", "Image", "Heading", "AlignLeft", "List", "GripVertical", "Info", "Slider", "Play", "Pause", "Copy", "Eye", "Bell", "Mail", "ArrowRight", "ArrowLeft", "ChevronRight", "ChevronDown", "X", "Clock", "Leaf", "Pebble", "Wind", "Coffee", "Zap", "Heart", "Layers", "Download", "Upload", "Link", "Share", "Tag", "Filter", "Edit", "Trash", "User", "Lock", "Shield", "Globe", "Palette", "Menu", "Star", "MoreHorizontal", "Send", "CornerDownRight", "Book", "Trophy", "Layout", "Refresh"],
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "73 icons. 1.5px stroke, currentColor. Tree-shakable named exports plus TempoIcon record for dynamic lookup.",
+        "platforms": ["web"],
+        "nativeEquivalent": "@tempo/ui/icons/native (insufficient evidence: not yet inventoried)"
+      },
+      {
+        "name": "BrandMark",
+        "sourceFiles": ["components.jsx#BrandMark (L94-L105)"],
+        "targetPath": "packages/ui/src/brand/BrandMark.tsx",
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "platforms": ["web"],
+        "nativeEquivalent": "packages/ui/src/brand/BrandMark.native.tsx (insufficient evidence: file not located)"
+      },
+      {
+        "name": "Wordmark",
+        "sourceFiles": ["components.jsx#Wordmark (L106-L110)"],
+        "targetPath": "packages/ui/src/brand/Wordmark.tsx",
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "platforms": ["web"]
+      },
+      {
+        "name": "SoftCard",
+        "sourceFiles": ["components.jsx (SoftCard pattern, used in screens-1.jsx etc)"],
+        "targetPath": "packages/ui/src/primitives/SoftCard.tsx",
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "Cream-raised card with whisper shadow. Tone variants: card, sunken, inverse."
+      },
+      {
+        "name": "Button",
+        "sourceFiles": ["components.jsx (Button pattern)"],
+        "targetPath": "packages/ui/src/primitives/Button.tsx",
+        "exportNames": ["Button", "ButtonProps", "ButtonSize", "ButtonVariant"],
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "6 variants (primary/soft/ghost/subtle/inverse/destructive), 3 sizes (sm/md/lg)."
+      },
+      {
+        "name": "Field",
+        "sourceFiles": ["components.jsx (form-field pattern)"],
+        "targetPath": "packages/ui/src/primitives/Field.tsx",
+        "status": "ported",
+        "owner": "claude-ui-pkg"
+      },
+      {
+        "name": "Pill",
+        "sourceFiles": ["components.jsx#Pill (L317-L322)"],
+        "targetPath": "packages/ui/src/primitives/Pill.tsx",
+        "exportNames": ["Pill", "PillProps", "PillTone"],
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "Tones: neutral, moss, brick, amber, slate-blue, orange. Optional dot prefix."
+      },
+      {
+        "name": "Ring",
+        "sourceFiles": ["components.jsx#Ring (L300-L316)"],
+        "targetPath": "packages/ui/src/primitives/Ring.tsx",
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "SVG progress ring. Used by HabitRing, energy meters."
+      },
+      {
+        "name": "HabitRing",
+        "sourceFiles": ["components.jsx (HabitRing composition)", "screens-2.jsx#ScreenHabits"],
+        "targetPath": "packages/ui/src/primitives/HabitRing.tsx",
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "Streak ring with day-count center label."
+      },
+      {
+        "name": "TaskRow",
+        "sourceFiles": ["components.jsx#TaskRow (L323-L341)"],
+        "targetPath": "packages/ui/src/primitives/TaskRow.tsx",
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "Optimistic checkbox + label + meta row. Used in Today, Tasks, project detail."
+      },
+      {
+        "name": "CoachBubble",
+        "sourceFiles": ["components.jsx#CoachBubble (L342-L347)", "components.jsx#UserBubble (L348-L354)"],
+        "targetPath": "packages/ui/src/primitives/CoachBubble.tsx",
+        "exportNames": ["CoachBubble", "CoachBubbleProps", "CoachBubbleRole"],
+        "status": "ported",
+        "owner": "claude-ui-pkg",
+        "notes": "Single component with role=coach|user."
+      }
+    ],
+    "appShell": [
+      {
+        "name": "Sidebar",
+        "sourceFiles": ["components.jsx#Sidebar (L173-L214)", "components.jsx#NAV (L147-L171)"],
+        "targetPath": "apps/web/components/tempo/Sidebar.tsx",
+        "status": "ported",
+        "owner": "claude-shell",
+        "notes": "Reads CATEGORIES + screensByCategory from lib/tempo-nav.ts. Lucide-style icons via @tempo/ui/icons."
+      },
+      {
+        "name": "Topbar",
+        "sourceFiles": ["components.jsx#Topbar (L277-L299)"],
+        "targetPath": "apps/web/components/tempo/Topbar.tsx",
+        "status": "ported",
+        "owner": "claude-shell",
+        "notes": "Title + breadcrumb slot + right-slot for actions."
+      },
+      {
+        "name": "TempoShell",
+        "sourceFiles": ["app.html (App layout)"],
+        "targetPath": "apps/web/components/tempo/TempoShell.tsx",
+        "status": "ported",
+        "owner": "claude-shell",
+        "notes": "Composition wrapper for sidebar + topbar + page area."
+      },
+      {
+        "name": "ScaffoldScreen",
+        "sourceFiles": ["(no prototype source)"],
+        "targetPath": "apps/web/components/tempo/ScaffoldScreen.tsx",
+        "status": "ported",
+        "owner": "claude-shell",
+        "notes": "Internal placeholder body for not-yet-ported routes. Not part of the prototype — used for the T-F004 stub matrix."
+      },
+      {
+        "name": "CommandPalette (⌘K)",
+        "sourceFiles": ["app.html#ScreenPicker (L113-L166)"],
+        "targetPath": "apps/web/components/tempo/CommandPalette.tsx",
+        "status": "ported",
+        "owner": "claude-shell",
+        "notes": "Reads TEMPO_SCREENS from lib/tempo-nav.ts. Filters by title/slug/category."
+      },
+      {
+        "name": "ReadAloudIndicator",
+        "sourceFiles": ["components.jsx#ReadAloudIndicator (L215-L258)"],
+        "targetPath": "(missing — accessibility primitive)",
+        "status": "missing",
+        "owner": "claude-shell",
+        "notes": "Floating indicator while TTS is reading. Hooks into theme-controller readAloud state. Insufficient evidence: not yet implemented in apps/web."
+      },
+      {
+        "name": "ListenBtn",
+        "sourceFiles": ["components.jsx#ListenBtn (L259-L276)"],
+        "targetPath": "(missing — accessibility primitive)",
+        "status": "missing",
+        "owner": "claude-shell",
+        "notes": "Per-content-block read-aloud trigger. Insufficient evidence: not yet implemented."
+      },
+      {
+        "name": "AppProvider / useApp",
+        "sourceFiles": ["components.jsx#AppCtx (L113-L144)"],
+        "targetPath": "apps/web/components/providers/providers.tsx (theme parts) + Next router (nav parts)",
+        "status": "partial",
+        "owner": "claude-shell",
+        "notes": "Prototype context bundles screen state + theme + dyslexia + readAloud. In Next.js, screen state is the URL (router); theme and accessibility live in providers. Verify all four are surfaced."
+      },
+      {
+        "name": "ProgressBar",
+        "sourceFiles": ["components.jsx#ProgressBar (L366-L375)"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-ui-pkg"
+      },
+      {
+        "name": "EnergyBar",
+        "sourceFiles": ["components.jsx#EnergyBar (L376+)"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-ui-pkg",
+        "notes": "1–5 segmented energy meter."
+      },
+      {
+        "name": "AcceptStrip",
+        "sourceFiles": ["components.jsx#AcceptStrip (L355-L365)"],
+        "targetPath": "(missing — accept/reject UX primitive)",
+        "status": "missing",
+        "owner": "claude-coach",
+        "notes": "HARD_RULES §6.2: every AI-originating mutation surfaces accept/edit/reject. This is the primitive. Used by brain dump, coach, plan."
+      }
+    ],
+    "today": [
+      {
+        "name": "TodayScreen",
+        "sourceFiles": ["screens-1.jsx#ScreenToday"],
+        "targetPath": "apps/web/components/today/TodayScreen.tsx",
+        "status": "partial",
+        "owner": "claude-web-flow",
+        "notes": "Composition root. Verify presence of: greeting, energy slider, schedule strip, brain-dump panel, suggested next."
+      },
+      {
+        "name": "TodayGreeting",
+        "sourceFiles": ["screens-1.jsx#ScreenToday (greeting block)"],
+        "targetPath": "apps/web/components/today/TodayGreeting.tsx",
+        "status": "ported",
+        "owner": "claude-web-flow"
+      },
+      {
+        "name": "TodayQuickAdd",
+        "sourceFiles": ["screens-1.jsx (quick-add bar)"],
+        "targetPath": "apps/web/components/today/TodayQuickAdd.tsx",
+        "status": "ported",
+        "owner": "claude-web-flow"
+      },
+      {
+        "name": "TodayTaskList",
+        "sourceFiles": ["screens-1.jsx (task list block)"],
+        "targetPath": "apps/web/components/today/TodayTaskList.tsx",
+        "status": "ported",
+        "owner": "claude-web-flow"
+      },
+      {
+        "name": "TodayBrainDumpPanel",
+        "sourceFiles": ["screens-1.jsx (brain-dump strip)"],
+        "targetPath": "apps/web/components/today/TodayBrainDumpPanel.tsx",
+        "status": "partial",
+        "owner": "claude-web-flow",
+        "notes": "Phase-4 brain-dump validation evidenced in docs/phase4-brain-dump-validation.md."
+      }
+    ],
+    "coach": [
+      {
+        "name": "CoachDock",
+        "sourceFiles": ["coach-dock.jsx#CoachDock"],
+        "targetPath": "(missing — apps/web/components/coach/CoachDock.tsx)",
+        "status": "missing",
+        "owner": "claude-coach",
+        "notes": "Floating coach dock with tabs (chat, brain dump). Used across screens via global mount."
+      },
+      {
+        "name": "CoachTab",
+        "sourceFiles": ["coach-dock.jsx#CoachTab"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach"
+      },
+      {
+        "name": "BrainDumpTab",
+        "sourceFiles": ["coach-dock.jsx#BrainDumpTab"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach"
+      },
+      {
+        "name": "CoachDotMark",
+        "sourceFiles": ["coach-dock.jsx#CoachDotMark"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach",
+        "notes": "Animated coach mark. Two-state: idle, listening."
+      },
+      {
+        "name": "FabBreath",
+        "sourceFiles": ["coach-dock.jsx#FabBreath"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach",
+        "notes": "Breathing-pulse floating action button for the dock."
+      }
+    ],
+    "voice": [
+      {
+        "name": "VCWaveform",
+        "sourceFiles": ["voice-chat.jsx#VCWaveform"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach"
+      },
+      {
+        "name": "VCTranscript",
+        "sourceFiles": ["voice-chat.jsx#VCTranscript"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach"
+      },
+      {
+        "name": "VCWalkieTalkie",
+        "sourceFiles": ["voice-chat.jsx#VCWalkieTalkie"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach",
+        "notes": "Push-to-talk mode (HARD_RULES §9: universal across tiers)."
+      },
+      {
+        "name": "VCVoiceMode",
+        "sourceFiles": ["voice-chat.jsx#VCVoiceMode"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach",
+        "notes": "Live (streaming) voice mode (HARD_RULES §9: minute-capped per tier)."
+      },
+      {
+        "name": "VCLauncher",
+        "sourceFiles": ["voice-chat.jsx#VCLauncher"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach"
+      },
+      {
+        "name": "VoiceDockButtons",
+        "sourceFiles": ["voice-chat.jsx#VoiceDockButtons"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach"
+      },
+      {
+        "name": "VCGlobalRoot",
+        "sourceFiles": ["voice-chat.jsx#VCGlobalRoot"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-coach",
+        "notes": "Top-level mount point for voice UI; goes in app/(tempo)/layout.tsx alongside CoachDock."
+      }
+    ],
+    "templates": [
+      {
+        "name": "TB_BLOCK_TYPES (registry)",
+        "sourceFiles": ["screens-template-builder.jsx#TB_BLOCK_TYPES"],
+        "targetPath": "(missing — apps/web/components/templates/blockTypes.ts)",
+        "status": "missing",
+        "owner": "claude-web-templates",
+        "notes": "12+ block types (heading, paragraph, checklist, subtasks, prompt, energy, rating, habit, timeblock, callout, divider). Critical: this is the schema for the template builder."
+      },
+      {
+        "name": "TemplateBuilder canvas/palette/inspector",
+        "sourceFiles": ["screens-template-builder.jsx (canvas)", "screens-template-builder-ui.jsx#ScreenTemplateBuilderV2"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-web-templates"
+      },
+      {
+        "name": "Slash command menu",
+        "sourceFiles": ["screens-template-builder-slash.jsx#TB_SLASH_SHORTCUTS"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-web-templates",
+        "notes": "Slash inside any block opens a typed picker."
+      },
+      {
+        "name": "TemplateRun",
+        "sourceFiles": ["screens-template-run.jsx#ScreenTemplateRunV2"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-web-templates",
+        "notes": "Guided execution mode for a template."
+      }
+    ],
+    "mobileShell": [
+      {
+        "name": "PhoneShell",
+        "sourceFiles": ["mobile/mobile-shell.jsx#PhoneShell"],
+        "targetPath": "(preview only — packages/ui/preview/iOSFrame)",
+        "status": "missing",
+        "owner": "claude-mobile-ui",
+        "notes": "Design-system canvas wrapper; not used at runtime in apps/mobile."
+      },
+      {
+        "name": "TabBar",
+        "sourceFiles": ["mobile/mobile-shell.jsx#TabBar"],
+        "targetPath": "apps/mobile/app/(tempo)/(tabs)/_layout.tsx",
+        "status": "partial",
+        "owner": "claude-mobile",
+        "notes": "5-tab bar: today, tasks, capture (modal), notes, coach."
+      },
+      {
+        "name": "ChatBall",
+        "sourceFiles": ["mobile/mobile-shell.jsx#ChatBall"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-mobile-ui"
+      },
+      {
+        "name": "CoachPanel (mobile)",
+        "sourceFiles": ["mobile/mobile-shell.jsx#CoachPanel"],
+        "targetPath": "(missing)",
+        "status": "missing",
+        "owner": "claude-mobile-ui"
+      },
+      {
+        "name": "DynamicIsland / HomeBar / TimeLabel (chrome)",
+        "sourceFiles": ["mobile/mobile-shell.jsx#DynamicIsland", "mobile/mobile-shell.jsx#HomeBar", "mobile/mobile-shell.jsx#TimeLabel"],
+        "targetPath": "(preview only)",
+        "status": "missing",
+        "owner": "claude-mobile-ui",
+        "notes": "iOS chrome for the design-system preview frame; do NOT port to runtime — Expo provides real status bar / home indicator."
+      }
+    ],
+    "marketing": [
+      {
+        "name": "Navbar (marketing)",
+        "sourceFiles": ["landing.html (header)"],
+        "targetPath": "apps/web/components/Navbar.tsx",
+        "status": "ported",
+        "owner": "claude-web-marketing"
+      },
+      {
+        "name": "Footer (marketing)",
+        "sourceFiles": ["landing.html (footer)"],
+        "targetPath": "apps/web/components/Footer.tsx",
+        "status": "ported",
+        "owner": "claude-web-marketing"
+      },
+      {
+        "name": "SignInModal / SignUpModal",
+        "sourceFiles": ["screens-5.jsx#ScreenSignIn (form patterns)"],
+        "targetPath": "apps/web/components/SignInModal.tsx + SignUpModal.tsx",
+        "status": "ported",
+        "owner": "claude-web-onboarding"
+      }
+    ],
+    "payments": [
+      {
+        "name": "PremiumGate",
+        "sourceFiles": ["(no prototype source — wraps RevenueCat entitlement)"],
+        "targetPath": "apps/web/components/payments/PremiumGate.tsx",
+        "status": "ported",
+        "owner": "claude-web-settings"
+      },
+      {
+        "name": "PaywallModal",
+        "sourceFiles": ["(no prototype source — RevenueCat-driven)"],
+        "targetPath": "apps/web/components/payments/PaywallModal.tsx",
+        "status": "ported",
+        "owner": "claude-web-settings"
+      }
+    ]
+  }
+}

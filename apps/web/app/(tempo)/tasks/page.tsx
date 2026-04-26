@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: tasks
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-2.jsx
+ * @source: docs/design/claude-export/design-system/screens-1.jsx#ScreenTasks
  * @summary: Tasks inbox with filters and grouping.
  * @queries: tasks.list
  * @mutations: tasks.complete, tasks.create
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Tasks"
       category="Library"
-      source="screens-2.jsx"
+      source="screens-1.jsx#ScreenTasks"
       summary="Tasks inbox with filters and grouping."
     />
   );

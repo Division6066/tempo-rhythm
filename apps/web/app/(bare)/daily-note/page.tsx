@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: daily-note
  * @category: Flow
- * @source: docs/design/claude-export/design-system/screens-1.jsx
+ * @source: docs/design/claude-export/design-system/screens-7.jsx#ScreenDailyNote
  * @summary: Distraction-free daily note surface.
  * @queries: journal.getDaily
  * @mutations: journal.updateDaily
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Daily note"
       category="Flow"
-      source="screens-1.jsx"
+      source="screens-7.jsx#ScreenDailyNote"
       summary="Distraction-free daily note surface."
     />
   );

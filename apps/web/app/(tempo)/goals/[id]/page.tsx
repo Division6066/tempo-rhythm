@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: goal-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
+ * @source: docs/design/claude-export/design-system/screens-3.jsx#ScreenGoalDetail
  * @summary: Goal detail view with milestones.
  * @queries: goals.get
  * @mutations: goals.update, goals.logMilestone
@@ -23,7 +23,7 @@ export default async function Page({
     <ScaffoldScreen
       title="Goal detail"
       category="Library"
-      source="screens-4.jsx"
+      source="screens-3.jsx#ScreenGoalDetail"
       summary={`Goal detail view with milestones. (id: ${id})`}
     />
   );
