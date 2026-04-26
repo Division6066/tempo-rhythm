@@ -153,7 +153,6 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               aria-activedescendant={activeId}
               aria-autocomplete="list"
               aria-controls="tempo-command-results"
-              aria-expanded={open}
               className="flex-1 bg-transparent text-body outline-none placeholder:text-subtle-foreground"
             />
             <span className="text-caption font-tabular text-muted-foreground">
