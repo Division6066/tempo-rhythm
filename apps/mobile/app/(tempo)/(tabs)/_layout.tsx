@@ -1,5 +1,11 @@
 import { Tabs } from "expo-router";
-import { BookOpen, CheckSquare, Heart, Home } from "lucide-react-native";
+import {
+  BookOpen,
+  CheckSquare,
+  Heart,
+  Home,
+  Settings,
+} from "lucide-react-native";
 import { tempoColors } from "@tempo/ui/theme";
 
 /**
@@ -37,21 +43,31 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="notes"
-        options={{
-          title: "Notes",
-          tabBarIcon: ({ color, size }) => (
-            <BookOpen size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="coach"
         options={{
           title: "Coach",
           tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="library"
+        options={{
+          title: "Library",
+          tabBarIcon: ({ color, size }) => (
+            <BookOpen size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color, size }) => (
+            <Settings size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen name="notes" options={{ href: null }} />
     </Tabs>
   );
 }
