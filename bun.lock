@@ -108,6 +108,13 @@
       "name": "@tempo/config",
       "version": "0.0.1",
     },
+    "packages/mock-data": {
+      "name": "@tempo/mock-data",
+      "version": "0.0.1",
+      "devDependencies": {
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/types": {
       "name": "@tempo/types",
       "version": "0.0.1",
@@ -718,6 +725,8 @@
     "@tailwindcss/typography": ["@tailwindcss/typography@0.5.19", "", { "dependencies": { "postcss-selector-parser": "6.0.10" }, "peerDependencies": { "tailwindcss": ">=3.0.0 || insiders || >=4.0.0-alpha.20 || >=4.0.0-beta.1" } }, "sha512-w31dd8HOx3k9vPtcQh5QHP9GwKcgbMp87j58qi6xgiBnFFtKEAgCWnDw4qUT8aHwkCp8bKvb/KGKWWHedP0AAg=="],
 
     "@tempo/config": ["@tempo/config@workspace:packages/config"],
+
+    "@tempo/mock-data": ["@tempo/mock-data@workspace:packages/mock-data"],
 
     "@tempo/types": ["@tempo/types@workspace:packages/types"],
 
