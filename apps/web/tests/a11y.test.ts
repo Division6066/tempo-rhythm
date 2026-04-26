@@ -26,6 +26,15 @@ describe("a11y helper · attr", () => {
   test("does not match attributes inside the body of a tag", () => {
     expect(attr('<div><span id="inner"></span></div>', "id")).toBeNull();
   });
+  test("does not match a name that is a prefix of another attribute", () => {
+    // `label` must not pull a value from `aria-label`.
+    expect(attr('<button aria-label="Close">x</button>', "label")).toBeNull();
+    // `for` must not pull from `forced` or `format`.
+    expect(attr('<input forced format="x">', "for")).toBeNull();
+  });
+  test("matches a self-closing tag terminator", () => {
+    expect(attr('<input id="x"/>', "id")).toBe("x");
+  });
 });
 
 describe("a11y helper · visibleText", () => {

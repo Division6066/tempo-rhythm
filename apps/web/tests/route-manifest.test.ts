@@ -13,6 +13,7 @@
  */
 import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { createElement } from "react";
 import type * as React from "react";
 import { audit, errorIssues, formatIssues, render, visibleText } from "./a11y";
@@ -143,13 +144,16 @@ describe("route manifest · disk presence", () => {
   // Belt-and-braces: the import-based tests above do not cover apps that simply
   // forgot to author a page file — `import()` would throw long before render.
   // This tightens the loop by erroring with a friendly message instead.
+  // Paths derived relative to this test file so the suite is portable across
+  // CI runners and developer machines.
+  const TESTS_DIR = import.meta.dir;
   const all = [...SCAFFOLD_ROUTES, ...DYNAMIC_ROUTES];
   for (const r of all) {
     test(`${r.name} module path resolves`, () => {
-      // Strip leading "../" (this test file lives in apps/web/tests/).
-      const rel = r.importPath.replace(/^\.\.\//, "apps/web/");
-      const absTsx = `/home/user/tempo-rhythm/${rel}.tsx`;
-      const absTs = `/home/user/tempo-rhythm/${rel}.ts`;
+      // Strip leading "../" since the import path is already test-file-relative.
+      const rel = r.importPath.replace(/^\.\.\//, "");
+      const absTsx = join(TESTS_DIR, "..", `${rel}.tsx`);
+      const absTs = join(TESTS_DIR, "..", `${rel}.ts`);
       expect(
         existsSync(absTsx) || existsSync(absTs),
         `expected page file at ${absTsx} or ${absTs}`,

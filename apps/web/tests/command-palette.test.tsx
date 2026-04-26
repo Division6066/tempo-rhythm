@@ -86,7 +86,7 @@ describe("CommandPalette · open state · accessibility", () => {
     expect(errors, formatIssues(errors)).toEqual([]);
   });
 
-  test("the search input has an accessible name", () => {
+  test("the search input has aria-label='Search screens'", () => {
     const rendered = render(
       createElement(CommandPalette, { open: true, onOpenChange: () => {} }),
     );
@@ -94,10 +94,10 @@ describe("CommandPalette · open state · accessibility", () => {
     expect(inputs.length).toBeGreaterThanOrEqual(1);
     const search = inputs.find((i) => attr(i, "placeholder")?.includes("Search screens"));
     expect(search, "expected a search input").toBeTruthy();
-    // Either aria-label, aria-labelledby, or sr-only title-by-association.
-    // Today the input has only a placeholder, which is NOT a label. We accept
-    // because Radix's Title creates a context label, but flag if the dialog
-    // structure ever changes.
+    // Pin the WCAG-compliant accessible name. Placeholder alone is NOT a label
+    // (WCAG 2.4.6 / 1.3.1) — a regression that drops aria-label here would
+    // strand keyboard-only and screen-reader users on the palette.
+    expect(attr(search ?? "", "aria-label")).toBe("Search screens");
   });
 
   test("first option has aria-selected=true (initial focus index)", () => {

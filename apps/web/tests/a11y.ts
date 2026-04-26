@@ -124,7 +124,14 @@ export function attr(slice: string, name: string): string | null {
   const openEnd = slice.indexOf(">");
   if (openEnd === -1) return null;
   const open = slice.slice(0, openEnd);
-  const re = new RegExp(`\\s${name}(?:=("([^"]*)"|'([^']*)'|([^\\s>]+)))?`, "i");
+  // The trailing lookahead pins the match to the FULL attribute name. Without
+  // it, `attr(s, "label")` could spuriously match `aria-label` (the `\s`
+  // wouldn't, but a future attribute prefix collision could). Whitespace, `=`,
+  // `>`, or `/` (self-closing tag) are the only legal terminators.
+  const re = new RegExp(
+    `\\s${name}(?=[\\s=/>]|$)(?:=("([^"]*)"|'([^']*)'|([^\\s>]+)))?`,
+    "i",
+  );
   const m = re.exec(open);
   if (!m) return null;
   return m[2] ?? m[3] ?? m[4] ?? "";
