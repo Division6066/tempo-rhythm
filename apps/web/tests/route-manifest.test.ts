@@ -168,12 +168,14 @@ describe("route manifest · scaffold pages use ScaffoldScreen", () => {
    * someone removes the heading), the others should still ship the same
    * structural promise. This tests one canonical screen for the contract.
    */
-  test("Coach scaffold contains a heading and category pill", async () => {
+  test("Coach scaffold contains a heading and Beta-preview pill", async () => {
     const mod = await import("../app/(tempo)/coach/page");
     const PageComponent = mod.default as () => React.ReactElement;
     const rendered = render(createElement(PageComponent));
     expect(rendered.tags.get("h1")?.[0]).toContain("Coach");
-    expect(rendered.html).toContain("scaffold · not ported");
+    // After #26 the placeholder string is replaced with a "Beta preview" pill
+    // so the scaffold reads as a real (but explicitly not-yet-shipped) shell.
+    expect(visibleText(rendered.html)).toContain("Beta preview");
   });
 
   test("Planning scaffold contains a heading", async () => {

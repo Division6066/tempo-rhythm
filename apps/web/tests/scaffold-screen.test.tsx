@@ -4,6 +4,10 @@
  * Every scaffold-only route renders ScaffoldScreen, so the contract here
  * is the contract for ~25 routes. If this regresses, the route-manifest
  * tests will too — but this file localizes the failure to the right place.
+ *
+ * Updated for #26 (concrete beta-safe layout shells): the scaffold now
+ * renders a `<main>` with header, primary/secondary action sections,
+ * readiness disclaimers, and route-state cards. Pinned below.
  */
 import { describe, expect, test } from "bun:test";
 import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
@@ -24,12 +28,13 @@ describe("ScaffoldScreen · structure", () => {
     expect(visibleText(h1s[0])).toBe("Coach");
   });
 
-  test("renders the category as a pill above the heading", () => {
+  test("renders the category and 'Beta preview' pills above the heading", () => {
     const rendered = render(
       <ScaffoldScreen title="Coach" category="Flow" source="x.jsx" />,
     );
-    expect(rendered.html).toContain("Flow");
-    expect(rendered.html).toContain("scaffold · not ported");
+    const text = visibleText(rendered.html);
+    expect(text).toContain("Flow");
+    expect(text).toContain("Beta preview");
   });
 
   test("renders the summary when provided", () => {
@@ -46,13 +51,47 @@ describe("ScaffoldScreen · structure", () => {
     );
   });
 
-  test("renders the source as a code element pointing at design export", () => {
+  test("falls back to a default summary when none is provided", () => {
     const rendered = render(
       <ScaffoldScreen title="X" category="Flow" source="screens-9.jsx" />,
     );
-    const codes = rendered.tags.get("code") ?? [];
-    expect(codes.length).toBeGreaterThan(0);
-    expect(codes.some((c) => c.includes("screens-9.jsx"))).toBe(true);
+    expect(visibleText(rendered.html)).toContain(
+      "concrete layout shell that follows the approved design hierarchy",
+    );
+  });
+
+  test("renders the source path as visible text near the heading", () => {
+    const rendered = render(
+      <ScaffoldScreen title="X" category="Flow" source="screens-9.jsx" />,
+    );
+    expect(visibleText(rendered.html)).toContain("Reference: screens-9.jsx");
+  });
+
+  test("renders the three route-state cards (Loading / Empty / Error)", () => {
+    const rendered = render(
+      <ScaffoldScreen title="X" category="Flow" source="x.jsx" />,
+    );
+    const text = visibleText(rendered.html);
+    expect(text).toContain("Loading state");
+    expect(text).toContain("Empty state");
+    expect(text).toContain("Error state");
+  });
+
+  test("uses a <main> landmark for the screen body", () => {
+    const rendered = render(
+      <ScaffoldScreen title="X" category="Flow" source="x.jsx" />,
+    );
+    const mains = rendered.tags.get("main") ?? [];
+    expect(mains.length).toBe(1);
+  });
+
+  test("flags Primary/Readiness/Route-state sections via aria-label", () => {
+    const rendered = render(
+      <ScaffoldScreen title="X" category="Flow" source="x.jsx" />,
+    );
+    expect(rendered.html).toContain('aria-label="Primary calls to action"');
+    expect(rendered.html).toContain('aria-label="Readiness disclaimers"');
+    expect(rendered.html).toContain('aria-label="Route state variants"');
   });
 });
 
