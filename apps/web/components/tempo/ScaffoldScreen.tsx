@@ -25,7 +25,7 @@ const routeStateCards = [
   },
   {
     label: "Error state",
-    tone: "danger" as const,
+    tone: "default" as const,
     body: "We could not load this screen from production services. Retry is safe; no billing or legal actions are submitted from this preview.",
   },
 ];
@@ -36,7 +36,7 @@ export function ScaffoldScreen({ title, category, source, summary }: Props) {
       <header className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <Pill tone="orange">{category}</Pill>
-          <Pill tone="blue">Beta preview</Pill>
+          <Pill tone="slate">Beta preview</Pill>
           <span className="text-caption font-tabular text-muted-foreground">
             Reference: {source}
           </span>
