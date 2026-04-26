@@ -33,8 +33,12 @@ export type TempoScreen = {
   showInSidebar?: boolean;
   /** Hide from Cmd/Ctrl+K while keeping metadata for route matching. */
   showInPalette?: boolean;
+  /** Match nested URLs without showing as a concrete navigation target. */
+  matchRoutes?: readonly string[];
   /** Include in mobile web / Expo primary tab metadata. */
   mobileTab?: boolean;
+  /** Ordering for primary mobile navigation. */
+  mobileOrder?: number;
   /** Optional icon name from @tempo/ui/icons. */
   icon?: string;
 };
@@ -49,6 +53,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     summary: "Daily command center with plan, check-ins, and quick capture.",
     keywords: ["dashboard", "home", "daily", "plan"],
     mobileTab: true,
+    mobileOrder: 1,
     icon: "Home",
   },
   {
@@ -78,6 +83,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     summary: "Supportive coach conversation and planning entry point.",
     keywords: ["chat", "ai", "ask", "plan"],
     mobileTab: true,
+    mobileOrder: 3,
     icon: "Heart",
   },
   {
@@ -99,6 +105,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     summary: "Master task list and future task detail entry point.",
     keywords: ["todo", "to-do", "inbox", "complete"],
     mobileTab: true,
+    mobileOrder: 2,
     icon: "CheckSquare",
   },
   {
@@ -108,6 +115,17 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     category: "Library",
     summary: "Notes list and markdown editor home.",
     keywords: ["writing", "wiki", "markdown"],
+    icon: "BookOpen",
+  },
+  {
+    slug: "note-detail",
+    title: "Note detail",
+    route: "/notes/demo",
+    category: "Library",
+    summary: "Markdown note detail scaffold.",
+    keywords: ["note", "editor", "markdown"],
+    showInSidebar: false,
+    showInPalette: false,
     icon: "BookOpen",
   },
   {
@@ -138,12 +156,34 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     icon: "Flame",
   },
   {
+    slug: "habit-detail",
+    title: "Habit detail",
+    route: "/habits/demo",
+    category: "Library",
+    summary: "Habit detail scaffold.",
+    keywords: ["habit", "detail", "check-in"],
+    showInSidebar: false,
+    showInPalette: false,
+    icon: "Flame",
+  },
+  {
     slug: "routines",
     title: "Routines",
     route: "/routines",
     category: "Library",
     summary: "Routine library and guided routine player.",
     keywords: ["steps", "repeat", "ritual"],
+    icon: "Repeat",
+  },
+  {
+    slug: "routine-detail",
+    title: "Routine detail",
+    route: "/routines/demo",
+    category: "Library",
+    summary: "Guided routine detail scaffold.",
+    keywords: ["routine", "guided", "steps"],
+    showInSidebar: false,
+    showInPalette: false,
     icon: "Repeat",
   },
   {
@@ -156,6 +196,28 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     icon: "Target",
   },
   {
+    slug: "goal-detail",
+    title: "Goal detail",
+    route: "/goals/demo",
+    category: "Library",
+    summary: "Goal detail scaffold.",
+    keywords: ["goal", "detail", "milestone"],
+    showInSidebar: false,
+    showInPalette: false,
+    icon: "Target",
+  },
+  {
+    slug: "goals-progress",
+    title: "Goals progress",
+    route: "/goals/progress",
+    category: "Library",
+    summary: "Goal progress chart scaffold.",
+    keywords: ["goal", "chart", "progress"],
+    showInSidebar: false,
+    showInPalette: false,
+    icon: "Chart",
+  },
+  {
     slug: "projects",
     title: "Projects",
     route: "/projects",
@@ -163,6 +225,28 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     summary: "Project list and linked task/note detail surfaces.",
     keywords: ["folders", "work", "timeline"],
     icon: "Folder",
+  },
+  {
+    slug: "project-detail",
+    title: "Project detail",
+    route: "/projects/demo",
+    category: "Library",
+    summary: "Project detail scaffold with linked task and note lanes.",
+    keywords: ["project", "detail", "timeline"],
+    showInSidebar: false,
+    showInPalette: false,
+    icon: "Folder",
+  },
+  {
+    slug: "project-kanban",
+    title: "Project kanban",
+    route: "/projects/demo/kanban",
+    category: "Library",
+    summary: "Kanban scaffold for a project board.",
+    keywords: ["project", "kanban", "board"],
+    showInSidebar: false,
+    showInPalette: false,
+    icon: "Layout",
   },
   {
     slug: "folders",
@@ -181,6 +265,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     summary: "Typed repository for prompts, recipes, routines, and references.",
     keywords: ["prompts", "recipes", "references", "formats"],
     mobileTab: true,
+    mobileOrder: 4,
     icon: "BookOpen",
   },
   {
@@ -281,6 +366,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
     summary: "Theme, accessibility, language, and motion preferences.",
     keywords: ["accessibility", "theme", "dyslexia", "motion"],
     mobileTab: true,
+    mobileOrder: 5,
     icon: "Settings",
   },
   {
@@ -400,7 +486,9 @@ export const CATEGORIES: readonly TempoCategory[] = [
   "Settings",
 ];
 
-const routeSpecificity = (screen: TempoScreen) => screen.route.length;
+function screenMatchRoutes(screen: TempoScreen): readonly string[] {
+  return [screen.route, ...(screen.matchRoutes ?? [])];
+}
 
 export function screenLabel(screen: TempoScreen): string {
   return screen.navLabel ?? screen.title;
@@ -428,7 +516,9 @@ export function commandPaletteScreens(): TempoScreen[] {
 }
 
 export function primaryMobileTabs(): TempoScreen[] {
-  return TEMPO_SCREENS.filter((screen) => screen.mobileTab === true);
+  return TEMPO_SCREENS.filter((screen) => screen.mobileTab === true).sort(
+    (a, b) => (a.mobileOrder ?? 999) - (b.mobileOrder ?? 999),
+  );
 }
 
 export function findScreen(slug: string): TempoScreen | undefined {
@@ -451,8 +541,11 @@ export function findScreenByPathname(
   }
 
   return [...TEMPO_SCREENS]
-    .sort((a, b) => routeSpecificity(b) - routeSpecificity(a))
-    .find((screen) => isRouteActive(pathname, screen.route));
+    .flatMap((screen) =>
+      screenMatchRoutes(screen).map((route) => ({ route, screen })),
+    )
+    .sort((a, b) => b.route.length - a.route.length)
+    .find(({ route }) => isRouteActive(pathname, route))?.screen;
 }
 
 export function screenSearchText(screen: TempoScreen): string {
