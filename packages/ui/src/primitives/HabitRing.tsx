@@ -12,12 +12,7 @@ type Props = {
   size?: number;
 };
 
-export function HabitRing({
-  completed,
-  total = 7,
-  label,
-  size = 44,
-}: Props) {
+export function HabitRing({ completed, total = 7, label, size = 44 }: Props) {
   return (
     <div className="flex flex-col items-center gap-1">
       <Ring size={size} value={completed} max={total}>
@@ -26,9 +21,7 @@ export function HabitRing({
           <span className="text-muted-foreground">/{total}</span>
         </span>
       </Ring>
-      {label ? (
-        <span className="text-caption text-muted-foreground">{label}</span>
-      ) : null}
+      {label ? <span className="text-caption text-muted-foreground">{label}</span> : null}
     </div>
   );
 }
