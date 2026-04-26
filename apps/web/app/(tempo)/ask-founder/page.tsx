@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: ask-founder
  * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
+ * @source: docs/design/claude-export/design-system/screens-4.jsx#ScreenAskFounder
  * @summary: Direct channel to send feedback.
  * @queries: (none)
  * @mutations: feedback.send
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Ask the founder"
       category="Settings"
-      source="screens-6.jsx"
+      source="screens-4.jsx#ScreenAskFounder"
       summary="Direct channel to send feedback."
     />
   );

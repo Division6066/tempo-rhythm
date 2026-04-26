@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tempo.flow/schemas/implementation-matrix/tokens.schema.json",
+  "title": "Tempo Design Tokens Matrix",
+  "type": "object",
+  "required": ["version", "generated", "groups"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "generated": { "type": "string", "format": "date" },
+    "generatedBy": { "type": "string" },
+    "sources": { "type": "object", "additionalProperties": { "type": "string" } },
+    "statusLegend": { "type": "object", "additionalProperties": { "type": "string" } },
+    "groups": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z]+$": {
+          "type": "object",
+          "required": ["tokens"],
+          "properties": {
+            "owner": { "type": "string" },
+            "notes": { "type": "string" },
+            "tokens": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/token" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "token": {
+      "type": "object",
+      "required": ["name", "value", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "value": { "type": "string" },
+        "cssVar": { "type": "string" },
+        "tsKey": { "type": "string" },
+        "status": { "enum": ["missing", "ported", "diverges", "shipped"] },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: template-run
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-template-run.jsx
+ * @source: docs/design/claude-export/design-system/screens-template-run.jsx#ScreenTemplateRunV2
  * @summary: Runs a template step by step.
  * @queries: templates.get
  * @mutations: templates.logRun
@@ -23,7 +23,7 @@ export default async function Page({
     <ScaffoldScreen
       title="Template run"
       category="You"
-      source="screens-template-run.jsx"
+      source="screens-template-run.jsx#ScreenTemplateRunV2"
       summary={`Runs a template step by step. (id: ${id})`}
     />
   );

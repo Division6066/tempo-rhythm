@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: billing
  * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
+ * @source: docs/design/claude-export/design-system/screens-4.jsx#ScreenBilling
  * @summary: Trial countdown + RevenueCat entitlement status.
  * @queries: billing.status
  * @mutations: (none)
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Trial & billing"
       category="Settings"
-      source="screens-6.jsx"
+      source="screens-4.jsx#ScreenBilling"
       summary="Trial countdown + RevenueCat entitlement status."
     />
   );

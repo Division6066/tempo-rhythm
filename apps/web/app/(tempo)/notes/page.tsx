@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: notes
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-2.jsx
+ * @source: docs/design/claude-export/design-system/screens-2.jsx#ScreenNotes
  * @summary: Notes library — grid with backlinks.
  * @queries: notes.list
  * @mutations: notes.create
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Notes"
       category="Library"
-      source="screens-2.jsx"
+      source="screens-2.jsx#ScreenNotes"
       summary="Notes library — grid with backlinks."
     />
   );

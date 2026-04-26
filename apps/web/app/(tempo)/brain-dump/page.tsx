@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: brain-dump
  * @category: Flow
- * @source: docs/design/claude-export/design-system/screens-1.jsx
+ * @source: docs/design/claude-export/design-system/screens-1.jsx#ScreenBrainDump
  * @summary: Rapid capture with auto-sort suggestions.
  * @queries: inbox.list
  * @mutations: inbox.capture, inbox.sort
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Brain dump"
       category="Flow"
-      source="screens-1.jsx"
+      source="screens-1.jsx#ScreenBrainDump"
       summary="Rapid capture with auto-sort suggestions."
     />
   );

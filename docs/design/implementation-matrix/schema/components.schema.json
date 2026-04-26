@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tempo.flow/schemas/implementation-matrix/components.schema.json",
+  "title": "Tempo UI Components Matrix",
+  "type": "object",
+  "required": ["version", "generated", "components"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "generated": { "type": "string", "format": "date" },
+    "generatedBy": { "type": "string" },
+    "sources": { "type": "object", "additionalProperties": { "type": "string" } },
+    "statusLegend": { "type": "object", "additionalProperties": { "type": "string" } },
+    "ownerLegend": { "type": "object", "additionalProperties": { "type": "string" } },
+    "components": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z]+$": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/component" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": ["name", "sourceFiles", "targetPath", "status", "owner"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "sourceFiles": { "type": "array", "items": { "type": "string" } },
+        "targetPath": { "type": "string" },
+        "exportNames": { "type": "array", "items": { "type": "string" } },
+        "status": { "enum": ["missing", "ported", "partial", "shipped"] },
+        "owner": { "type": "string" },
+        "platforms": { "type": "array", "items": { "enum": ["web", "mobile"] } },
+        "nativeEquivalent": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

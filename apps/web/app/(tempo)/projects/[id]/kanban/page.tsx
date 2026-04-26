@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: project-kanban
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
+ * @source: docs/design/claude-export/design-system/screens-3.jsx#ScreenProjectKanban
  * @summary: Project kanban board.
  * @queries: projects.get, projects.tasks
  * @mutations: tasks.moveColumn
@@ -23,7 +23,7 @@ export default async function Page({
     <ScaffoldScreen
       title="Project kanban"
       category="Library"
-      source="screens-4.jsx"
+      source="screens-3.jsx#ScreenProjectKanban"
       summary={`Project kanban board. (id: ${id})`}
     />
   );

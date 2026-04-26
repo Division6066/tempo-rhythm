@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: onboarding
  * @category: Onboarding
- * @source: docs/design/claude-export/design-system/screens-7.jsx
+ * @source: docs/design/claude-export/design-system/screens-5.jsx#ScreenOnboarding
  * @summary: 5-step onboarding (welcome → personalization → template → first brain dump → first plan).
  * @queries: (none)
  * @mutations: users.completeOnboarding
@@ -17,7 +17,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Onboarding"
       category="Onboarding"
-      source="screens-7.jsx"
+      source="screens-5.jsx#ScreenOnboarding"
       summary="5-step onboarding (welcome → personalization → template → first brain dump → first plan)."
     />
   );

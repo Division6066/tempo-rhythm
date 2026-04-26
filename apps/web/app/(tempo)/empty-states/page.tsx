@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: empty-states
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-6.jsx
+ * @source: docs/design/claude-export/design-system/screens-5.jsx#ScreenEmptyStates
  * @summary: Gallery of anti-shame empty states.
  * @queries: (none)
  * @mutations: (none)
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Empty states gallery"
       category="You"
-      source="screens-6.jsx"
+      source="screens-5.jsx#ScreenEmptyStates"
       summary="Gallery of anti-shame empty states."
     />
   );

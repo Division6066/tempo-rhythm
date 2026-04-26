@@ -1,5 +1,20 @@
 # Screen inventory — Claude design export → target routes
 
+> **STALE — see the canonical implementation matrix instead:**
+> [`docs/design/implementation-matrix/`](./implementation-matrix/).
+>
+> The mapping in the tables below has known **source-file drift** (e.g.
+> `daily-note` → `screens-1.jsx` should be `screens-7.jsx`; `tasks` →
+> `screens-2.jsx` should be `screens-1.jsx`; `goals` → `screens-4.jsx`
+> should be `screens-3.jsx`; etc.). Use the matrix's
+> [Source-file truth table](./implementation-matrix/README.md#source-file-truth-table)
+> for the corrected mapping.
+>
+> This file is kept verbatim for backward compatibility with any agent or
+> tool already pointing at it. New work should read the matrix.
+
+---
+
 **Source:** `docs/design/claude-export/design-system/` (Tempo Flow Design System v1.0, April 2026).
 **Router map source:** `design-system/app.html` lines 60–109 (`SCREENS` object).
 

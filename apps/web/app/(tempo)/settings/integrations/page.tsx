@@ -2,7 +2,7 @@
  * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: settings-integrations
  * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
+ * @source: docs/design/claude-export/design-system/screens-4.jsx#ScreenSettingsIntegrations
  * @summary: Google Calendar & other integrations.
  * @queries: integrations.list
  * @mutations: integrations.connect, integrations.disconnect
@@ -16,7 +16,7 @@ export default function Page() {
     <ScaffoldScreen
       title="Integrations"
       category="Settings"
-      source="screens-6.jsx"
+      source="screens-4.jsx#ScreenSettingsIntegrations"
       summary="Google Calendar & other integrations."
     />
   );
