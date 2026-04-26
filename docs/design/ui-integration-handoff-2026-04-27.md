@@ -4,7 +4,7 @@
 
 - **Project:** Tempo
 - **Agent:** Cursor Agent 2 — UI Integration Commander
-- **Branch:** `cursor/ui-integration-commander`
+- **Branch:** `cursor/ui-integration-matrix-05a9` (draft PR branch; `cursor/ui-integration-commander` was also pushed with the same commit for traceability)
 - **Date prepared:** 2026-04-26
 - **Scope:** integration matrix, merge order, conflict analysis, small compatibility guidance, final handoff docs
 - **Hard constraints:** do not merge PRs, do not force-push, do not deploy production, do not change billing, do not change DNS/domain, do not publish legal pages as final, do not call Tempo shipped.

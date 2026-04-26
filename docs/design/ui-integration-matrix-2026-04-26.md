@@ -4,7 +4,8 @@
 
 - Project: Tempo
 - Agent: Cursor Agent 2 — UI Integration Commander
-- Branch: `cursor/ui-integration-commander`
+- PR branch: `cursor/ui-integration-matrix-05a9`
+- Requested branch alias also pushed: `cursor/ui-integration-commander`
 - Date: 2026-04-26
 - Owned scope: integration matrix, merge order, conflict analysis, small compatibility fixes, and final handoff docs
 - Out of scope: large feature implementation, production deployment, billing changes, DNS/domain changes, legal-page publication, force-pushes, and PR merges
