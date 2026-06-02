@@ -11,17 +11,26 @@ This document defines the four-mode environment model for Tempo Flow. Every agen
 | **Dev** | Coding, immediate local testing | `dev:<your-slug>` (auto via `bun x convex dev`) | N/A (`next dev` locally) | `.env.local` (git-ignored) | May break at any time. Not a QA surface. |
 | **Test** | Prove behavior | Dev deployment | Local `next build` + CI | `.env.local` + CI env | CI green + local smoke pass. Not a shareable URL. |
 | **Preview** | Branch / PR validation | `preview:<slug>` (target state — not yet provisioned) | Preview URL from PR (**disabled this weekend**) | Vercel env table (preview scope) | Agents MUST NOT treat preview as shipped. |
-| **Deployment** | Promoted stable surface | `prod:<slug>` (not yet linked — T-0008) | Production domain | Vercel env table (production scope) + Convex dashboard env | Only code that passed preview + explicit human promote. |
+| **Deployment** | Promoted stable surface | `prod:<slug>` | Production domain | Vercel env table (production scope) + Convex dashboard env | Only code that passed preview + explicit human promote. |
 
 ---
 
-## Convex: three deployments (target model)
+## Convex: deployments
 
-- **`dev`** — `dev:ceaseless-dog-617` already exists and is the only deployment this weekend that can be edited safely. Every local machine gets its own `dev:*` slug via `bun x convex dev`.
+- **`dev`** — current registry candidate: `dev:tremendous-bass-443` (`https://tremendous-bass-443.convex.cloud`). Every local machine can also get its own `dev:*` slug via `bun x convex dev`.
 - **`preview`** — [placeholder — not yet provisioned]. Documented here as the target model. Provisioning is a `human-amit` / `twin` action: Convex dashboard → Project Settings → Deployments → Add preview deployment. Until then, PRs run against the author's `dev` deployment.
-- **`prod`** — [placeholder — not yet linked (T-0008)]. Until T-0008 is done, `CONVEX_DEPLOY_KEY` stays empty in `.env.example` and any `convex deploy` call fails loudly and intentionally.
+- **`staging`** — current registry candidate: `staging:ceaseless-dog-617` (`https://ceaseless-dog-617.convex.cloud`).
+- **`prod`** — current production deployment: `prod:precious-wildcat-890` (`https://precious-wildcat-890.eu-west-1.convex.cloud`).
 
-Rule: no agent provisions Convex deployments. That is a dashboard action, owner `human-amit` or `twin`.
+Rule: no agent provisions Convex deployments without an explicit human choice of
+team/project. Agents may inspect an existing deployment with an explicit
+`--deployment` flag, but must not create, relink, or promote deployments silently.
+
+Known local CLI state on 2026-06-02:
+
+- `bunx convex function-spec --deployment precious-wildcat-890` can inspect the production deployment.
+- A root `bunx convex function-spec` fails until `CONVEX_DEPLOYMENT` is set or `bun x convex dev` configures a local dev deployment.
+- Before configuring local dev, choose whether this machine should attach to the existing `dev:tremendous-bass-443` project or create a fresh personal `dev:*` deployment.
 
 ---
 
@@ -70,9 +79,10 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 
 ## What is NOT decided yet
 
-- **Production Convex linked (T-0008).** The `prod:*` deployment does not exist. `CONVEX_DEPLOY_KEY` is empty. No agent should treat the production row as real until T-0008 is marked done.
 - **Preview Convex provisioned.** The `preview:*` deployment is planned but not provisioned. Do not reference preview Convex URLs in any config.
 - **Vercel preview re-enablement plan.** Previews are disabled this weekend. When re-enabled, this file must be updated with the actual scope of preview secrets and the confirmation step.
+- **Convex local dev attachment.** Choose existing `dev:tremendous-bass-443` vs a new personal `dev:*` deployment before running an interactive `bun x convex dev` configuration.
+- **EAS ownership path.** The workstation is authenticated to EAS, but `apps/mobile/app.json` currently points at owner `tempo-rhythm` and project ID `6f4c596f-b3ed-431b-b9d2-70813ac231d2`. If the authenticated account cannot read that project, either log into the owning Expo account/org or explicitly relink the app to a project owned by the current account.
 
 ---
 
