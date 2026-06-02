@@ -57,7 +57,7 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 - **Promote `tempo-web` Vercel env vars into Convex dashboard** so prod and dashboard share one source of truth (currently set via `vercel env` + `.local.vercel.env`).
 
 ### Mobile
-- **Resolve EAS ownership mismatch.** This workstation is logged into EAS, but `apps/mobile/app.json` points at owner `tempo-rhythm` and project ID `6f4c596f-b3ed-431b-b9d2-70813ac231d2`. Choose either owner-account login or explicit relink to the current account before EAS builds.
+- **Resolve EAS ownership mismatch.** This workstation is logged into EAS as `amitlevin`, but `apps/mobile/app.json` points at owner `tempo-rhythm` and project ID `6f4c596f-b3ed-431b-b9d2-70813ac231d2`, which is not readable by that login. Verified accessible candidate: `@amitlevin/tempi` / `90dfac90-0baa-461b-946c-351d2306e607`. Choose either owner-account login or explicit relink before EAS builds.
 - **Fix `apps/mobile` Biome style rules** (currently muted in `apps/mobile/biome.json`).
 
 ### RAG / brain

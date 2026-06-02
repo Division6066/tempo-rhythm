@@ -83,7 +83,7 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 - **Preview Convex provisioned.** The `preview:*` deployment is planned but not provisioned. Do not reference preview Convex URLs in any config.
 - **Vercel preview re-enablement plan.** Previews are disabled this weekend. When re-enabled, this file must be updated with the actual scope of preview secrets and the confirmation step.
 - **Convex local dev attachment.** Choose existing `dev:tremendous-bass-443` vs a new personal `dev:*` deployment before running an interactive `bun x convex dev` configuration.
-- **EAS ownership path.** The workstation is authenticated to EAS, but `apps/mobile/app.json` currently points at owner `tempo-rhythm` and project ID `6f4c596f-b3ed-431b-b9d2-70813ac231d2`. If the authenticated account cannot read that project, either log into the owning Expo account/org or explicitly relink the app to a project owned by the current account.
+- **EAS ownership path.** The workstation is authenticated to EAS as `amitlevin`, but `apps/mobile/app.json` currently points at owner `tempo-rhythm` and project ID `6f4c596f-b3ed-431b-b9d2-70813ac231d2`, which this login cannot read. The verified accessible candidate is `@amitlevin/tempi` with project ID `90dfac90-0baa-461b-946c-351d2306e607`. Either log into the owning Expo account/org for `tempo-rhythm`, or explicitly approve relinking mobile to `@amitlevin/tempi`.
 
 ---
 

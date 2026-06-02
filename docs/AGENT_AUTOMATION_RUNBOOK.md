@@ -55,6 +55,14 @@ Recommended lanes:
 - `pr-readiness` — verify the branch and PR body before human review.
 - `merge-steward` — recommend merge order, never self-merge.
 
+Prepared local worktrees on this Windows machine:
+
+- `C:\Users\User\.cyrus\worktrees\tempo-bug-scan` on `codex/bug-scan`
+- `C:\Users\User\.cyrus\worktrees\tempo-test-coverage` on `codex/test-coverage`
+- `C:\Users\User\.cyrus\worktrees\tempo-docs-generation` on `codex/docs-generation`
+- `C:\Users\User\.cyrus\worktrees\tempo-pr-readiness` on `codex/pr-readiness`
+- `C:\Users\User\.cyrus\worktrees\tempo-merge-steward` on `codex/merge-steward`
+
 ## Cursor automation outlines
 
 Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
