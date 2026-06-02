@@ -7,11 +7,11 @@ turning them loose.
 
 Choose exactly one lane:
 
-- `bug-scan`
-- `test-coverage`
-- `docs-generation`
-- `pr-readiness`
-- `merge-steward`
+- `bug-scan` — use `docs/CURSOR_PROMPTS.md` §13.8.
+- `test-coverage` — use `docs/CURSOR_PROMPTS.md` §13.9.
+- `docs-generation` — use `docs/CURSOR_PROMPTS.md` §13.10.
+- `pr-readiness` — use `docs/CURSOR_PROMPTS.md` §13.11.
+- `merge-steward` — use `docs/CURSOR_PROMPTS.md` §13.12.
 
 ## 2. Stay read-only first
 

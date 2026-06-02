@@ -13,6 +13,10 @@ accepted.
 Do not merge either PR automatically. A human should review PR #31 first, then
 close PR #32 after #31 lands.
 
+Current always-on runtime blocker: Cyrus cloud switch support ticket `CYHOST-1030`.
+Until that is resolved, keep agent work local or cloud-IDE based and avoid
+pretending a 24-hour Cyrus runtime is available.
+
 ## Before starting a long agent run
 
 1. Confirm the runtime switch or agent host is online.
