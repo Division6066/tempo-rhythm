@@ -23,13 +23,14 @@ This document defines the four-mode environment model for Tempo Flow. Every agen
 - **`prod`** — current production deployment: `prod:precious-wildcat-890` (`https://precious-wildcat-890.eu-west-1.convex.cloud`).
 
 Rule: no agent provisions Convex deployments without an explicit human choice of
-team/project. Agents may inspect an existing deployment with an explicit
-`--deployment` flag, but must not create, relink, or promote deployments silently.
+team/project. Agents may inspect an existing deployment with an explicit deployment
+name on a CLI version that supports it, but must not create, relink, or promote
+deployments silently.
 
 Known local CLI state on 2026-06-02:
 
-- `bunx convex function-spec --deployment precious-wildcat-890` can inspect the production deployment.
-- A root `bunx convex function-spec` fails until `CONVEX_DEPLOYMENT` is set or `bun x convex dev` configures a local dev deployment.
+- The repo-pinned Convex CLI is `1.32.0`; `bunx convex function-spec` fails until `CONVEX_DEPLOYMENT` is set or `bun x convex dev` configures a local dev deployment.
+- `npx convex@1.39.1 function-spec --deployment-name=precious-wildcat-890` can inspect the production deployment without writing repo config.
 - Before configuring local dev, choose whether this machine should attach to the existing `dev:tremendous-bass-443` project or create a fresh personal `dev:*` deployment.
 
 ---
