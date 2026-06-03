@@ -12,6 +12,7 @@ Choose exactly one lane:
 - `docs-generation` — use `docs/CURSOR_PROMPTS.md` §13.10.
 - `pr-readiness` — use `docs/CURSOR_PROMPTS.md` §13.11.
 - `merge-steward` — use `docs/CURSOR_PROMPTS.md` §13.12.
+- `tempo-merge-agent` — use `.cursor/agents/tempo-merge-agent.md` for the Composer 2.5 merge/report loop.
 
 ## 2. Stay read-only first
 
@@ -30,6 +31,7 @@ For the first pass:
 - Keep the diff narrow.
 - Run `/run-qa` before opening or updating a PR.
 - Do not merge your own PR.
+- For merge stewardship, default to Cursor Composer 2.5 and write a merge report before recommending any human merge action.
 - Do not deploy.
 - Do not write secrets.
 

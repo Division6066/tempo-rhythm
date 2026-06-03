@@ -58,6 +58,7 @@ Recommended lanes:
 - `docs-generation` — update the nearest existing developer doc.
 - `pr-readiness` — verify the branch and PR body before human review.
 - `merge-steward` — recommend merge order, never self-merge.
+- `tempo-merge-agent` — Cursor Composer 2.5 merge/report steward for finished PRs.
 
 Prepared local worktrees on this Windows machine:
 
@@ -90,6 +91,17 @@ Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
 - Docs generation: §13.10
 - PR readiness check: §13.11
 - Merge-agent checklist: §13.12
+
+For the recurring merge/report loop, use `.cursor/agents/tempo-merge-agent.md`.
+It defaults to Cursor Composer 2.5 for routine merge stewardship because this work is
+mostly structured inspection, report consolidation, and follow-up ticket drafting.
+The merge agent must:
+
+- inspect the finished PR or branch,
+- run the required checks when safe,
+- write a report under `docs/QA/agent-runs/`,
+- draft follow-up tickets when evidence supports them,
+- never self-merge, deploy, rotate secrets, or undraft dependency PRs.
 
 ## Stop conditions
 
