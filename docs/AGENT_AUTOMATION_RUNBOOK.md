@@ -42,6 +42,21 @@ Do not use `bun run check` as a verification-only command until the repo fixes
 that script. On 2026-06-02 it was observed to run `biome check --write` in the
 mobile package and to fail on pre-existing web formatter diagnostics.
 
+## Cyrus worktree setup
+
+The repository root includes `cyrus-setup.sh` for Cyrus-created worktrees.
+Cyrus runs this script after creating an isolated worktree for a Linear issue.
+
+The script is intentionally small:
+
+- disables common telemetry in CI-style agent runs;
+- installs Bun `1.3.9` only when Bun is missing from the runner;
+- runs `bun install --frozen-lockfile`;
+- avoids secrets, dashboard writes, deploys, and long build steps.
+
+Do not add API keys or production environment variables to this script. Those
+belong in the owning dashboard or secret manager.
+
 ## Worktree pattern
 
 Use one worktree per independent task:
