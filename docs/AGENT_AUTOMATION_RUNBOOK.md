@@ -1,30 +1,34 @@
 # Agent Automation Runbook
 
-This is the clean handoff for "full steam ahead" agent work once the always-on
-runtime is healthy again.
+This is the clean handoff for "full steam ahead" agent work now that the
+automation baseline has landed.
 
 ## Current decision
 
-PR #31 is the preferred path. It includes the current `master` typecheck/build
-fix from PR #32 and adds automation readiness. PR #32 is still useful as the
-minimal baseline fix, but it should be treated as superseded if PR #31 is
-accepted.
+PR #31 landed the automation-readiness baseline. PR #39 landed the follow-up
+Dependabot workspace cleanup. PR #32 was closed as superseded.
 
-Do not merge either PR automatically. A human should review PR #31 first, then
-close PR #32 after #31 lands.
+Current runtime status from the 2026-06-03 readiness pass:
 
-Current always-on runtime blocker: Cyrus cloud switch support ticket `CYHOST-1030`.
-Until that is resolved, keep agent work local or cloud-IDE based and avoid
-pretending a 24-hour Cyrus runtime is available.
+- Cyrus local worker returns `{"status":"idle"}` at `http://127.0.0.1:3456/status`.
+- Cyrus worker logs show an active Cloudflare tunnel.
+- The `tempo-rhythm` repo is registered in Cyrus with Linear workspace `amit-levin`.
+- Claude Code auth works from terminal.
+- Vercel is linked to `amit-levins-projects/tempo-web`.
+- Convex local dev points at `dev:tremendous-bass-443`.
+
+Remaining dashboard/secret items are listed in
+`C:\Users\User\.cyrus\handoffs\tempo-full-speed-readiness-2026-06-03.md`.
 
 ## Before starting a long agent run
 
 1. Confirm the runtime switch or agent host is online.
-2. Confirm GitHub auth works with `gh auth status`.
+2. Confirm GitHub remote access works with `git ls-remote origin master`.
 3. Confirm the repo branch is clean with `git status --short`.
 4. Confirm the correct base branch is `master`.
 5. Confirm no dashboard-only action is being hidden inside a code task.
-6. Run the batch checks:
+6. Confirm Convex local dev is bound with `bunx convex function-spec`.
+7. Run the batch checks:
 
 ```powershell
 bun install --frozen-lockfile
@@ -62,6 +66,19 @@ Prepared local worktrees on this Windows machine:
 - `C:\Users\User\.cyrus\worktrees\tempo-docs-generation` on `codex/docs-generation`
 - `C:\Users\User\.cyrus\worktrees\tempo-pr-readiness` on `codex/pr-readiness`
 - `C:\Users\User\.cyrus\worktrees\tempo-merge-steward` on `codex/merge-steward`
+
+Ticket lanes prepared from latest `master` on 2026-06-03:
+
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-72-a1`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-75-a4`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-79-b1`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-86-c1`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-90-d1`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-94-d5`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-97-e3`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-98-g1`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-101-h1`
+- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-104-i2`
 
 ## Cursor automation outlines
 
