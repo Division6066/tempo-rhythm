@@ -47,6 +47,9 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 ## Backlog (unordered, groomed as capacity allows)
 
 ### Platform / infra
+- **Merge PR #31 or PR #32 to unblock `master` checks.** Prefer PR #31 because it includes the `ScaffoldScreen` typecheck/build fix from PR #32 plus GitHub automation readiness. If PR #31 lands, close PR #32 as superseded.
+- **Resolve always-on runtime support ticket.** Cloud runtime switch is blocked outside the repo; keep coding automation work moving locally and retry the switch after support repairs the GitHub App authentication step.
+- **Choose Convex local dev attachment.** Decide whether this workstation should attach to existing `dev:tremendous-bass-443` or create a fresh personal `dev:*` deployment before running interactive `bun x convex dev`.
 - **Backfill + tighten `users` schema.** Today (`convex/schema.ts`) the `role`, `isActive`, `createdAt`, `updatedAt` fields on `users` are `v.optional(...)` so prod could accept pre-existing test users (`beta2@tempo.app`, `beta3@tempo.app`). Backfill those rows, then make the fields required again. Also decide the final shape of `name` vs `fullName` (currently both exist).
 - **Delete or migrate `tempo-marketing` Vercel project.** Unlinked from GitHub (PR #10 session, 2026-04-18) so it stops failing every PR. Still exists as an empty project pointing at a nonexistent `artifacts/tempo-marketing` root dir — either wire it to a real marketing site or delete the project via Vercel dashboard.
 - **Remove orphaned `C:/Projects/tempo-worktrees`** directory on this Windows box (leftover from earlier worktree experiments; Windows long-path issues make it annoying to delete).
@@ -54,7 +57,7 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 - **Promote `tempo-web` Vercel env vars into Convex dashboard** so prod and dashboard share one source of truth (currently set via `vercel env` + `.local.vercel.env`).
 
 ### Mobile
-- **Run `bun x eas login`** on this workstation so EAS builds work without interactive auth.
+- **Resolve EAS ownership mismatch.** This workstation is logged into EAS as `amitlevin`, but `apps/mobile/app.json` points at owner `tempo-rhythm` and project ID `6f4c596f-b3ed-431b-b9d2-70813ac231d2`, which is not readable by that login. Verified accessible candidate: `@amitlevin/tempi` / `90dfac90-0baa-461b-946c-351d2306e607`. Choose either owner-account login or explicit relink before EAS builds.
 - **Fix `apps/mobile` Biome style rules** (currently muted in `apps/mobile/biome.json`).
 
 ### RAG / brain

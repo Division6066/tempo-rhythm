@@ -344,6 +344,9 @@ Report baseline numbers and post-fix numbers in the PR description.
 
 Short, recurring prompts for the Cursor Background Agent (or GitHub Actions equivalents).
 
+Use these prompts as outlines first. If the agent proposes code changes, require the
+normal session preamble, a scoped file list, and the full QA gate before opening a PR.
+
 ### 13.1 Forbidden tech scanner
 
 ```
@@ -413,6 +416,108 @@ Every voice session start must:
 - The ai_usage rate limiter reads the user's tier daily cap and blocks further live-voice calls when exceeded.
 
 If any of these are missing, block merge.
+```
+
+### 13.8 Bug scan
+
+```
+Run a read-only bug scan against the current branch.
+
+Scope:
+- Recent diffs on this branch.
+- Code paths touched by the diff.
+- Nearby tests, route handlers, Convex functions, and shared UI primitives.
+
+Method:
+1. Read docs/HARD_RULES.md and docs/CURSOR_RULES.md.
+2. Run `bun install --frozen-lockfile`.
+3. Run `bun run lint`, `bun test`, `bun run typecheck`, and `bun run build`.
+4. Inspect failures and warnings. Separate current-branch regressions from known baseline issues.
+5. For each likely bug, report file path, risk, reproduction path, and smallest safe fix.
+
+Do not modify files. Do not open a PR. End with PASS / FAIL / INSUFFICIENT EVIDENCE.
+```
+
+### 13.9 Test coverage gap finder
+
+```
+Find high-value missing tests for the current branch.
+
+Scope:
+- Files changed on this branch.
+- Public exports and user-visible flows touched by those files.
+- Convex queries, mutations, and actions touched by those files.
+
+Method:
+1. Read the changed files and existing tests first.
+2. List uncovered happy paths, edge cases, and regression cases.
+3. Rank gaps by user risk and implementation effort.
+4. If asked to implement, add only the top 1-3 tests and run the smallest relevant suite plus root `bun test`.
+
+Do not add a new test framework. Do not widen the task into product work.
+```
+
+### 13.10 Docs generation
+
+```
+Generate or update developer documentation for the current branch.
+
+Inputs:
+- The branch diff.
+- docs/HARD_RULES.md.
+- docs/ENVIRONMENTS.md.
+- docs/LOCAL_DEV_WINDOWS.md when local setup is affected.
+
+Rules:
+1. Prefer updating the nearest existing doc over creating a new top-level doc.
+2. Document commands, expected outputs, and human decision points.
+3. Do not include secrets, private tokens, or raw user content.
+4. Do not mark a feature shipped unless docs/SHIP_STATE.md proves it is shipped-and-running.
+
+End with the exact files changed and the verification commands run.
+```
+
+### 13.11 PR readiness check
+
+```
+Check whether this branch is ready for human review.
+
+Required checks:
+- `git status --short` is clean after the final commit.
+- `bun install --frozen-lockfile` passes.
+- `bun run lint` passes or only has documented pre-existing warnings.
+- `bun test` passes.
+- `bun run typecheck` passes.
+- `bun run build` passes.
+- PR body maps changes to acceptance criteria and names any known gaps.
+
+Review:
+- Confirm the branch does not deploy, merge, rotate secrets, or change production dashboards.
+- Confirm any dashboard-only action is documented as a human step.
+- Confirm no unrelated files were changed.
+
+End with READY / NOT READY and the blocking reason.
+```
+
+### 13.12 Merge-agent checklist
+
+```
+Act as the merge steward for one finished branch.
+
+Inputs:
+- PR number.
+- Base branch.
+- Latest CI/check results.
+- Any related superseded PRs.
+
+Checklist:
+1. Confirm the intended PR is the one to merge.
+2. Confirm any superseded PR is documented, not silently ignored.
+3. Confirm required reviews and branch rules are satisfied.
+4. Confirm the final diff has no dashboard actions, secrets, or deploys.
+5. Confirm the post-merge plan: close superseded PRs, update TASKS.md, and rerun smoke checks on master.
+
+Never self-merge. Return the merge recommendation and the exact human action needed.
 ```
 
 ---
