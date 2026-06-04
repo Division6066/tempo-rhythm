@@ -1,5 +1,12 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
+
+export function isRevenueCatRequestAuthorized(
+  webhookSecret: string | undefined | null,
+  authHeader: string | null,
+) {
+  return Boolean(webhookSecret) && authHeader === webhookSecret;
+}
 
 /**
  * RevenueCat webhook handler.
@@ -16,7 +23,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   const authHeader = request.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
 
-  if (webhookSecret && authHeader !== webhookSecret) {
+  if (!isRevenueCatRequestAuthorized(webhookSecret, authHeader)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -58,7 +65,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
 
   if (appUserId) {
     try {
-      await ctx.runMutation(api.users.updateSubscriptionStatus, {
+      await ctx.runMutation(internal.users.updateSubscriptionStatus, {
         userId: appUserId,
         userType,
         activeEntitlements,

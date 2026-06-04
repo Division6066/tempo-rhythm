@@ -3,6 +3,7 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel } from "./_generated/dataModel";
+import { buildExistingUserPatch } from "./lib/authUserPatch";
 
 const DEFAULT_FOUNDER_EMAIL = "amitlevin65@protonmail.com";
 const DEFAULT_BETA_MAX_TESTERS = 30;
@@ -106,16 +107,13 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
       if (args.existingUserId) {
         const existingUserId = args.existingUserId;
-        await db.patch(existingUserId, {
+        await db.patch(existingUserId, buildExistingUserPatch({
           email,
           emailVerified: args.profile.emailVerified ?? false,
           fullName: profileName,
-          betaAccess: isFounder ? "founder" : undefined,
-          entitlementTier: isFounder ? "god" : undefined,
-          isGodTier: isFounder || undefined,
-          userType: isFounder ? "paid" : undefined,
-          updatedAt: now,
-        });
+          isFounder,
+          now,
+        }));
 
         if (isFounder) {
           const existingState = await db

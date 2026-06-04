@@ -8,7 +8,9 @@ export const list = query({
     const user = await requireUser(ctx);
     const rows = await ctx.db
       .query("habits")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
     rows.sort((a, b) => b.updatedAt - a.updatedAt);
     return rows;
@@ -40,7 +42,7 @@ export const completeToday = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const habit = await ctx.db.get(args.habitId);
-    if (!habit || habit.userId !== user._id) {
+    if (!habit || habit.userId !== user._id || habit.deletedAt !== undefined) {
       throw new Error("Habit not found");
     }
     const now = Date.now();
@@ -79,7 +81,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const habit = await ctx.db.get(args.habitId);
-    if (!habit || habit.userId !== user._id) {
+    if (!habit || habit.userId !== user._id || habit.deletedAt !== undefined) {
       throw new Error("Habit not found");
     }
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -95,10 +97,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const habit = await ctx.db.get(args.habitId);
-    if (!habit || habit.userId !== user._id) {
+    if (!habit || habit.userId !== user._id || habit.deletedAt !== undefined) {
       throw new Error("Habit not found");
     }
-    await ctx.db.delete(args.habitId);
+    await ctx.db.patch(args.habitId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });

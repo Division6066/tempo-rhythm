@@ -22,7 +22,9 @@ export const list = query({
     const user = await requireUser(ctx);
     let rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
 
     if (args.status) {
@@ -59,7 +61,9 @@ export const listDueInRange = query({
     const user = await requireUser(ctx);
     const rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
     return rows.filter(
       (t) =>
@@ -125,7 +129,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
       throw new Error("Task not found");
     }
     const now = Date.now();
@@ -149,10 +153,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
       throw new Error("Task not found");
     }
-    await ctx.db.delete(args.taskId);
+    await ctx.db.patch(args.taskId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });
@@ -202,7 +206,9 @@ export const listToday = query({
     }
     const rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
     return rows
       .filter(
@@ -222,7 +228,7 @@ export const toggleCompletion = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
       throw new Error("Task not found");
     }
     const next = task.status === "done" ? "todo" : "done";

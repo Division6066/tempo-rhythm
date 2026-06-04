@@ -13,11 +13,11 @@
 // הערה:
 // - אם PAYWALL_ENABLED כבוי — אנחנו לא נפריע למשתמש ונציג את התוכן.
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 
 import PaywallModal from "@/components/payments/PaywallModal";
-import { MOCK_PAYMENTS, PAYWALL_ENABLED } from "@/config/appConfig";
+import { PAYWALL_ENABLED } from "@/config/appConfig";
 import { api } from "@/convex/_generated/api";
 
 type PremiumGateProps = {
@@ -28,7 +28,6 @@ type PremiumGateProps = {
 
 export default function PremiumGate({ children, forcePreview }: PremiumGateProps) {
   const user = useQuery(api.users.getCurrentUser);
-  const updateUserType = useMutation(api.users.updateUserType);
 
   const [paywallOpen, setPaywallOpen] = useState(false);
 
@@ -52,15 +51,6 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
       setPaywallOpen(true);
     }
   }, [forcePreview, isPaid, user]);
-
-  const handleMockUpgradeToPaid = async () => {
-    if (!MOCK_PAYMENTS) {
-      return;
-    }
-
-    // מצב בדיקה: מאפשר לסמן את המשתמש כ-paid בלי Checkout אמיתי
-    await updateUserType({ userType: "paid" });
-  };
 
   if (!PAYWALL_ENABLED) {
     return <>{children}</>;
@@ -86,7 +76,6 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
       <PaywallModal
         open={paywallOpen}
         onOpenChange={setPaywallOpen}
-        onMockUpgradeToPaid={handleMockUpgradeToPaid}
         preview={Boolean(forcePreview)}
       />
 

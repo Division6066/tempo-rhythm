@@ -29,7 +29,7 @@ export const sendMessage = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const conv = await ctx.db.get(args.conversationId);
-    if (!conv || conv.userId !== user._id) {
+    if (!conv || conv.userId !== user._id || conv.deletedAt !== undefined) {
       throw new Error("Conversation not found");
     }
     const text = args.content.trim();
