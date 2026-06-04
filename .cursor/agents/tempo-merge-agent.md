@@ -40,7 +40,7 @@ Read these before acting:
 For each finished run:
 
 1. Inspect PR metadata:
-   - `gh pr view <PR> --json title,body,headRefName,baseRefName,isDraft,mergeStateStatus,statusCheckRollup,files,commits,reviews`
+   - `gh pr view <PR> --json title,body,headRefName,baseRefName,isDraft,mergeable,statusCheckRollup,files,commits,reviews`
 2. Confirm the PR is not a dependency-update bundle unless Amit explicitly requested dependency work.
 3. Confirm the PR is not draft unless the task is only to prepare a report.
 4. Confirm required checks are green or document the exact failing check.

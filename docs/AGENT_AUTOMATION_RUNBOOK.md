@@ -67,6 +67,7 @@ Prepared local worktrees on this Windows machine:
 - `C:\Users\User\.cyrus\worktrees\tempo-docs-generation` on `codex/docs-generation`
 - `C:\Users\User\.cyrus\worktrees\tempo-pr-readiness` on `codex/pr-readiness`
 - `C:\Users\User\.cyrus\worktrees\tempo-merge-steward` on `codex/merge-steward`
+- `C:\Users\User\.cyrus\worktrees\tempo-merge-agent` on `codex/tempo-merge-agent`
 
 Ticket lanes prepared from latest `master` on 2026-06-03:
 

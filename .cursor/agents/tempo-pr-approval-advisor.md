@@ -18,7 +18,7 @@ open, non-draft, non-dependency PR.
 Use:
 
 ```powershell
-gh pr view <PR> --json title,body,headRefName,baseRefName,isDraft,mergeStateStatus,statusCheckRollup,files,commits,reviews,reviewDecision
+gh pr view <PR> --json title,body,headRefName,baseRefName,isDraft,mergeable,statusCheckRollup,files,commits,reviews,reviewDecision
 git fetch origin
 git diff --name-only origin/master...<headRefName>
 ```
