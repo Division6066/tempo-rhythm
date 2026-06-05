@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { filterLive, isLive, softDeleteOnly, softDeleteWithUpdatedAt } from './lib/softDelete';
 
 // Query: Get all conversations for a user
 export const list = query({
@@ -25,7 +26,7 @@ export const list = query({
       .order('desc')
       .collect();
 
-    return conversations;
+    return filterLive(conversations);
   },
 });
 
@@ -50,7 +51,7 @@ export const get = query({
     }
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!isLive(conversation) || conversation.userId !== user._id) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -114,7 +115,7 @@ export const updateTechnique = mutation({
     }
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!isLive(conversation) || conversation.userId !== user._id) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -149,7 +150,7 @@ export const updateTitle = mutation({
     }
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!isLive(conversation) || conversation.userId !== user._id) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -183,22 +184,22 @@ export const remove = mutation({
     }
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!isLive(conversation) || conversation.userId !== user._id) {
       throw new Error('Conversation not found or access denied');
     }
 
-    // Delete all messages in this conversation first
+    // Hide all live messages in this conversation first.
     const messages = await ctx.db
       .query('messages')
       .withIndex('by_conversationId', (q) => q.eq('conversationId', args.conversationId))
       .collect();
 
-    for (const message of messages) {
-      await ctx.db.delete(message._id);
+    const now = Date.now();
+    for (const message of filterLive(messages)) {
+      await ctx.db.patch(message._id, softDeleteOnly(now));
     }
 
-    // Delete the conversation
-    await ctx.db.delete(args.conversationId);
+    await ctx.db.patch(args.conversationId, softDeleteWithUpdatedAt(now));
 
     return { success: true };
   },

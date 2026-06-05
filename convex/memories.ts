@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query, action } from './_generated/server';
 import { api } from './_generated/api';
+import { filterLive, isLive, softDeleteWithUpdatedAt } from './lib/softDelete';
 
 // Memory sector type
 export type MemorySector = 'semantic' | 'episodic' | 'procedural' | 'emotional' | 'general';
@@ -43,8 +44,8 @@ export const queryMemories = query({
 
     // Filter by sector if provided
     let filtered = args.sector
-      ? memories.filter((m) => m.sector === args.sector)
-      : memories;
+      ? filterLive(memories).filter((m) => m.sector === args.sector)
+      : filterLive(memories);
 
     // Sort by salience (descending) and lastAccessed (descending)
     filtered.sort((a, b) => {
@@ -132,7 +133,7 @@ export const updateSalience = mutation({
     }
 
     const memory = await ctx.db.get(args.memoryId);
-    if (!memory || memory.userId !== user._id) {
+    if (!isLive(memory) || memory.userId !== user._id) {
       throw new Error('Memory not found or access denied');
     }
 
@@ -171,11 +172,11 @@ export const deleteMemory = mutation({
     }
 
     const memory = await ctx.db.get(args.memoryId);
-    if (!memory || memory.userId !== user._id) {
+    if (!isLive(memory) || memory.userId !== user._id) {
       throw new Error('Memory not found or access denied');
     }
 
-    await ctx.db.delete(args.memoryId);
+    await ctx.db.patch(args.memoryId, softDeleteWithUpdatedAt());
     return { success: true };
   },
 });
@@ -353,10 +354,10 @@ export const getMemoryStats = query({
       throw new Error('User not found');
     }
 
-    const memories = await ctx.db
+    const memories = filterLive(await ctx.db
       .query('memories')
       .withIndex('by_userId', (q) => q.eq('userId', user._id))
-      .collect();
+      .collect());
 
     const sectors: MemorySector[] = ['semantic', 'episodic', 'procedural', 'emotional', 'general'];
     const stats = sectors.map((sector) => {

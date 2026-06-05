@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { filterLive, isLive, softDeleteOnly } from './lib/softDelete';
 
 // Query: Get all messages for a conversation
 export const list = query({
@@ -23,7 +24,7 @@ export const list = query({
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!isLive(conversation) || conversation.userId !== user._id) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -33,7 +34,7 @@ export const list = query({
       .order('asc')
       .collect();
 
-    return messages;
+    return filterLive(messages);
   },
 });
 
@@ -64,7 +65,7 @@ export const create = mutation({
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!isLive(conversation) || conversation.userId !== user._id) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -108,17 +109,17 @@ export const remove = mutation({
     }
 
     const message = await ctx.db.get(args.messageId);
-    if (!message) {
+    if (!isLive(message)) {
       throw new Error('Message not found');
     }
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(message.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!isLive(conversation) || conversation.userId !== user._id) {
       throw new Error('Access denied');
     }
 
-    await ctx.db.delete(args.messageId);
+    await ctx.db.patch(args.messageId, softDeleteOnly());
     return { success: true };
   },
 });

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { filterLive, isLive, softDeleteWithUpdatedAt } from "./lib/softDelete";
 
 export const list = query({
   args: {
@@ -14,6 +15,7 @@ export const list = query({
       .query("goals")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
+    rows = filterLive(rows);
     if (args.status) {
       rows = rows.filter((g) => g.status === args.status);
     }
@@ -58,7 +60,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const goal = await ctx.db.get(args.goalId);
-    if (!goal || goal.userId !== user._id) {
+    if (!isLive(goal) || goal.userId !== user._id) {
       throw new Error("Goal not found");
     }
     const now = Date.now();
@@ -84,10 +86,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const goal = await ctx.db.get(args.goalId);
-    if (!goal || goal.userId !== user._id) {
+    if (!isLive(goal) || goal.userId !== user._id) {
       throw new Error("Goal not found");
     }
-    await ctx.db.delete(args.goalId);
+    await ctx.db.patch(args.goalId, softDeleteWithUpdatedAt());
     return { success: true };
   },
 });
