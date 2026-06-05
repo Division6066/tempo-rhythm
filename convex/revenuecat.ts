@@ -65,12 +65,15 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
 
   if (appUserId) {
     try {
-      await ctx.runMutation(internal.users.updateSubscriptionStatus, {
+      const result = await ctx.runMutation(internal.users.updateSubscriptionStatus, {
         userId: appUserId,
         userType,
         activeEntitlements,
         revenueCatEvent: eventType ?? "UNKNOWN",
       });
+      if (!result.updated) {
+        return new Response("User not found for subscription sync", { status: 500 });
+      }
     } catch (err) {
       console.error("[RevenueCat Webhook] Failed to update user:", err);
       return new Response("Failed to update subscription status", { status: 500 });

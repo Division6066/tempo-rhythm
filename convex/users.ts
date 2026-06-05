@@ -144,8 +144,7 @@ export const updateUserType = mutation({
     const user = await requireUser(ctx);
     if (!isLive(user)) throw new Error("User not found");
 
-    const mockEntitlementEnabled = process.env.ALLOW_MOCK_ENTITLEMENT_MUTATIONS === "true";
-    if (user.role !== "admin" && !mockEntitlementEnabled) {
+    if (user.role !== "admin") {
       throw new Error("Entitlement changes must come from billing sync.");
     }
 

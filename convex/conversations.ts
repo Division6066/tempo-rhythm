@@ -1,24 +1,13 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { requireUser } from './lib/requireUser';
 import { filterLive, isLive, softDeleteOnly, softDeleteWithUpdatedAt } from './lib/softDelete';
 
 // Query: Get all conversations for a user
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversations = await ctx.db
       .query('conversations')
@@ -36,19 +25,7 @@ export const get = query({
     conversationId: v.id('conversations'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
     if (!isLive(conversation) || conversation.userId !== user._id) {
@@ -66,19 +43,7 @@ export const create = mutation({
     technique: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const now = Date.now();
     const conversationId = await ctx.db.insert('conversations', {
@@ -100,19 +65,7 @@ export const updateTechnique = mutation({
     technique: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
     if (!isLive(conversation) || conversation.userId !== user._id) {
@@ -135,19 +88,7 @@ export const updateTitle = mutation({
     title: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
     if (!isLive(conversation) || conversation.userId !== user._id) {
@@ -169,19 +110,7 @@ export const remove = mutation({
     conversationId: v.id('conversations'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
     if (!isLive(conversation) || conversation.userId !== user._id) {
