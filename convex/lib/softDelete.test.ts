@@ -5,12 +5,12 @@ describe("soft-delete helpers", () => {
   test("isLive only accepts docs without deletedAt", () => {
     expect(isLive(undefined)).toBe(false);
     expect(isLive(null)).toBe(false);
-    expect(isLive({ _id: "live" })).toBe(true);
+    expect(isLive({ _id: "live", deletedAt: undefined })).toBe(true);
     expect(isLive({ _id: "deleted", deletedAt: 123 })).toBe(false);
   });
 
   test("filterLive removes soft-deleted rows without cloning live rows", () => {
-    const live = { _id: "live", title: "Keep" };
+    const live = { _id: "live", title: "Keep", deletedAt: undefined };
     const rows = [live, { _id: "deleted", deletedAt: 123 }];
 
     expect(filterLive(rows)).toEqual([live]);

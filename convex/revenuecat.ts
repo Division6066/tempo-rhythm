@@ -73,8 +73,10 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
       });
     } catch (err) {
       console.error("[RevenueCat Webhook] Failed to update user:", err);
-      // Return 200 so RevenueCat doesn't retry on our internal errors
+      return new Response("Failed to update subscription status", { status: 500 });
     }
+  } else {
+    return new Response("Missing app_user_id", { status: 400 });
   }
 
   return new Response(JSON.stringify({ received: true, eventType }), {
