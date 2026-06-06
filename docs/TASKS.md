@@ -57,7 +57,6 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 - **Promote `tempo-web` Vercel env vars into Convex dashboard** so prod and dashboard share one source of truth (currently set via `vercel env` + `.local.vercel.env`).
 
 ### Mobile
-- **Resolve EAS ownership mismatch.** This workstation is logged into EAS as `amitlevin`, but `apps/mobile/app.json` points at owner `tempo-rhythm` and project ID `6f4c596f-b3ed-431b-b9d2-70813ac231d2`, which is not readable by that login. Verified accessible candidate: `@amitlevin/tempi` / `90dfac90-0baa-461b-946c-351d2306e607`. Choose either owner-account login or explicit relink before EAS builds.
 - **Fix `apps/mobile` Biome style rules** (currently muted in `apps/mobile/biome.json`).
 
 ### RAG / brain
@@ -70,6 +69,9 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 ---
 
 ## Done (by date)
+
+### 2026-06-04 — Expo/EAS identity resolved
+- Mobile Expo/EAS project now points at the existing accessible Tempo Rhythm project `@amitlevin/tempi` with project ID `90dfac90-0baa-461b-946c-351d2306e607`. The `tempi` slug is a historical spelling mistake in the Expo project name; the app still presents as Tempo Rhythm and keeps `com.temporhythm.app` plus `tempo-rhythm` URL scheme.
 
 ### 2026-04-18 — "Phase 3 rails" session (evening)
 - **Atomic ticket queue generated:** 59 ticket files across 13 cluster parents covering Phase 0 + M0 + M1 in `docs/brain/tickets/`. Each ticket sized ~30 min, with `product` / `assignee` / `execution` / `cluster` / `parallelizable` / `blocked-by` / `blocks` frontmatter and full acceptance criteria + implementation guidance. See `docs/brain/tickets/_INDEX.md` (by time / parallelizability / dependency / cluster / assignee / fallback log) and `docs/brain/tickets/CLUSTERS.md` (parent → child split rationale).
