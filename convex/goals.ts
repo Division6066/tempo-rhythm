@@ -12,7 +12,9 @@ export const list = query({
     const user = await requireUser(ctx);
     let rows = await ctx.db
       .query("goals")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
     if (args.status) {
       rows = rows.filter((g) => g.status === args.status);
@@ -58,7 +60,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const goal = await ctx.db.get(args.goalId);
-    if (!goal || goal.userId !== user._id) {
+    if (!goal || goal.userId !== user._id || goal.deletedAt !== undefined) {
       throw new Error("Goal not found");
     }
     const now = Date.now();
@@ -84,10 +86,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const goal = await ctx.db.get(args.goalId);
-    if (!goal || goal.userId !== user._id) {
+    if (!goal || goal.userId !== user._id || goal.deletedAt !== undefined) {
       throw new Error("Goal not found");
     }
-    await ctx.db.delete(args.goalId);
+    await ctx.db.patch(args.goalId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });

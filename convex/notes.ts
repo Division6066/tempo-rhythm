@@ -11,8 +11,9 @@ export const list = query({
     const user = await requireUser(ctx);
     let rows = await ctx.db
       .query("notes")
-      .withIndex("by_userId_updatedAt", (q) => q.eq("userId", user._id))
-      .order("desc")
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
 
     if (args.pinnedOnly) {
@@ -25,7 +26,7 @@ export const list = query({
           n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q),
       );
     }
-    return rows;
+    return rows.toSorted((a, b) => b.updatedAt - a.updatedAt);
   },
 });
 
@@ -34,7 +35,7 @@ export const get = query({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       return null;
     }
     return note;
@@ -88,7 +89,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       throw new Error("Note not found");
     }
     const now = Date.now();
@@ -107,7 +108,7 @@ export const togglePin = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       throw new Error("Note not found");
     }
     const now = Date.now();
@@ -124,10 +125,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       throw new Error("Note not found");
     }
-    await ctx.db.delete(args.noteId);
+    await ctx.db.patch(args.noteId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });

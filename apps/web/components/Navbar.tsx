@@ -53,7 +53,6 @@ export default function Navbar() {
   }, []);
 
   const displayName = user?.fullName || user?.email?.split("@")[0] || "משתמש";
-  const updateUserType = useMutation(api.users.updateUserType); // שינוי סטטוס משתמש (למצב בדיקה)
   const deleteMyAccount = useMutation(api.users.deleteMyAccount); // מחיקת חשבון (Convex)
 
   // פתיחת דיאלוג התנתקות (במקום התנתקות מיידית)
@@ -192,18 +191,6 @@ export default function Navbar() {
                         פתח Paywall (Preview)
                       </button>
 
-                      {/* כפתור בדיקה: סימון המשתמש כ-paid (רק אם MOCK_PAYMENTS) */}
-                      {MOCK_PAYMENTS && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await updateUserType({ userType: "paid" });
-                          }}
-                          className="w-full rounded-lg border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-right text-sm text-orange-100 transition hover:bg-orange-500/15"
-                        >
-                          מצב בדיקה: שדרג אותי לפרימיום
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

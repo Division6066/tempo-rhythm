@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { requireUser } from './lib/requireUser';
 
 // Query: Get all messages for a conversation
 export const list = query({
@@ -7,33 +8,22 @@ export const list = query({
     conversationId: v.id('conversations'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) {
       throw new Error('Conversation not found or access denied');
     }
 
     const messages = await ctx.db
       .query('messages')
-      .withIndex('by_conversationId_createdAt', (q) => q.eq('conversationId', args.conversationId))
-      .order('asc')
+      .withIndex('by_conversationId_deletedAt', (q) =>
+        q.eq('conversationId', args.conversationId).eq('deletedAt', undefined),
+      )
       .collect();
 
-    return messages;
+    return messages.toSorted((a, b) => a.createdAt - b.createdAt);
   },
 });
 
@@ -48,23 +38,11 @@ export const create = mutation({
     toolCalls: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -93,32 +71,20 @@ export const remove = mutation({
     messageId: v.id('messages'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const message = await ctx.db.get(args.messageId);
-    if (!message) {
+    if (!message || message.deletedAt !== undefined) {
       throw new Error('Message not found');
     }
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(message.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) {
       throw new Error('Access denied');
     }
 
-    await ctx.db.delete(args.messageId);
+    await ctx.db.patch(args.messageId, { deletedAt: Date.now() });
     return { success: true };
   },
 });

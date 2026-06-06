@@ -28,27 +28,39 @@ export const overview = query({
     const [tasks, notes, habits, goals, memories, conversations] = await Promise.all([
       ctx.db
         .query("tasks")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .withIndex("by_userId_deletedAt", (q) =>
+          q.eq("userId", user._id).eq("deletedAt", undefined),
+        )
         .collect(),
       ctx.db
         .query("notes")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .withIndex("by_userId_deletedAt", (q) =>
+          q.eq("userId", user._id).eq("deletedAt", undefined),
+        )
         .collect(),
       ctx.db
         .query("habits")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .withIndex("by_userId_deletedAt", (q) =>
+          q.eq("userId", user._id).eq("deletedAt", undefined),
+        )
         .collect(),
       ctx.db
         .query("goals")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .withIndex("by_userId_deletedAt", (q) =>
+          q.eq("userId", user._id).eq("deletedAt", undefined),
+        )
         .collect(),
       ctx.db
         .query("memories")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .withIndex("by_userId_deletedAt", (q) =>
+          q.eq("userId", user._id).eq("deletedAt", undefined),
+        )
         .collect(),
       ctx.db
         .query("conversations")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .withIndex("by_userId_deletedAt", (q) =>
+          q.eq("userId", user._id).eq("deletedAt", undefined),
+        )
         .collect(),
     ]);
 

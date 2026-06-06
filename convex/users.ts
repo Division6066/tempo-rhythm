@@ -1,7 +1,8 @@
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { isActiveUser, requireUser } from "./lib/requireUser";
 
 /** Shared resolver for the authenticated app user document. */
 export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
@@ -16,7 +17,7 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
     const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
     try {
       const user = await ctx.db.get(userId);
-      if (user) return user;
+      if (user && isActiveUser(user)) return user;
     } catch {
       // invalid ID, fall through to email lookup
     }
@@ -27,7 +28,7 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
       .unique();
-    if (user) return user;
+    if (user && isActiveUser(user)) return user;
   }
 
   return null;
@@ -53,52 +54,123 @@ export const getProfile = query({
   },
 });
 
-export const getById = query({
+export const getById = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => ctx.db.get(userId),
 });
 
-export const listActive = query({
+export const listActive = internalQuery({
   args: {},
   handler: async (ctx) =>
     ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect(),
+      .withIndex("by_deletedAt", (q) => q.eq("deletedAt", undefined))
+      .collect()
+      .then((users) => users.filter((user) => user.isActive === true)),
 });
 
-export const createOrUpdateUser = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+async function softDeleteConversationMessages(
+  ctx: MutationCtx,
+  conversationId: Id<"conversations">,
+  now: number,
+) {
+  const messages = await ctx.db
+    .query("messages")
+    .withIndex("by_conversationId_deletedAt", (q) =>
+      q.eq("conversationId", conversationId).eq("deletedAt", undefined),
+    )
+    .collect();
 
-    const email = identity.email ?? "";
-    const now = Date.now();
+  for (const message of messages) {
+    await ctx.db.patch(message._id, { deletedAt: now });
+  }
+  return messages.length;
+}
 
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .unique();
+async function softDeleteUserOwnedRows(ctx: MutationCtx, userId: Id<"users">, now: number) {
+  let deletedCount = 0;
 
-    const userData = {
-      email,
-      emailVerified: identity.emailVerified ?? false,
-      fullName: identity.name || identity.nickname || "User",
-      role: "user" as const,
-      userType: "free" as const,
-      isActive: true,
+  const conversations = await ctx.db
+    .query("conversations")
+    .withIndex("by_userId_deletedAt", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined),
+    )
+    .collect();
+  for (const conversation of conversations) {
+    deletedCount += await softDeleteConversationMessages(ctx, conversation._id, now);
+    await ctx.db.patch(conversation._id, { deletedAt: now, updatedAt: now });
+    deletedCount += 1;
+  }
+
+  const memories = await ctx.db
+    .query("memories")
+    .withIndex("by_userId_deletedAt", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined),
+    )
+    .collect();
+  for (const memory of memories) {
+    await ctx.db.patch(memory._id, { deletedAt: now, updatedAt: now });
+    deletedCount += 1;
+  }
+
+  const tasks = await ctx.db
+    .query("tasks")
+    .withIndex("by_userId_deletedAt", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined),
+    )
+    .collect();
+  for (const task of tasks) {
+    await ctx.db.patch(task._id, { deletedAt: now, updatedAt: now });
+    deletedCount += 1;
+  }
+
+  const notes = await ctx.db
+    .query("notes")
+    .withIndex("by_userId_deletedAt", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined),
+    )
+    .collect();
+  for (const note of notes) {
+    await ctx.db.patch(note._id, { deletedAt: now, updatedAt: now });
+    deletedCount += 1;
+  }
+
+  const habits = await ctx.db
+    .query("habits")
+    .withIndex("by_userId_deletedAt", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined),
+    )
+    .collect();
+  for (const habit of habits) {
+    await ctx.db.patch(habit._id, { deletedAt: now, updatedAt: now });
+    deletedCount += 1;
+  }
+
+  const goals = await ctx.db
+    .query("goals")
+    .withIndex("by_userId_deletedAt", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined),
+    )
+    .collect();
+  for (const goal of goals) {
+    await ctx.db.patch(goal._id, { deletedAt: now, updatedAt: now });
+    deletedCount += 1;
+  }
+
+  const subscriptionState = await ctx.db
+    .query("subscriptionStates")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+  if (subscriptionState) {
+    await ctx.db.patch(subscriptionState._id, {
+      status: "cancelled",
+      source: "account_deleted",
       updatedAt: now,
-    };
+    });
+  }
 
-    if (existing) {
-      await ctx.db.patch(existing._id, userData);
-      return existing._id;
-    }
-
-    return ctx.db.insert("users", { ...userData, createdAt: now });
-  },
-});
+  return deletedCount;
+}
 
 export const updateProfile = mutation({
   args: {
@@ -106,43 +178,12 @@ export const updateProfile = mutation({
     fullName: v.optional(v.string()),
   },
   handler: async (ctx, { userId, fullName }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const currentUser = await requireUser(ctx);
+    if (currentUser._id !== userId && currentUser.role !== "admin") {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
     return userId;
-  },
-});
-
-export const updateUserType = mutation({
-  args: {
-    userType: v.union(v.literal("free"), v.literal("paid")),
-  },
-  handler: async (ctx, { userType }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    let user = null;
-    const subjectParts = identity.subject.split("|");
-    if (subjectParts.length >= 2) {
-      const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-      try {
-        user = await ctx.db.get(userId);
-      } catch {
-        // fall through
-      }
-    }
-
-    if (!user && identity.email) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
-        .unique();
-    }
-
-    if (!user) throw new Error("User not found");
-
-    await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
-    return user._id;
   },
 });
 
@@ -150,7 +191,7 @@ export const updateUserType = mutation({
  * Called by the RevenueCat webhook (convex/revenuecat.ts) to sync subscription status.
  * Uses appUserId (RevenueCat user ID = Convex user email or subject) to find and update the user.
  */
-export const updateSubscriptionStatus = mutation({
+export const updateSubscriptionStatus = internalMutation({
   args: {
     userId: v.string(),
     userType: v.union(v.literal("free"), v.literal("paid")),
@@ -183,34 +224,19 @@ export const updateSubscriptionStatus = mutation({
   },
 });
 
-export const remove = mutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    await ctx.db.delete(userId);
-  },
-});
-
 export const deleteMyAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await requireUser(ctx);
+    const now = Date.now();
+    const deletedRows = await softDeleteUserOwnedRows(ctx, user._id, now);
 
-    const userId = identity.subject;
-    let deletedCount = 0;
+    await ctx.db.patch(user._id, {
+      isActive: false,
+      deletedAt: now,
+      updatedAt: now,
+    });
 
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("_id"), userId))
-      .first();
-
-    if (user) {
-      await ctx.db.delete(user._id);
-      deletedCount += 1;
-    }
-
-    return { success: true, deletedCount };
+    return { success: true, deletedCount: deletedRows + 1 };
   },
 });

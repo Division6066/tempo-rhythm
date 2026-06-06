@@ -1,31 +1,21 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { requireUser } from './lib/requireUser';
 
 // Query: Get all conversations for a user
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversations = await ctx.db
       .query('conversations')
-      .withIndex('by_userId_updatedAt', (q) => q.eq('userId', user._id))
-      .order('desc')
+      .withIndex('by_userId_deletedAt', (q) =>
+        q.eq('userId', user._id).eq('deletedAt', undefined),
+      )
       .collect();
 
-    return conversations;
+    return conversations.toSorted((a, b) => b.updatedAt - a.updatedAt);
   },
 });
 
@@ -35,22 +25,10 @@ export const get = query({
     conversationId: v.id('conversations'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -65,19 +43,7 @@ export const create = mutation({
     technique: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const now = Date.now();
     const conversationId = await ctx.db.insert('conversations', {
@@ -99,22 +65,10 @@ export const updateTechnique = mutation({
     technique: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -134,22 +88,10 @@ export const updateTitle = mutation({
     title: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) {
       throw new Error('Conversation not found or access denied');
     }
 
@@ -168,37 +110,28 @@ export const remove = mutation({
     conversationId: v.id('conversations'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) {
       throw new Error('Conversation not found or access denied');
     }
 
-    // Delete all messages in this conversation first
+    const now = Date.now();
+
+    // Soft-delete all messages in this conversation first.
     const messages = await ctx.db
       .query('messages')
-      .withIndex('by_conversationId', (q) => q.eq('conversationId', args.conversationId))
+      .withIndex('by_conversationId_deletedAt', (q) =>
+        q.eq('conversationId', args.conversationId).eq('deletedAt', undefined),
+      )
       .collect();
 
     for (const message of messages) {
-      await ctx.db.delete(message._id);
+      await ctx.db.patch(message._id, { deletedAt: now });
     }
 
-    // Delete the conversation
-    await ctx.db.delete(args.conversationId);
+    await ctx.db.patch(args.conversationId, { deletedAt: now, updatedAt: now });
 
     return { success: true };
   },

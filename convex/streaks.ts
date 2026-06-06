@@ -10,7 +10,9 @@ export const getCurrent = query({
     const user = await requireUser(ctx);
     const habits = await ctx.db
       .query("habits")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
     const streakCount =
       habits.length === 0 ? 0 : Math.max(...habits.map((h) => h.currentStreak));

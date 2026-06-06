@@ -1,6 +1,10 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
+export function isActiveUser(user: Pick<Doc<"users">, "deletedAt" | "isActive">) {
+  return user.deletedAt === undefined && user.isActive !== false;
+}
+
 /**
  * Resolve the authenticated app user (users table row) from Convex Auth identity.
  */
@@ -29,6 +33,9 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   const subjectUser = await resolveUserFromSubject(ctx, identity.subject);
   if (subjectUser) {
+    if (!isActiveUser(subjectUser)) {
+      throw new Error("Account inactive");
+    }
     return subjectUser;
   }
 
@@ -44,6 +51,9 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   if (!user) {
     throw new Error("User not found");
+  }
+  if (!isActiveUser(user)) {
+    throw new Error("Account inactive");
   }
 
   return user;
