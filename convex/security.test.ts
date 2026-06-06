@@ -1,11 +1,16 @@
 import { describe, expect, test } from "bun:test";
+import type { Doc } from "./_generated/dataModel";
 import { resolveUserFromSubject } from "./lib/requireUser";
 import { isRevenueCatWebhookAuthorized } from "./revenuecat";
 import { isMockPaymentMutationAllowed } from "./users";
 
 describe("security-critical auth helpers", () => {
   test("resolves the app user from any valid subject segment", async () => {
-    const user = { _id: "user_real", email: "person@example.com" };
+    const user = {
+      _id: "user_real",
+      _creationTime: 1,
+      email: "person@example.com",
+    } as Doc<"users">;
     const ctx = {
       db: {
         normalizeId: (_table: string, value: string) =>
@@ -22,9 +27,10 @@ describe("security-critical auth helpers", () => {
   test("authenticated user lookup ignores soft-deleted users", async () => {
     const deletedUser = {
       _id: "user_deleted",
+      _creationTime: 1,
       email: "deleted@example.com",
       deletedAt: Date.now(),
-    };
+    } as Doc<"users">;
     const ctx = {
       auth: {
         getUserIdentity: async () => ({
