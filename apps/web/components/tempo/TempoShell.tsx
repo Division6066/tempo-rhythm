@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { CommandPalette } from "./CommandPalette";
+import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
@@ -10,6 +11,7 @@ import { Topbar } from "./Topbar";
  * Owns the ⌘K listener.
  */
 export function TempoShell({ children }: { children: ReactNode }) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -28,9 +30,15 @@ export function TempoShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0">
-        <Topbar onOpenPalette={() => setPaletteOpen(true)} />
-        <main className="flex-1 overflow-y-auto scroll-subtle">{children}</main>
+        <Topbar
+          onOpenMobileNav={() => setMobileNavOpen(true)}
+          onOpenPalette={() => setPaletteOpen(true)}
+        />
+        <main className="flex-1 overflow-y-auto scroll-subtle pb-20 lg:pb-0">
+          {children}
+        </main>
       </div>
+      <MobileNav open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );
