@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "@tempo/ui/icons";
+import { filterScreens } from "@/lib/screen-filter";
 import { TEMPO_SCREENS } from "@/lib/tempo-nav";
 
 type Props = {
@@ -31,16 +32,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     }
   }, [open]);
 
-  const items = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return TEMPO_SCREENS;
-    return TEMPO_SCREENS.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.slug.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q),
-    );
-  }, [query]);
+  const items = useMemo(() => filterScreens(TEMPO_SCREENS, query), [query]);
 
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   useEffect(() => {
@@ -83,6 +75,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             <input
               ref={inputRef}
               type="text"
+              aria-label="Search screens"
               placeholder="Search screens…"
               value={query}
               onChange={(e) => {

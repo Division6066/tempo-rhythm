@@ -4,7 +4,17 @@ import type { HTMLAttributes, ReactNode } from "react";
  * Pill — compact status chip in the 4 semantic tones + neutral.
  * @source docs/design/claude-export/design-system/components.jsx (Pill pattern)
  */
-export type PillTone = "neutral" | "moss" | "brick" | "amber" | "slate" | "orange";
+export type PillTone =
+  | "neutral"
+  | "moss"
+  | "brick"
+  | "amber"
+  | "slate"
+  | "orange"
+  // Compatibility fix for #26 (concrete scaffold layout shells), which uses
+  // `tone="blue"` for the "Beta preview" badge. Aliased to slate-blue so the
+  // existing palette is reused without introducing a new CSS variable.
+  | "blue";
 
 export type PillProps = HTMLAttributes<HTMLSpanElement> & {
   tone?: PillTone;
@@ -18,6 +28,7 @@ const toneMap: Record<PillTone, string> = {
   amber: "bg-[color:var(--color-amber)]/14 text-[color:var(--color-amber)]",
   slate: "bg-[color:var(--color-slate-blue)]/12 text-[color:var(--color-slate-blue)]",
   orange: "bg-[color:var(--color-tempo-orange)]/12 text-[color:var(--color-tempo-orange)]",
+  blue: "bg-[color:var(--color-slate-blue)]/12 text-[color:var(--color-slate-blue)]",
 };
 
 export function Pill({ tone = "neutral", leading, className = "", children, ...rest }: PillProps) {
