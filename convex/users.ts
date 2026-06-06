@@ -1,7 +1,9 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { requireUser } from "./lib/requireUser";
+import { filterLive, isLive, softDeleteWithUpdatedAt } from "./lib/softDelete";
 
 /** Shared resolver for the authenticated app user document. */
 export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
@@ -16,7 +18,7 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
     const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
     try {
       const user = await ctx.db.get(userId);
-      if (user) return user;
+      if (isLive(user) && user.isActive !== false) return user;
     } catch {
       // invalid ID, fall through to email lookup
     }
@@ -27,7 +29,7 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
       .unique();
-    if (user) return user;
+    if (isLive(user) && user.isActive !== false) return user;
   }
 
   return null;
@@ -55,16 +57,28 @@ export const getProfile = query({
 
 export const getById = query({
   args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => ctx.db.get(userId),
+  handler: async (ctx, { userId }) => {
+    const actor = await requireUser(ctx);
+    if (actor._id !== userId && actor.role !== "admin") {
+      return null;
+    }
+    const user = await ctx.db.get(userId);
+    return isLive(user) ? user : null;
+  },
 });
 
 export const listActive = query({
   args: {},
-  handler: async (ctx) =>
-    ctx.db
+  handler: async (ctx) => {
+    const actor = await requireUser(ctx);
+    if (actor.role !== "admin") {
+      return [];
+    }
+    return filterLive(await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isActive"), true))
-      .collect(),
+      .collect());
+  },
 });
 
 export const createOrUpdateUser = mutation({
@@ -92,6 +106,9 @@ export const createOrUpdateUser = mutation({
     };
 
     if (existing) {
+      if (!isLive(existing) || existing.isActive === false) {
+        throw new Error("This account is not active. Please contact support.");
+      }
       await ctx.db.patch(existing._id, userData);
       return existing._id;
     }
@@ -106,8 +123,14 @@ export const updateProfile = mutation({
     fullName: v.optional(v.string()),
   },
   handler: async (ctx, { userId, fullName }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const actor = await requireUser(ctx);
+    if (actor._id !== userId && actor.role !== "admin") {
+      throw new Error("User not found");
+    }
+    const target = await ctx.db.get(userId);
+    if (!isLive(target)) {
+      throw new Error("User not found");
+    }
     await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
     return userId;
   },
@@ -118,28 +141,12 @@ export const updateUserType = mutation({
     userType: v.union(v.literal("free"), v.literal("paid")),
   },
   handler: async (ctx, { userType }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await requireUser(ctx);
+    if (!isLive(user)) throw new Error("User not found");
 
-    let user = null;
-    const subjectParts = identity.subject.split("|");
-    if (subjectParts.length >= 2) {
-      const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-      try {
-        user = await ctx.db.get(userId);
-      } catch {
-        // fall through
-      }
+    if (user.role !== "admin") {
+      throw new Error("Entitlement changes must come from billing sync.");
     }
-
-    if (!user && identity.email) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
-        .unique();
-    }
-
-    if (!user) throw new Error("User not found");
 
     await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
     return user._id;
@@ -150,7 +157,7 @@ export const updateUserType = mutation({
  * Called by the RevenueCat webhook (convex/revenuecat.ts) to sync subscription status.
  * Uses appUserId (RevenueCat user ID = Convex user email or subject) to find and update the user.
  */
-export const updateSubscriptionStatus = mutation({
+export const updateSubscriptionStatus = internalMutation({
   args: {
     userId: v.string(),
     userType: v.union(v.literal("free"), v.literal("paid")),
@@ -173,7 +180,7 @@ export const updateSubscriptionStatus = mutation({
       }
     }
 
-    if (!user) {
+    if (!isLive(user)) {
       console.warn(`[RevenueCat] User not found for appUserId: ${userId}`);
       return { updated: false };
     }
@@ -186,31 +193,31 @@ export const updateSubscriptionStatus = mutation({
 export const remove = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    await ctx.db.delete(userId);
+    const actor = await requireUser(ctx);
+    if (actor._id !== userId && actor.role !== "admin") {
+      throw new Error("User not found");
+    }
+    const target = await ctx.db.get(userId);
+    if (!isLive(target)) {
+      throw new Error("User not found");
+    }
+    await ctx.db.patch(userId, {
+      ...softDeleteWithUpdatedAt(),
+      isActive: false,
+    });
+    return { success: true };
   },
 });
 
 export const deleteMyAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await requireUser(ctx);
+    await ctx.db.patch(user._id, {
+      ...softDeleteWithUpdatedAt(),
+      isActive: false,
+    });
 
-    const userId = identity.subject;
-    let deletedCount = 0;
-
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("_id"), userId))
-      .first();
-
-    if (user) {
-      await ctx.db.delete(user._id);
-      deletedCount += 1;
-    }
-
-    return { success: true, deletedCount };
+    return { success: true, deletedCount: 1 };
   },
 });

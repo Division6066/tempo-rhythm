@@ -1,5 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { isLive } from "./softDelete";
 
 /**
  * Resolve the authenticated app user (users table row) from Convex Auth identity.
@@ -14,7 +15,7 @@ async function resolveUserFromSubject(
       continue;
     }
     const user = await ctx.db.get(normalizedId);
-    if (user) {
+    if (isLive(user) && user.isActive !== false) {
       return user;
     }
   }
@@ -42,7 +43,7 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
     .withIndex("by_email", (q) => q.eq("email", email))
     .unique();
 
-  if (!user) {
+  if (!isLive(user) || user.isActive === false) {
     throw new Error("User not found");
   }
 
