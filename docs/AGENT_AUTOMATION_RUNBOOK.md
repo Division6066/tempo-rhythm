@@ -42,6 +42,21 @@ Do not use `bun run check` as a verification-only command until the repo fixes
 that script. On 2026-06-02 it was observed to run `biome check --write` in the
 mobile package and to fail on pre-existing web formatter diagnostics.
 
+## Cyrus worktree setup
+
+The repository root includes `cyrus-setup.sh` for Cyrus-created worktrees.
+Cyrus runs this script after creating an isolated worktree for a Linear issue.
+
+The script is intentionally small:
+
+- disables common telemetry in CI-style agent runs;
+- installs Bun `1.3.9` only when Bun is missing from the runner;
+- runs `bun install --frozen-lockfile`;
+- avoids secrets, dashboard writes, deploys, and long build steps.
+
+Do not add API keys or production environment variables to this script. Those
+belong in the owning dashboard or secret manager.
+
 ## Worktree pattern
 
 Use one worktree per independent task:
@@ -58,6 +73,7 @@ Recommended lanes:
 - `docs-generation` — update the nearest existing developer doc.
 - `pr-readiness` — verify the branch and PR body before human review.
 - `merge-steward` — recommend merge order, never self-merge.
+- `tempo-merge-agent` — Cursor Composer 2.5 merge/report steward for finished PRs.
 
 Prepared local worktrees on this Windows machine:
 
@@ -66,6 +82,7 @@ Prepared local worktrees on this Windows machine:
 - `C:\Users\User\.cyrus\worktrees\tempo-docs-generation` on `codex/docs-generation`
 - `C:\Users\User\.cyrus\worktrees\tempo-pr-readiness` on `codex/pr-readiness`
 - `C:\Users\User\.cyrus\worktrees\tempo-merge-steward` on `codex/merge-steward`
+- `C:\Users\User\.cyrus\worktrees\tempo-merge-agent` on `codex/tempo-merge-agent`
 
 Ticket lanes prepared from latest `master` on 2026-06-03:
 
@@ -90,6 +107,34 @@ Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
 - Docs generation: §13.10
 - PR readiness check: §13.11
 - Merge-agent checklist: §13.12
+- PR approval advisor: `.cursor/agents/tempo-pr-approval-advisor.md`
+- CI fix agent: `.cursor/agents/tempo-ci-fix-agent.md`
+- Critical bug scan agent: `.cursor/agents/tempo-critical-bug-agent.md`
+- Security scan agent: `.cursor/agents/tempo-security-scan-agent.md`
+- Dependency remediation agent: `.cursor/agents/tempo-dependency-remediation-agent.md`
+
+For the recurring merge/report loop, use `.cursor/agents/tempo-merge-agent.md`.
+It defaults to Cursor Composer 2.5 for routine merge stewardship because this work is
+mostly structured inspection, report consolidation, and follow-up ticket drafting.
+The merge agent must:
+
+- inspect the finished PR or branch,
+- run the required checks when safe,
+- write a report under `docs/QA/agent-runs/`,
+- draft follow-up tickets when evidence supports them,
+- never self-merge, deploy, rotate secrets, or undraft dependency PRs.
+
+Risk policy for all background automations:
+
+- GREEN: checks green, non-critical, no secrets/deploys/billing/auth policy,
+  schema migration, dependency bundle, dashboard setting, or EAS ownership. The
+  agent may continue and may hand off to the merge steward.
+- YELLOW: shared architecture, CI/package config, Convex functions, merge order,
+  pending/flaky checks, or superseded PRs. Notify Amit before the action and
+  verify afterward.
+- RED: secrets, OAuth, billing, production deploy, EAS ownership, destructive
+  data/schema, auth/security model, or branch-protection bypass. Stop and ask
+  Amit.
 
 ## Stop conditions
 
