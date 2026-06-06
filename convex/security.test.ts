@@ -19,6 +19,35 @@ describe("security-critical auth helpers", () => {
     ).resolves.toBe(user);
   });
 
+  test("authenticated user lookup ignores soft-deleted users", async () => {
+    const deletedUser = {
+      _id: "user_deleted",
+      email: "deleted@example.com",
+      deletedAt: Date.now(),
+    };
+    const ctx = {
+      auth: {
+        getUserIdentity: async () => ({
+          subject: "authAccount_123|user_deleted",
+          email: "deleted@example.com",
+        }),
+      },
+      db: {
+        normalizeId: (_table: string, value: string) =>
+          value.startsWith("user_") ? value : null,
+        get: async (id: string) => (id === deletedUser._id ? deletedUser : null),
+        query: () => ({
+          withIndex: () => ({
+            unique: async () => deletedUser,
+          }),
+        }),
+      },
+    };
+
+    const { findUserByIdentity } = await import("./lib/requireUser");
+    await expect(findUserByIdentity(ctx as never)).resolves.toBeNull();
+  });
+
   test("RevenueCat webhook auth fails closed when the secret is missing", () => {
     expect(isRevenueCatWebhookAuthorized("Bearer anything", undefined)).toBe(false);
     expect(isRevenueCatWebhookAuthorized("Bearer anything", "")).toBe(false);

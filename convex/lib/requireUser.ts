@@ -29,7 +29,7 @@ export async function findUserByIdentity(ctx: QueryCtx | MutationCtx): Promise<D
 
   const subjectUser = await resolveUserFromSubject(ctx, identity.subject);
   if (subjectUser) {
-    return subjectUser;
+    return isActiveUser(subjectUser) ? subjectUser : null;
   }
 
   const email = identity.email?.trim().toLowerCase();
@@ -37,10 +37,11 @@ export async function findUserByIdentity(ctx: QueryCtx | MutationCtx): Promise<D
     return null;
   }
 
-  return await ctx.db
+  const user = await ctx.db
     .query("users")
     .withIndex("by_email", (q) => q.eq("email", email))
     .unique();
+  return user && isActiveUser(user) ? user : null;
 }
 
 export async function requireUser(ctx: QueryCtx | MutationCtx) {
@@ -49,4 +50,8 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
     throw new Error("Not authenticated");
   }
   return user;
+}
+
+function isActiveUser(user: Doc<"users">) {
+  return user.deletedAt === undefined && user.isActive !== false;
 }

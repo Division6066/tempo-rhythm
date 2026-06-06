@@ -72,6 +72,7 @@ export default defineSchema({
     source: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 
   conversations: defineTable({

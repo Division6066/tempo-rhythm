@@ -200,13 +200,16 @@ async function softDeleteUserData(ctx: MutationCtx, user: Doc<"users">) {
     .withIndex("by_userId", (q) => q.eq("userId", user._id))
     .collect();
   for (const subscriptionState of subscriptionStates) {
-    await ctx.db.patch(subscriptionState._id, {
-      plan: "none",
-      billingCycle: "none",
-      status: "cancelled",
-      updatedAt: now,
-    });
-    deletedCount += 1;
+    if (subscriptionState.deletedAt === undefined) {
+      await ctx.db.patch(subscriptionState._id, {
+        plan: "none",
+        billingCycle: "none",
+        status: "cancelled",
+        deletedAt: now,
+        updatedAt: now,
+      });
+      deletedCount += 1;
+    }
   }
 
   const conversations = await ctx.db
