@@ -63,33 +63,20 @@ export const listActive = query({
 export const createOrUpdateUser = mutation({
   args: {},
   handler: async (ctx) => {
+    const user = await requireUser(ctx);
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const email = identity.email ?? "";
+    const email = identity.email?.trim().toLowerCase() ?? "";
     const now = Date.now();
 
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .unique();
-
-    const userData = {
+    await ctx.db.patch(user._id, {
       email,
       emailVerified: identity.emailVerified ?? false,
       fullName: identity.name || identity.nickname || "User",
-      role: "user" as const,
-      userType: "free" as const,
-      isActive: true,
       updatedAt: now,
-    };
-
-    if (existing) {
-      await ctx.db.patch(existing._id, userData);
-      return existing._id;
-    }
-
-    return ctx.db.insert("users", { ...userData, createdAt: now });
+    });
+    return user._id;
   },
 });
 
