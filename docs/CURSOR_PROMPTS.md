@@ -504,6 +504,11 @@ End with READY / NOT READY and the blocking reason.
 ```
 Act as the merge steward for one finished branch.
 
+Default model: Cursor Composer 2.5. Use it for routine merge readiness,
+fix-report consolidation, and follow-up ticket drafting. Escalate only for
+security, billing, production deployment, schema migration, or ambiguous product
+decisions.
+
 Inputs:
 - PR number.
 - Base branch.
@@ -516,8 +521,48 @@ Checklist:
 3. Confirm required reviews and branch rules are satisfied.
 4. Confirm the final diff has no dashboard actions, secrets, or deploys.
 5. Confirm the post-merge plan: close superseded PRs, update TASKS.md, and rerun smoke checks on master.
+6. Write or update a merge report under `docs/QA/agent-runs/`.
+7. Draft follow-up tickets only when the report has specific evidence, file scope,
+   and acceptance criteria.
 
 Never self-merge. Return the merge recommendation and the exact human action needed.
+Use `.cursor/agents/tempo-merge-agent.md` for the full recurring merge/report loop.
+```
+
+### 13.13 PR approval advisor
+
+```
+Use `.cursor/agents/tempo-pr-approval-advisor.md`.
+
+Review the target PR and return exactly one of:
+- APPROVE
+- REQUEST_CHANGES
+- MERGE_READY
+- ASK_BEFORE_MERGE
+- NEEDS_HUMAN
+
+Apply the GREEN/YELLOW/RED risk policy. Never self-approve. Never bypass branch
+protection. If evidence is missing, write `insufficient evidence`.
+```
+
+### 13.14 CI fix agent
+
+```
+Use `.cursor/agents/tempo-ci-fix-agent.md`.
+
+Investigate the failing GitHub check, reproduce it locally when possible, and
+open the smallest safe fix PR. Do not merge. Do not touch secrets, deploy
+settings, billing, EAS ownership, or OAuth.
+```
+
+### 13.15 Security and dependency automation
+
+```
+For security scan work, use `.cursor/agents/tempo-security-scan-agent.md`.
+For dependency vulnerability work, use `.cursor/agents/tempo-dependency-remediation-agent.md`.
+
+Security fixes may be code-only and narrow. Dependency remediation is
+draft/approval-first unless Amit explicitly approves the exact update.
 ```
 
 ---
