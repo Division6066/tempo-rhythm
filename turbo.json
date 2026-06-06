@@ -21,6 +21,11 @@
     "check": {
       "dependsOn": ["^check"]
     },
+    "test": {
+      "dependsOn": ["^test"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": []
+    },
     "clean": {
       "cache": false
     }
