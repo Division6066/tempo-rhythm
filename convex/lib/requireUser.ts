@@ -4,7 +4,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 /**
  * Resolve the authenticated app user (users table row) from Convex Auth identity.
  */
-async function resolveUserFromSubject(
+export async function resolveUserFromSubject(
   ctx: QueryCtx | MutationCtx,
   subject: string,
 ): Promise<Doc<"users"> | null> {
@@ -21,10 +21,10 @@ async function resolveUserFromSubject(
   return null;
 }
 
-export async function requireUser(ctx: QueryCtx | MutationCtx) {
+export async function findUserByIdentity(ctx: QueryCtx | MutationCtx): Promise<Doc<"users"> | null> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
-    throw new Error("Not authenticated");
+    return null;
   }
 
   const subjectUser = await resolveUserFromSubject(ctx, identity.subject);
@@ -32,19 +32,21 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
     return subjectUser;
   }
 
-  const email = identity.email;
+  const email = identity.email?.trim().toLowerCase();
   if (!email) {
-    throw new Error("Not authenticated");
+    return null;
   }
 
-  const user = await ctx.db
+  return await ctx.db
     .query("users")
     .withIndex("by_email", (q) => q.eq("email", email))
     .unique();
+}
 
+export async function requireUser(ctx: QueryCtx | MutationCtx) {
+  const user = await findUserByIdentity(ctx);
   if (!user) {
-    throw new Error("User not found");
+    throw new Error("Not authenticated");
   }
-
   return user;
 }
