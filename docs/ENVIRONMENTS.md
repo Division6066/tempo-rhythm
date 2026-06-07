@@ -78,12 +78,37 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 
 ---
 
+## EAS (mobile builds)
+
+**Project:** `@amitlevin/tempi` — project ID `90dfac90-0baa-461b-946c-351d2306e607` in `apps/mobile/app.json`. Display name remains "Tempo Rhythm"; Expo slug is `tempi` (historical project name).
+
+**Build profiles** (`apps/mobile/eas.json`):
+
+| Profile | Distribution | Notes |
+|---|---|---|
+| `development` | internal | `developmentClient: true` — dev client builds |
+| `preview` | internal | Ad-hoc / TestFlight-style internal builds |
+| `production` | store | `autoIncrement: true` — App Store / Play Store |
+
+**Common commands** (from `apps/mobile/`, with EAS CLI logged in):
+
+```bash
+eas build --profile development --platform ios
+eas build --profile preview --platform all
+eas build --profile production --platform all
+eas submit --profile production --platform ios
+```
+
+Secrets for mobile builds use `[EAS secrets]` scope — see `apps/mobile/.env.example` for variable names (`EXPO_PUBLIC_CONVEX_URL`, RevenueCat keys, etc.). RevenueCat setup doc is not yet written; keys are commented in `.env.example`.
+
+---
+
 ## What is NOT decided yet
 
 - **Preview Convex provisioned.** The `preview:*` deployment is planned but not provisioned. Do not reference preview Convex URLs in any config.
 - **Vercel preview re-enablement plan.** Previews are disabled this weekend. When re-enabled, this file must be updated with the actual scope of preview secrets and the confirmation step.
 - **Convex local dev attachment.** Choose existing `dev:tremendous-bass-443` vs a new personal `dev:*` deployment before running an interactive `bun x convex dev` configuration.
-- **EAS project identity.** Resolved on 2026-06-04: `apps/mobile/app.json` points at the accessible Expo/EAS project `@amitlevin/tempi` with project ID `90dfac90-0baa-461b-946c-351d2306e607`. The `tempi` slug is the existing Tempo Rhythm Expo project name; app display name, bundle identifier, Android package, and URL scheme remain Tempo Rhythm / `com.temporhythm.app` / `tempo-rhythm`.
+- **RevenueCat mobile setup runbook.** Keys are documented in `apps/mobile/.env.example`; a dedicated setup doc is not written yet.
 
 ---
 
@@ -92,4 +117,5 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 - [docs/HARD_RULES.md](./HARD_RULES.md) — §13 (secrets and env vars) and §13.5 (ship state)
 - [docs/SHIP_STATE.md](./SHIP_STATE.md) — one-table source of truth for what is shipped vs planned
 - [docs/LOCAL_DEV_WINDOWS.md](./LOCAL_DEV_WINDOWS.md) — local setup guide
+- [docs/CI.md](./CI.md) — GitHub Actions gates
 - [docs/brain/TASKS.md](./brain/TASKS.md) — master task list (T-0008, T-0020, T-R006, T-R007)
