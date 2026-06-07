@@ -44,7 +44,7 @@ export function isAllowlisted(email: string, allowlistedEmails: Set<string>): bo
 }
 
 export type BetaUserRow = {
-  betaAccess?: "founder" | "tester";
+  betaAccess?: "founder" | "tester" | "none";
   deletedAt?: number;
 };
 
