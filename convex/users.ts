@@ -1,7 +1,22 @@
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { requireUser } from "./lib/requireUser";
+import { softDeleteUserData } from "./lib/soft_delete_user_data";
+
+/** Server-only dev flag; client MOCK_PAYMENTS must not bypass entitlements alone. */
+function mockEntitlementsAllowed(): boolean {
+  return process.env.ALLOW_MOCK_ENTITLEMENTS === "true";
+}
+
+async function requireAdmin(ctx: QueryCtx): Promise<Doc<"users">> {
+  const user = await requireUser(ctx);
+  if (user.role !== "admin") {
+    throw new Error("Forbidden");
+  }
+  return user;
+}
 
 /** Shared resolver for the authenticated app user document. */
 export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
@@ -13,7 +28,7 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
   // In Convex Auth the subject is: authAccountId|userId
   const subjectParts = identity.subject.split("|");
   if (subjectParts.length >= 2) {
-    const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
+    const userId = subjectParts[1] as Id<"users">;
     try {
       const user = await ctx.db.get(userId);
       if (user) return user;
@@ -55,16 +70,24 @@ export const getProfile = query({
 
 export const getById = query({
   args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => ctx.db.get(userId),
+  handler: async (ctx, { userId }) => {
+    const currentUser = await requireUser(ctx);
+    if (currentUser.role !== "admin" && currentUser._id !== userId) {
+      throw new Error("Forbidden");
+    }
+    return ctx.db.get(userId);
+  },
 });
 
 export const listActive = query({
   args: {},
-  handler: async (ctx) =>
-    ctx.db
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isActive"), true))
-      .collect(),
+      .collect();
+  },
 });
 
 export const createOrUpdateUser = mutation({
@@ -106,8 +129,10 @@ export const updateProfile = mutation({
     fullName: v.optional(v.string()),
   },
   handler: async (ctx, { userId, fullName }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const currentUser = await requireUser(ctx);
+    if (currentUser._id !== userId) {
+      throw new Error("Forbidden");
+    }
     await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
     return userId;
   },
@@ -118,29 +143,11 @@ export const updateUserType = mutation({
     userType: v.union(v.literal("free"), v.literal("paid")),
   },
   handler: async (ctx, { userType }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    let user = null;
-    const subjectParts = identity.subject.split("|");
-    if (subjectParts.length >= 2) {
-      const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-      try {
-        user = await ctx.db.get(userId);
-      } catch {
-        // fall through
-      }
+    if (!mockEntitlementsAllowed()) {
+      throw new Error("Entitlement changes require RevenueCat verification");
     }
 
-    if (!user && identity.email) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
-        .unique();
-    }
-
-    if (!user) throw new Error("User not found");
-
+    const user = await requireUser(ctx);
     await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
     return user._id;
   },
@@ -148,9 +155,9 @@ export const updateUserType = mutation({
 
 /**
  * Called by the RevenueCat webhook (convex/revenuecat.ts) to sync subscription status.
- * Uses appUserId (RevenueCat user ID = Convex user email or subject) to find and update the user.
+ * Internal-only — never expose to clients.
  */
-export const updateSubscriptionStatus = mutation({
+export const updateSubscriptionStatus = internalMutation({
   args: {
     userId: v.string(),
     userType: v.union(v.literal("free"), v.literal("paid")),
@@ -158,16 +165,14 @@ export const updateSubscriptionStatus = mutation({
     revenueCatEvent: v.string(),
   },
   handler: async (ctx, { userId, userType, activeEntitlements: _entitlements, revenueCatEvent: _event }) => {
-    // Try to find user by email (RevenueCat appUserId is typically the user's email)
     let user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", userId))
       .unique();
 
-    // Fallback: try to find by ID if userId looks like a Convex ID
     if (!user) {
       try {
-        user = await ctx.db.get(userId as import("./_generated/dataModel").Id<"users">);
+        user = await ctx.db.get(userId as Id<"users">);
       } catch {
         // Not a valid Convex ID — user not found
       }
@@ -186,31 +191,22 @@ export const updateSubscriptionStatus = mutation({
 export const remove = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    await ctx.db.delete(userId);
+    const currentUser = await requireUser(ctx);
+    if (currentUser._id !== userId) {
+      throw new Error("Forbidden");
+    }
+    const now = Date.now();
+    const deletedCount = await softDeleteUserData(ctx, userId, now);
+    return { success: true, deletedCount };
   },
 });
 
 export const deleteMyAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const userId = identity.subject;
-    let deletedCount = 0;
-
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("_id"), userId))
-      .first();
-
-    if (user) {
-      await ctx.db.delete(user._id);
-      deletedCount += 1;
-    }
-
+    const user = await requireUser(ctx);
+    const now = Date.now();
+    const deletedCount = await softDeleteUserData(ctx, user._id, now);
     return { success: true, deletedCount };
   },
 });
