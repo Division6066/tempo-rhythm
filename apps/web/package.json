@@ -18,7 +18,7 @@
     "ultracite": "ultracite"
   },
   "dependencies": {
-    "@convex-dev/auth": "^0.0.91",
+    "@convex-dev/auth": "^0.0.93",
     "@polar-sh/nextjs": "^0.9.1",
     "@tempo/ui": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -29,24 +29,24 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.32.0",
-    "lucide-react": "^0.546.0",
+    "lucide-react": "^1.17.0",
     "next": "^16.0.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
     "styled-jsx": "^5.1.7",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.8",
+    "@biomejs/biome": "2.4.16",
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/typography": "^0.5.19",
-    "@types/node": "^20.19.27",
+    "@types/node": "^25.9.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3",
-    "ultracite": "6.3.10"
+    "typescript": "^6.0.3",
+    "ultracite": "7.8.2"
   }
 }
