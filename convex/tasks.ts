@@ -1,6 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import {
+  filterTasksDueInWindow,
+  toggleTaskStatus,
+  truncateQuickTitle,
+} from "./lib/taskFilters";
 import { fetchCurrentUser } from "./users";
 
 export const list = query({
@@ -37,12 +42,7 @@ export const list = query({
       );
     }
     if (args.dueFrom !== undefined && args.dueTo !== undefined) {
-      rows = rows.filter(
-        (t) =>
-          t.dueAt !== undefined &&
-          t.dueAt >= args.dueFrom! &&
-          t.dueAt < args.dueTo!,
-      );
+      rows = filterTasksDueInWindow(rows, args.dueFrom, args.dueTo) as typeof rows;
     }
     rows.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt));
     return rows;
@@ -61,13 +61,9 @@ export const listDueInRange = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows.filter(
-      (t) =>
-        t.dueAt !== undefined &&
-        t.dueAt >= args.startMs &&
-        t.dueAt < args.endMs &&
-        t.status !== "cancelled",
-    );
+    return filterTasksDueInWindow(rows, args.startMs, args.endMs, {
+      excludeCancelled: true,
+    }) as typeof rows;
   },
 });
 
@@ -157,8 +153,6 @@ export const remove = mutation({
   },
 });
 
-const QUICK_TITLE_MAX = 280;
-
 /** Quick-add a task for today — minimal args, sensible defaults. */
 export const createQuick = mutation({
   args: {
@@ -167,12 +161,7 @@ export const createQuick = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const trimmed = args.title.trim();
-    if (!trimmed) {
-      throw new Error("Title cannot be empty.");
-    }
-    const title =
-      trimmed.length > QUICK_TITLE_MAX ? `${trimmed.slice(0, QUICK_TITLE_MAX - 3)}...` : trimmed;
+    const title = truncateQuickTitle(args.title);
     const now = Date.now();
     return ctx.db.insert("tasks", {
       userId: user._id,
@@ -204,15 +193,10 @@ export const listToday = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows
-      .filter(
-        (t) =>
-          t.dueAt !== undefined &&
-          t.dueAt >= args.dueFrom &&
-          t.dueAt < args.dueTo &&
-          t.status !== "cancelled",
-      )
-      .sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
+    return filterTasksDueInWindow(rows, args.dueFrom, args.dueTo, {
+      excludeCancelled: true,
+    })
+      .sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0)) as typeof rows;
   },
 });
 
@@ -225,7 +209,7 @@ export const toggleCompletion = mutation({
     if (!task || task.userId !== user._id) {
       throw new Error("Task not found");
     }
-    const next = task.status === "done" ? "todo" : "done";
+    const next = toggleTaskStatus(task.status);
     await ctx.db.patch(args.taskId, { status: next, updatedAt: Date.now() });
     return { taskId: args.taskId, status: next };
   },
