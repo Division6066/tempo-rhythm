@@ -112,6 +112,9 @@ Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
 - Critical bug scan agent: `.cursor/agents/tempo-critical-bug-agent.md`
 - Security scan agent: `.cursor/agents/tempo-security-scan-agent.md`
 - Dependency remediation agent: `.cursor/agents/tempo-dependency-remediation-agent.md`
+- Docs generation agent: `.cursor/agents/tempo-docs-generation-agent.md`
+- QA gate: `.cursor/agents/tempo-qa.md`
+- Reviewer: `.cursor/agents/tempo-reviewer.md`
 
 For the recurring merge/report loop, use `.cursor/agents/tempo-merge-agent.md`.
 It defaults to Cursor Composer 2.5 for routine merge stewardship because this work is

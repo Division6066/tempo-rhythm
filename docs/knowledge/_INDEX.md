@@ -12,6 +12,8 @@
 | Write marketing / UI copy | [`brand/voice.md`](brand/voice.md) |
 | Understand what "done" means for Phase 1 MVP | [`prds/README.md`](prds/README.md) → `docs/brain/PRDs/PRD_Phase_1_MVP.md` |
 | Know what you absolutely must not do | [`rules/README.md`](rules/README.md) → `docs/HARD_RULES.md` |
+| Understand CI gates before opening a PR | [`../CI.md`](../CI.md) |
+| Run a long background agent session | [`../AGENT_AUTOMATION_RUNBOOK.md`](../AGENT_AUTOMATION_RUNBOOK.md) |
 | Run a 45-minute multi-agent session | [`agents-playbook/workflow-sunday-morning.md`](agents-playbook/workflow-sunday-morning.md) |
 | Know when to stop and ask Amit | [`agents-playbook/checkpoints.md`](agents-playbook/checkpoints.md) |
 | Understand each sub-agent's job | [`agents-playbook/sub-agents.md`](agents-playbook/sub-agents.md) |

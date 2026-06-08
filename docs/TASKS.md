@@ -60,11 +60,11 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 - **Fix `apps/mobile` Biome style rules** (currently muted in `apps/mobile/biome.json`).
 
 ### RAG / brain
-- **Design the ingestion pipeline** for `docs/brain/sources/`: folder drop → Convex `documents` table → OpenRouter embeddings → retrieval action usable from the coach and planner agents.
+- **Design the ingestion pipeline** for `docs/brain/sources/`: folder drop → Convex `documents` table → Mistral embeddings (planned) → retrieval action usable from the coach and planner agents.
 - **Decide storage boundary:** what lives in public `tempo-rhythm` vs private `tempo-brain` submodule.
 
 ### Tests
-- **Add a root `test` script.** CI currently emits `::notice::root 'test' script not yet implemented — Phase 3 will add it` and skips; replace with real unit tests (convex + packages).
+- **Stabilize the test suite.** Root `test` script exists (`bun test`) but CI still uses `continue-on-error: true`. Expand convex + package coverage and remove that flag once failures are actionable.
 
 ---
 

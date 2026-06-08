@@ -153,7 +153,7 @@ Any ingestion of third-party content (email, WhatsApp, Telegram, ChatGPT export,
 - The scanner extracts structured candidates (task, event, commitment, person mention), surfaces them for user approval via the accept-reject flow, and discards the source bytes when the action returns.
 - Only the approved, derived records persist.
 - If a user re-connects an integration, the scanner re-runs on the live source; there is no "historical cache" of raw content.
-- Document the scanner entry point with a `// RAM-ONLY` comment and include a linter check (`pnpm scan:ram-only-audit`) that fails if a scanner function persists raw content.
+- Document the scanner entry point with a `// RAM-ONLY` comment and include a linter check (`bun run scan:ram-only-audit` once the script lands) that fails if a scanner function persists raw content. See `docs/CI.md` for current scan status.
 
 ### 6.5 Coach personality setting
 

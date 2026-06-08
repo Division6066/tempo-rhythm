@@ -104,4 +104,5 @@ When these scripts land, update this doc and remove the notice-only behavior in 
 - [docs/HARD_RULES.md](./HARD_RULES.md) — §11 testing rules, §12 git/PR rules
 - [docs/AGENT_AUTOMATION_RUNBOOK.md](./AGENT_AUTOMATION_RUNBOOK.md) — agent batch checks before long runs
 - [docs/SHIP_STATE.md](./SHIP_STATE.md) — which CI features are shipped vs planned
+- `.cursor/agents/` — background automation agents (CI fix, security scan, merge steward, docs generation, etc.)
 - `.cursor/rules/tempo-qa.mdc` — QA gate checklist for agents
