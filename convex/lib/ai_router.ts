@@ -41,7 +41,8 @@ const CONTEXT_TOO_LARGE_PHRASES = [
   "maximum context length",
 ];
 
-function isContextTooLarge(body: string): boolean {
+/** Exported for unit tests — detects Mistral context overflow responses. */
+export function isContextTooLarge(body: string): boolean {
   const lower = body.toLowerCase();
   return CONTEXT_TOO_LARGE_PHRASES.some((p) => lower.includes(p));
 }
