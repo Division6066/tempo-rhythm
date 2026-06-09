@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  filterTasksBySearch,
   filterTasksDueInWindow,
   QUICK_TITLE_MAX,
   toggleTaskStatus,
@@ -71,5 +72,27 @@ describe("toggleTaskStatus", () => {
     expect(toggleTaskStatus("todo")).toBe("done");
     expect(toggleTaskStatus("in_progress")).toBe("done");
     expect(toggleTaskStatus("cancelled")).toBe("done");
+  });
+});
+
+describe("filterTasksBySearch", () => {
+  const tasks = [
+    { title: "Pay rent", description: "Due tonight", status: "todo" },
+    { title: "Call mom", description: "Weekend", status: "todo" },
+    { title: "Groceries", status: "todo" },
+  ];
+
+  test("matches title case-insensitively", () => {
+    const filtered = filterTasksBySearch(tasks, "RENT");
+    expect(filtered.map((t) => t.title)).toEqual(["Pay rent"]);
+  });
+
+  test("matches description when title does not match", () => {
+    const filtered = filterTasksBySearch(tasks, "weekend");
+    expect(filtered.map((t) => t.title)).toEqual(["Call mom"]);
+  });
+
+  test("returns all tasks for blank search", () => {
+    expect(filterTasksBySearch(tasks, "   ")).toHaveLength(3);
   });
 });

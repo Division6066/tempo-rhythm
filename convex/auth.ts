@@ -3,6 +3,7 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel } from "./_generated/dataModel";
+import { assertAccountCanSignIn } from "./lib/accountAccess";
 import {
   buildAllowlist,
   checkBetaSignupEligibility,
@@ -194,9 +195,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       if (!user) {
         throw new Error("We couldn't load your account yet. Please try again.");
       }
-      if (user.deletedAt !== undefined || user.isActive === false) {
-        throw new Error("This account is not active. Please contact support.");
-      }
+      assertAccountCanSignIn(user);
     },
   },
 });
