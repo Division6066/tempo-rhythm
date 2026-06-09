@@ -3,6 +3,19 @@
 **Source:** `docs/design/claude-export/design-system/` (Tempo Flow Design System v1.0, April 2026).
 **Router map source:** `design-system/app.html` lines 60–109 (`SCREENS` object).
 
+## Web — route groups
+
+Next.js App Router uses four layout groups under `apps/web/app/`:
+
+| Group | Layout | Shell | Use for |
+|---|---|---|---|
+| `(tempo)` | `TempoShell` (sidebar + topbar) | Full app chrome | Most MVP screens (today, tasks, coach, settings, …) |
+| `(bare)` | Minimal full-screen | No nav chrome | Focus mode: daily note, onboarding, template builder/run, trial-end |
+| `(app)` | `grain-bg` wrapper | Marketing / legacy shell | Grain-background pages outside TempoShell |
+| `(auth)` | Auth gate + gradient bg | Sign-in / sign-up only | Convex Auth pages; redirects when already signed in |
+
+Route group names do not appear in URLs — `(tempo)/today/page.tsx` is served at `/today`.
+
 ## Web — 42 screens
 
 Target base: `apps/web/app/(tempo)/`
