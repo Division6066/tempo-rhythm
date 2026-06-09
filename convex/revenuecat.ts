@@ -1,5 +1,6 @@
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
+import { mapRevenueCatEventToUserType } from "./lib/revenueCatMapping";
 
 /**
  * RevenueCat webhook handler.
@@ -40,21 +41,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   // RevenueCat sends entitlement identifiers in the event
   const activeEntitlements = (event.entitlement_ids as string[] | undefined) ?? [];
 
-  let userType: "free" | "paid" = "free";
-  if (
-    eventType === "INITIAL_PURCHASE" ||
-    eventType === "RENEWAL" ||
-    eventType === "PRODUCT_CHANGE" ||
-    eventType === "UNCANCELLATION"
-  ) {
-    userType = "paid";
-  } else if (
-    eventType === "EXPIRATION" ||
-    eventType === "CANCELLATION" ||
-    eventType === "SUBSCRIBER_ALIAS"
-  ) {
-    userType = "free";
-  }
+  const userType = mapRevenueCatEventToUserType(eventType);
 
   if (appUserId) {
     try {

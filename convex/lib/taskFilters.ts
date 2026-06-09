@@ -1,6 +1,8 @@
 export type TaskLike = {
   dueAt?: number;
   status: string;
+  title?: string;
+  description?: string;
 };
 
 export function filterTasksDueInWindow(
@@ -33,4 +35,16 @@ export function truncateQuickTitle(title: string): string {
 
 export function toggleTaskStatus(status: string): "todo" | "done" {
   return status === "done" ? "todo" : "done";
+}
+
+export function filterTasksBySearch<T extends TaskLike>(tasks: T[], search: string): T[] {
+  const q = search.trim().toLowerCase();
+  if (!q) {
+    return tasks;
+  }
+  return tasks.filter(
+    (task) =>
+      (task.title?.toLowerCase().includes(q) ?? false) ||
+      (task.description?.toLowerCase().includes(q) ?? false),
+  );
 }
