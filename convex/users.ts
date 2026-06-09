@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { deriveGreetingName } from "./lib/userProfile";
 
 /** Shared resolver for the authenticated app user document. */
 export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
@@ -44,8 +45,7 @@ export const getProfile = query({
   handler: async (ctx) => {
     const user = await fetchCurrentUser(ctx);
     if (!user) return null;
-    const greetingName =
-      user.fullName?.trim() || user.email?.split("@")[0] || "there";
+    const greetingName = deriveGreetingName(user.fullName, user.email);
     return {
       ...user,
       greetingName,
