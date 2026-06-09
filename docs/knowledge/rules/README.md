@@ -13,13 +13,13 @@ All live in `.cursor/rules/` and each one references HARD_RULES with `@docs/HARD
 
 | Rule file | Attach mode | What it enforces |
 |---|---|---|
-| `tempo-hard-rules.mdc` | `alwaysApply: true` | The top-of-session primer: shame-proof, accept-reject, undo, forbidden tech. |
-| `tempo-convex-schema.mdc` | `globs: convex/**/*.ts` | Schema shape — `userId` optional, soft delete, indexes, generic tables. |
-| `tempo-openrouter.mdc` | `agentRequested` | All LLM calls go through OpenRouter; no direct provider SDKs. |
-| `tempo-accept-reject.mdc` | `agentRequested` | AI mutations must flow through `convex/proposals.ts`. |
-| `tempo-design-tokens.mdc` | `globs: packages/ui/**`, `apps/web/app/globals.css` | Token usage, no arbitrary hex. |
-| `tempo-brand.mdc` | `alwaysApply` when touching UI files | Auto-attaches the brand knowledge base to any UI session. |
-| `tempo-skills.mdc` | `alwaysApply: true` | Green-list / red-list of which `skills.sh` skills are safe for Tempo. |
+| `tempo-hard-rules.mdc` | `alwaysApply: true` | Top-of-session primer: shame-proof, accept-reject, undo, forbidden tech, Mistral via `convex/lib/ai_router.ts`. |
+| `tempo-context.mdc` | `alwaysApply: true` | Repo layout, phase PRD pointer, owner tags. |
+| `tempo-git-workflow.mdc` | `alwaysApply: true` | Branch naming, PR rules, never push to `master`. |
+| `tempo-tickets.mdc` | `agentRequested` | How to read and execute atomic tickets. |
+| `tempo-qa.mdc` | `agentRequested` | QA gate before marking work done. |
+| `tempo-long-running.mdc` | `agentRequested` | Overnight / 8-hour cloud agent playbook. |
+| `session-start.mdc` / `task-complete.mdc` | `agentRequested` | `/whats-next` and ticket status updates. |
 
 ## Precedence recap
 

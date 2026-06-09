@@ -153,7 +153,7 @@ Any ingestion of third-party content (email, WhatsApp, Telegram, ChatGPT export,
 - The scanner extracts structured candidates (task, event, commitment, person mention), surfaces them for user approval via the accept-reject flow, and discards the source bytes when the action returns.
 - Only the approved, derived records persist.
 - If a user re-connects an integration, the scanner re-runs on the live source; there is no "historical cache" of raw content.
-- Document the scanner entry point with a `// RAM-ONLY` comment and include a linter check (`pnpm scan:ram-only-audit`) that fails if a scanner function persists raw content.
+- Document the scanner entry point with a `// RAM-ONLY` comment and include a linter check (`bun run scan:ram-only-audit`) that fails if a scanner function persists raw content.
 
 ### 6.5 Coach personality setting
 
@@ -245,7 +245,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 - Every new Convex mutation gets at least one test (`convex/<module>.test.ts`) — happy path + one error case minimum.
 - Every React component with meaningful logic gets a render test with `@testing-library/react` (web) or `@testing-library/react-native` (mobile).
 - Every AI routing function (`route-by-task`, `confidence-router`) is unit-tested with a golden fixture set.
-- PRs run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm scan:forbidden-tech`, `pnpm convex:schema-guard`, `pnpm scan:ram-only-audit`, `pnpm scan:design-tokens`.
+- PRs run: `bun run lint`, `bun run typecheck`, `bun test`, and (when implemented) `bun run scan:forbidden-tech`, `bun run convex:schema-guard`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`. See `docs/CI.md` for what is blocking today.
 - All of these must pass before merge.
 
 ---
@@ -271,7 +271,7 @@ See `docs/ENVIRONMENTS.md` for the full four-mode contract (dev / test / preview
 
 - **No secrets in the repo.** Ever. Use `.env.local` locally (git-ignored) and Vercel / EAS env var config for deployed environments.
 - **`.env.example`** is the canonical list. Every new env var is added there with a placeholder and a one-line comment.
-- **Secret scanning** runs in CI (`pnpm scan:secrets`). Never merge a PR where the scan fires.
+- **Secret scanning** runs in CI via Gitleaks + TruffleHog (`.github/workflows/security.yml`). Never merge a PR where the scan fires.
 - **Mistral keys** are scoped per environment and rotated quarterly.
 - **RevenueCat** public keys are safe to ship client-side. Secret keys only in server-side Convex actions.
 - **Four-mode contract.** Dev, test, preview, and deployment are different environments with different trust gates. See `docs/ENVIRONMENTS.md`.
