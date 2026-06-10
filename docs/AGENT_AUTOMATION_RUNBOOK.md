@@ -57,6 +57,42 @@ The script is intentionally small:
 Do not add API keys or production environment variables to this script. Those
 belong in the owning dashboard or secret manager.
 
+## Slack -> Cyrus trigger contract
+
+Target Slack channels for the Tempo loop:
+
+- `#tempo-control` for human control messages and throwaway dry-run requests.
+- `#tempo-prs` for PR-opened / PR-ready notifications.
+- `#tempo-alerts` for failed checks, blocked agents, and auth/tunnel failures.
+- `#tempo-log` for low-noise execution logs.
+
+Expected event path:
+
+1. Amit posts a bounded request in `#tempo-control`.
+2. Slack sends the event to the Cyrus Slack webhook.
+3. Cyrus creates or updates the matching Linear issue in workspace `amit-levin`.
+4. Cyrus routes the issue to the active `tempo-rhythm` repo config.
+5. Cyrus creates an isolated worktree from `master`, runs `cyrus-setup.sh`, and
+   executes the issue.
+6. Cyrus pushes a branch and opens a PR against `master`.
+7. Agents or notifications post the PR link and status to `#tempo-prs`; failures
+   go to `#tempo-alerts`; routine run notes go to `#tempo-log`.
+
+Current checked state on 2026-06-10:
+
+- Cyrus config has `tempo-rhythm` active with Linear workspace `amit-levin`.
+- `cyrus start` registers `/slack-webhook`, `/linear-webhook`, and
+  `/github-webhook` locally before attempting the tunnel.
+- Local Cyrus startup is blocked by Cloudflare tunnel setup: `Timeout waiting for
+  Cloudflare tunnel (0/4 connections)`.
+- Slack connector access only found an existing `#tempo-` channel; the four
+  target channels above were not visible through connector search.
+
+Until either the local Cloudflare tunnel starts successfully or the cloud-hosted
+Cyrus dashboard exposes a live Slack webhook URL, the Slack -> Cyrus dry run is
+not verified. Do not mark autonomous Slack triggers ON without a successful
+Slack message -> Linear issue -> Cyrus branch -> PR proof.
+
 ## Worktree pattern
 
 Use one worktree per independent task:
