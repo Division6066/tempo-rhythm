@@ -60,7 +60,7 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 - **Fix `apps/mobile` Biome style rules** (currently muted in `apps/mobile/biome.json`).
 
 ### RAG / brain
-- **Design the ingestion pipeline** for `docs/brain/sources/`: folder drop → Convex `documents` table → OpenRouter embeddings → retrieval action usable from the coach and planner agents.
+- **Design the ingestion pipeline** for `docs/brain/sources/`: folder drop → Convex `documents` table → Mistral embeddings (via `convex/lib/ai_router.ts` or a dedicated embed action) → retrieval action usable from the coach and planner agents.
 - **Decide storage boundary:** what lives in public `tempo-rhythm` vs private `tempo-brain` submodule.
 
 ### Tests
