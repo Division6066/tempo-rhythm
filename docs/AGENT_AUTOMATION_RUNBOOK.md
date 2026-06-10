@@ -80,6 +80,11 @@ Expected event path:
 7. Agents or notifications post the PR link and status to `#tempo-prs`; failures
    go to `#tempo-alerts`; routine run notes go to `#tempo-log`.
 
+Cyrus' published Slack behavior starts a temporary Slack session from an
+`@Cyrus` mention; published code/PR work starts from Linear issues. Treat the
+Slack -> Linear issue -> Cyrus PR path above as a Tempo-specific bridge that
+must be proven before it is considered ON.
+
 Current checked state on 2026-06-10:
 
 - Cyrus config has `tempo-rhythm` active with Linear workspace `amit-levin`.
@@ -92,6 +97,7 @@ Current checked state on 2026-06-10:
 - The active tunnel process is Cyrus-managed through the bundled `cloudflared`
   binary under the global `cyrus-ai` package.
 - Slack connector access created the four public target channels above.
+- Each new channel currently lists Amit as its only visible member.
 - Slack connector user search does not expose a `Cyrus` user/app, so inviting
   the Cyrus Slack app/bot still needs dashboard or Slack UI verification.
 - The local Cyrus process warns that `LINEAR_CLIENT_ID` and
