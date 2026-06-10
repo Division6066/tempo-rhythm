@@ -2,6 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { getLocalDayBoundsMs, nextLocalDayRolloverDelayMs } from "./todayBounds";
 
 describe("getLocalDayBoundsMs", () => {
+  test("B13 merge-gate proof deliberately fails", () => {
+    expect(true).toBe(false);
+  });
+
   test("returns a 24h half-open window in local time", () => {
     const noon = new Date(2026, 3, 15, 12, 30, 45);
     const bounds = getLocalDayBoundsMs(noon);
