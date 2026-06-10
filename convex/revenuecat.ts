@@ -1,5 +1,6 @@
+import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { validateRevenueCatWebhookAuth } from "./lib/revenuecat_webhook";
 
 /**
  * RevenueCat webhook handler.
@@ -15,9 +16,13 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   // Validate authorization header
   const authHeader = request.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
+  const authResult = validateRevenueCatWebhookAuth(authHeader, webhookSecret);
 
-  if (webhookSecret && authHeader !== webhookSecret) {
-    return new Response("Unauthorized", { status: 401 });
+  if (!authResult.ok) {
+    if (authResult.status === 503) {
+      console.error("[RevenueCat Webhook] REVENUECAT_WEBHOOK_SECRET is not configured");
+    }
+    return new Response(authResult.reason, { status: authResult.status });
   }
 
   let body: Record<string, unknown>;
@@ -58,7 +63,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
 
   if (appUserId) {
     try {
-      await ctx.runMutation(api.users.updateSubscriptionStatus, {
+      await ctx.runMutation(internal.users.updateSubscriptionStatus, {
         userId: appUserId,
         userType,
         activeEntitlements,

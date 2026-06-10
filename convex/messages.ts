@@ -41,7 +41,6 @@ export const list = query({
 export const create = mutation({
   args: {
     conversationId: v.id('conversations'),
-    role: v.union(v.literal('user'), v.literal('assistant'), v.literal('system')),
     content: v.string(),
     modelUsed: v.optional(v.string()),
     councilResponse: v.optional(v.any()),
@@ -70,7 +69,7 @@ export const create = mutation({
 
     const messageId = await ctx.db.insert('messages', {
       conversationId: args.conversationId,
-      role: args.role,
+      role: 'user',
       content: args.content,
       modelUsed: args.modelUsed,
       councilResponse: args.councilResponse,
