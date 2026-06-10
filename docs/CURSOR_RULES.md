@@ -50,7 +50,7 @@ For the hard non-negotiables, see [`HARD_RULES.md`](./HARD_RULES.md). This file 
 | ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators |
 | Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
 | Payments | Stripe direct SDK | RevenueCat (mobile); web may use Polar in this repo — converge on PRD |
-| AI SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai` | OpenRouter |
+| AI SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@mistralai/mistralai` | Mistral API via native `fetch` in `convex/lib/ai_router.ts` |
 | Client state | Redux, Zustand, Jotai, Recoil, MobX | Convex reactive queries |
 | HTTP | Axios, ky, got | Native `fetch` |
 | Direct DB | `mongodb`, `pg`, `mysql2` | Convex |
@@ -63,7 +63,7 @@ For the hard non-negotiables, see [`HARD_RULES.md`](./HARD_RULES.md). This file 
 - **ORMs:** Convex's schema + validators are the ORM. Adding Prisma or Drizzle would duplicate the schema definition and introduce a second source of truth.
 - **Auth libraries:** Convex Auth is designed for Convex. Third-party auth forces a user table in a second system, which fights against the tenant-isolation model.
 - **Stripe direct:** RevenueCat wraps App Store, Play Store, and Stripe in a single SDK with subscription state management. Going direct means building three parallel billing systems.
-- **AI SDKs:** OpenRouter routes between many providers behind one API. Direct SDKs lock us into one provider and break the OpenRouter-first cost optimization.
+- **AI SDKs:** All LLM calls go through `convex/lib/ai_router.ts` using native `fetch` against `https://api.mistral.ai/v1/chat/completions`. Direct vendor SDKs add bundle weight and bypass the tiered routing / escalation policy in HARD_RULES §6.
 - **Client state libraries:** Convex queries are reactive. A Redux store on top of reactive queries is a performance and consistency problem in waiting.
 - **Axios:** native `fetch` works everywhere we ship. Axios adds weight and an abstraction that is not needed.
 - **Direct DB clients:** Convex is the database. We do not open direct DB connections.
@@ -123,9 +123,9 @@ If you think you need a forbidden dependency, open an issue first with the justi
 
 ## 10. Design tokens only
 
-**Rule.** Prefer design tokens and theme variables over one-off colors. No arbitrary hex in new UI unless a token already exists. For web Tailwind v4, extend tokens via CSS variables / `@theme` in `apps/web/app/globals.css` (and eventually `packages/ui`). When `pnpm scan:design-tokens` exists, it must pass on changed UI.
+**Rule.** Prefer design tokens and theme variables over one-off colors. No arbitrary hex in new UI unless a token already exists. For web Tailwind v4, extend tokens via CSS variables / `@theme` in `apps/web/app/globals.css` (and eventually `packages/ui`). When `bun run scan:design-tokens` exists, it must pass on changed UI.
 
-**Rationale.** Arbitrary values are how design systems erode. Once one file uses `#ff7a00` instead of `text-accent`, the next agent copies it, and within two weeks you have 17 orange-ish oranges and no way to theme. The design-token enforcer (`pnpm scan:design-tokens`) fails the build on arbitrary values.
+**Rationale.** Arbitrary values are how design systems erode. Once one file uses `#ff7a00` instead of `text-accent`, the next agent copies it, and within two weeks you have 17 orange-ish oranges and no way to theme. The design-token enforcer (`bun run scan:design-tokens`) will fail the build on arbitrary values once the script lands.
 
 ---
 
