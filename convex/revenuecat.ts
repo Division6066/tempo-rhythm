@@ -1,5 +1,9 @@
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
+import {
+  isRevenueCatWebhookAuthorized,
+  userTypeFromRevenueCatEvent,
+} from "./lib/revenuecatPolicy";
 
 /**
  * RevenueCat webhook handler.
@@ -16,7 +20,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   const authHeader = request.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
 
-  if (webhookSecret && authHeader !== webhookSecret) {
+  if (!isRevenueCatWebhookAuthorized(webhookSecret, authHeader)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -40,21 +44,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   // RevenueCat sends entitlement identifiers in the event
   const activeEntitlements = (event.entitlement_ids as string[] | undefined) ?? [];
 
-  let userType: "free" | "paid" = "free";
-  if (
-    eventType === "INITIAL_PURCHASE" ||
-    eventType === "RENEWAL" ||
-    eventType === "PRODUCT_CHANGE" ||
-    eventType === "UNCANCELLATION"
-  ) {
-    userType = "paid";
-  } else if (
-    eventType === "EXPIRATION" ||
-    eventType === "CANCELLATION" ||
-    eventType === "SUBSCRIBER_ALIAS"
-  ) {
-    userType = "free";
-  }
+  const userType = userTypeFromRevenueCatEvent(eventType);
 
   if (appUserId) {
     try {
