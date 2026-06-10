@@ -99,19 +99,23 @@ Ticket lanes prepared from latest `master` on 2026-06-03:
 
 ## Cursor automation outlines
 
+The B13 contract inventory lives at `docs/CURSOR_AUTOMATION_CONTRACTS.md`.
 Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
-`docs/CURSOR_PROMPTS.md`:
+`docs/CURSOR_PROMPTS.md`.
 
-- Bug scan: §13.8
-- Test coverage gap finder: §13.9
-- Docs generation: §13.10
-- PR readiness check: §13.11
-- Merge-agent checklist: §13.12
-- PR approval advisor: `.cursor/agents/tempo-pr-approval-advisor.md`
-- CI fix agent: `.cursor/agents/tempo-ci-fix-agent.md`
-- Critical bug scan agent: `.cursor/agents/tempo-critical-bug-agent.md`
-- Security scan agent: `.cursor/agents/tempo-security-scan-agent.md`
-- Dependency remediation agent: `.cursor/agents/tempo-dependency-remediation-agent.md`
+The eight B13 lanes are:
+
+- Critical bug scan: `.cursor/agents/tempo-critical-bug-agent.md`, §13.8
+- CI fix: `.cursor/agents/tempo-ci-fix-agent.md`, §13.9
+- Security scan: `.cursor/agents/tempo-security-scan-agent.md`, §13.10
+- Test coverage gap finder: `.cursor/agents/tempo-test-coverage-agent.md`, §13.11
+- Docs generation: `.cursor/agents/tempo-docs-generation-agent.md`, §13.12
+- PR readiness review: `.cursor/agents/tempo-reviewer.md`, §13.13
+- PR approval advisor: `.cursor/agents/tempo-pr-approval-advisor.md`, §13.14
+- Merge steward: `.cursor/agents/tempo-merge-agent.md`, §13.15
+
+Extra utility agents such as dependency remediation and docs-to-tickets remain
+available, but they are outside the B13 eight-automation baseline.
 
 For the recurring merge/report loop, use `.cursor/agents/tempo-merge-agent.md`.
 It defaults to Cursor Composer 2.5 for routine merge stewardship because this work is

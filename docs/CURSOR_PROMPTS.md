@@ -418,152 +418,183 @@ Every voice session start must:
 If any of these are missing, block merge.
 ```
 
-### 13.8 Bug scan
+The B13 recurring automation contracts live in
+`docs/CURSOR_AUTOMATION_CONTRACTS.md`. Use Composer 2.5 for each B13
+background lane unless a RED risk tier requires human escalation.
 
-```
-Run a read-only bug scan against the current branch.
+### 13.8 Critical Bug Scan
 
-Scope:
-- Recent diffs on this branch.
-- Code paths touched by the diff.
-- Nearby tests, route handlers, Convex functions, and shared UI primitives.
+Use agent: `.cursor/agents/tempo-critical-bug-agent.md`
 
-Method:
-1. Read docs/HARD_RULES.md and docs/CURSOR_RULES.md.
-2. Run `bun install --frozen-lockfile`.
-3. Run `bun run lint`, `bun test`, `bun run typecheck`, and `bun run build`.
-4. Inspect failures and warnings. Separate current-branch regressions from known baseline issues.
-5. For each likely bug, report file path, risk, reproduction path, and smallest safe fix.
-
-Do not modify files. Do not open a PR. End with PASS / FAIL / INSUFFICIENT EVIDENCE.
-```
-
-### 13.9 Test coverage gap finder
-
-```
-Find high-value missing tests for the current branch.
+Run the B13 `critical-bug-scan` automation on Composer 2.5.
 
 Scope:
-- Files changed on this branch.
-- Public exports and user-visible flows touched by those files.
-- Convex queries, mutations, and actions touched by those files.
-
-Method:
-1. Read the changed files and existing tests first.
-2. List uncovered happy paths, edge cases, and regression cases.
-3. Rank gaps by user risk and implementation effort.
-4. If asked to implement, add only the top 1-3 tests and run the smallest relevant suite plus root `bun test`.
-
-Do not add a new test framework. Do not widen the task into product work.
-```
-
-### 13.10 Docs generation
-
-```
-Generate or update developer documentation for the current branch.
-
-Inputs:
-- The branch diff.
-- docs/HARD_RULES.md.
-- docs/ENVIRONMENTS.md.
-- docs/LOCAL_DEV_WINDOWS.md when local setup is affected.
+- Inspect the latest 20 commits on `origin/master` and all open PRs.
+- Focus on high-severity correctness bugs in changed routes, Convex functions,
+  shared UI primitives, and package config.
+- Run safe checks: `bun install --frozen-lockfile`, `bun run lint`, `bun test`,
+  `bun run typecheck`, `bun run build`.
 
 Rules:
-1. Prefer updating the nearest existing doc over creating a new top-level doc.
-2. Document commands, expected outputs, and human decision points.
-3. Do not include secrets, private tokens, or raw user content.
-4. Do not mark a feature shipped unless docs/SHIP_STATE.md proves it is shipped-and-running.
+- Fix only proven GREEN bugs with a small local change.
+- Otherwise draft a bug report; do not speculate.
+- Keep any PR draft/open. Do not merge.
 
-End with the exact files changed and the verification commands run.
-```
+Output:
+`Critical bug scan` report with scope, bugs found, fix PRs opened, tickets
+drafted, and checks.
 
-### 13.11 PR readiness check
+### 13.9 CI Fix
 
-```
-Check whether this branch is ready for human review.
+Use agent: `.cursor/agents/tempo-ci-fix-agent.md`
 
-Required checks:
-- `git status --short` is clean after the final commit.
-- `bun install --frozen-lockfile` passes.
-- `bun run lint` passes or only has documented pre-existing warnings.
-- `bun test` passes.
-- `bun run typecheck` passes.
-- `bun run build` passes.
-- PR body maps changes to acceptance criteria and names any known gaps.
+Run the B13 `ci-fix` automation on Composer 2.5.
 
-Review:
-- Confirm the branch does not deploy, merge, rotate secrets, or change production dashboards.
-- Confirm any dashboard-only action is documented as a human step.
-- Confirm no unrelated files were changed.
+Scope:
+- Identify one failing GitHub check using `gh pr checks <PR>` and failed logs.
+- Reproduce the exact failure locally when possible.
+- Make the smallest safe fix on a fresh branch from `origin/master`.
 
-End with READY / NOT READY and the blocking reason.
-```
+Rules:
+- One failing check maps to one narrow fix PR.
+- Dependency bundles, secrets, dashboards, deploys, and OAuth are out of scope.
+- Keep any PR draft/open. Do not merge.
 
-### 13.12 Merge-agent checklist
+Output:
+`CI fix report` with failing check, root cause, files changed, verification, PR,
+and blocker.
 
-```
-Act as the merge steward for one finished branch.
+### 13.10 Security Scan
 
-Default model: Cursor Composer 2.5. Use it for routine merge readiness,
-fix-report consolidation, and follow-up ticket drafting. Escalate only for
-security, billing, production deployment, schema migration, or ambiguous product
-decisions.
+Use agent: `.cursor/agents/tempo-security-scan-agent.md`
 
-Inputs:
-- PR number.
-- Base branch.
-- Latest CI/check results.
-- Any related superseded PRs.
+Run the B13 `security-scan` automation on Composer 2.5.
 
-Checklist:
-1. Confirm the intended PR is the one to merge.
-2. Confirm any superseded PR is documented, not silently ignored.
-3. Confirm required reviews and branch rules are satisfied.
-4. Confirm the final diff has no dashboard actions, secrets, or deploys.
-5. Confirm the post-merge plan: close superseded PRs, update TASKS.md, and rerun smoke checks on master.
-6. Write or update a merge report under `docs/QA/agent-runs/`.
-7. Draft follow-up tickets only when the report has specific evidence, file scope,
-   and acceptance criteria.
+Scope:
+- Scan diffs for secret-looking strings, unsafe auth/session changes, missing
+  Convex authorization, direct AI provider SDK calls, dependency vulnerability
+  paths, and CI/deploy/OAuth/billing changes.
+- Run `bun run scan:forbidden-tech` when available; otherwise manually scan
+  the diff for forbidden technology imports.
 
-Never self-merge. Return the merge recommendation and the exact human action needed.
-Use `.cursor/agents/tempo-merge-agent.md` for the full recurring merge/report loop.
-```
+Rules:
+- BLOCKER findings block merge.
+- CHANGE findings need a fix before merge.
+- NOTE findings are tracked but not blocking.
+- Never rotate secrets or edit production dashboards.
 
-### 13.13 PR approval advisor
+Output:
+`Security scan report` with scope, findings, risk tier, fix PR, and human action
+needed.
 
-```
-Use `.cursor/agents/tempo-pr-approval-advisor.md`.
+### 13.11 Test Coverage Gap Finder
 
-Review the target PR and return exactly one of:
-- APPROVE
-- REQUEST_CHANGES
-- MERGE_READY
-- ASK_BEFORE_MERGE
-- NEEDS_HUMAN
+Use agent: `.cursor/agents/tempo-test-coverage-agent.md`
 
-Apply the GREEN/YELLOW/RED risk policy. Never self-approve. Never bypass branch
-protection. If evidence is missing, write `insufficient evidence`.
-```
+Run the B13 `test-coverage` automation on Composer 2.5.
 
-### 13.14 CI fix agent
+Scope:
+- Read the PR diff or `git diff origin/master...HEAD`.
+- Find changed public behavior with existing nearby tests.
+- Add the top 1-3 high-value regression tests only.
 
-```
-Use `.cursor/agents/tempo-ci-fix-agent.md`.
+Rules:
+- Do not add a new test framework.
+- Do not widen into product implementation.
+- If a test exposes a product bug, stop unless the fix is tiny and in scope.
+- Keep any PR draft/open. Do not merge.
 
-Investigate the failing GitHub check, reproduce it locally when possible, and
-open the smallest safe fix PR. Do not merge. Do not touch secrets, deploy
-settings, billing, EAS ownership, or OAuth.
-```
+Output:
+`Test coverage report` with scope, tests added, commands run, remaining gaps,
+and PR.
 
-### 13.15 Security and dependency automation
+### 13.12 Docs Generation
 
-```
-For security scan work, use `.cursor/agents/tempo-security-scan-agent.md`.
-For dependency vulnerability work, use `.cursor/agents/tempo-dependency-remediation-agent.md`.
+Use agent: `.cursor/agents/tempo-docs-generation-agent.md`
 
-Security fixes may be code-only and narrow. Dependency remediation is
-draft/approval-first unless Amit explicitly approves the exact update.
-```
+Run the B13 `docs-generation` automation on Composer 2.5.
+
+Scope:
+- Inspect the merged PR or current branch diff.
+- Update the nearest existing doc when setup, commands, API/schema, workflow, or
+  automation changed.
+- Prefer `docs/AGENT_AUTOMATION_RUNBOOK.md`, `docs/CURSOR_PROMPTS.md`,
+  `docs/LOCAL_DEV_WINDOWS.md`, `docs/ENVIRONMENTS.md`, or
+  `docs/SHIP_STATE.md`.
+
+Rules:
+- Docs-only branch unless Amit explicitly asks otherwise.
+- Do not create clutter or new top-level folders.
+- Do not mark anything shipped unless `docs/SHIP_STATE.md` proves it.
+
+Output:
+`Docs generation report` with source PR/branch, docs changed, verification,
+open questions, and PR.
+
+### 13.13 PR Readiness Review
+
+Use agent: `.cursor/agents/tempo-reviewer.md`
+
+Run the B13 `pr-readiness` automation on Composer 2.5.
+
+Scope:
+- Review PR or local diff against `docs/HARD_RULES.md`, the referenced ticket
+  acceptance criteria, Convex patterns, brand voice, tests, CI, and PR hygiene.
+
+Rules:
+- Read-only. Do not post GitHub comments, approve, merge, or edit files.
+- Any unmet acceptance criterion or red CI check prevents approval.
+- If evidence is missing, write `insufficient evidence`.
+
+Output:
+Findings ordered by severity and exactly one verdict:
+`VERDICT=APPROVE`, `VERDICT=REQUEST_CHANGES: <reason>`, or
+`VERDICT=BLOCK: <reason>`.
+
+### 13.14 PR Approval Advisor
+
+Use agent: `.cursor/agents/tempo-pr-approval-advisor.md`
+
+Run the B13 `pr-approval-advisor` automation on Composer 2.5.
+
+Scope:
+- Inspect PR metadata, checks, reviews, branch rules, and risk tier.
+- Run safe local checks only when the working tree is clean.
+
+Rules:
+- GREEN can hand off to merge steward.
+- YELLOW asks Amit before merge.
+- RED needs human action.
+- Do not self-approve, self-merge, or hide uncertainty.
+
+Output:
+`PR approval advisor` report with risk tier and one recommendation:
+`APPROVE`, `REQUEST_CHANGES`, `MERGE_READY`, `ASK_BEFORE_MERGE`, or
+`NEEDS_HUMAN`.
+
+### 13.15 Merge Steward
+
+Use agent: `.cursor/agents/tempo-merge-agent.md`
+
+Run the B13 `merge-steward` automation on Composer 2.5.
+
+Scope:
+- Inspect finished PRs or branches.
+- Confirm draft state, dependency status, status checks, reviews, changed files,
+  and RED/YELLOW risk categories.
+- Run safe local checks when appropriate.
+- Write a merge report under `docs/QA/agent-runs/`.
+
+Rules:
+- Merge gate is load-bearing. Never bypass branch protection.
+- Never self-merge, approve your own PR, force-push, deploy, or undraft
+  dependency PRs.
+- Recommend merge only when evidence is green.
+
+Output:
+`Merge agent report` ending with
+`MERGE_RECOMMENDATION=MERGE`, `MERGE_RECOMMENDATION=REQUEST_CHANGES`, or
+`MERGE_RECOMMENDATION=BLOCKED`.
 
 ---
 
