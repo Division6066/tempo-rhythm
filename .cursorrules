@@ -1,6 +1,6 @@
 # Tempo Flow — Cursor rules
 
-Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Expo mobile + Convex + OpenRouter. See `README.md` for the project overview.
+Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Expo mobile + Convex + Mistral API routing. See `README.md` for the project overview.
 
 ## Read these first (every session)
 
