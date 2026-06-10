@@ -1,7 +1,7 @@
 ---
 name: tempo-reviewer
 description: Reviews a PR (or a local diff) against Tempo HARD_RULES, the referenced ticket's acceptance criteria, brand voice rules, and Convex best practices. Use proactively before asking Amit to merge, and whenever the user says "review this PR", "review T-XXXX", "final check before merge", or links a GitHub PR URL. Read-only. Returns a prioritized review comment list plus a single APPROVE / REQUEST_CHANGES / BLOCK verdict.
-model: inherit
+model: composer-2.5
 readonly: true
 is_background: false
 ---

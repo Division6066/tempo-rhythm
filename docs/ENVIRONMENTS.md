@@ -35,11 +35,35 @@ Known local CLI state on 2026-06-02:
 
 ---
 
+## Vercel: project and env contract
+
+Live CLI evidence on 2026-06-10:
+
+- Vercel team: `amit-levins-projects`.
+- Vercel project: `tempo-web` (`apps/web/.vercel/project.json`).
+- Package name: `tempo-rhythm-web`.
+- `tempo-rhythm-web` is not the Vercel project name; use `tempo-web` for
+  dashboard and CLI operations.
+
+Canonical Vercel env names:
+
+| Name | Scope | Meaning |
+|---|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | Production | Production Convex URL: `https://precious-wildcat-890.eu-west-1.convex.cloud`. |
+| `NEXT_PUBLIC_CONVEX_URL` | Development | Local/dev Convex URL: `https://tremendous-bass-443.convex.cloud`. |
+| `NEXT_PUBLIC_CONVEX_URL` | Preview | Temporary preview value until a real `preview:*` Convex deployment exists. Do not treat preview as shipped. |
+| `CONVEX_DEPLOY_KEY` | Production | Vercel build/deploy access for the production Convex deployment. |
+| `BASE_PATH` | Production, Preview, Development | `/`. |
+| `PORT` | Production, Preview, Development | `3000`. |
+
+Removed on 2026-06-10: stale `VITE_CONVEX_URL` from Vercel. This repo is a
+Next.js app and must use `NEXT_PUBLIC_CONVEX_URL` for the web client.
+
 ## Vercel: production domain only this weekend
 
 Preview builds are explicitly disabled for the weekend. To disable via the Vercel dashboard [human-amit action]:
 
-1. Open Vercel → Project `tempo-rhythm-web` → Settings → Git.
+1. Open Vercel -> Project `tempo-web` -> Settings -> Git.
 2. Set "Ignored Build Step" to: `if [ "$VERCEL_GIT_COMMIT_REF" = "master" ]; then exit 1; else exit 0; fi`
    — or toggle "Deploy Previews" off entirely.
 3. Confirm by pushing a throwaway branch and verifying that no preview URL appears on the PR.

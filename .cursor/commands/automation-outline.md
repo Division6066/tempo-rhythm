@@ -1,23 +1,23 @@
-# /automation-outline — recurring agent outline
+# /automation-outline — B13 recurring automation outline
 
-Use this when the user asks to configure or review background automations before
-turning them loose.
+Use this when the user asks to configure, review, or start one of the eight B13
+Cursor background automations before turning it loose.
 
 ## 1. Pick the automation
 
-Choose exactly one lane:
+Choose exactly one B13 lane:
 
-- `bug-scan` — use `docs/CURSOR_PROMPTS.md` §13.8.
-- `test-coverage` — use `docs/CURSOR_PROMPTS.md` §13.9.
-- `docs-generation` — use `docs/CURSOR_PROMPTS.md` §13.10.
-- `pr-readiness` — use `docs/CURSOR_PROMPTS.md` §13.11.
-- `merge-steward` — use `docs/CURSOR_PROMPTS.md` §13.12.
-- `tempo-merge-agent` — use `.cursor/agents/tempo-merge-agent.md` for the Composer 2.5 merge/report loop.
-- `pr-approval-advisor` — use `.cursor/agents/tempo-pr-approval-advisor.md`.
-- `ci-fix` — use `.cursor/agents/tempo-ci-fix-agent.md`.
-- `critical-bug-scan` — use `.cursor/agents/tempo-critical-bug-agent.md`.
-- `security-scan` — use `.cursor/agents/tempo-security-scan-agent.md`.
-- `dependency-remediation` — use `.cursor/agents/tempo-dependency-remediation-agent.md`.
+- `critical-bug-scan` — every 12 hours; use `.cursor/agents/tempo-critical-bug-agent.md` and `docs/CURSOR_PROMPTS.md` §13.8.
+- `ci-fix` — every 12 hours or on failed checks; use `.cursor/agents/tempo-ci-fix-agent.md` and `docs/CURSOR_PROMPTS.md` §13.9.
+- `security-scan` — every 24 hours or on security-sensitive PRs; use `.cursor/agents/tempo-security-scan-agent.md` and `docs/CURSOR_PROMPTS.md` §13.10.
+- `test-coverage` — every 24 hours or after risky PRs; use `.cursor/agents/tempo-test-coverage-agent.md` and `docs/CURSOR_PROMPTS.md` §13.11.
+- `docs-generation` — every 24 hours or after workflow/API changes; use `.cursor/agents/tempo-docs-generation-agent.md` and `docs/CURSOR_PROMPTS.md` §13.12.
+- `pr-readiness` — on PR open/update/ready; use `.cursor/agents/tempo-reviewer.md` and `docs/CURSOR_PROMPTS.md` §13.13.
+- `pr-approval-advisor` — on approval/merge-readiness questions; use `.cursor/agents/tempo-pr-approval-advisor.md` and `docs/CURSOR_PROMPTS.md` §13.14.
+- `merge-steward` — on finished PRs only; use `.cursor/agents/tempo-merge-agent.md` and `docs/CURSOR_PROMPTS.md` §13.15.
+
+The full contract table is `docs/CURSOR_AUTOMATION_CONTRACTS.md`. Other utility
+agents may exist, but they are not part of the B13 eight-automation baseline.
 
 ## 2. Stay read-only first
 
@@ -39,6 +39,7 @@ For the first pass:
 - For merge stewardship, default to Cursor Composer 2.5 and write a merge report before recommending any human merge action.
 - Do not deploy.
 - Do not write secrets.
+- Keep PRs draft/open unless Amit explicitly asks to make them ready or merge.
 - Apply the risk policy:
   - GREEN: non-critical, checks green, no protected areas; may continue.
   - YELLOW: notify Amit before merge/action, then verify after.

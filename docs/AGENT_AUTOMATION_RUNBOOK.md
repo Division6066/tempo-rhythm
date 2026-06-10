@@ -57,6 +57,60 @@ The script is intentionally small:
 Do not add API keys or production environment variables to this script. Those
 belong in the owning dashboard or secret manager.
 
+## Slack -> Cyrus trigger contract
+
+Target Slack channels for the Tempo loop:
+
+- `#tempo-control` (`C0BAJVAHMFA`) for human control messages and throwaway
+  dry-run requests.
+- `#tempo-prs` (`C0B9M9D6LRK`) for PR-opened / PR-ready notifications.
+- `#tempo-alerts` (`C0B9M9C6EDT`) for failed checks, blocked agents, and
+  auth/tunnel failures.
+- `#tempo-log` (`C0B9QLWG1M0`) for low-noise execution logs.
+
+Expected event path:
+
+1. Amit posts a bounded request in `#tempo-control`.
+2. Slack sends the event to the Cyrus Slack webhook.
+3. Cyrus creates or updates the matching Linear issue in workspace `amit-levin`.
+4. Cyrus routes the issue to the active `tempo-rhythm` repo config.
+5. Cyrus creates an isolated worktree from `master`, runs `cyrus-setup.sh`, and
+   executes the issue.
+6. Cyrus pushes a branch and opens a PR against `master`.
+7. Agents or notifications post the PR link and status to `#tempo-prs`; failures
+   go to `#tempo-alerts`; routine run notes go to `#tempo-log`.
+
+Cyrus' published Slack behavior starts a temporary Slack session from an
+`@Cyrus` mention; published code/PR work starts from Linear issues. Treat the
+Slack -> Linear issue -> Cyrus PR path above as a Tempo-specific bridge that
+must be proven before it is considered ON.
+
+Current checked state on 2026-06-10:
+
+- Cyrus config has `tempo-rhythm` active with Linear workspace `amit-levin`.
+- `cyrus start` registers `/slack-webhook`, `/linear-webhook`,
+  `/github-webhook`, `/mcp/cyrus-tools`, and status endpoints.
+- The local Cyrus worker returns `{"status":"idle"}` at
+  `http://127.0.0.1:3456/status`.
+- The public Cyrus tunnel returns `{"status":"idle"}` at
+  `https://team-4e899e98.atcyrus.com/status`.
+- The active tunnel process is Cyrus-managed through the bundled `cloudflared`
+  binary under the global `cyrus-ai` package.
+- The local `/slack-webhook` endpoint accepts proxy-authenticated Slack
+  `url_verification` probes and returns the supplied challenge.
+- Slack connector access created the four public target channels above.
+- Each new channel currently lists Amit as its only visible member.
+- Slack connector user search does not expose a `Cyrus` user/app, so inviting
+  the Cyrus Slack app/bot still needs dashboard or Slack UI verification.
+- The Codex Linear connector currently requires reauthentication before issue
+  reads or writes can succeed.
+- The local Cyrus process warns that `LINEAR_CLIENT_ID` and
+  `LINEAR_CLIENT_SECRET` are not set, so Linear token refresh is disabled.
+
+The worker and tunnel are live, but the Slack -> Cyrus dry run is still not
+verified. Do not mark autonomous Slack triggers ON without a successful Slack
+message -> Linear issue -> Cyrus branch -> PR proof.
+
 ## Worktree pattern
 
 Use one worktree per independent task:
@@ -99,19 +153,23 @@ Ticket lanes prepared from latest `master` on 2026-06-03:
 
 ## Cursor automation outlines
 
+The B13 contract inventory lives at `docs/CURSOR_AUTOMATION_CONTRACTS.md`.
 Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
-`docs/CURSOR_PROMPTS.md`:
+`docs/CURSOR_PROMPTS.md`.
 
-- Bug scan: §13.8
-- Test coverage gap finder: §13.9
-- Docs generation: §13.10
-- PR readiness check: §13.11
-- Merge-agent checklist: §13.12
-- PR approval advisor: `.cursor/agents/tempo-pr-approval-advisor.md`
-- CI fix agent: `.cursor/agents/tempo-ci-fix-agent.md`
-- Critical bug scan agent: `.cursor/agents/tempo-critical-bug-agent.md`
-- Security scan agent: `.cursor/agents/tempo-security-scan-agent.md`
-- Dependency remediation agent: `.cursor/agents/tempo-dependency-remediation-agent.md`
+The eight B13 lanes are:
+
+- Critical bug scan: `.cursor/agents/tempo-critical-bug-agent.md`, §13.8
+- CI fix: `.cursor/agents/tempo-ci-fix-agent.md`, §13.9
+- Security scan: `.cursor/agents/tempo-security-scan-agent.md`, §13.10
+- Test coverage gap finder: `.cursor/agents/tempo-test-coverage-agent.md`, §13.11
+- Docs generation: `.cursor/agents/tempo-docs-generation-agent.md`, §13.12
+- PR readiness review: `.cursor/agents/tempo-reviewer.md`, §13.13
+- PR approval advisor: `.cursor/agents/tempo-pr-approval-advisor.md`, §13.14
+- Merge steward: `.cursor/agents/tempo-merge-agent.md`, §13.15
+
+Extra utility agents such as dependency remediation and docs-to-tickets remain
+available, but they are outside the B13 eight-automation baseline.
 
 For the recurring merge/report loop, use `.cursor/agents/tempo-merge-agent.md`.
 It defaults to Cursor Composer 2.5 for routine merge stewardship because this work is
