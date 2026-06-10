@@ -96,10 +96,14 @@ Current checked state on 2026-06-10:
   `https://team-4e899e98.atcyrus.com/status`.
 - The active tunnel process is Cyrus-managed through the bundled `cloudflared`
   binary under the global `cyrus-ai` package.
+- The local `/slack-webhook` endpoint accepts proxy-authenticated Slack
+  `url_verification` probes and returns the supplied challenge.
 - Slack connector access created the four public target channels above.
 - Each new channel currently lists Amit as its only visible member.
 - Slack connector user search does not expose a `Cyrus` user/app, so inviting
   the Cyrus Slack app/bot still needs dashboard or Slack UI verification.
+- The Codex Linear connector currently requires reauthentication before issue
+  reads or writes can succeed.
 - The local Cyrus process warns that `LINEAR_CLIENT_ID` and
   `LINEAR_CLIENT_SECRET` are not set, so Linear token refresh is disabled.
 
