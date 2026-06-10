@@ -81,17 +81,22 @@ Expected event path:
 Current checked state on 2026-06-10:
 
 - Cyrus config has `tempo-rhythm` active with Linear workspace `amit-levin`.
-- `cyrus start` registers `/slack-webhook`, `/linear-webhook`, and
-  `/github-webhook` locally before attempting the tunnel.
-- Local Cyrus startup is blocked by Cloudflare tunnel setup: `Timeout waiting for
-  Cloudflare tunnel (0/4 connections)`.
+- `cyrus start` registers `/slack-webhook`, `/linear-webhook`,
+  `/github-webhook`, `/mcp/cyrus-tools`, and status endpoints.
+- The local Cyrus worker returns `{"status":"idle"}` at
+  `http://127.0.0.1:3456/status`.
+- The public Cyrus tunnel returns `{"status":"idle"}` at
+  `https://team-4e899e98.atcyrus.com/status`.
+- The active tunnel process is Cyrus-managed through the bundled `cloudflared`
+  binary under the global `cyrus-ai` package.
 - Slack connector access only found an existing `#tempo-` channel; the four
   target channels above were not visible through connector search.
+- The local Cyrus process warns that `LINEAR_CLIENT_ID` and
+  `LINEAR_CLIENT_SECRET` are not set, so Linear token refresh is disabled.
 
-Until either the local Cloudflare tunnel starts successfully or the cloud-hosted
-Cyrus dashboard exposes a live Slack webhook URL, the Slack -> Cyrus dry run is
-not verified. Do not mark autonomous Slack triggers ON without a successful
-Slack message -> Linear issue -> Cyrus branch -> PR proof.
+The worker and tunnel are live, but the Slack -> Cyrus dry run is still not
+verified. Do not mark autonomous Slack triggers ON without a successful Slack
+message -> Linear issue -> Cyrus branch -> PR proof.
 
 ## Worktree pattern
 
