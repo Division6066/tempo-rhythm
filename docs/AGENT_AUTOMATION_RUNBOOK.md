@@ -61,10 +61,12 @@ belong in the owning dashboard or secret manager.
 
 Target Slack channels for the Tempo loop:
 
-- `#tempo-control` for human control messages and throwaway dry-run requests.
-- `#tempo-prs` for PR-opened / PR-ready notifications.
-- `#tempo-alerts` for failed checks, blocked agents, and auth/tunnel failures.
-- `#tempo-log` for low-noise execution logs.
+- `#tempo-control` (`C0BAJVAHMFA`) for human control messages and throwaway
+  dry-run requests.
+- `#tempo-prs` (`C0B9M9D6LRK`) for PR-opened / PR-ready notifications.
+- `#tempo-alerts` (`C0B9M9C6EDT`) for failed checks, blocked agents, and
+  auth/tunnel failures.
+- `#tempo-log` (`C0B9QLWG1M0`) for low-noise execution logs.
 
 Expected event path:
 
@@ -89,8 +91,9 @@ Current checked state on 2026-06-10:
   `https://team-4e899e98.atcyrus.com/status`.
 - The active tunnel process is Cyrus-managed through the bundled `cloudflared`
   binary under the global `cyrus-ai` package.
-- Slack connector access only found an existing `#tempo-` channel; the four
-  target channels above were not visible through connector search.
+- Slack connector access created the four public target channels above.
+- Slack connector user search does not expose a `Cyrus` user/app, so inviting
+  the Cyrus Slack app/bot still needs dashboard or Slack UI verification.
 - The local Cyrus process warns that `LINEAR_CLIENT_ID` and
   `LINEAR_CLIENT_SECRET` are not set, so Linear token refresh is disabled.
 
