@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import {
+  filterTasksBySearch,
   filterTasksDueInWindow,
   toggleTaskStatus,
   truncateQuickTitle,
@@ -34,12 +35,7 @@ export const list = query({
       rows = rows.filter((t) => t.status === args.status);
     }
     if (args.search?.trim()) {
-      const q = args.search.trim().toLowerCase();
-      rows = rows.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          (t.description?.toLowerCase().includes(q) ?? false),
-      );
+      rows = filterTasksBySearch(rows, args.search) as typeof rows;
     }
     if (args.dueFrom !== undefined && args.dueTo !== undefined) {
       rows = filterTasksDueInWindow(rows, args.dueFrom, args.dueTo) as typeof rows;
