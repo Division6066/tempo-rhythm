@@ -381,10 +381,10 @@ If found, comment on the PR with the rule violated and the line numbers.
 ### 13.4 AI call audit
 
 ```
-Scan all files touching OpenRouter:
-- Every fetch call to OpenRouter must log to ai_usage.
-- Every fetch call must include the X-Tempo-No-Train header.
-- No provider SDK imports allowed.
+Scan all files touching the Mistral API (convex/lib/ai_router.ts and callers):
+- Every LLM fetch must go through ai_router.ts — no ad-hoc https://api.mistral.ai calls elsewhere.
+- No provider SDK imports allowed (@mistralai/*, openai, @anthropic-ai/*, etc.).
+- Usage should be observable (ai_usage logging when that table lands).
 
 Block merge if violations found.
 ```

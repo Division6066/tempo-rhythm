@@ -15,7 +15,7 @@ All live in `.cursor/rules/` and each one references HARD_RULES with `@docs/HARD
 |---|---|---|
 | `tempo-hard-rules.mdc` | `alwaysApply: true` | The top-of-session primer: shame-proof, accept-reject, undo, forbidden tech. |
 | `tempo-convex-schema.mdc` | `globs: convex/**/*.ts` | Schema shape — `userId` optional, soft delete, indexes, generic tables. |
-| `tempo-openrouter.mdc` | `agentRequested` | All LLM calls go through OpenRouter; no direct provider SDKs. |
+| `tempo-hard-rules.mdc` | `always` | Mistral API via `convex/lib/ai_router.ts`; no direct provider SDKs. |
 | `tempo-accept-reject.mdc` | `agentRequested` | AI mutations must flow through `convex/proposals.ts`. |
 | `tempo-design-tokens.mdc` | `globs: packages/ui/**`, `apps/web/app/globals.css` | Token usage, no arbitrary hex. |
 | `tempo-brand.mdc` | `alwaysApply` when touching UI files | Auto-attaches the brand knowledge base to any UI session. |
