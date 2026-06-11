@@ -92,4 +92,6 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 - [docs/HARD_RULES.md](./HARD_RULES.md) — §13 (secrets and env vars) and §13.5 (ship state)
 - [docs/SHIP_STATE.md](./SHIP_STATE.md) — one-table source of truth for what is shipped vs planned
 - [docs/LOCAL_DEV_WINDOWS.md](./LOCAL_DEV_WINDOWS.md) — local setup guide
+- [docs/REVENUECAT_SETUP.md](./REVENUECAT_SETUP.md) — mobile keys + Convex webhook
+- [docs/CI.md](./CI.md) — GitHub Actions gates
 - [docs/brain/TASKS.md](./brain/TASKS.md) — master task list (T-0008, T-0020, T-R006, T-R007)
