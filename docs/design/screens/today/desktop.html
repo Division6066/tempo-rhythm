@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tempo Flow · Today</title>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../shell.css">
+  <link rel="stylesheet" href="../../responsive-layout.css">
+</head>
+<body data-layout="desktop">
+<!-- @tfComponent TF.Shell.App -->
+<div class="app">
+  
+  <!-- @tfComponent TF.Shell.Sidebar -->
+  <aside class="sidebar scroll-subtle">
+    <!-- @tfComponent TF.Brand.Mark -->
+    <div class="sidebar-brand">
+      <span class="brand-name">Tempo<em>Flow</em></span>
+    </div>
+    
+      <!-- @tfComponent TF.Nav.Group -->
+      <div class="sidebar-section">
+        <h4>Flow</h4>
+        
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../daily-note/desktop.html">
+          <span>Daily Note</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item is-active" href="../today/desktop.html">
+          <span>Today</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../brain-dump/desktop.html">
+          <span>Brain Dump</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../coach/desktop.html">
+          <span>Coach</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../plan/desktop.html">
+          <span>Planning</span>
+        </a>
+      </div>
+      <!-- @tfComponent TF.Nav.Group -->
+      <div class="sidebar-section">
+        <h4>Library</h4>
+        
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../tasks/desktop.html">
+          <span>Tasks</span><span class="badge">12</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../notes/desktop.html">
+          <span>Notes</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../journal/desktop.html">
+          <span>Journal</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../calendar/desktop.html">
+          <span>Calendar</span>
+        </a>
+      </div>
+    <!-- @tfComponent TF.Nav.UserFooter -->
+    <div style="margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3)">
+        <div style="width:32px;height:32px;border-radius:99px;background:var(--gradient-tempo);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">A</div>
+        <div><div style="font-size:13px;font-weight:500">Amit</div><div class="caption">Pro · 5-day streak</div></div>
+      </div>
+    </div>
+  </aside>
+  
+  
+  <div class="app-main">
+    
+    <!-- @tfComponent TF.Shell.Topbar -->
+    <header class="topbar">
+      
+      <div class="breadcrumb"><span>Thursday, April 23 · </span><strong>Today</strong></div>
+      <div class="spacer"></div>
+      <!-- @tfComponent TF.Button.Gradient --><button class="btn btn-sm btn-gradient">✨ Plan with Coach</button>
+      <button class="icon-btn" title="Search" aria-label="Search">🔍</button>
+      <button class="icon-btn" title="Notifications" aria-label="Notifications">🔔</button>
+    </header>
+    
+    <!-- @tfComponent TF.Page.Container -->
+    <div class="page">
+      <!-- @tfComponent TF.Page.Header -->
+      <div class="page-header row">
+        <div>
+          <div class="eyebrow">Thursday · April 23</div>
+          <h1 style="font-size:40px">Good morning, Amit.</h1>
+          <p class="lede">Three things look doable this afternoon. Your energy tends to dip after lunch — that's allowed.</p>
+        </div>
+        <div class="row hide-mobile">
+          <div style="text-align:right">
+            <div class="eyebrow">Energy</div>
+            <!-- @tfComponent TF.EnergyBar -->
+            <div style="display:inline-flex;gap:3"><span style="width:16px;height:6px;border-radius:99px;background:var(--tempo-orange)"></span><span style="width:16px;height:6px;border-radius:99px;background:var(--tempo-orange)"></span><span style="width:16px;height:6px;border-radius:99px;background:var(--tempo-orange)"></span><span style="width:16px;height:6px;border-radius:99px;background:var(--tempo-orange)"></span><span style="width:16px;height:6px;border-radius:99px;background:var(--border)"></span></div>
+          </div>
+          <div class="divider-vert" style="height:40px"></div>
+          <div style="text-align:right">
+            <div class="eyebrow">Streak</div>
+            <div style="font-family:var(--font-serif);font-size:22px;font-weight:500">5 days</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-asym">
+        <!-- @tfComponent TF.Stack -->
+        <div class="stack">
+          <!-- @tfComponent TF.Card.TaskList -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="eyebrow">Today's anchors</div>
+                <h2>1 of 5 things</h2>
+              </div>
+              <div class="row-tight">
+                <!-- @tfComponent TF.Ring -->
+                <span class="ring" style="width:40px;height:40px"><svg width="40" height="40"><circle class="ring-track" cx="20" cy="20" r="18" stroke-width="3"/><circle class="ring-fill" cx="20" cy="20" r="18" stroke-width="3" style="stroke-dasharray:113;stroke-dashoffset:90"/></svg><span class="ring-label">20</span></span>
+                <!-- @tfComponent TF.Button.Outline --><button class="btn btn-sm btn-outline">+ Add</button>
+              </div>
+            </div>
+            <div class="stack-2">
+              
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row is-done">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">Morning pages</div>
+              <div class="task-meta">
+                <span>08:00</span>
+                <span>· 15 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-slate">low energy</span>
+              </div>
+            </div>
+            
+          </div>
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">Draft Tempo 1.0 launch post</div>
+              <div class="task-meta">
+                <span>09:30</span>
+                <span>· 60 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-accent">high energy</span>
+              </div>
+            </div>
+            <!-- @tfComponent TF.Pill --><span class="pill pill-accent">AI</span>
+          </div>
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">Review PRs from yesterday</div>
+              <div class="task-meta">
+                <span>11:00</span>
+                <span>· 30 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-moss">medium energy</span>
+              </div>
+            </div>
+            
+          </div>
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">10-minute walk</div>
+              <div class="task-meta">
+                <span>12:30</span>
+                <span>· 10 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-slate">low energy</span>
+              </div>
+            </div>
+            
+          </div>
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">Respond to three founder questions</div>
+              <div class="task-meta">
+                <span>14:00</span>
+                <span>· 25 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-moss">medium energy</span>
+              </div>
+            </div>
+            <!-- @tfComponent TF.Pill --><span class="pill pill-accent">AI</span>
+          </div>
+            </div>
+            <!-- @tfComponent TF.AcceptStrip -->
+            <div class="accept-strip">
+              <div class="strip-text">Two overdue things from yesterday. Carry them to today, or let them rest?</div>
+              <button class="btn btn-sm btn-primary">Accept</button>
+              <button class="btn btn-sm btn-outline">Tweak</button>
+              <button class="btn btn-sm btn-ghost">Skip</button>
+            </div>
+          </div>
+
+          <!-- @tfComponent TF.Card.CoachSuggestion -->
+          <div class="card sunken">
+            <!-- @tfComponent TF.Coach.Bubble -->
+            <div style="display:flex;gap:var(--space-3);align-items:flex-start">
+              <div class="coach-avatar">T</div>
+              <div class="coach-bubble">Nice work on morning pages. When you're ready, the Tempo 1.0 post is the biggest thing — sixty minutes, high-energy. Want me to stage the outline first?</div>
+            </div>
+            <div style="margin-top:var(--space-4);display:flex;gap:8">
+              <button class="btn btn-sm btn-primary">Stage the outline</button>
+              <button class="btn btn-sm btn-ghost">Not now</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- @tfComponent TF.Stack -->
+        <div class="stack">
+          <!-- @tfComponent TF.Card.Habits -->
+          <div class="card">
+            <div class="eyebrow" style="margin-bottom:12px">Habits · today</div>
+            <div class="stack-3">
+              <div class="row-apart"><div class="row"><span>Morning pages</span></div><!-- @tfComponent TF.Pill --><span class="pill pill-moss">5-day streak</span></div>
+              <div class="row-apart"><div class="row"><span>10-min walk</span></div><span class="pill pill-amber">due</span></div>
+              <div class="row-apart"><div class="row"><span>Shutdown sequence</span></div><span class="pill">8pm</span></div>
+            </div>
+          </div>
+          <!-- @tfComponent TF.Card.UpNext -->
+          <div class="card">
+            <div class="eyebrow" style="margin-bottom:12px">Up next</div>
+            <div class="stack-3">
+              <div class="row" style="padding:8px 0;border-bottom:1px solid var(--border-soft)"><span style="font-size:14px">11:00 Review PRs · 30 min</span></div>
+              <div class="row" style="padding:8px 0;border-bottom:1px solid var(--border-soft)"><span style="font-size:14px">12:30 10-minute walk</span></div>
+              <div class="row" style="padding:8px 0"><span style="font-size:14px">14:00 Respond to founder Qs</span></div>
+            </div>
+          </div>
+          <!-- @tfComponent TF.Card.Pebble -->
+          <div class="card sunken flat">
+            <div class="eyebrow" style="margin-bottom:10px">Pebble of the day</div>
+            <p style="font-family:var(--font-serif);font-size:18px;line-height:1.5">"10 minute walk" beats "some movement." — small, gentle, specific.</p>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+</body></html>
