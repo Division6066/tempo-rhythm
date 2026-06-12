@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Daily Note · mobile · Tempo Flow</title>
+  <link rel="stylesheet" href="../../tokens.css"/>
+  <link rel="stylesheet" href="../../responsive-shell.css"/>
+</head>
+<body class="tf-mobile" data-screen="daily-note" data-breakpoint="mobile">
+  <!-- @tfComponent TF.Shell.App -->
+  <div class="note-layout">
+    <!-- @tfComponent TF.Note.CalendarRail -->
+    <aside class="note-calendar">
+      <div class="calendar-detail" style="padding:var(--space-4)">
+        <div class="sidebar-brand"><span>Tempo<em>Flow</em></span></div>
+        <div class="eyebrow" style="margin:12px 0">April 2026</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;text-align:center">
+          <span>23</span>
+        </div>
+        <div style="margin-top:16px" class="stack-2">
+          <button class="nav-item is-active">Today</button>
+          <button class="nav-item">This week</button>
+          <button class="nav-item">Projects <span class="badge">4</span></button>
+        </div>
+      </div>
+    </aside>
+    <main class="note-editor">
+      <!-- @tfComponent TF.Shell.Topbar -->
+      <header class="topbar" style="position:sticky;top:0">
+        <button class="icon-btn mobile-menu-btn">☰</button>
+        <span class="mono caption">2026-04-23.md</span>
+        <div class="spacer"></div>
+        <button class="btn btn-sm btn-outline">⌘K Quick switch</button>
+      </header>
+      <!-- @tfComponent TF.Note.Editor -->
+      <article style="max-width:720px;margin:0 auto;padding:32px">
+        <div class="eyebrow" style="color:var(--tempo-orange)">Thursday · April 23 · Week 17</div>
+        <h1>☀️ Today</h1>
+        <p style="font-style:italic;color:var(--fg-muted);margin:16px 0">Three things look doable this afternoon. I pulled them from your dump — the worry I parked for tomorrow.</p>
+        <h2>Tasks</h2>
+        <div class="stack-2 mobile-limit-5">
+          <div class="task-row is-done"><button class="check">✓</button><span>Morning pages — Journal</span></div>
+          <div class="task-row is-done"><button class="check">✓</button><span>Draft launch post, first pass</span></div>
+          <div class="task-row"><button class="check"></button><span>Ten-minute walk (non-negotiable</span></div>
+          <div class="task-row"><button class="check"></button><span>Respond to founder Qs in Tempo 1.0</span></div>
+          <div class="task-row"><button class="check"></button><span>Evening shutdown — close loops</span></div>
+        </div>
+        <h2 style="margin-top:24px">Linked mentions</h2>
+        <!-- @tfComponent TF.Card.Backlink -->
+        <div class="card" style="margin-top:8px;padding:14px">
+          <div class="caption">3 backlinks · #writing</div>
+          <div style="margin-top:8px;font-size:13px;color:var(--tempo-orange)">2026-04-22.md</div>
+          <p style="font-size:13px;color:var(--fg-muted)">Got the structure for launch post — three sections, intro is hardest.</p>
+        </div>
+      </article>
+    </main>
+    <!-- @tfComponent TF.Note.RightRail -->
+    <aside class="note-right" style="padding:var(--space-4)">
+      <div class="eyebrow">Focus</div>
+      <div class="row-tight" style="margin:12px 0"><button class="btn btn-sm btn-outline">−5m</button><button class="btn btn-sm btn-primary">Pause</button><button class="btn btn-sm btn-outline">+5m</button></div>
+      <div class="eyebrow" style="margin-top:20px">Quick dump</div>
+      <div class="field" style="margin-top:8px"><textarea placeholder="Capture without leaving the note…"></textarea></div>
+      <button class="btn btn-gradient" style="margin-top:12px;width:100%">Send to Brain Dump</button>
+    </aside>
+  </div>
+    <!-- @tfComponent TF.Shell.BottomNav -->
+    <nav class="bottom-nav" aria-label="Primary">
+    <a href="#" class=""><span class="nav-icon">🏠</span>Today</a>
+    <a href="#" class=""><span class="nav-icon">✨</span>Dump</a>
+    <a href="#" class=""><span class="nav-icon">🎙</span>Coach</a>
+    <a href="#" class=""><span class="nav-icon">📅</span>Plan</a>
+    </nav></body>
+</html>

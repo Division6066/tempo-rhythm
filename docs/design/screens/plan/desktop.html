@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Planning · desktop · Tempo Flow</title>
+  <link rel="stylesheet" href="../../tokens.css"/>
+  <link rel="stylesheet" href="../../responsive-shell.css"/>
+</head>
+<body class="tf-desktop" data-screen="plan" data-breakpoint="desktop">
+  <!-- @tfComponent TF.Shell.App -->
+  <div class="app">
+    <!-- @tfComponent TF.Shell.Sidebar -->
+    <aside class="sidebar">
+      <!-- @tfComponent TF.Shell.BrandMark -->
+      <div class="sidebar-brand"><span class="brand-mark">◐</span><span class="brand-name">Tempo<em>Flow</em></span></div>
+      <div class="sidebar-section">
+        <h4>Flow</h4>
+          <button class="nav-item"><span>📓</span><span>Daily Note</span></button>
+          <button class="nav-item"><span>🏠</span><span>Today</span></button>
+          <button class="nav-item"><span>✨</span><span>Brain Dump</span></button>
+          <button class="nav-item"><span>🎙</span><span>Coach</span></button>
+          <button class="nav-item is-active"><span>📅</span><span>Planning</span></button>
+      </div>
+      <div class="sidebar-section">
+        <h4>Library</h4>
+          <button class="nav-item"><span>☑</span><span>Tasks</span><span class="badge">12</span></button>
+          <button class="nav-item"><span>📓</span><span>Notes</span><span class="badge"></span></button>
+          <button class="nav-item"><span>📖</span><span>Journal</span><span class="badge"></span></button>
+          <button class="nav-item"><span>📅</span><span>Calendar</span><span class="badge"></span></button>
+          <button class="nav-item"><span>🔥</span><span>Habits</span><span class="badge"></span></button>
+      </div>
+      <!-- @tfComponent TF.Shell.UserChip -->
+      <div style="margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--border)">
+        <div class="row" style="padding:var(--space-3)">
+          <div style="width:32px;height:32px;border-radius:99px;background:var(--gradient-tempo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600">A</div>
+          <div><div style="font-size:13px;font-weight:500">Amit</div><div class="caption">Pro · 5-day streak</div></div>
+        </div>
+      </div>
+    </aside>
+    <div class="app-main">
+      <!-- @tfComponent TF.Shell.Topbar -->
+      <header class="topbar">
+        <div class="breadcrumb"><strong>Planning</strong> · Flow</div>
+        <div class="spacer"></div>
+        <button class="btn btn-primary">✨ Re-plan</button>
+      </header>
+      <main class="page">
+        <header class="page-header row">
+          <div>
+            <div class="eyebrow">Plan · Thursday</div>
+            <h1>Let's stage today.</h1>
+            <p class="lede">Coach suggests six blocks based on yesterday's energy curve and your two anchors (pages + walk).</p>
+          </div>
+          <div class="row-tight">
+            <!-- @tfComponent TF.SegControl -->
+            <div class="seg-control"><button class="is-active">Day</button><button>Week</button></div>
+            <button class="btn btn-primary">✨ Re-plan</button>
+          </div>
+        </header>
+        <div class="grid-asym">
+          <section class="card">
+            <div class="card-head"><h3>Timeline</h3><div class="caption">5 blocks · 2h 30m focused work</div></div>
+            <!-- @tfComponent TF.Timeline -->
+            <div class="stack-2">
+                <!-- @tfComponent TF.Card.TimelineBlock -->
+                <div style="padding:8px 12px;margin:4px 0;background:var(--moss-bg);border-left:3px solid var(--moss);border-radius:8px">
+                  <div style="font-weight:500">Morning pages</div><div class="caption">8:00–8:15</div>
+                </div>
+                <!-- @tfComponent TF.Card.TimelineBlock -->
+                <div style="padding:8px 12px;margin:4px 0;background:var(--tempo-orange-bg);border-left:3px solid var(--tempo-orange);border-radius:8px">
+                  <div style="font-weight:500">Draft Tempo 1.0 launch post</div><div class="caption">9:30–10:30</div>
+                </div>
+                <!-- @tfComponent TF.Card.TimelineBlock -->
+                <div style="padding:8px 12px;margin:4px 0;background:var(--slate-blue-bg);border-left:3px solid var(--slate-blue);border-radius:8px">
+                  <div style="font-weight:500">Review PRs</div><div class="caption">11:00–11:30</div>
+                </div>
+                <!-- @tfComponent TF.Card.TimelineBlock -->
+                <div style="padding:8px 12px;margin:4px 0;background:var(--moss-bg);border-left:3px solid var(--moss);border-radius:8px">
+                  <div style="font-weight:500">10-minute walk</div><div class="caption">12:30–12:40</div>
+                </div>
+                <!-- @tfComponent TF.Card.TimelineBlock -->
+                <div style="padding:8px 12px;margin:4px 0;background:var(--tempo-orange-bg);border-left:3px solid var(--tempo-orange);border-radius:8px">
+                  <div style="font-weight:500">Respond to founder Qs</div><div class="caption">14:00–14:25</div>
+                </div>
+            </div>
+          </section>
+          <div class="stack">
+            <section class="card">
+              <div class="eyebrow" style="margin-bottom:10px">Energy check-in</div>
+              <div class="pill pill-moss">4 / 5 alert</div>
+            </section>
+            <section class="card sunken flat">
+              <div class="coach-bubble">Five things feels full but fine. If the afternoon wobbles, the founder questions can slide to Friday.</div>
+            </section>
+          </div>
+        </div>
+      </main>    </div>
+  </div>
+</body>
+</html>

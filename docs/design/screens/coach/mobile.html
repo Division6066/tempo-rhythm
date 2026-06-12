@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Coach · mobile · Tempo Flow</title>
+  <link rel="stylesheet" href="../../tokens.css"/>
+  <link rel="stylesheet" href="../../responsive-shell.css"/>
+</head>
+<body class="tf-mobile" data-screen="coach" data-breakpoint="mobile">
+  <!-- @tfComponent TF.Shell.App -->
+  <div class="app">
+    <!-- @tfComponent TF.Shell.SidebarRail -->
+    <aside class="sidebar-rail">
+      <div style="font-family:var(--font-serif);font-weight:600;color:var(--tempo-orange)">T</div>
+      <button class="nav-item" title="today"><span class="sr-only">today</span><span>🏠</span></button>
+      <button class="nav-item" title="brain-dump"><span class="sr-only">brain-dump</span><span>✨</span></button>
+      <button class="nav-item is-active" title="coach"><span class="sr-only">coach</span><span>🎙</span></button>
+      <button class="nav-item" title="plan"><span class="sr-only">plan</span><span>📅</span></button>
+      <button class="nav-item" title="tasks"><span class="sr-only">tasks</span><span>☑</span></button>
+    </aside>
+    <div class="app-main">
+      <!-- @tfComponent TF.Shell.Topbar -->
+      <header class="topbar">
+      <button class="icon-btn mobile-menu-btn" aria-label="Open menu">☰</button>
+        <div class="breadcrumb"><strong>Coach</strong> · Flow</div>
+        <div class="spacer"></div>
+        <span class="pill pill-moss">Online</span>
+      </header>
+      <main class="page-tight">
+        <header class="page-header">
+          <div class="eyebrow">Coach</div>
+          <h1>A quiet second brain.</h1>
+          <p class="lede">Warmth dial at <strong>6/10</strong> — gently offering, not saccharine. Coach sees only the notes and projects you share.</p>
+        </header>
+        <div class="grid-asym">
+          <section class="card" style="padding:0;display:flex;flex-direction:column;min-height:480px">
+            <!-- @tfComponent TF.Coach.Thread -->
+            <div style="flex:1;padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);overflow-y:auto">
+              <div class="caption" style="text-align:center">Thursday, 9:12 AM</div>
+              <div class="coach-bubble">Morning. I noticed you dumped seven things earlier. Three of them look like worries about shipping. Want to talk about those, or should I stage the tasks first?</div>
+              <div class="user-bubble">Stage the tasks. I'll come back to the worries tonight.</div>
+              <div class="coach-bubble">Good. I'll add <em>Finish landing copy</em>, <em>Book dentist</em>, and <em>Ask Sam about Convex</em> to today.</div>
+            </div>
+            <!-- @tfComponent TF.Coach.Composer -->
+            <div style="padding:var(--space-4) var(--space-5);border-top:1px solid var(--border)">
+              <div class="field"><textarea placeholder="Type, or hold to dictate…" style="min-height:44px"></textarea></div>
+              <div class="row-tight" style="margin-top:8px">
+                <button class="btn btn-sm btn-primary" style="width:100%">Send</button>
+                <span class="pill pill-accent">Stage tasks</span>
+                <span class="pill">Draft journal prompt</span>
+              </div>
+            </div>
+          </section>
+          <div class="stack">
+            <!-- @tfComponent TF.Coach.PersonalityDial -->
+            <section class="card">
+              <div class="eyebrow" style="margin-bottom:10px">Personality dial</div>
+              <div style="font-family:var(--font-serif);font-size:20px;margin-bottom:8px">Gentle</div>
+              <div style="height:8px;background:var(--surface-sunken);border-radius:99px"><div style="width:60%;height:100%;background:var(--gradient-tempo);border-radius:99px"></div></div>
+            </section>
+            <!-- @tfComponent TF.Coach.ScopeList -->
+            <section class="card">
+              <div class="eyebrow" style="margin-bottom:10px">Conversation scope</div>
+              <div class="stack-2"><div class="row"><span>📓</span><span>Launch notes</span></div><div class="row"><span>📁</span><span>Tempo 1.0</span></div></div>
+            </section>
+          </div>
+        </div>
+      </main>    </div>
+  </div>
+    <!-- @tfComponent TF.Shell.BottomNav -->
+    <nav class="bottom-nav" aria-label="Primary">
+    <a href="#" class=""><span class="nav-icon">🏠</span>Today</a>
+    <a href="#" class=""><span class="nav-icon">✨</span>Dump</a>
+    <a href="#" class="is-active"><span class="nav-icon">🎙</span>Coach</a>
+    <a href="#" class=""><span class="nav-icon">📅</span>Plan</a>
+    </nav></body>
+</html>
