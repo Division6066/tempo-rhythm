@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "source": "claude-export/design-system/app.html",
+  "batches": {
+    "flow": {
+      "name": "Flow",
+      "screenIds": ["daily-note", "today", "brain-dump", "coach", "plan"],
+      "status": "complete"
+    }
+  },
+  "screens": [
+    { "id": "daily-note", "title": "Daily Note", "category": "Flow", "bare": true, "responsive": true, "source": "screens-7.jsx" },
+    { "id": "today", "title": "Today", "category": "Flow", "bare": false, "responsive": true, "source": "screens-1.jsx" },
+    { "id": "brain-dump", "title": "Brain Dump", "category": "Flow", "bare": false, "responsive": true, "source": "screens-1.jsx" },
+    { "id": "coach", "title": "Coach", "category": "Flow", "bare": false, "responsive": true, "source": "screens-1.jsx" },
+    { "id": "plan", "title": "Planning", "category": "Flow", "bare": false, "responsive": true, "source": "screens-1.jsx" },
+    { "id": "tasks", "title": "Tasks", "category": "Library", "bare": false, "responsive": false, "source": "screens-1.jsx" },
+    { "id": "notes", "title": "Notes", "category": "Library", "bare": false, "responsive": false, "source": "screens-2.jsx" },
+    { "id": "note-detail", "title": "Note · editor", "category": "Library", "bare": false, "responsive": false, "source": "screens-2.jsx" },
+    { "id": "journal", "title": "Journal", "category": "Library", "bare": false, "responsive": false, "source": "screens-2.jsx" },
+    { "id": "calendar", "title": "Calendar", "category": "Library", "bare": false, "responsive": false, "source": "screens-3.jsx" },
+    { "id": "habits", "title": "Habits", "category": "Library", "bare": false, "responsive": false, "source": "screens-3.jsx" },
+    { "id": "habit-detail", "title": "Habit detail", "category": "Library", "bare": false, "responsive": false, "source": "screens-3.jsx" },
+    { "id": "routines", "title": "Routines", "category": "Library", "bare": false, "responsive": false, "source": "screens-3.jsx" },
+    { "id": "routine-detail", "title": "Routine · guided", "category": "Library", "bare": false, "responsive": false, "source": "screens-3.jsx" },
+    { "id": "goals", "title": "Goals", "category": "Library", "bare": false, "responsive": false, "source": "screens-4.jsx" },
+    { "id": "goal-detail", "title": "Goal detail", "category": "Library", "bare": false, "responsive": false, "source": "screens-4.jsx" },
+    { "id": "goals-progress", "title": "Goals · chart", "category": "Library", "bare": false, "responsive": false, "source": "screens-4.jsx" },
+    { "id": "projects", "title": "Projects", "category": "Library", "bare": false, "responsive": false, "source": "screens-4.jsx" },
+    { "id": "project-detail", "title": "Project detail", "category": "Library", "bare": false, "responsive": false, "source": "screens-4.jsx" },
+    { "id": "project-kanban", "title": "Project · kanban", "category": "Library", "bare": false, "responsive": false, "source": "screens-4.jsx" },
+    { "id": "analytics", "title": "Insights", "category": "You", "bare": false, "responsive": false, "source": "screens-5.jsx" },
+    { "id": "activity", "title": "Recent activity", "category": "You", "bare": false, "responsive": false, "source": "screens-5.jsx" },
+    { "id": "templates", "title": "Templates", "category": "You", "bare": false, "responsive": false, "source": "screens-templates.jsx" },
+    { "id": "template-builder", "title": "Template · builder", "category": "You", "bare": true, "responsive": false, "source": "screens-template-builder.jsx" },
+    { "id": "template-run", "title": "Template · run", "category": "You", "bare": true, "responsive": false, "source": "screens-template-run.jsx" },
+    { "id": "search", "title": "Search", "category": "You", "bare": false, "responsive": false, "source": "screens-5.jsx" },
+    { "id": "command", "title": "Command bar", "category": "You", "bare": false, "responsive": false, "source": "screens-5.jsx" },
+    { "id": "settings", "title": "Settings · profile", "category": "Settings", "bare": false, "responsive": false, "source": "screens-6.jsx" },
+    { "id": "settings-prefs", "title": "Settings · prefs", "category": "Settings", "bare": false, "responsive": false, "source": "screens-6.jsx" },
+    { "id": "billing", "title": "Trial & billing", "category": "Settings", "bare": false, "responsive": false, "source": "screens-6.jsx" },
+    { "id": "landing", "title": "Landing page", "category": "Marketing", "bare": true, "responsive": false, "source": "landing.html" },
+    { "id": "sign-in", "title": "Sign in", "category": "Onboarding", "bare": true, "responsive": false, "source": "screens-7.jsx" },
+    { "id": "onboarding", "title": "Onboarding", "category": "Onboarding", "bare": true, "responsive": false, "source": "screens-7.jsx" }
+  ]
+}

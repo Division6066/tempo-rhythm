@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Brain Dump · tablet · Tempo Flow</title>
+  <link rel="stylesheet" href="../../tokens.css"/>
+  <link rel="stylesheet" href="../../responsive-shell.css"/>
+</head>
+<body class="tf-tablet" data-screen="brain-dump" data-breakpoint="tablet">
+  <!-- @tfComponent TF.Shell.App -->
+  <div class="app">
+    <!-- @tfComponent TF.Shell.SidebarRail -->
+    <aside class="sidebar-rail">
+      <div style="font-family:var(--font-serif);font-weight:600;color:var(--tempo-orange)">T</div>
+      <button class="nav-item" title="today"><span class="sr-only">today</span><span>🏠</span></button>
+      <button class="nav-item is-active" title="brain-dump"><span class="sr-only">brain-dump</span><span>✨</span></button>
+      <button class="nav-item" title="coach"><span class="sr-only">coach</span><span>🎙</span></button>
+      <button class="nav-item" title="plan"><span class="sr-only">plan</span><span>📅</span></button>
+      <button class="nav-item" title="tasks"><span class="sr-only">tasks</span><span>☑</span></button>
+    </aside>
+    <div class="app-main">
+      <!-- @tfComponent TF.Shell.Topbar -->
+      <header class="topbar">
+        <div class="breadcrumb"><strong>Brain Dump</strong> · Flow</div>
+        <div class="spacer"></div>
+        <button class="btn btn-gradient">✨ Sort it</button>
+      </header>
+      <main class="page">
+        <header class="page-header">
+          <div class="eyebrow">Brain Dump</div>
+          <h1>Everything on your mind.</h1>
+          <p class="lede">Don't organize it. Just type. I'll sort it into tasks, reminders, ideas, and worries — then you approve what sticks.</p>
+        </header>
+        <div class="grid-asym">
+          <section class="card">
+            <div class="card-head"><h3>Dump</h3><span class="caption mono">312 chars · 58 words</span></div>
+            <!-- @tfComponent TF.Field.Textarea -->
+            <div class="field"><textarea style="min-height:280px;font-family:var(--font-serif);font-size:18px">Remember to finish the landing copy. Book dentist. Ask Sam about the Convex migration. Pick up groceries on the way home. Worry: am I shipping fast enough?</textarea></div>
+            <div class="row-apart" style="margin-top:var(--space-4)">
+              <span class="caption">End-to-end encrypted. Only you see this.</span>
+              <button class="btn btn-gradient">✨ Sort it</button>
+            </div>
+          </section>
+          <div class="stack">
+            <section class="card">
+              <div class="eyebrow" style="margin-bottom:8px">Gentle prompts</div>
+              <div class="stack-2">
+                <!-- @tfComponent TF.Card.Prompt -->
+                <div style="padding:10px;background:var(--surface-sunken);border-radius:10px;font-family:var(--font-serif);font-size:14px">What's one thing you've been avoiding?</div>
+                <div style="padding:10px;background:var(--surface-sunken);border-radius:10px;font-family:var(--font-serif);font-size:14px">Any small wins from yesterday?</div>
+                <div style="padding:10px;background:var(--surface-sunken);border-radius:10px;font-family:var(--font-serif);font-size:14px">What would help your shoulders drop?</div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <section class="card" style="margin-top:var(--space-8)">
+          <div class="card-head">
+            <div><div class="eyebrow">Sorted — 7 items</div><h3>Review and approve</h3></div>
+            <div class="row-tight">
+              <button class="btn btn-sm btn-outline">Approve all</button>
+              <button class="btn btn-sm btn-ghost">Skip all</button>
+            </div>
+          </div>
+          <div class="stack-2">
+                <!-- @tfComponent TF.Card.SortedItem -->
+                <div class="row-apart" style="padding:12px 16px;background:var(--surface-sunken);border-radius:10px">
+                  <div class="row"><span class="pill pill-accent">task</span><span>Finish the landing copy</span></div>
+                  <div class="row-tight"><span class="caption mono">94%</span><button class="btn btn-sm btn-primary">Accept</button><button class="btn btn-sm btn-ghost">Skip</button></div>
+                </div>
+                <!-- @tfComponent TF.Card.SortedItem -->
+                <div class="row-apart" style="padding:12px 16px;background:var(--surface-sunken);border-radius:10px">
+                  <div class="row"><span class="pill pill-accent">task</span><span>Book dentist</span></div>
+                  <div class="row-tight"><span class="caption mono">97%</span><button class="btn btn-sm btn-primary">Accept</button><button class="btn btn-sm btn-ghost">Skip</button></div>
+                </div>
+                <!-- @tfComponent TF.Card.SortedItem -->
+                <div class="row-apart" style="padding:12px 16px;background:var(--surface-sunken);border-radius:10px">
+                  <div class="row"><span class="pill pill-accent">task</span><span>Ask Sam about the Convex migration</span></div>
+                  <div class="row-tight"><span class="caption mono">91%</span><button class="btn btn-sm btn-primary">Accept</button><button class="btn btn-sm btn-ghost">Skip</button></div>
+                </div>
+                <!-- @tfComponent TF.Card.SortedItem -->
+                <div class="row-apart" style="padding:12px 16px;background:var(--surface-sunken);border-radius:10px">
+                  <div class="row"><span class="pill pill-slate">reminder</span><span>Pick up groceries on the way home</span></div>
+                  <div class="row-tight"><span class="caption mono">86%</span><button class="btn btn-sm btn-primary">Accept</button><button class="btn btn-sm btn-ghost">Skip</button></div>
+                </div>
+                <!-- @tfComponent TF.Card.SortedItem -->
+                <div class="row-apart" style="padding:12px 16px;background:var(--surface-sunken);border-radius:10px">
+                  <div class="row"><span class="pill pill-amber">worry</span><span>Am I shipping fast enough?</span></div>
+                  <div class="row-tight"><span class="caption mono">88%</span><button class="btn btn-sm btn-primary">Accept</button><button class="btn btn-sm btn-ghost">Skip</button></div>
+                </div>
+                <!-- @tfComponent TF.Card.SortedItem -->
+                <div class="row-apart" style="padding:12px 16px;background:var(--surface-sunken);border-radius:10px">
+                  <div class="row"><span class="pill pill-amber">idea</span><span>Orange gradient on the first-run splash</span></div>
+                  <div class="row-tight"><span class="caption mono">82%</span><button class="btn btn-sm btn-primary">Accept</button><button class="btn btn-sm btn-ghost">Skip</button></div>
+                </div>
+                <!-- @tfComponent TF.Card.SortedItem -->
+                <div class="row-apart" style="padding:12px 16px;background:var(--surface-sunken);border-radius:10px">
+                  <div class="row"><span class="pill pill-slate">reminder</span><span>Journal about the talk</span></div>
+                  <div class="row-tight"><span class="caption mono">79%</span><button class="btn btn-sm btn-primary">Accept</button><button class="btn btn-sm btn-ghost">Skip</button></div>
+                </div>
+          </div>
+        </section>
+      </main>    </div>
+  </div>
+</body>
+</html>
