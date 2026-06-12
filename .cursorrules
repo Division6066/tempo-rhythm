@@ -1,6 +1,6 @@
 # Tempo Flow — Cursor rules
 
-Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Expo mobile + Convex + OpenRouter. See `README.md` for the project overview.
+Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Expo mobile + Convex + Mistral API (via `convex/lib/ai_router.ts`). See `README.md` for the project overview.
 
 ## Read these first (every session)
 
@@ -34,7 +34,7 @@ Before writing code:
 - Prisma, Drizzle, TypeORM, any other ORM
 - Auth0, Clerk, NextAuth, BetterAuth (we use Convex Auth)
 - Stripe direct SDK (we use RevenueCat)
-- OpenAI, Anthropic, Google AI direct SDKs (we use OpenRouter)
+- OpenAI, Anthropic, Google AI, Mistral AI direct SDKs (we use Mistral API via native `fetch` in Convex actions)
 - Redux, Zustand, Jotai, Recoil, MobX (Convex is reactive by default)
 - Axios or any fetch wrapper
 - MongoDB, Postgres (any direct DB client)
@@ -55,7 +55,7 @@ Before writing code:
 
 - Every new Convex mutation gets at least one test in `convex/*.test.ts`.
 - Every React component with non-trivial logic gets a render test.
-- PRs run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm convex:schema-guard`, `pnpm scan:forbidden-tech`.
+- PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, plus CI scans (see `docs/CI.md`). Blocking today: typecheck, lint, secret scan.
 - PRs must target a feature branch, never `main` directly.
 
 ## Commit style
