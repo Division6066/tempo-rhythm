@@ -3,6 +3,19 @@
 **Source:** `docs/design/claude-export/design-system/` (Tempo Flow Design System v1.0, April 2026).
 **Router map source:** `design-system/app.html` lines 60–109 (`SCREENS` object).
 
+## Web route groups (`apps/web/app/`)
+
+Next.js App Router layouts split screens into four groups. Route groups in parentheses do not appear in URLs.
+
+| Group | Layout file | Shell | Purpose | Example paths |
+|---|---|---|---|---|
+| `(tempo)` | `(tempo)/layout.tsx` | `TempoShell` (sidebar + topbar) | Primary app surfaces | `/today`, `/tasks`, `/coach` |
+| `(bare)` | `(bare)/layout.tsx` | None (focus mode) | Full-bleed flows without chrome | `/daily-note`, `/onboarding`, `/templates/builder`, `/billing/trial-end` |
+| `(app)` | `(app)/layout.tsx` | `grain-bg` wrapper | Legacy / scaffold shells | `/dashboard` |
+| `(auth)` | `(auth)/layout.tsx` | Auth gate + spinner | Convex Auth loading states | Wraps sign-in flows when nested here |
+
+Marketing pages (`/`, `/about`, `/changelog`) and bare auth routes (`/sign-in`, `/sign-up`) sit outside `(tempo)` at the app root.
+
 ## Web — 42 screens
 
 Target base: `apps/web/app/(tempo)/`
