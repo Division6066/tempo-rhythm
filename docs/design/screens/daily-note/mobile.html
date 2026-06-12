@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tempo Flow · Daily Note</title>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../shell.css">
+  <link rel="stylesheet" href="../../responsive-layout.css">
+</head>
+<body data-layout="mobile">
+<!-- @tfComponent TF.Shell.App -->
+<div class="daily-note-layout">
+  <!-- @tfComponent TF.Card.CalendarRail -->
+  <aside class="daily-note-rail" style="padding:var(--space-4)">
+    <div class="sidebar-brand" style="margin-bottom:var(--space-4)"><span class="brand-name">Tempo<em>Flow</em></span></div>
+    <div class="eyebrow">April 2026</div>
+    <p class="caption" style="margin:8px 0">Today · 2026-04-23</p>
+    
+  </aside>
+  <!-- @tfComponent TF.Card.NoteEditor -->
+  <main class="daily-note-editor">
+    <header class="topbar" style="position:sticky;top:0">
+      <span class="mono caption">2026-04-23.md</span>
+      <div class="spacer"></div>
+      <button class="menu-btn" onclick="document.getElementById('nav-drawer')?.classList.add('is-open')">☰</button>
+    </header>
+    <article style="max-width:720px;margin:0 auto;padding:var(--space-8) var(--space-6)">
+      <div class="eyebrow" style="color:var(--tempo-orange)">Thursday · April 23 · Week 17</div>
+      <h1>☀️ Today</h1>
+      <blockquote style="font-family:var(--font-serif);font-size:17px;color:var(--fg-muted);border-left:3px solid var(--tempo-orange);padding-left:var(--space-4);margin:var(--space-4) 0">Three things look doable this afternoon. I pulled them from your dump.</blockquote>
+      <h2>Tasks</h2>
+      <div class="stack-2" style="margin:var(--space-4) 0">
+        
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row is-done">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">Morning pages</div>
+              <div class="task-meta">
+                <span>08:00</span>
+                <span>· 15 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-slate">low energy</span>
+              </div>
+            </div>
+            
+          </div>
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row is-done">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">Draft launch post, first pass</div>
+              <div class="task-meta">
+                <span>09:30</span>
+                <span>· 15 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-slate">low energy</span>
+              </div>
+            </div>
+            
+          </div>
+          <!-- @tfComponent TF.TaskRow -->
+          <div class="task-row">
+            <button class="check" aria-label="Toggle task"></button>
+            <div class="task-main">
+              <div class="task-title">Ten-minute walk (non-negotiable)</div>
+              <div class="task-meta">
+                <span>12:30</span>
+                <span>· 15 min</span>
+                <!-- @tfComponent TF.Pill --><span class="pill pill-slate">low energy</span>
+              </div>
+            </div>
+            
+          </div>
+      </div>
+      <h2>Notes</h2>
+      <p>Sam replied on Convex — he's bullish, wants a 30-min pairing session this week.</p>
+      <div class="mobile-primary-cta"><button class="btn btn-primary" style="width:100%">⌘K Quick switch</button></div>
+    </article>
+  </main>
+  
+</div>
+
+  <!-- @tfComponent TF.Shell.Drawer -->
+  <aside class="drawer" id="nav-drawer" style="padding:var(--space-4)">
+    <div class="eyebrow">Navigate</div>
+    <a class="nav-item is-active" href="mobile.html">Daily Note</a>
+    <a class="nav-item" href="../today/mobile.html">Today</a>
+    <a class="nav-item" href="../brain-dump/mobile.html">Brain Dump</a>
+    <a class="nav-item" href="../coach/mobile.html">Coach</a>
+    <a class="nav-item" href="../plan/mobile.html">Planning</a>
+  </aside>
+  <div class="drawer-overlay" onclick="document.getElementById('nav-drawer').classList.remove('is-open')"></div>
+  <!-- @tfComponent TF.Shell.BottomNav -->
+  <nav class="bottom-nav" aria-label="Primary">
+    <a href="../today/mobile.html"><span>🏠</span>Today</a>
+    <a href="../brain-dump/mobile.html"><span>✨</span>Dump</a>
+    <a href="mobile.html" class="is-active"><span>📝</span>Note</a>
+    <a href="../coach/mobile.html"><span>🎙</span>Coach</a>
+    <a href="../plan/mobile.html"><span>📋</span>Plan</a>
+  </nav>
+</body></html>

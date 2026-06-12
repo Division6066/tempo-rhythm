@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tempo Flow · Coach</title>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../shell.css">
+  <link rel="stylesheet" href="../../responsive-layout.css">
+</head>
+<body data-layout="desktop">
+<!-- @tfComponent TF.Shell.App -->
+<div class="app">
+  
+  <!-- @tfComponent TF.Shell.Sidebar -->
+  <aside class="sidebar scroll-subtle">
+    <!-- @tfComponent TF.Brand.Mark -->
+    <div class="sidebar-brand">
+      <span class="brand-name">Tempo<em>Flow</em></span>
+    </div>
+    
+      <!-- @tfComponent TF.Nav.Group -->
+      <div class="sidebar-section">
+        <h4>Flow</h4>
+        
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../daily-note/desktop.html">
+          <span>Daily Note</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../today/desktop.html">
+          <span>Today</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../brain-dump/desktop.html">
+          <span>Brain Dump</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item is-active" href="../coach/desktop.html">
+          <span>Coach</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../plan/desktop.html">
+          <span>Planning</span>
+        </a>
+      </div>
+      <!-- @tfComponent TF.Nav.Group -->
+      <div class="sidebar-section">
+        <h4>Library</h4>
+        
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../tasks/desktop.html">
+          <span>Tasks</span><span class="badge">12</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../notes/desktop.html">
+          <span>Notes</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../journal/desktop.html">
+          <span>Journal</span>
+        </a>
+        <!-- @tfComponent TF.Nav.Item -->
+        <a class="nav-item" href="../calendar/desktop.html">
+          <span>Calendar</span>
+        </a>
+      </div>
+    <!-- @tfComponent TF.Nav.UserFooter -->
+    <div style="margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3)">
+        <div style="width:32px;height:32px;border-radius:99px;background:var(--gradient-tempo);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">A</div>
+        <div><div style="font-size:13px;font-weight:500">Amit</div><div class="caption">Pro · 5-day streak</div></div>
+      </div>
+    </div>
+  </aside>
+  
+  
+  <div class="app-main">
+    
+    <!-- @tfComponent TF.Shell.Topbar -->
+    <header class="topbar">
+      
+      <div class="breadcrumb"><span>Flow · </span><strong>Coach</strong></div>
+      <div class="spacer"></div>
+      
+      <button class="icon-btn" title="Search" aria-label="Search">🔍</button>
+      <button class="icon-btn" title="Notifications" aria-label="Notifications">🔔</button>
+    </header>
+    
+    <div class="page-tight">
+      <div class="page-header">
+        <div class="eyebrow">Coach</div>
+        <h1>A quiet second brain.</h1>
+        <p class="lede">Warmth dial at <strong>6/10</strong> — gently offering, not saccharine.</p>
+      </div>
+      <div class="grid-asym">
+        <!-- @tfComponent TF.Card.CoachChat -->
+        <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;min-height:560px">
+          <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+            <div class="coach-avatar" style="width:28px;height:28px;font-size:13px">T</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:500">Tempo Coach</div><div class="caption">scope: 2 notes · 1 project</div></div>
+            <span class="pill pill-moss">Online</span>
+          </div>
+          <div style="flex:1;padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);overflow-y:auto">
+            <div class="caption" style="text-align:center">Thursday, 9:12 AM</div>
+            <div style="display:flex;gap:var(--space-3)"><div class="coach-avatar">T</div><div class="coach-bubble">Morning. I noticed you dumped seven things earlier. Want to talk about those, or should I stage the tasks first?</div></div>
+            <div class="user-bubble" style="align-self:flex-end">Stage the tasks. I'll come back to the worries tonight.</div>
+            <div style="display:flex;gap:var(--space-3)"><div class="coach-avatar">T</div><div class="coach-bubble">Good. I'll add <em>Finish landing copy</em>, <em>Book dentist</em>, and <em>Ask Sam about Convex</em> to today.</div></div>
+          </div>
+          <div class="coach-composer" style="padding:var(--space-4) var(--space-5);border-top:1px solid var(--border)">
+            <div class="row" style="align-items:flex-end">
+              <div class="field" style="flex:1"><textarea placeholder="Type, or hold to dictate…" style="min-height:44px"></textarea></div>
+              <button class="btn btn-primary btn-sm">Send</button>
+            </div>
+            <div class="row-tight" style="margin-top:8px"><span class="pill pill-accent">Stage tasks</span><span class="pill">Draft journal prompt</span></div>
+          </div>
+        </div>
+        <div class="stack">
+          <!-- @tfComponent TF.Card.PersonalityDial -->
+          <div class="card"><div class="eyebrow">Personality dial</div><div style="font-family:var(--font-serif);font-size:20px;margin:8px 0">Gentle</div><div style="height:8px;background:var(--surface-sunken);border-radius:99px"><div style="width:60%;height:100%;background:var(--gradient-tempo);border-radius:99px"></div></div></div>
+          <!-- @tfComponent TF.Card.Scope -->
+          <div class="card"><div class="eyebrow">Conversation scope</div><div class="stack-2" style="margin-top:10px"><div>Launch notes</div><div>Onboarding copy</div><div>Tempo 1.0</div></div></div>
+          <!-- @tfComponent TF.Card.PastConversations -->
+          <div class="card sunken flat"><div class="eyebrow">Past conversations</div><div class="caption" style="margin-top:8px">Shipping worries · Mon</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>
