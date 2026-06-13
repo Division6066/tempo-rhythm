@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { requireUser } from './lib/requireUser';
 
 // Query: Get all messages for a conversation
 export const list = query({
@@ -7,19 +8,7 @@ export const list = query({
     conversationId: v.id('conversations'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(args.conversationId);
@@ -41,26 +30,13 @@ export const list = query({
 export const create = mutation({
   args: {
     conversationId: v.id('conversations'),
-    role: v.union(v.literal('user'), v.literal('assistant'), v.literal('system')),
     content: v.string(),
     modelUsed: v.optional(v.string()),
     councilResponse: v.optional(v.any()),
     toolCalls: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     // Verify conversation belongs to user
     const conversation = await ctx.db.get(args.conversationId);
@@ -70,7 +46,7 @@ export const create = mutation({
 
     const messageId = await ctx.db.insert('messages', {
       conversationId: args.conversationId,
-      role: args.role,
+      role: 'user',
       content: args.content,
       modelUsed: args.modelUsed,
       councilResponse: args.councilResponse,
@@ -93,19 +69,7 @@ export const remove = mutation({
     messageId: v.id('messages'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await requireUser(ctx);
 
     const message = await ctx.db.get(args.messageId);
     if (!message) {
