@@ -12,7 +12,7 @@ the current branch or PR. Keep changes narrow.
 ## Rules
 
 - Do not add a new test framework.
-- Prefer existing Vitest/Jest/Playwright patterns.
+- Use `bun test` — tests live in `convex/*.test.ts` and `apps/web/lib/*.test.ts`.
 - Cover changed public behavior, Convex functions, route handlers, and shared UI
   logic.
 - Add at most 1 to 3 focused tests per run unless Amit explicitly asks for more.

@@ -14,11 +14,12 @@ Current runtime status from the 2026-06-03 readiness pass:
 - Cyrus worker logs show an active Cloudflare tunnel.
 - The `tempo-rhythm` repo is registered in Cyrus with Linear workspace `amit-levin`.
 - Claude Code auth works from terminal.
-- Vercel is linked to `amit-levins-projects/tempo-web`.
+- Vercel is linked to `tempo-rhythm-web` (Vercel project for `apps/web`).
 - Convex local dev points at `dev:tremendous-bass-443`.
 
-Remaining dashboard/secret items are listed in
-`C:\Users\User\.cyrus\handoffs\tempo-full-speed-readiness-2026-06-03.md`.
+Remaining dashboard/secret items are tracked in the Cyrus handoff notes on the
+host machine (see `C:\Users\User\.cyrus\handoffs\` on the Windows Cyrus worker).
+Treat those as human-amit actions — do not embed secrets in the repo.
 
 ## Before starting a long agent run
 
@@ -38,9 +39,13 @@ bun run typecheck
 bun run build
 ```
 
-Do not use `bun run check` as a verification-only command until the repo fixes
-that script. On 2026-06-02 it was observed to run `biome check --write` in the
-mobile package and to fail on pre-existing web formatter diagnostics.
+Do not use `bun run check` as a verification-only command. The root `check`
+script runs `turbo run check`, which delegates to each workspace:
+
+- `apps/web`: `biome check .` (read-only)
+- `apps/mobile`: `biome check --write .` (may modify files)
+
+For verification, prefer the explicit batch below.
 
 ## Cyrus worktree setup
 
@@ -49,10 +54,11 @@ Cyrus runs this script after creating an isolated worktree for a Linear issue.
 
 The script is intentionally small:
 
-- disables common telemetry in CI-style agent runs;
+- sets `CI=1` and disables Next/Turbo telemetry;
+- logs `LINEAR_ISSUE_IDENTIFIER` when Cyrus passes it;
 - installs Bun `1.3.9` only when Bun is missing from the runner;
 - runs `bun install --frozen-lockfile`;
-- avoids secrets, dashboard writes, deploys, and long build steps.
+- avoids secrets, dashboard writes, deploys, Convex dev, and long build steps.
 
 Do not add API keys or production environment variables to this script. Those
 belong in the owning dashboard or secret manager.
@@ -73,29 +79,34 @@ Recommended lanes:
 - `docs-generation` — update the nearest existing developer doc.
 - `pr-readiness` — verify the branch and PR body before human review.
 - `merge-steward` — recommend merge order, never self-merge.
-- `tempo-merge-agent` — Cursor Composer 2.5 merge/report steward for finished PRs.
 
-Prepared local worktrees on this Windows machine:
+Example layout on a Cyrus host (paths vary by machine):
 
-- `C:\Users\User\.cyrus\worktrees\tempo-bug-scan` on `codex/bug-scan`
-- `C:\Users\User\.cyrus\worktrees\tempo-test-coverage` on `codex/test-coverage`
-- `C:\Users\User\.cyrus\worktrees\tempo-docs-generation` on `codex/docs-generation`
-- `C:\Users\User\.cyrus\worktrees\tempo-pr-readiness` on `codex/pr-readiness`
-- `C:\Users\User\.cyrus\worktrees\tempo-merge-steward` on `codex/merge-steward`
-- `C:\Users\User\.cyrus\worktrees\tempo-merge-agent` on `codex/tempo-merge-agent`
+```text
+~/.cyrus/worktrees/tempo-<lane>/     # one worktree per lane or ticket
+~/.cyrus/handoffs/                   # human dashboard follow-ups
+```
 
-Ticket lanes prepared from latest `master` on 2026-06-03:
+## Cursor agent roster
 
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-72-a1`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-75-a4`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-79-b1`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-86-c1`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-90-d1`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-94-d5`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-97-e3`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-98-g1`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-101-h1`
-- `C:\Users\User\.cyrus\worktrees\tempo-TEMPO-104-i2`
+All agents live as flat markdown files under `.cursor/agents/`. There is no npm
+package — the "automation agents package" is this directory plus the §13 prompts
+in `docs/CURSOR_PROMPTS.md`.
+
+| Agent file | Mutates? | Primary trigger |
+|---|---|---|
+| `tempo-merge-agent.md` | yes (reports, tickets) | Finished PR needs merge stewardship |
+| `tempo-ci-fix-agent.md` | yes | GitHub check failure blocks a PR |
+| `tempo-critical-bug-agent.md` | yes (fix PR) | High-severity correctness scan |
+| `tempo-security-scan-agent.md` | yes (findings/fix PR) | Security-sensitive diff or scheduled scan |
+| `tempo-dependency-remediation-agent.md` | yes (draft PR) | Dependency vulnerability review |
+| `tempo-docs-generation-agent.md` | yes (docs only) | Setup/workflow/API doc drift |
+| `tempo-test-coverage-agent.md` | yes (tests only) | Post-feature coverage gap |
+| `tempo-docs-to-tickets.md` | yes (tickets only) | Decompose a source doc into atomic tickets |
+| `tempo-reviewer.md` | no | Pre-merge PR review vs HARD_RULES + ticket AC |
+| `tempo-pr-approval-advisor.md` | no | Merge readiness + risk tier |
+| `tempo-qa.md` | no | `/run-qa` gate before marking a ticket done |
+| `tempo-ticket-picker.md` | no | `/whats-next` session bootstrap |
 
 ## Cursor automation outlines
 
@@ -107,11 +118,18 @@ Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
 - Docs generation: §13.10
 - PR readiness check: §13.11
 - Merge-agent checklist: §13.12
+
+Specialized agents (see roster table above):
+
 - PR approval advisor: `.cursor/agents/tempo-pr-approval-advisor.md`
 - CI fix agent: `.cursor/agents/tempo-ci-fix-agent.md`
 - Critical bug scan agent: `.cursor/agents/tempo-critical-bug-agent.md`
 - Security scan agent: `.cursor/agents/tempo-security-scan-agent.md`
 - Dependency remediation agent: `.cursor/agents/tempo-dependency-remediation-agent.md`
+- QA gate: `.cursor/agents/tempo-qa.md`
+- Reviewer: `.cursor/agents/tempo-reviewer.md`
+- Ticket picker (`/whats-next`): `.cursor/agents/tempo-ticket-picker.md`
+- Docs-to-tickets: `.cursor/agents/tempo-docs-to-tickets.md`
 
 For the recurring merge/report loop, use `.cursor/agents/tempo-merge-agent.md`.
 It defaults to Cursor Composer 2.5 for routine merge stewardship because this work is

@@ -10,7 +10,7 @@ This document defines the four-mode environment model for Tempo Flow. Every agen
 |---|---|---|---|---|---|
 | **Dev** | Coding, immediate local testing | `dev:<your-slug>` (auto via `bun x convex dev`) | N/A (`next dev` locally) | `.env.local` (git-ignored) | May break at any time. Not a QA surface. |
 | **Test** | Prove behavior | Dev deployment | Local `next build` + CI | `.env.local` + CI env | CI green + local smoke pass. Not a shareable URL. |
-| **Preview** | Branch / PR validation | `preview:<slug>` (target state — not yet provisioned) | Preview URL from PR (**disabled this weekend**) | Vercel env table (preview scope) | Agents MUST NOT treat preview as shipped. |
+| **Preview** | Branch / PR validation | `preview:<slug>` (target state — not yet provisioned) | Preview URL from PR (disabled as of 2026-06-02; re-enable per §4) | Vercel env table (preview scope) | Agents MUST NOT treat preview as shipped. |
 | **Deployment** | Promoted stable surface | `prod:<slug>` | Production domain | Vercel env table (production scope) + Convex dashboard env | Only code that passed preview + explicit human promote. |
 
 ---
@@ -35,9 +35,9 @@ Known local CLI state on 2026-06-02:
 
 ---
 
-## Vercel: production domain only this weekend
+## Vercel: preview policy
 
-Preview builds are explicitly disabled for the weekend. To disable via the Vercel dashboard [human-amit action]:
+Preview builds were disabled on 2026-06-02. To disable via the Vercel dashboard [human-amit action]:
 
 1. Open Vercel → Project `tempo-rhythm-web` → Settings → Git.
 2. Set "Ignored Build Step" to: `if [ "$VERCEL_GIT_COMMIT_REF" = "master" ]; then exit 1; else exit 0; fi`
@@ -81,9 +81,28 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 ## What is NOT decided yet
 
 - **Preview Convex provisioned.** The `preview:*` deployment is planned but not provisioned. Do not reference preview Convex URLs in any config.
-- **Vercel preview re-enablement plan.** Previews are disabled this weekend. When re-enabled, this file must be updated with the actual scope of preview secrets and the confirmation step.
+- **Vercel preview re-enablement plan.** Previews disabled 2026-06-02. When re-enabled, update this file with the actual scope of preview secrets and the confirmation step.
 - **Convex local dev attachment.** Choose existing `dev:tremendous-bass-443` vs a new personal `dev:*` deployment before running an interactive `bun x convex dev` configuration.
-- **EAS project identity.** Resolved on 2026-06-04: `apps/mobile/app.json` points at the accessible Expo/EAS project `@amitlevin/tempi` with project ID `90dfac90-0baa-461b-946c-351d2306e607`. The `tempi` slug is the existing Tempo Rhythm Expo project name; app display name, bundle identifier, Android package, and URL scheme remain Tempo Rhythm / `com.temporhythm.app` / `tempo-rhythm`.
+- **EAS project identity.** Resolved 2026-06-04: `apps/mobile/app.json` points at `@amitlevin/tempi` (project ID `90dfac90-0baa-461b-946c-351d2306e607`). Build profiles live in `apps/mobile/eas.json` (`development`, `preview`, `production`).
+
+---
+
+## Mobile builds (EAS)
+
+Expo Application Services builds use `apps/mobile/eas.json`:
+
+| Profile | Distribution | Notes |
+|---|---|---|
+| `development` | internal | `developmentClient: true` — dev client builds |
+| `preview` | internal | QA / TestFlight-style internal builds |
+| `production` | store | `autoIncrement: true` for store submissions |
+
+Local dev uses `bun run dev:mobile` (Expo SDK 54). Client URL: set
+`EXPO_PUBLIC_CONVEX_URL` or `NEXT_PUBLIC_CONVEX_URL` in `apps/mobile/.env.local`
+to the `.convex.cloud` deployment URL (same host as web).
+
+EAS secrets scope tag: `[EAS secrets]` — see root `.env.example` for RevenueCat
+and other mobile-only keys.
 
 ---
 

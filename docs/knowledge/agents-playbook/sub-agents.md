@@ -1,49 +1,57 @@
 # Tempo sub-agents — roles and invocation
 
-**Sub-agents** are scoped, single-purpose agents invoked by the main Cursor agent or the orchestrator during a feature build. They do verification, not implementation. Each lives at `.cursor/agents/<name>/` (scaffolded in Phase 3).
+**Sub-agents** are scoped, single-purpose agents invoked by the main Cursor agent,
+Cyrus, or scheduled automations. They live as flat markdown files under
+`.cursor/agents/<name>.md` (not subdirectories).
 
-## Roster
+Canonical roster and triggers: `docs/AGENT_AUTOMATION_RUNBOOK.md` → "Cursor agent
+roster". This file describes how they fit together.
+
+## Roster (current)
 
 | Name | Readonly | Trigger | Job |
 |---|---|---|---|
-| `tempo-schema-checker` | yes | after any diff touching `convex/**/*.ts` | Confirms schema rules: `userId` optional, soft delete, indexes, no per-user tables, generic shape. |
-| `tempo-design-token-validator` | yes | after any diff touching `packages/ui/**` or `apps/web/app/globals.css` or `apps/*/src/**/*.tsx` | Fails on arbitrary hex values, missing tokens, inconsistent spacing, forbidden Tailwind patterns. |
-| `tempo-accept-reject-checker` | yes | after any diff that mentions `action`, `mutation`, AI calls, or `convex/proposals.ts` | Confirms no AI-originating mutation bypasses the proposals flow. |
-| `tempo-hard-rules-auditor` | yes | on every PR | Runs through all 17 HARD_RULES sections against the diff. Produces a report. |
-| `tempo-brand-validator` | yes | on diffs touching UI copy or components | Checks copy against `docs/brain/brand/voice.md` pattern library. Flags violations and proposes on-brand replacements. |
-| `tempo-test-runner` | **no** | after build completes | Runs `pnpm typecheck`, `pnpm test`, `pnpm scan:forbidden-tech`, `pnpm scan:ram-only-audit`, `pnpm scan:design-tokens`. Reports pass/fail per suite. |
+| `tempo-qa` | yes | `/run-qa`, before marking a ticket done | Runs `bun run typecheck`, `bun run lint`, `bun test`, forbidden-tech/schema spot checks; returns pass/fail report. |
+| `tempo-reviewer` | yes | Pre-merge PR review | Checks diff against HARD_RULES, ticket AC, brand voice, Convex patterns. |
+| `tempo-pr-approval-advisor` | yes | PR opened/updated | Merge readiness + GREEN/YELLOW/RED risk tier. |
+| `tempo-ticket-picker` | yes | `/whats-next` | Suggests three tickets for a time budget from `docs/brain/tickets/_INDEX.md`. |
+| `tempo-merge-agent` | no | Finished PR needs stewardship | Consolidates fix reports, drafts follow-up tickets, never self-merges. |
+| `tempo-ci-fix-agent` | no | GitHub check failure | Investigates CI, opens smallest safe fix PR. |
+| `tempo-critical-bug-agent` | no | Scheduled or post-merge burst | Scans for high-severity correctness bugs; fix PR only with strong evidence. |
+| `tempo-security-scan-agent` | no | Security-sensitive diff | Validates auth/secrets patterns; findings or narrow fix PR. |
+| `tempo-dependency-remediation-agent` | no | Vulnerability scan | Prepares dependency update PRs (approval-first). |
+| `tempo-test-coverage-agent` | no | Post-feature PR | Adds high-value tests using `bun test` (not Vitest/Jest). |
+| `tempo-docs-generation-agent` | no | Doc drift / cron | Updates nearest existing developer doc; docs-only mutations. |
+| `tempo-docs-to-tickets` | no | New source doc under `docs/brain/sources/` | Decomposes docs into atomic tickets under `docs/brain/tickets/`. |
 
 ## How the orchestrator uses them
 
 ```
 Build agent completes
     ↓
-Stop hook runs tsc + lint
+Run batch checks (bun run lint, bun test, bun run typecheck)
     ↓
-Orchestrator invokes (in parallel):
-    • tempo-hard-rules-auditor
-    • tempo-schema-checker (if convex changed)
-    • tempo-design-token-validator (if UI changed)
-    • tempo-accept-reject-checker (if actions/mutations changed)
-    • tempo-brand-validator (if UI copy changed)
+Orchestrator invokes (in parallel, as applicable):
+    • tempo-reviewer or tempo-pr-approval-advisor
+    • tempo-qa (before marking in-review / done)
+    • tempo-security-scan-agent (if auth/secrets touched)
     ↓
-Orchestrator invokes tempo-test-runner
-    ↓
-If all green → build agent opens the PR
-If any red  → build agent gets the report and iterates
+If GREEN and checks pass → open PR; tempo-merge-agent may steward follow-up
+If YELLOW/RED → stop and ask human-amit
 ```
 
 ## Sub-agent authoring rules
 
-- **One file of context, one job.** Each sub-agent's prompt is under 200 lines, focused on its one domain.
-- **Readonly unless test-runner.** Verification agents must never write code. If they would need to write, that is the build agent's job; surface the fix plan instead.
-- **Output format is structured.** Each sub-agent returns either `PASS` with a one-line summary, or `FAIL` with a list of `{file, line, rule, suggested_fix}` objects.
+- **One file, one job.** Each agent prompt stays focused on a single domain.
+- **Readonly unless the agent mutates.** Verification agents must not write code.
+  Docs/test/CI agents may write only in their declared scope.
+- **Output format is structured.** Prefer PASS/FAIL reports with file + rule refs.
 - **No auto-merge.** A PASS from every sub-agent does not mean merge. Amit still reviews.
 
 ## How to add a new sub-agent
 
 1. Pick a rule or HARD_RULES section that is currently enforced only by a human reviewer.
-2. Author the sub-agent file at `.cursor/agents/<name>/instructions.md` using the `skill-creator` and `mcp-builder` patterns as guides.
-3. Register it in `.cursor/hooks.json` under the appropriate hook (typically `stop` for post-completion verification).
+2. Author `.cursor/agents/<name>.md` following the frontmatter pattern in existing agents.
+3. Register the trigger in `docs/AGENT_AUTOMATION_RUNBOOK.md` and `docs/CURSOR_PROMPTS.md` §13 if scheduled.
 4. Update this file with the new entry.
-5. PR the change with a test case that proves the sub-agent catches a real violation.
+5. PR the change with a test case that proves the agent catches a real violation.

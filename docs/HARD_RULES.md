@@ -244,16 +244,16 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 
 - Every new Convex mutation gets at least one test (`convex/<module>.test.ts`) — happy path + one error case minimum.
 - Every React component with meaningful logic gets a render test with `@testing-library/react` (web) or `@testing-library/react-native` (mobile).
-- Every AI routing function (`route-by-task`, `confidence-router`) is unit-tested with a golden fixture set.
-- PRs run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm scan:forbidden-tech`, `pnpm convex:schema-guard`, `pnpm scan:ram-only-audit`, `pnpm scan:design-tokens`.
+- Every AI routing function (`convex/lib/ai_router.ts`, confidence router) is unit-tested with a golden fixture set.
+- PRs run: `bun run lint`, `bun run typecheck`, `bun test`. Additional scan scripts (`scan:forbidden-tech`, `convex:schema-guard`, `scan:ram-only-audit`, `scan:design-tokens`) are CI targets as they land in `package.json`.
 - All of these must pass before merge.
 
 ---
 
 ## 12. Git and PR rules
 
-- **Never push to `main` directly.** All changes through PR.
-- **`main` is always deployable.** If a PR would break `main`, fix the PR or revert.
+- **Never push to `master` directly.** All changes through PR.
+- **`master` is always deployable.** If a PR would break `master`, fix the PR or revert.
 - **One logical change per PR.** Large features land as a stack of PRs.
 - **PR description** must reference the `TASKS.md` task ID and include:
   - Summary (2–3 sentences, *why* not *what*)
