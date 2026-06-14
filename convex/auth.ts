@@ -114,6 +114,8 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           entitlementTier: isFounder ? "god" : undefined,
           isGodTier: isFounder || undefined,
           userType: isFounder ? "paid" : undefined,
+          isActive: true,
+          deletedAt: undefined,
           updatedAt: now,
         });
 
