@@ -22,8 +22,10 @@ This document is the one-table source of truth for what is `shipped-and-running`
 | /tasks route | `coded` | scaffold only | 2026-04-24 |
 | /coach route | `coded` | scaffold only | 2026-04-24 |
 | /journal route | `coded` | scaffold only | 2026-04-24 |
-| CI typecheck + lint | `shipped-and-running` | .github/workflows/ci.yml, green on PR #19 | 2026-04-24 |
-| CI forbidden-tech + secrets scans | `planned` | T-0020 todo; scripts not yet implemented | 2026-04-24 |
+| CI typecheck + lint | `shipped-and-running` | `.github/workflows/ci.yml`, green on PRs | 2026-06-14 |
+| CI unit tests (`bun test`) | `coded` | Root script exists; CI Test job still `continue-on-error` | 2026-06-14 |
+| CI forbidden-tech + RAM-only + design-token scans | `planned` | Scripts not in root `package.json`; CI logs notices only | 2026-06-14 |
+| CI secret scan (Gitleaks + TruffleHog) | `shipped-and-running` | `.github/workflows/security.yml` | 2026-06-14 |
 | Convex production deployment | `planned` | T-0008 todo (human-amit) | 2026-04-24 |
 | Four-mode environment contract | `shipped-and-running` | this commit | 2026-04-24 |
 
