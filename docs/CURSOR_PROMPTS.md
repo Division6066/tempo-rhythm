@@ -381,10 +381,10 @@ If found, comment on the PR with the rule violated and the line numbers.
 ### 13.4 AI call audit
 
 ```
-Scan all files touching OpenRouter:
-- Every fetch call to OpenRouter must log to ai_usage.
-- Every fetch call must include the X-Tempo-No-Train header.
-- No provider SDK imports allowed.
+Scan all files that call LLMs or import AI helpers:
+- Every LLM call must go through convex/lib/ai_router.ts (callLLM) — no ad-hoc fetch to provider URLs.
+- No vendor SDK imports allowed (openai, @anthropic-ai/*, @google/generative-ai, @mistralai/*).
+- Tier must be explicit at each call site (fast | balanced | deep).
 
 Block merge if violations found.
 ```
