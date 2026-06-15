@@ -11,6 +11,7 @@
 | Design a UI component | [`brand/_INDEX.md`](brand/_INDEX.md) → [`brand/visual-tokens.md`](brand/visual-tokens.md) |
 | Write marketing / UI copy | [`brand/voice.md`](brand/voice.md) |
 | Understand what "done" means for Phase 1 MVP | [`prds/README.md`](prds/README.md) → `docs/brain/PRDs/PRD_Phase_1_MVP.md` |
+| Know what CI blocks on PRs | [`docs/CI.md`](../CI.md) |
 | Know what you absolutely must not do | [`rules/README.md`](rules/README.md) → `docs/HARD_RULES.md` |
 | Run a 45-minute multi-agent session | [`agents-playbook/workflow-sunday-morning.md`](agents-playbook/workflow-sunday-morning.md) |
 | Know when to stop and ask Amit | [`agents-playbook/checkpoints.md`](agents-playbook/checkpoints.md) |

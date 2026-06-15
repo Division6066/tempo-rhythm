@@ -14,18 +14,18 @@ Tempo Flow is an open-source, overwhelm-first AI daily planner and personal oper
 ## Tech stack (this repository — MVP target)
 
 - **Web:** Next.js 16 (App Router, Turbopack) deployable on Vercel, Progressive Web App–ready
-- **Mobile:** Expo SDK 53 (React Native) for iOS and Android, NativeWind 4
+- **Mobile:** Expo SDK 54 (React Native) for iOS and Android, NativeWind 4
 - **Backend:** Convex at repo root `convex/` (queries, mutations, actions, HTTP routes, scheduled jobs, file storage)
 - **Auth:** Convex Auth (`@convex-dev/auth`)
 - **Payments:** RevenueCat on mobile; Polar (`@polar-sh/nextjs`) for web checkout in this repo — align with PRD over time
-- **AI routing (target):** OpenRouter — Gemma / Mistral per `docs/brain/PRDs/PRD_Phase_1_MVP.md` (router package planned)
+- **AI routing:** Mistral API via native `fetch` in `convex/lib/ai_router.ts` (`fast` / `balanced` / `deep` tiers). No provider SDKs. See HARD_RULES §6.
 - **Styling:** Tailwind CSS v4 + PostCSS in `apps/web`; NativeWind + Tailwind 3.x in `apps/mobile`
 - **Shared packages:** `packages/types`, `packages/utils`, `packages/ui` (tokens and shared UI to grow here)
 - **Typography (target):** Newsreader, Inter, IBM Plex Mono, OpenDyslexic toggle per PRD
 - **Compliance (target):** GetTerms.io
 - **Analytics (target):** PostHog (opt-in)
 - **Observability (target):** Sentry + PostHog
-- **Package manager:** pnpm
+- **Package manager:** Bun (`bun@1.3.9`)
 - **Monorepo:** Turborepo (`apps/*`, `packages/*`)
 
 See [`docs/HARD_RULES.md`](./docs/HARD_RULES.md) for the full non-negotiables list and [`docs/brain/PRDs/PRD_Phase_1_MVP.md`](./docs/brain/PRDs/PRD_Phase_1_MVP.md) for the full MVP spec.
@@ -42,16 +42,16 @@ git clone https://github.com/<your-org>/tempo-flow.git
 cd tempo-flow
 
 # 2. Install dependencies
-pnpm install
+bun install
 
 # 3. Start Convex dev backend (runs in a separate terminal; keep it running)
-pnpm convex:dev
+bun run convex:dev
 
 # 4. Start the web app (Next.js)
-pnpm dev:web
+bun run dev:web
 
 # 5. (Optional) Start the mobile app
-pnpm dev:mobile
+bun run dev:mobile
 ```
 
 Required environment variables are documented in `.env.example` at the repo root. Copy to `.env.local` and fill in values from your own Convex, Mistral, RevenueCat, and GetTerms accounts before running.
@@ -66,6 +66,7 @@ All project documentation lives under [`./docs/`](./docs/).
 - [`docs/CURSOR_PROMPTS.md`](./docs/CURSOR_PROMPTS.md) — prompt library for Cursor IDE and Cursor Cloud agents.
 - [`docs/brain/TASKS.md`](./docs/brain/TASKS.md) — master task list, owner-tagged.
 - [`docs/SESSION_WORKFLOW.md`](./docs/SESSION_WORKFLOW.md) — `/whats-next` / `/tick-task` session flow.
+- [`docs/CI.md`](./docs/CI.md) — GitHub Actions jobs, local pre-PR checks, scan status.
 - [`docs/brain/PRDs/`](./docs/brain/PRDs/) — one PRD per public phase (1.0, 1.1, 1.5, 2.0, 3.0).
 - [`docs/brain/AGENT_SETUP/`](./docs/brain/AGENT_SETUP/) — Tempo-specific setup guides for Zo Computer, Twin.so, Pokee AI, and the overall agent handoff map.
 

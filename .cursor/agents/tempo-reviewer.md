@@ -34,7 +34,7 @@ For each rule, scan the diff:
 - §2 Forbidden tech — any new import or package of Firebase, Supabase, Prisma, Drizzle, Clerk, NextAuth, Auth0, BetterAuth, `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@google/genai`, Axios, Zustand, Jotai, Redux, MobX, Mongoose, TypeORM.
 - §4 Naming conventions — component files `PascalCase.tsx`, hooks `useThing.ts`, Convex files `kebab-case.ts`, Convex table names plural without prefix, enums as `v.union(v.literal(...))`.
 - §5 Schema — every new/modified Convex table: `createdAt`, `updatedAt`, `deletedAt` (unless explicitly excluded like `auditEvents`), compound `by_userId_deletedAt` index if user-owned, `v.id("otherTable")` for refs. No `.filter()` on queries without `.withIndex()`.
-- §6 AI routing — LLM calls via OpenRouter + `fetch`, never a provider SDK. Accept-reject flow for any AI-originating mutation (must go through `proposals`). `confidence` field present on AI-originating rows.
+- §6 AI routing — LLM calls via Mistral API + native `fetch` in `convex/lib/ai_router.ts`, never a provider SDK or OpenRouter. Accept-reject flow for any AI-originating mutation (must go through `proposals`). `confidence` field present on AI-originating rows.
 - §7 Design tokens — no arbitrary `bg-[#...]` / `text-[13.5px]` unless unavoidable. Tokens live in `packages/ui/src/tokens.ts` or `apps/web/app/globals.css` `@theme`.
 - §8 A11y — every new interactive element has a label/`aria-*`. No `outline: none` without a visible replacement.
 - §9 Voice — voice-minute logic touches `voiceSessions`, not ad-hoc counters.

@@ -15,7 +15,7 @@ Check:
 - Secret-looking strings in diffs.
 - Unsafe auth/session changes.
 - Convex functions missing authorization.
-- AI/provider calls that bypass OpenRouter or logging rules.
+- AI/provider calls that bypass `convex/lib/ai_router.ts` or usage-logging rules (direct SDKs, OpenRouter URLs).
 - Dependency vulnerabilities with actionable upgrade paths.
 - PRs that touch deploy, CI, OAuth, billing, or production settings.
 

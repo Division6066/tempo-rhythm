@@ -3,6 +3,21 @@
 **Source:** `docs/design/claude-export/design-system/` (Tempo Flow Design System v1.0, April 2026).
 **Router map source:** `design-system/app.html` lines 60–109 (`SCREENS` object).
 
+## Web route groups (Next.js App Router)
+
+The web app uses four layout groups under `apps/web/app/`:
+
+| Group | Path prefix | Layout | Purpose |
+|---|---|---|---|
+| `(tempo)` | `/today`, `/tasks`, … | `TempoShell` (sidebar + topbar) | Main product screens |
+| `(bare)` | `/onboarding`, `/daily-note`, `/templates/builder`, … | Minimal full-screen shell | Focus mode — no chrome |
+| `(app)` | `/dashboard` | `grain-bg` wrapper | Post-auth landing / legacy shell |
+| `(auth)` | *(reserved)* | Auth loading gate | Convex Auth session check |
+
+Marketing and auth pages outside groups: `/`, `/sign-in`, `/sign-up`, `/about`, `/changelog`, etc.
+
+**Bare vs tempo:** Template builder/run, onboarding, daily-note, and trial-end live under `(bare)/`, not `(tempo)/`. The inventory table below notes `(bare)` where applicable.
+
 ## Web — 42 screens
 
 Target base: `apps/web/app/(tempo)/`
@@ -11,7 +26,7 @@ Target base: `apps/web/app/(tempo)/`
 
 | Slug | Route | Source file | Title |
 |---|---|---|---|
-| `daily-note` | `(tempo)/daily-note/page.tsx` | screens-1.jsx | Daily Note (bare) |
+| `daily-note` | `(bare)/daily-note/page.tsx` | screens-1.jsx | Daily Note (bare) |
 | `today` | `(tempo)/today/page.tsx` | screens-1.jsx | Today |
 | `brain-dump` | `(tempo)/brain-dump/page.tsx` | screens-1.jsx | Brain Dump |
 | `coach` | `(tempo)/coach/page.tsx` | screens-1.jsx / coach-dock.jsx | Coach |
@@ -44,8 +59,8 @@ Target base: `apps/web/app/(tempo)/`
 | `analytics` | `(tempo)/insights/page.tsx` | screens-5.jsx | Insights |
 | `activity` | `(tempo)/activity/page.tsx` | screens-5.jsx | Recent activity |
 | `templates` | `(tempo)/templates/page.tsx` | screens-templates.jsx | Templates |
-| `template-builder` | `(tempo)/templates/builder/page.tsx` | screens-template-builder.jsx + -ui.jsx + -slash.jsx | Template · builder (bare) |
-| `template-run` | `(tempo)/templates/run/[id]/page.tsx` | screens-template-run.jsx | Template · run (bare) |
+| `template-builder` | `(bare)/templates/builder/page.tsx` | screens-template-builder.jsx + -ui.jsx + -slash.jsx | Template · builder (bare) |
+| `template-run` | `(bare)/templates/run/[id]/page.tsx` | screens-template-run.jsx | Template · run (bare) |
 | `template-editor` | `(tempo)/templates/editor/[id]/page.tsx` | screens-5.jsx | Template · editor (legacy) |
 | `template-sketch` | `(tempo)/templates/sketch/page.tsx` | screens-5.jsx | Template · sketch |
 | `search` | `(tempo)/search/page.tsx` | screens-5.jsx | Search |
@@ -60,7 +75,7 @@ Target base: `apps/web/app/(tempo)/`
 | `settings-prefs` | `(tempo)/settings/preferences/page.tsx` | screens-6.jsx | Settings · prefs |
 | `settings-integrations` | `(tempo)/settings/integrations/page.tsx` | screens-6.jsx | Settings · sync |
 | `billing` | `(tempo)/billing/page.tsx` | screens-6.jsx | Trial & billing |
-| `trial-end` | `(tempo)/billing/trial-end/page.tsx` | screens-6.jsx | Trial ended |
+| `trial-end` | `(bare)/billing/trial-end/page.tsx` | screens-6.jsx | Trial ended |
 | `ask-founder` | `(tempo)/ask-founder/page.tsx` | screens-6.jsx | Ask the founder |
 | `notifications` | `(tempo)/notifications/page.tsx` | screens-6.jsx | Notifications |
 
@@ -77,7 +92,7 @@ Target base: `apps/web/app/(tempo)/`
 | Slug | Route | Source file | Title |
 |---|---|---|---|
 | `sign-in` | `/sign-in` | screens-7.jsx | Sign in (bare, no shell) |
-| `onboarding` | `/onboarding` | screens-7.jsx | Onboarding (bare, 5 steps) |
+| `onboarding` | `(bare)/onboarding/page.tsx` | screens-7.jsx | Onboarding (bare, 5 steps) |
 
 ## Mobile — 12 screens
 
