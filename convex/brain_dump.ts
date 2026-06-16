@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { AiAuthError, AiContextTooLargeError, AiRateLimitedError, AiUpstreamError } from "./lib/ai_errors";
 import { callLLM } from "./lib/ai_router";
+import { validateBrainDumpInput } from "./lib/brainDumpInput";
 import {
   type BrainDumpPlan,
   parsePlanFromModelContent,
@@ -9,8 +10,6 @@ import {
 
 export type { BrainDumpPlan, BrainDumpPriority } from "./lib/brainDumpParse";
 export { parsePlanFromModelContent } from "./lib/brainDumpParse";
-
-const MAX_RAW_CHARS = 12_000;
 
 const SYSTEM_PROMPT = `You are a calm planning assistant for an ADHD-friendly app. The user pastes a messy brain dump (tasks, worries, reminders mixed together).
 
@@ -47,15 +46,11 @@ export const prioritize = action({
       throw new Error("Sign in to use planning on this device.");
     }
 
-    const raw = args.rawText.trim();
-    if (!raw) {
-      throw new Error("Paste something first — even a rough list is enough.");
+    const validated = validateBrainDumpInput(args.rawText);
+    if (!validated.ok) {
+      throw new Error(validated.message);
     }
-    if (raw.length > MAX_RAW_CHARS) {
-      throw new Error(
-        `That is a lot at once (${raw.length} characters). Try the first chunk under ${MAX_RAW_CHARS} characters, then run again on the rest.`,
-      );
-    }
+    const raw = validated.raw;
 
     try {
       const result = await callLLM({
