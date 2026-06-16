@@ -2,6 +2,9 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { assertSelfUserId } from "./lib/profileAccess";
+import { requireUser } from "./lib/requireUser";
+import { resolveUserFromSubject } from "./lib/userResolver";
 import { deriveGreetingName } from "./lib/userProfile";
 
 /** Shared resolver for the authenticated app user document. */
@@ -11,16 +14,9 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
     return null;
   }
 
-  // In Convex Auth the subject is: authAccountId|userId
-  const subjectParts = identity.subject.split("|");
-  if (subjectParts.length >= 2) {
-    const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-    try {
-      const user = await ctx.db.get(userId);
-      if (user) return user;
-    } catch {
-      // invalid ID, fall through to email lookup
-    }
+  const subjectUser = await resolveUserFromSubject(ctx, identity.subject);
+  if (subjectUser) {
+    return subjectUser;
   }
 
   if (identity.email) {
@@ -106,8 +102,8 @@ export const updateProfile = mutation({
     fullName: v.optional(v.string()),
   },
   handler: async (ctx, { userId, fullName }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const currentUser = await requireUser(ctx);
+    assertSelfUserId(currentUser._id, userId);
     await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
     return userId;
   },
@@ -195,22 +191,8 @@ export const remove = mutation({
 export const deleteMyAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const userId = identity.subject;
-    let deletedCount = 0;
-
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("_id"), userId))
-      .first();
-
-    if (user) {
-      await ctx.db.delete(user._id);
-      deletedCount += 1;
-    }
-
-    return { success: true, deletedCount };
+    const user = await requireUser(ctx);
+    await ctx.db.delete(user._id);
+    return { success: true, deletedCount: 1 };
   },
 });
