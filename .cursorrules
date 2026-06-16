@@ -55,8 +55,8 @@ Before writing code:
 
 - Every new Convex mutation gets at least one test in `convex/*.test.ts`.
 - Every React component with non-trivial logic gets a render test.
-- PRs run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm convex:schema-guard`, `pnpm scan:forbidden-tech`.
-- PRs must target a feature branch, never `main` directly.
+- PRs run CI via Bun: `bun run lint`, `bun run typecheck`, `bun run test`, plus scan scripts when implemented (see `docs/CI.md`).
+- PRs must target a feature branch, never `master` directly.
 
 ## Commit style
 
