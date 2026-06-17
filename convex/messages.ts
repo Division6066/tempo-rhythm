@@ -68,9 +68,13 @@ export const create = mutation({
       throw new Error('Conversation not found or access denied');
     }
 
+    if (args.role !== "user") {
+      throw new Error("Only user messages can be created from the client.");
+    }
+
     const messageId = await ctx.db.insert('messages', {
       conversationId: args.conversationId,
-      role: args.role,
+      role: "user",
       content: args.content,
       modelUsed: args.modelUsed,
       councilResponse: args.councilResponse,

@@ -1,5 +1,5 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 /**
  * RevenueCat webhook handler.
@@ -12,11 +12,15 @@ import { api } from "./_generated/api";
  * Set this env var in each Convex deployment's environment variables.
  */
 export const revenueCatWebhook = httpAction(async (ctx, request) => {
-  // Validate authorization header
   const authHeader = request.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
 
-  if (webhookSecret && authHeader !== webhookSecret) {
+  if (!webhookSecret) {
+    console.error("[RevenueCat Webhook] REVENUECAT_WEBHOOK_SECRET is not configured");
+    return new Response("Webhook secret not configured", { status: 503 });
+  }
+
+  if (authHeader !== webhookSecret) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -58,7 +62,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
 
   if (appUserId) {
     try {
-      await ctx.runMutation(api.users.updateSubscriptionStatus, {
+      await ctx.runMutation(internal.users.updateSubscriptionStatus, {
         userId: appUserId,
         userType,
         activeEntitlements,
