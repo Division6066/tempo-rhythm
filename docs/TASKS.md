@@ -47,7 +47,7 @@ _(nothing in flight right now — waiting for tomorrow morning's 45-min + overni
 ## Backlog (unordered, groomed as capacity allows)
 
 ### Platform / infra
-- **Merge PR #31 or PR #32 to unblock `master` checks.** Prefer PR #31 because it includes the `ScaffoldScreen` typecheck/build fix from PR #32 plus GitHub automation readiness. If PR #31 lands, close PR #32 as superseded.
+- **GitHub automation baseline landed (PRs #31, #39, #41).** Next: run scheduled doc-generation and CI-fix automations against fresh `master`; see `docs/AGENT_AUTOMATION_RUNBOOK.md`.
 - **Resolve always-on runtime support ticket.** Cloud runtime switch is blocked outside the repo; keep coding automation work moving locally and retry the switch after support repairs the GitHub App authentication step.
 - **Choose Convex local dev attachment.** Decide whether this workstation should attach to existing `dev:tremendous-bass-443` or create a fresh personal `dev:*` deployment before running interactive `bun x convex dev`.
 - **Backfill + tighten `users` schema.** Today (`convex/schema.ts`) the `role`, `isActive`, `createdAt`, `updatedAt` fields on `users` are `v.optional(...)` so prod could accept pre-existing test users (`beta2@tempo.app`, `beta3@tempo.app`). Backfill those rows, then make the fields required again. Also decide the final shape of `name` vs `fullName` (currently both exist).

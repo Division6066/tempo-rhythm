@@ -3,6 +3,20 @@
 **Source:** `docs/design/claude-export/design-system/` (Tempo Flow Design System v1.0, April 2026).
 **Router map source:** `design-system/app.html` lines 60–109 (`SCREENS` object).
 
+## Implementation status (web)
+
+Last updated: 2026-06-17. For ship-state labels see [`docs/SHIP_STATE.md`](../SHIP_STATE.md).
+
+| Status | Meaning | Routes |
+|---|---|---|
+| **Live** | Real Convex wiring + user-facing logic | `/today` (see [`docs/BRAIN_DUMP_TODAY.md`](../BRAIN_DUMP_TODAY.md)) |
+| **Shell** | `ScaffoldScreen` — beta-safe layout from design refs, no production backend | Most `(tempo)/*` routes (PR #26) |
+| **Auth / marketing** | Implemented outside `ScaffoldScreen` | `/sign-in`, `/sign-up`, `/`, `/about`, `/changelog` |
+
+**Shell pattern:** `apps/web/components/tempo/ScaffoldScreen.tsx` renders category pills, loading/empty/error preview cards, and explicit beta disclaimers. Route `page.tsx` files pass `title`, `category`, `source`, and optional `summary`.
+
+**Next port step:** replace a shell route's `ScaffoldScreen` with a real screen component (same pattern as `TodayScreen`), wire Convex queries/mutations, then bump the row in `SHIP_STATE.md`.
+
 ## Web — 42 screens
 
 Target base: `apps/web/app/(tempo)/`
