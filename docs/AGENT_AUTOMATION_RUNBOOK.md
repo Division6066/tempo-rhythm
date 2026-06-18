@@ -57,6 +57,13 @@ The script is intentionally small:
 Do not add API keys or production environment variables to this script. Those
 belong in the owning dashboard or secret manager.
 
+## Mobile / EAS notes
+
+- Expo SDK **54** in `apps/mobile` (see `apps/mobile/package.json`).
+- EAS project: slug `tempi`, owner `amitlevin`, project ID in `apps/mobile/app.json` → `extra.eas.projectId`.
+- RevenueCat keys and EAS secrets: see `docs/REVENUECAT_SETUP.md`.
+- EAS ownership changes are **RED** risk per the policy below — stop and ask Amit.
+
 ## Worktree pattern
 
 Use one worktree per independent task:

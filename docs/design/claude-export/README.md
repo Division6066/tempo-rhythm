@@ -9,8 +9,10 @@ artifacts in April 2026. The canonical source is `design-system/`.
   screens, marketing site, token system, shared components. See
   `design-system/README.md` for a tour.
 - `design-system/uploads/Tempo_Flow_Master_Document.md` — consolidated
-  13k-line document (PRD, roadmap, rules). Historical reference only;
-  canonical versions of those documents live under `docs/brain/`.
+  13k-line document (PRD, roadmap, rules). **Historical reference only** —
+  it still mentions OpenRouter and pnpm; canonical rules live in
+  `docs/HARD_RULES.md` (Mistral API, Bun). Canonical PRDs live under
+  `docs/brain/`.
 - `TempoFlow Prototype.html` *(git-ignored)* — standalone 2.7 MB bundler
   artefact. Open locally in a browser for a click-through preview. Not
   checked in because it duplicates the unpacked source.

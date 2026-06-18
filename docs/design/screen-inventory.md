@@ -3,6 +3,19 @@
 **Source:** `docs/design/claude-export/design-system/` (Tempo Flow Design System v1.0, April 2026).
 **Router map source:** `design-system/app.html` lines 60–109 (`SCREENS` object).
 
+## Web route groups (`apps/web/app/`)
+
+Next.js route groups control layout chrome. Four groups are in use:
+
+| Group | Layout | Shell | Use for |
+|---|---|---|---|
+| `(tempo)` | `TempoShell` (sidebar + topbar) | Full app chrome | Most library / flow screens |
+| `(bare)` | Minimal `min-h-screen` wrapper | No nav chrome | Auth, onboarding, template builder/run, focus mode |
+| `(app)` | `grain-bg` wrapper | Marketing-style grain background | Alternate app surfaces |
+| `(auth)` | Auth gate layout | Sign-in flows | Protected-route entry |
+
+When porting from the design export, default product screens to `(tempo)` unless the inventory marks them **bare**.
+
 ## Web — 42 screens
 
 Target base: `apps/web/app/(tempo)/`
