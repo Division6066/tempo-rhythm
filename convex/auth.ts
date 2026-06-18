@@ -11,6 +11,7 @@ import {
   normalizeEmail,
   parseBetaMaxTesters,
 } from "./lib/betaGating";
+import { assertAccountActiveForSession } from "./lib/sessionGuard";
 
 function getFounderEmail() {
   return normalizeEmail(String(process.env.BETA_FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL));
@@ -191,12 +192,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     async beforeSessionCreation(ctx, args) {
       const db = ctx.db as unknown as GenericMutationCtx<DataModel>["db"];
       const user = await db.get(args.userId);
-      if (!user) {
-        throw new Error("We couldn't load your account yet. Please try again.");
-      }
-      if (user.deletedAt !== undefined || user.isActive === false) {
-        throw new Error("This account is not active. Please contact support.");
-      }
+      assertAccountActiveForSession(user);
     },
   },
 });
