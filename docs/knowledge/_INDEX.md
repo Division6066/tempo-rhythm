@@ -1,6 +1,6 @@
 # Knowledge Base — Top-Level Index
 
-**Last updated:** 2026-04-18 (scaffold)
+**Last updated:** 2026-06-19 (docs cron)
 **Owner:** human-amit
 
 ## Entry points by goal
