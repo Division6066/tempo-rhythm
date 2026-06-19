@@ -1,6 +1,6 @@
 # Tempo Flow — Cursor rules
 
-Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Expo mobile + Convex + OpenRouter. See `README.md` for the project overview.
+Tempo Flow is an open-source, overwhelm-first AI daily planner. Next.js PWA + Expo mobile + Convex + Mistral API (via Convex actions). See `README.md` for the project overview.
 
 ## Read these first (every session)
 
@@ -55,8 +55,8 @@ Before writing code:
 
 - Every new Convex mutation gets at least one test in `convex/*.test.ts`.
 - Every React component with non-trivial logic gets a render test.
-- PRs run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm convex:schema-guard`, `pnpm scan:forbidden-tech`.
-- PRs must target a feature branch, never `main` directly.
+- PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run convex:schema-guard`, `bun run scan:forbidden-tech`. See `docs/CI.md` for blocking vs notice-only jobs.
+- PRs must target a feature branch, never `master` directly.
 
 ## Commit style
 

@@ -57,6 +57,16 @@ The script is intentionally small:
 Do not add API keys or production environment variables to this script. Those
 belong in the owning dashboard or secret manager.
 
+## Mobile / EAS
+
+Expo builds use the project in `apps/mobile/app.json`:
+
+- Owner: `@amitlevin`, slug: `tempi`, EAS project ID `90dfac90-0baa-461b-946c-351d2306e607`
+- RevenueCat env vars: see `docs/REVENUECAT_SETUP.md`
+- EAS secrets scope: `docs/ENVIRONMENTS.md` (`[EAS secrets]`)
+
+Changing EAS project ownership is a **RED** risk action per the policy below — stop and ask Amit.
+
 ## Worktree pattern
 
 Use one worktree per independent task:
