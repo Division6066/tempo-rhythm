@@ -106,6 +106,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
       if (args.existingUserId) {
         const existingUserId = args.existingUserId;
+        const existingUser = await db.get(existingUserId);
+        const isRecoveringSoftDelete =
+          existingUser?.deletedAt !== undefined || existingUser?.isActive === false;
+
         await db.patch(existingUserId, {
           email,
           emailVerified: args.profile.emailVerified ?? false,
@@ -114,6 +118,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           entitlementTier: isFounder ? "god" : undefined,
           isGodTier: isFounder || undefined,
           userType: isFounder ? "paid" : undefined,
+          ...(isRecoveringSoftDelete
+            ? { deletedAt: undefined, isActive: true }
+            : {}),
           updatedAt: now,
         });
 
