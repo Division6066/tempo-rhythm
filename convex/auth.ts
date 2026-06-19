@@ -3,31 +3,26 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel } from "./_generated/dataModel";
-
-const DEFAULT_FOUNDER_EMAIL = "amitlevin65@protonmail.com";
-const DEFAULT_BETA_MAX_TESTERS = 30;
-
-function normalizeEmail(email: string | undefined | null): string {
-  return (email ?? "").trim().toLowerCase();
-}
+import {
+  buildAllowlistedEmails,
+  countActiveBetaTesters,
+  isBetaSeatAvailable,
+  isFounderEmail,
+  normalizeEmail,
+  parseBetaMaxTesters,
+  resolveFounderEmail,
+} from "./lib/authBeta";
 
 function getFounderEmail() {
-  return normalizeEmail(String(process.env.BETA_FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL));
+  return resolveFounderEmail(process.env.BETA_FOUNDER_EMAIL);
 }
 
 function getAllowlistedEmails() {
-  const fromEnv = (String(process.env.BETA_ALLOWLIST_EMAILS ?? ""))
-    .split(",")
-    .map((item: string) => normalizeEmail(item))
-    .filter(Boolean);
-  const allowlisted = new Set(fromEnv);
-  allowlisted.add(getFounderEmail());
-  return allowlisted;
+  return buildAllowlistedEmails(process.env.BETA_ALLOWLIST_EMAILS, getFounderEmail());
 }
 
 function getBetaMaxTesters() {
-  const parsed = Number(String(process.env.BETA_MAX_TESTERS ?? DEFAULT_BETA_MAX_TESTERS));
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BETA_MAX_TESTERS;
+  return parseBetaMaxTesters(process.env.BETA_MAX_TESTERS);
 }
 
 async function sendMagicLinkEmail({
@@ -100,7 +95,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const email = normalizeEmail(args.profile.email);
       const founderEmail = getFounderEmail();
       const allowlistedEmails = getAllowlistedEmails();
-      const isFounder = email === founderEmail;
+      const isFounder = isFounderEmail(email, founderEmail);
 
       const profileName = typeof args.profile.name === "string" ? args.profile.name : "User";
 
@@ -157,8 +152,8 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           .query("users")
           .withIndex("by_betaAccess", (q) => q.eq("betaAccess", "tester"))
           .collect();
-        const testerCount = activeTesters.filter((user) => user.deletedAt === undefined).length;
-        if (testerCount >= getBetaMaxTesters()) {
+        const testerCount = countActiveBetaTesters(activeTesters);
+        if (!isBetaSeatAvailable(testerCount, getBetaMaxTesters())) {
           throw new Error("All beta seats are currently filled. We can add you to the next wave.");
         }
       }
