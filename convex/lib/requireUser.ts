@@ -46,5 +46,9 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
     throw new Error("User not found");
   }
 
+  if (user.deletedAt !== undefined || user.isActive === false) {
+    throw new Error("This account is not active");
+  }
+
   return user;
 }
