@@ -3,6 +3,20 @@
 **Source:** `docs/design/claude-export/design-system/` (Tempo Flow Design System v1.0, April 2026).
 **Router map source:** `design-system/app.html` lines 60–109 (`SCREENS` object).
 
+## Web route groups
+
+Next.js App Router groups under `apps/web/app/` control shell chrome and auth gating:
+
+| Group | Path | Layout | Use |
+|---|---|---|---|
+| `(tempo)` | `app/(tempo)/*` | `TempoShell` (sidebar + topbar) | Primary product screens (42-screen inventory below) |
+| `(bare)` | `app/(bare)/*` | Minimal full-screen | Focus mode: daily note, onboarding, template builder/run, trial-end |
+| `(app)` | `app/(app)/*` | `grain-bg` wrapper | Legacy / scaffold dashboard shell |
+| `(auth)` | `app/(auth)/*` | Convex auth gate + gradient | Sign-in flows that must hide when already authenticated |
+| Marketing | `app/page.tsx`, `/about`, `/changelog`, … | Root `layout.tsx` | Public pages outside product shell |
+
+Sign-in and sign-up also exist at `/sign-in` and `/sign-up` at the app root (outside `(auth)`). Prefer the inventory routes when adding new product screens.
+
 ## Web — 42 screens
 
 Target base: `apps/web/app/(tempo)/`

@@ -54,8 +54,17 @@ The script is intentionally small:
 - runs `bun install --frozen-lockfile`;
 - avoids secrets, dashboard writes, deploys, and long build steps.
 
+On Linux/macOS cloud agents, Cyrus invokes the script from the worktree root.
+On Windows, use Git Bash for the same entry point.
+
 Do not add API keys or production environment variables to this script. Those
 belong in the owning dashboard or secret manager.
+
+## Mobile / EAS
+
+Expo SDK **54** (`apps/mobile/package.json`). EAS project `@amitlevin/tempi`
+(project ID in `apps/mobile/app.json` → `extra.eas.projectId`). Full setup:
+`docs/REVENUECAT_SETUP.md`. Re-pointing EAS ownership is RED-tier — stop and ask Amit.
 
 ## Worktree pattern
 
@@ -114,6 +123,10 @@ Use `/automation-outline` in Cursor, or paste one of the §13 prompts from
 - Dependency remediation agent: `.cursor/agents/tempo-dependency-remediation-agent.md`
 
 For the recurring merge/report loop, use `.cursor/agents/tempo-merge-agent.md`.
+For recurring **docs drift** (package manager, CI, EAS, router), the Cursor cron
+automation on `cursor/engineering-documentation-updates-*` branches follows
+`.cursor/agents/tempo-docs-generation-agent.md` — prefer updating existing docs
+(`docs/CI.md`, `README.md`, runbooks) over new top-level pages.
 It defaults to Cursor Composer 2.5 for routine merge stewardship because this work is
 mostly structured inspection, report consolidation, and follow-up ticket drafting.
 The merge agent must:
