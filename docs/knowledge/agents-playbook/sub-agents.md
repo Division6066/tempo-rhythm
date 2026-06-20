@@ -1,6 +1,6 @@
 # Tempo sub-agents — roles and invocation
 
-**Sub-agents** are scoped, single-purpose agents invoked by the main Cursor agent or the orchestrator during a feature build. They do verification, not implementation. Each lives at `.cursor/agents/<name>/` (scaffolded in Phase 3).
+**Sub-agents** are scoped, single-purpose agents invoked by the main Cursor agent or the orchestrator during a feature build. They do verification, not implementation. Definitions live in `.cursor/agents/*.md` (see `docs/AGENT_AUTOMATION_RUNBOOK.md`).
 
 ## Roster
 
@@ -11,7 +11,7 @@
 | `tempo-accept-reject-checker` | yes | after any diff that mentions `action`, `mutation`, AI calls, or `convex/proposals.ts` | Confirms no AI-originating mutation bypasses the proposals flow. |
 | `tempo-hard-rules-auditor` | yes | on every PR | Runs through all 17 HARD_RULES sections against the diff. Produces a report. |
 | `tempo-brand-validator` | yes | on diffs touching UI copy or components | Checks copy against `docs/brain/brand/voice.md` pattern library. Flags violations and proposes on-brand replacements. |
-| `tempo-test-runner` | **no** | after build completes | Runs `pnpm typecheck`, `pnpm test`, `pnpm scan:forbidden-tech`, `pnpm scan:ram-only-audit`, `pnpm scan:design-tokens`. Reports pass/fail per suite. |
+| `tempo-test-runner` | **no** | after build completes | Runs `bun run typecheck`, `bun run test`, and scan scripts when implemented (`scan:forbidden-tech`, `scan:ram-only-audit`, `scan:design-tokens`). Reports pass/fail per suite. See `docs/CI.md`. |
 
 ## How the orchestrator uses them
 
