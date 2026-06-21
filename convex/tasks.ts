@@ -152,7 +152,7 @@ export const remove = mutation({
     if (!task || task.userId !== user._id) {
       throw new Error("Task not found");
     }
-    await ctx.db.delete(args.taskId);
+    await ctx.db.patch(args.taskId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });

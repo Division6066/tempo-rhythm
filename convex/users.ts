@@ -55,48 +55,10 @@ export const getProfile = query({
 
 export const getById = query({
   args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => ctx.db.get(userId),
-});
-
-export const listActive = query({
-  args: {},
-  handler: async (ctx) =>
-    ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect(),
-});
-
-export const createOrUpdateUser = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const email = identity.email ?? "";
-    const now = Date.now();
-
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .unique();
-
-    const userData = {
-      email,
-      emailVerified: identity.emailVerified ?? false,
-      fullName: identity.name || identity.nickname || "User",
-      role: "user" as const,
-      userType: "free" as const,
-      isActive: true,
-      updatedAt: now,
-    };
-
-    if (existing) {
-      await ctx.db.patch(existing._id, userData);
-      return existing._id;
-    }
-
-    return ctx.db.insert("users", { ...userData, createdAt: now });
+  handler: async (ctx, { userId }) => {
+    const user = await fetchCurrentUser(ctx);
+    if (!user || user._id !== userId) throw new Error("Not found");
+    return user;
   },
 });
 
@@ -106,8 +68,8 @@ export const updateProfile = mutation({
     fullName: v.optional(v.string()),
   },
   handler: async (ctx, { userId, fullName }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await fetchCurrentUser(ctx);
+    if (!user || user._id !== userId) throw new Error("User not found or unauthenticated");
     await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
     return userId;
   },
@@ -118,28 +80,8 @@ export const updateUserType = mutation({
     userType: v.union(v.literal("free"), v.literal("paid")),
   },
   handler: async (ctx, { userType }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    let user = null;
-    const subjectParts = identity.subject.split("|");
-    if (subjectParts.length >= 2) {
-      const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-      try {
-        user = await ctx.db.get(userId);
-      } catch {
-        // fall through
-      }
-    }
-
-    if (!user && identity.email) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
-        .unique();
-    }
-
-    if (!user) throw new Error("User not found");
+    const user = await fetchCurrentUser(ctx);
+    if (!user) throw new Error("Not authenticated or user not found");
 
     await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
     return user._id;
@@ -186,31 +128,20 @@ export const updateSubscriptionStatus = mutation({
 export const remove = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    await ctx.db.delete(userId);
+    const user = await fetchCurrentUser(ctx);
+    if (!user || user._id !== userId) throw new Error("Not found");
+    await ctx.db.patch(userId, { deletedAt: Date.now(), updatedAt: Date.now() });
+    return { deleted: true };
   },
 });
 
 export const deleteMyAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await fetchCurrentUser(ctx);
+    if (!user) throw new Error("Not authenticated");
 
-    const userId = identity.subject;
-    let deletedCount = 0;
-
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("_id"), userId))
-      .first();
-
-    if (user) {
-      await ctx.db.delete(user._id);
-      deletedCount += 1;
-    }
-
-    return { success: true, deletedCount };
+    await ctx.db.patch(user._id, { deletedAt: Date.now(), updatedAt: Date.now() });
+    return { success: true, deletedCount: 1, deleted: true };
   },
 });
