@@ -57,6 +57,13 @@ The script is intentionally small:
 Do not add API keys or production environment variables to this script. Those
 belong in the owning dashboard or secret manager.
 
+## Mobile / EAS
+
+Expo EAS project `@amitlevin/tempi` (slug `tempi`, project ID in `apps/mobile/app.json`).
+Cloud agents must not create a new EAS project — use the existing one. Build profiles
+and secrets are documented in `docs/MOBILE_EAS.md`. RevenueCat webhook setup is in
+`docs/REVENUECAT_SETUP.md`.
+
 ## Worktree pattern
 
 Use one worktree per independent task:
