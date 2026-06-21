@@ -23,6 +23,9 @@
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.91",
+    "@simplewebauthn/server": "^13.3.1",
+    "@simplewebauthn/types": "^12.0.0",
+    "@types/nodemailer": "^8.0.1",
     "convex": "^1.32.0"
   },
   "devDependencies": {

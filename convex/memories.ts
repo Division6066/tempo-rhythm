@@ -175,8 +175,8 @@ export const deleteMemory = mutation({
       throw new Error('Memory not found or access denied');
     }
 
-    await ctx.db.delete(args.memoryId);
-    return { success: true };
+    await ctx.db.patch(args.memoryId, { deletedAt: Date.now(), updatedAt: Date.now() });
+    return { deleted: true };
   },
 });
 

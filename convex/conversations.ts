@@ -194,13 +194,13 @@ export const remove = mutation({
       .collect();
 
     for (const message of messages) {
-      await ctx.db.delete(message._id);
+      await ctx.db.patch(message._id, { deletedAt: Date.now() });
     }
 
     // Delete the conversation
-    await ctx.db.delete(args.conversationId);
+    await ctx.db.patch(args.conversationId, { deletedAt: Date.now(), updatedAt: Date.now() } as any);
 
-    return { success: true };
+    return { deleted: true };
   },
 });
 

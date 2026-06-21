@@ -127,7 +127,7 @@ export const remove = mutation({
     if (!note || note.userId !== user._id) {
       throw new Error("Note not found");
     }
-    await ctx.db.delete(args.noteId);
+    await ctx.db.patch(args.noteId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });
