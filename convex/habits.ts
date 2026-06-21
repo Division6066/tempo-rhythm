@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { computeHabitStreakUpdate } from "./lib/habitStreak";
 import { requireUser } from "./lib/requireUser";
 
 export const list = query({
@@ -44,29 +45,26 @@ export const completeToday = mutation({
       throw new Error("Habit not found");
     }
     const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
-    let current = habit.currentStreak;
-    if (habit.lastCompletedAt !== undefined) {
-      const daysSince = Math.floor((now - habit.lastCompletedAt) / dayMs);
-      if (daysSince === 0) {
-        return { currentStreak: habit.currentStreak, alreadyDone: true as const };
-      }
-      if (daysSince === 1) {
-        current += 1;
-      } else {
-        current = 1;
-      }
-    } else {
-      current = 1;
+    const update = computeHabitStreakUpdate(
+      now,
+      habit.lastCompletedAt,
+      habit.currentStreak,
+      habit.longestStreak,
+    );
+    if (update.alreadyDone) {
+      return { currentStreak: update.currentStreak, alreadyDone: true as const };
     }
-    const longest = Math.max(habit.longestStreak, current);
     await ctx.db.patch(args.habitId, {
-      currentStreak: current,
-      longestStreak: longest,
+      currentStreak: update.currentStreak,
+      longestStreak: update.longestStreak,
       lastCompletedAt: now,
       updatedAt: now,
     });
-    return { currentStreak: current, longestStreak: longest, alreadyDone: false as const };
+    return {
+      currentStreak: update.currentStreak,
+      longestStreak: update.longestStreak,
+      alreadyDone: false as const,
+    };
   },
 });
 
