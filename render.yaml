@@ -1,0 +1,24 @@
+# Render Blueprint for the Tempo Remote Control MCP bridge.
+# Free web service, no credit card required. Secrets are entered in the
+# Render dashboard (sync: false) and are never stored in this repo.
+services:
+  - type: web
+    name: tempo-remote-control-mcp
+    runtime: node
+    plan: free
+    rootDir: packages/tempo-remote-control-mcp
+    buildCommand: npm install --no-workspaces --include=dev && npm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: TEMPO_BRIDGE_TOKEN
+        sync: false
+      - key: LINEAR_API_KEY
+        sync: false
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: NEBULA_WEBHOOK_URL
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
