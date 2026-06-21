@@ -87,7 +87,7 @@ export const remove = mutation({
     if (!goal || goal.userId !== user._id) {
       throw new Error("Goal not found");
     }
-    await ctx.db.delete(args.goalId);
+    await ctx.db.patch(args.goalId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });

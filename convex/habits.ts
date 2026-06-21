@@ -98,7 +98,7 @@ export const remove = mutation({
     if (!habit || habit.userId !== user._id) {
       throw new Error("Habit not found");
     }
-    await ctx.db.delete(args.habitId);
+    await ctx.db.patch(args.habitId, { deletedAt: Date.now(), updatedAt: Date.now() });
     return { success: true };
   },
 });
