@@ -21,6 +21,13 @@ async function resolveUserFromSubject(
   return null;
 }
 
+function assertUserIsActive(user: Doc<"users">): Doc<"users"> {
+  if (user.deletedAt !== undefined || user.isActive === false) {
+    throw new Error("This account is not active");
+  }
+  return user;
+}
+
 export async function requireUser(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -29,7 +36,7 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   const subjectUser = await resolveUserFromSubject(ctx, identity.subject);
   if (subjectUser) {
-    return subjectUser;
+    return assertUserIsActive(subjectUser);
   }
 
   const email = identity.email;
@@ -46,9 +53,5 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
     throw new Error("User not found");
   }
 
-  if (user.deletedAt !== undefined || user.isActive === false) {
-    throw new Error("This account is not active");
-  }
-
-  return user;
+  return assertUserIsActive(user);
 }
