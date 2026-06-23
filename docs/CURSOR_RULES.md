@@ -123,9 +123,9 @@ If you think you need a forbidden dependency, open an issue first with the justi
 
 ## 10. Design tokens only
 
-**Rule.** Prefer design tokens and theme variables over one-off colors. No arbitrary hex in new UI unless a token already exists. For web Tailwind v4, extend tokens via CSS variables / `@theme` in `apps/web/app/globals.css` (and eventually `packages/ui`). When `pnpm scan:design-tokens` exists, it must pass on changed UI.
+**Rule.** Prefer design tokens and theme variables over one-off colors. No arbitrary hex in new UI unless a token already exists. For web Tailwind v4, extend tokens via CSS variables / `@theme` in `apps/web/app/globals.css` (and eventually `packages/ui`). When `bun run scan:design-tokens` exists, it must pass on changed UI.
 
-**Rationale.** Arbitrary values are how design systems erode. Once one file uses `#ff7a00` instead of `text-accent`, the next agent copies it, and within two weeks you have 17 orange-ish oranges and no way to theme. The design-token enforcer (`pnpm scan:design-tokens`) fails the build on arbitrary values.
+**Rationale.** Arbitrary values are how design systems erode. Once one file uses `#ff7a00` instead of `text-accent`, the next agent copies it, and within two weeks you have 17 orange-ish oranges and no way to theme. The design-token enforcer (`bun run scan:design-tokens`) fails the build on arbitrary values.
 
 ---
 
