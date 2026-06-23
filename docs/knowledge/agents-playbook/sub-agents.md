@@ -11,7 +11,7 @@
 | `tempo-accept-reject-checker` | yes | after any diff that mentions `action`, `mutation`, AI calls, or `convex/proposals.ts` | Confirms no AI-originating mutation bypasses the proposals flow. |
 | `tempo-hard-rules-auditor` | yes | on every PR | Runs through all 17 HARD_RULES sections against the diff. Produces a report. |
 | `tempo-brand-validator` | yes | on diffs touching UI copy or components | Checks copy against `docs/brain/brand/voice.md` pattern library. Flags violations and proposes on-brand replacements. |
-| `tempo-test-runner` | **no** | after build completes | Runs `pnpm typecheck`, `pnpm test`, `pnpm scan:forbidden-tech`, `pnpm scan:ram-only-audit`, `pnpm scan:design-tokens`. Reports pass/fail per suite. |
+| `tempo-test-runner` | **no** | after build completes | Runs `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`. Reports pass/fail per suite. |
 
 ## How the orchestrator uses them
 
