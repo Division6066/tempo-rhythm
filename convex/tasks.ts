@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { filterTasksDueInRange } from "./lib/task_filters";
 import { requireUser } from "./lib/requireUser";
 import { fetchCurrentUser } from "./users";
 
@@ -61,13 +62,7 @@ export const listDueInRange = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows.filter(
-      (t) =>
-        t.dueAt !== undefined &&
-        t.dueAt >= args.startMs &&
-        t.dueAt < args.endMs &&
-        t.status !== "cancelled",
-    );
+    return filterTasksDueInRange(rows, args.startMs, args.endMs);
   },
 });
 
@@ -204,15 +199,9 @@ export const listToday = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows
-      .filter(
-        (t) =>
-          t.dueAt !== undefined &&
-          t.dueAt >= args.dueFrom &&
-          t.dueAt < args.dueTo &&
-          t.status !== "cancelled",
-      )
-      .sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
+    return filterTasksDueInRange(rows, args.dueFrom, args.dueTo).sort(
+      (a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0),
+    );
   },
 });
 

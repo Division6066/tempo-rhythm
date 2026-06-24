@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parsePlanFromModelContent } from "./brain_dump";
+import { parsePlanFromModelContent } from "./lib/brain_dump_parse";
 
 describe("parsePlanFromModelContent", () => {
   test("parses a clean JSON plan", () => {
