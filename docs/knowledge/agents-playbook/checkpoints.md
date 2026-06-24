@@ -7,7 +7,7 @@
 | Trigger | Why |
 |---|---|
 | About to ship a proposed ticket batch to parallel agents (`/whats-next` has picked 3) | Amit confirms the scope before work starts. |
-| About to merge any PR to `main` | HARD_RULES §12 — `main` must be deployable, and no agent auto-merges. |
+| About to merge any PR to `master` | HARD_RULES §12 — `master` must be deployable, and no agent auto-merges. |
 | About to add a new dependency | HARD_RULES §2 forbidden list + license check. Even when a skill suggests it. |
 | About to modify `convex/schema.ts` in a way that changes an existing table | Data migration risk. Amit approves the migration plan first. |
 | About to add a new env var | HARD_RULES §13 — must be added to `.env.example` + Vercel/EAS env config. |
