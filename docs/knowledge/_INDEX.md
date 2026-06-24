@@ -13,6 +13,11 @@
 | Understand what "done" means for Phase 1 MVP | [`prds/README.md`](prds/README.md) → `docs/brain/PRDs/PRD_Phase_1_MVP.md` |
 | Know what you absolutely must not do | [`rules/README.md`](rules/README.md) → `docs/HARD_RULES.md` |
 | Run a 45-minute multi-agent session | [`agents-playbook/workflow-sunday-morning.md`](agents-playbook/workflow-sunday-morning.md) |
+| Understand CI / pre-PR checks | [`../CI.md`](../CI.md) |
+| Configure mobile EAS builds | [`../MOBILE_EAS.md`](../MOBILE_EAS.md) |
+| Wire RevenueCat webhooks | [`../REVENUECAT_SETUP.md`](../REVENUECAT_SETUP.md) |
+| Run Cursor background automations (CI fix, docs, merge steward) | [`../AGENT_AUTOMATION_RUNBOOK.md`](../AGENT_AUTOMATION_RUNBOOK.md) + `.cursor/agents/` |
+| File merge-agent evidence reports | [`../QA/agent-runs/README.md`](../QA/agent-runs/README.md) |
 | Know when to stop and ask Amit | [`agents-playbook/checkpoints.md`](agents-playbook/checkpoints.md) |
 | Understand each sub-agent's job | [`agents-playbook/sub-agents.md`](agents-playbook/sub-agents.md) |
 
