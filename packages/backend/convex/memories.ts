@@ -1,52 +1,40 @@
-import { v } from 'convex/values';
-import { mutation, query, action } from './_generated/server';
-import { api } from './_generated/api';
+import { v } from "convex/values";
+import { action, mutation, query } from "./_generated/server";
+import { api } from "./_generated/api";
+import { requireUser } from "./lib/requireUser";
+import { liveOnly, softDeletePatch } from "./lib/soft_delete";
 
-// Memory sector type
-export type MemorySector = 'semantic' | 'episodic' | 'procedural' | 'emotional' | 'general';
+export type MemorySector = "semantic" | "episodic" | "procedural" | "emotional" | "general";
 
-// Query: Get all memories for a user, optionally filtered by sector
+const sectorValidator = v.union(
+  v.literal("semantic"),
+  v.literal("episodic"),
+  v.literal("procedural"),
+  v.literal("emotional"),
+  v.literal("general"),
+);
+
 export const queryMemories = query({
   args: {
-    sector: v.optional(v.union(
-      v.literal('semantic'),
-      v.literal('episodic'),
-      v.literal('procedural'),
-      v.literal('emotional'),
-      v.literal('general')
-    )),
+    sector: v.optional(sectorValidator),
     limit: v.optional(v.number()),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
+    const user = await requireUser(ctx);
 
-    // Find user by email
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
+    const memories = liveOnly(
+      await ctx.db
+        .query("memories")
+        .withIndex("by_userId_salience", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .collect(),
+    );
 
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    let query = ctx.db
-      .query('memories')
-      .withIndex('by_userId_salience', (q) => q.eq('userId', user._id));
-
-    const memories = await query
-      .order('desc')
-      .collect();
-
-    // Filter by sector if provided
     let filtered = args.sector
       ? memories.filter((m) => m.sector === args.sector)
       : memories;
 
-    // Sort by salience (descending) and lastAccessed (descending)
     filtered.sort((a, b) => {
       if (b.salience !== a.salience) {
         return b.salience - a.salience;
@@ -54,7 +42,6 @@ export const queryMemories = query({
       return b.lastAccessed - a.lastAccessed;
     });
 
-    // Apply limit
     if (args.limit) {
       filtered = filtered.slice(0, args.limit);
     }
@@ -63,40 +50,21 @@ export const queryMemories = query({
   },
 });
 
-// Mutation: Add a new memory
 export const addMemory = mutation({
   args: {
     content: v.string(),
-    sector: v.optional(v.union(
-      v.literal('semantic'),
-      v.literal('episodic'),
-      v.literal('procedural'),
-      v.literal('emotional'),
-      v.literal('general')
-    )),
+    sector: v.optional(sectorValidator),
     salience: v.optional(v.number()),
     metadata: v.optional(v.any()),
   },
+  returns: v.id("memories"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
+    const user = await requireUser(ctx);
     const now = Date.now();
-    const memoryId = await ctx.db.insert('memories', {
+    return ctx.db.insert("memories", {
       userId: user._id,
       content: args.content,
-      sector: args.sector || 'general',
+      sector: args.sector || "general",
       salience: args.salience ?? 0.5,
       decayRate: 0.1,
       lastAccessed: now,
@@ -105,92 +73,63 @@ export const addMemory = mutation({
       createdAt: now,
       updatedAt: now,
     });
-
-    return memoryId;
   },
 });
 
-// Mutation: Update memory salience
 export const updateSalience = mutation({
   args: {
-    memoryId: v.id('memories'),
+    memoryId: v.id("memories"),
     salience: v.number(),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
+    const user = await requireUser(ctx);
     const memory = await ctx.db.get(args.memoryId);
-    if (!memory || memory.userId !== user._id) {
-      throw new Error('Memory not found or access denied');
+    if (!memory || memory.userId !== user._id || memory.deletedAt !== undefined) {
+      throw new Error("Memory not found or access denied");
     }
 
-    // Clamp salience between 0.1 and 1.0
     const clampedSalience = Math.max(0.1, Math.min(1.0, args.salience));
+    const now = Date.now();
 
     await ctx.db.patch(args.memoryId, {
       salience: clampedSalience,
-      lastAccessed: Date.now(),
+      lastAccessed: now,
       accessCount: memory.accessCount + 1,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
 
     return { success: true };
   },
 });
 
-// Mutation: Delete a memory
 export const deleteMemory = mutation({
   args: {
-    memoryId: v.id('memories'),
+    memoryId: v.id("memories"),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
+    const user = await requireUser(ctx);
     const memory = await ctx.db.get(args.memoryId);
-    if (!memory || memory.userId !== user._id) {
-      throw new Error('Memory not found or access denied');
+    if (!memory || memory.userId !== user._id || memory.deletedAt !== undefined) {
+      throw new Error("Memory not found or access denied");
     }
 
-    await ctx.db.delete(args.memoryId);
+    await ctx.db.patch(args.memoryId, softDeletePatch());
     return { success: true };
   },
 });
 
-// Action: Apply decay to memories (reduces salience over time)
 export const decayMemories = action({
   args: {},
+  returns: v.object({ success: v.boolean(), updated: v.number() }),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error('Not authenticated');
+      throw new Error("Not authenticated");
     }
 
     const memories = await ctx.runQuery(api.memories.queryMemories, {});
-
     const now = Date.now();
     let updated = 0;
 
@@ -200,7 +139,7 @@ export const decayMemories = action({
       if (daysSinceAccess > 1) {
         const newSalience = Math.max(
           0.1,
-          memory.salience * (1 - memory.decayRate * daysSinceAccess)
+          memory.salience * (1 - memory.decayRate * daysSinceAccess),
         );
 
         if (newSalience < memory.salience) {
@@ -217,25 +156,29 @@ export const decayMemories = action({
   },
 });
 
-// Action: Extract memories from conversation using AI
+/**
+ * Extract memories from conversation text.
+ * NOTE: Legacy AI path still present in this module; prefer Mistral via
+ * `lib/ai_router` in a follow-up. Auth gate is enforced here.
+ */
 export const extractMemories = action({
   args: {
     content: v.string(),
     save: v.optional(v.boolean()),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error('Not authenticated');
+      throw new Error("Not authenticated");
     }
 
-    // Get AI API key from environment (set in Convex dashboard)
     const aiApiKey = process.env.AI_API_KEY;
-    const aiProvider = process.env.AI_PROVIDER || 'gemini';
-    const aiModel = process.env.AI_MODEL || 'gemini-2.5-flash';
+    const aiProvider = process.env.AI_PROVIDER || "gemini";
+    const aiModel = process.env.AI_MODEL || "gemini-2.5-flash";
 
     if (!aiApiKey) {
-      throw new Error('AI not configured. Please set AI_API_KEY in Convex dashboard.');
+      throw new Error("AI not configured. Please set AI_API_KEY in Convex dashboard.");
     }
 
     const extractionPrompt = `Analyze this conversation and extract important facts, preferences, and information worth remembering about the user.
@@ -253,54 +196,59 @@ ${args.content}`;
 
     let apiUrl: string;
     let headers: Record<string, string>;
-    let body: any;
+    let body: Record<string, unknown>;
 
-    if (aiProvider === 'gemini') {
-      // Use Gemini API
-      apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + aiModel + ':generateContent';
+    if (aiProvider === "gemini") {
+      apiUrl =
+        "https://generativelanguage.googleapis.com/v1beta/models/" +
+        aiModel +
+        ":generateContent";
       headers = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
       body = {
-        contents: [{
-          parts: [{ text: extractionPrompt }],
-        }],
+        contents: [
+          {
+            parts: [{ text: extractionPrompt }],
+          },
+        ],
       };
-      // Add API key to URL for Gemini
       apiUrl += `?key=${aiApiKey}`;
     } else {
-      // Use OpenAI-compatible API
-      apiUrl = 'https://api.openai.com/v1/chat/completions';
+      apiUrl = "https://api.openai.com/v1/chat/completions";
       headers = {
-        'Authorization': `Bearer ${aiApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aiApiKey}`,
+        "Content-Type": "application/json",
       };
       body = {
         model: aiModel,
-        messages: [{ role: 'user', content: extractionPrompt }],
+        messages: [{ role: "user", content: extractionPrompt }],
       };
     }
 
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      throw new Error('AI extraction failed');
+      throw new Error("AI extraction failed");
     }
 
     let extractedText: string;
-    if (aiProvider === 'gemini') {
-      const data = await response.json();
-      extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+    if (aiProvider === "gemini") {
+      const data = (await response.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      };
+      extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
     } else {
-      const data = await response.json();
-      extractedText = data.choices?.[0]?.message?.content || '[]';
+      const data = (await response.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      extractedText = data.choices?.[0]?.message?.content || "[]";
     }
 
-    // Parse extracted memories
     let memories: Array<{
       content: string;
       sector: MemorySector;
@@ -308,19 +256,21 @@ ${args.content}`;
     }> = [];
 
     try {
-      const cleanJson = extractedText.replace(/```json\n?|\n?```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-      memories = parsed.map((m: any) => ({
-        content: m.content || '',
-        sector: (m.sector || 'general') as MemorySector,
-        salience: Math.max(0.1, Math.min(1.0, m.salience || 0.5)),
+      const cleanJson = extractedText.replace(/```json\n?|\n?```/g, "").trim();
+      const parsed = JSON.parse(cleanJson) as Array<Record<string, unknown>>;
+      memories = parsed.map((m) => ({
+        content: typeof m.content === "string" ? m.content : "",
+        sector: (typeof m.sector === "string" ? m.sector : "general") as MemorySector,
+        salience: Math.max(
+          0.1,
+          Math.min(1.0, typeof m.salience === "number" ? m.salience : 0.5),
+        ),
       }));
     } catch (e) {
-      console.error('Failed to parse extracted memories:', e);
+      console.error("Failed to parse extracted memories:", e);
       return { success: false, data: [] };
     }
 
-    // Optionally save extracted memories
     if (args.save && memories.length > 0) {
       for (const memory of memories) {
         await ctx.runMutation(api.memories.addMemory, {
@@ -335,48 +285,56 @@ ${args.content}`;
   },
 });
 
-// Query: Get memory statistics by sector
 export const getMemoryStats = query({
   args: {},
+  returns: v.object({
+    total: v.number(),
+    sectors: v.array(
+      v.object({
+        sector: sectorValidator,
+        count: v.number(),
+        avgSalience: v.number(),
+      }),
+    ),
+    avgSalience: v.number(),
+  }),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error('Not authenticated');
-    }
+    const user = await requireUser(ctx);
 
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_email', (q) => q.eq('email', identity.email!))
-      .first();
+    const memories = liveOnly(
+      await ctx.db
+        .query("memories")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect(),
+    );
 
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const memories = await ctx.db
-      .query('memories')
-      .withIndex('by_userId', (q) => q.eq('userId', user._id))
-      .collect();
-
-    const sectors: MemorySector[] = ['semantic', 'episodic', 'procedural', 'emotional', 'general'];
+    const sectors: MemorySector[] = [
+      "semantic",
+      "episodic",
+      "procedural",
+      "emotional",
+      "general",
+    ];
     const stats = sectors.map((sector) => {
       const sectorMemories = memories.filter((m) => m.sector === sector);
       return {
         sector,
         count: sectorMemories.length,
-        avgSalience: sectorMemories.length > 0
-          ? sectorMemories.reduce((sum, m) => sum + m.salience, 0) / sectorMemories.length
-          : 0,
+        avgSalience:
+          sectorMemories.length > 0
+            ? sectorMemories.reduce((sum, m) => sum + m.salience, 0) /
+              sectorMemories.length
+            : 0,
       };
     });
 
     return {
       total: memories.length,
       sectors: stats,
-      avgSalience: memories.length > 0
-        ? memories.reduce((sum, m) => sum + m.salience, 0) / memories.length
-        : 0,
+      avgSalience:
+        memories.length > 0
+          ? memories.reduce((sum, m) => sum + m.salience, 0) / memories.length
+          : 0,
     };
   },
 });
-
