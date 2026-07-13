@@ -1,11 +1,28 @@
 # Tempo Flow — Claude Code via GitHub Actions
 #
-# WHY THERE IS NO 'prompt:' INPUT:
-#   Supplying 'prompt' puts the action into AUTOMATION mode, where it runs that
-#   prompt as the task and IGNORES the @claude comment. Omitting it keeps the
-#   action in TAG mode, where the @claude comment IS the task.
-#   Standing orders live in CLAUDE.md -> docs/HARD_RULES.md, which Claude Code
-#   reads automatically on every run. Do NOT re-add 'prompt:' here.
+# COPY THIS WHOLE FILE INTO:  .github/workflows/claude.yml   (tempo-rhythm, master)
+#
+# ---------------------------------------------------------------------------
+# HOW IT FIRES
+#   Comment "@claude <instruction>" on a GitHub issue or PR.
+#   Linear mirrors the ticket into a GitHub issue, and mirrors comments from the
+#   SYNCED THREAD into that issue.
+#
+#   TRAP: a side comment on the Linear issue does NOT reach GitHub and will NOT
+#   fire this. It must go inside the synced thread.
+#
+# ---------------------------------------------------------------------------
+# WHY THERE IS NO 'prompt:' INPUT   (learned the hard way, 2026-07-13)
+#   Supplying 'prompt' switches the action into AUTOMATION mode: it runs that
+#   prompt as the task and IGNORES the @claude comment entirely. The run goes
+#   GREEN in about 30 seconds and does absolutely nothing.
+#
+#   Omitting 'prompt' keeps the action in TAG mode, where the @claude comment
+#   IS the task. That is what we want.
+#
+#   The standing orders live in CLAUDE.md -> docs/HARD_RULES.md, which Claude
+#   Code reads automatically on every run. DO NOT re-add 'prompt:' here.
+# ---------------------------------------------------------------------------
 
 name: Claude Code
 
@@ -30,10 +47,10 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-      id-token: write
+      contents: write        # push a branch (NOT master — protection blocks that)
+      pull-requests: write   # open the PR
+      issues: write          # reply on the issue, which syncs back to Linear
+      id-token: write        # OIDC, required by the action
 
     steps:
       - name: Checkout
@@ -47,6 +64,17 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
           # Linear mirrors comments into GitHub as the 'linear-code' bot.
-          # Without this the action refuses: "Workflow initiated by non-human
-          # actor". ONLY this bot. NEVER use "*".
+          # Without this, the action refuses to run:
+          #   "Workflow initiated by non-human actor: linear-code (type: Bot)."
+          # ONLY this bot. NEVER use "*" — that would let ANY bot command Claude.
           allowed_bots: "linear-code"
+
+          # Bash is sandboxed by default. Result: Claude could push a branch but
+          # not open the PR — it reported "I don't have permission to run
+          # gh pr create". This grants exactly that one command and nothing else,
+          # so Stage 3 now completes unattended.
+          #
+          # Merging still requires Amit. Branch protection (Restrict updates,
+          # bypass = Repository admin only) guarantees no App can touch master.
+          claude_args: |
+            --allowedTools "Bash(gh pr create:*)"
