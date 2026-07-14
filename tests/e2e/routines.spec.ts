@@ -3,12 +3,18 @@ import { expect, type Page, test } from "@playwright/test";
 const testEmail = "amitlevin65@protonmail.com";
 const testPassword = "TempoRoutinesE2E!2026";
 
+async function waitForRoutinesPath(page: Page) {
+  await page.waitForFunction(() => window.location.pathname === "/routines", undefined, {
+    timeout: 20_000,
+  });
+}
+
 async function signIn(page: Page) {
   await page.goto("/sign-in?next=/routines");
   await page.locator("#signin-email").fill(testEmail);
   await page.locator("#signin-password").fill(testPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/routines$/, { timeout: 20_000 });
+  await waitForRoutinesPath(page);
 }
 
 async function ensureSignedIn(page: Page) {
@@ -19,7 +25,7 @@ async function ensureSignedIn(page: Page) {
   await page.getByRole("button", { name: "Create account" }).click();
 
   try {
-    await expect(page).toHaveURL(/\/routines$/, { timeout: 20_000 });
+    await waitForRoutinesPath(page);
   } catch {
     await signIn(page);
   }
