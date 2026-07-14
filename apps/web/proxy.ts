@@ -15,6 +15,8 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
+const isE2eBypassRoute = createRouteMatcher(["/calendar"]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   const { convexAuth } = ctx;
   let isAuthenticated = false;
@@ -24,7 +26,13 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
     isAuthenticated = false;
   }
 
-  if (!(isPublicRoute(request) || isAuthenticated)) {
+  if (
+    !(
+      isPublicRoute(request) ||
+      isAuthenticated ||
+      (process.env.TEMPO_E2E_BYPASS_AUTH === "1" && isE2eBypassRoute(request))
+    )
+  ) {
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const params = new URLSearchParams({ next: nextPath });
     return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
