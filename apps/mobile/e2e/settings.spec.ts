@@ -7,8 +7,6 @@ const baseUrl = `http://127.0.0.1:${port}`;
 
 let server: ChildProcess | undefined;
 
-test.setTimeout(180_000);
-
 async function waitForServer(): Promise<void> {
   const deadline = Date.now() + 120_000;
   while (Date.now() < deadline) {
@@ -26,8 +24,6 @@ async function waitForServer(): Promise<void> {
 }
 
 test.beforeAll(async () => {
-  test.setTimeout(180_000);
-
   server = spawn("bun", ["expo", "start", "--web", "--port", String(port)], {
     cwd: "apps/mobile",
     env: {
