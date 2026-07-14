@@ -26,7 +26,7 @@ test("task can become a calendar block and keyboard reschedule persists", async 
   await signUpOrSignIn(page);
 
   await page.goto("/calendar");
-  await expect(page.getByRole("heading", { name: "Calendar" })).toBeVisible();
+  await expect(page.locator("main").getByRole("heading", { level: 1, name: /^Calendar$/ })).toBeVisible();
 
   await page.getByLabel("Task title").fill(taskTitle);
   await page.getByRole("button", { name: "Add task" }).click();
