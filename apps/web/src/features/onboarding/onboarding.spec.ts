@@ -28,6 +28,7 @@ function startWebServer() {
     env: {
       ...process.env,
       NEXT_TELEMETRY_DISABLED: "1",
+      NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL ?? "http://127.0.0.1:3210",
     },
   });
 
