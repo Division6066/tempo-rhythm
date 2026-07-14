@@ -134,6 +134,9 @@ export default defineSchema({
       v.literal("cancelled"),
     ),
     priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    energy: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+    projectId: v.optional(v.string()),
+    projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -142,6 +145,7 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_dueAt", ["userId", "dueAt"])
+    .index("by_userId_projectId", ["userId", "projectId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   notes: defineTable({
