@@ -122,7 +122,10 @@ export default function Screen() {
         testID="movement-library"
       >
         <View className="gap-2">
-          <Text className="text-3xl font-semibold text-foreground">
+          <Text
+            accessibilityRole="header"
+            className="text-3xl font-semibold text-foreground"
+          >
             Movement routines
           </Text>
           <Text className="text-base text-muted-foreground">

@@ -15,7 +15,7 @@ test.describe("movement routine library", () => {
     await page.goto("/routines");
 
     await expect(page.getByTestId("movement-library")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Movement routines" }))
+    await expect(page.getByText("Movement routines", { exact: true }))
       .toBeVisible();
 
     for (const category of expectedCategories) {
