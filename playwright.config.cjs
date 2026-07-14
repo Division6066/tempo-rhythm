@@ -7,6 +7,7 @@ const config = {
   timeout: 60_000,
   use: {
     baseURL: "http://127.0.0.1:8081",
+    channel: "chrome",
     trace: "retain-on-failure",
   },
   webServer: {
