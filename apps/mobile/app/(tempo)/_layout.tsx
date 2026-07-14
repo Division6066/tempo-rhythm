@@ -8,6 +8,7 @@ export default function TempoLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="routines/[id]" />
       <Stack.Screen name="capture" options={{ presentation: "modal" }} />
     </Stack>
   );
