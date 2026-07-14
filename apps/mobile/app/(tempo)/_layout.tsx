@@ -9,6 +9,7 @@ export default function TempoLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="capture" options={{ presentation: "modal" }} />
+      <Stack.Screen name="theme-tokens" />
     </Stack>
   );
 }
