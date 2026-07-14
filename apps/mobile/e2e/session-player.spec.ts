@@ -1,9 +1,11 @@
-import type { Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const activeSessionStorageKey = 'theway.sessionPlayer.active.v1';
 const sessionLogStorageKey = 'theway.sessionPlayer.log.v1';
 const elapsedSelector = '[data-testid="session-player-elapsed"]';
-const isBunUnitTestRunner = typeof Bun !== 'undefined';
+const isPlaywrightRunner = process.argv.some((arg) =>
+  arg.includes('playwright')
+);
 
 async function readElapsedSeconds(page: Page): Promise<number> {
   const text = await page.getByTestId('session-player-elapsed').innerText();
@@ -25,9 +27,7 @@ async function setVisibility(page: Page, visibilityState: 'hidden' | 'visible') 
   }, visibilityState);
 }
 
-if (!isBunUnitTestRunner) {
-  const { expect, test } = await import('@playwright/test');
-
+if (isPlaywrightRunner) {
   test('plays seeded routine end to end with pause, resume, background resume, and session log', async ({
     page,
   }) => {
