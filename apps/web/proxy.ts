@@ -15,8 +15,24 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
+const isE2ePlaceholderRoute = createRouteMatcher([
+  "/brain-dump",
+  "/coach",
+  "/plan",
+  "/tasks",
+  "/notes",
+  "/journal",
+  "/calendar",
+  "/habits",
+  "/routines",
+  "/templates",
+  "/settings/profile",
+  "/onboarding",
+]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   const { convexAuth } = ctx;
+  const isPlaywrightE2e = process.env.PLAYWRIGHT_E2E === "1";
   let isAuthenticated = false;
   try {
     isAuthenticated = await convexAuth.isAuthenticated();
@@ -24,7 +40,13 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
     isAuthenticated = false;
   }
 
-  if (!(isPublicRoute(request) || isAuthenticated)) {
+  if (
+    !(
+      isPublicRoute(request) ||
+      isAuthenticated ||
+      (isPlaywrightE2e && isE2ePlaceholderRoute(request))
+    )
+  ) {
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const params = new URLSearchParams({ next: nextPath });
     return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
