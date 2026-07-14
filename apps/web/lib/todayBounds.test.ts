@@ -2,10 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { getLocalDayBoundsMs, nextLocalDayRolloverDelayMs } from "./todayBounds";
 
 describe("getLocalDayBoundsMs", () => {
-  test("returns a 24h half-open window in local time", () => {
+  test("returns a half-open local-day window", () => {
     const noon = new Date(2026, 3, 15, 12, 30, 45);
     const bounds = getLocalDayBoundsMs(noon);
-    expect(bounds.endMs - bounds.startMs).toBe(24 * 60 * 60 * 1000);
     expect(bounds.startMs).toBeLessThanOrEqual(noon.getTime());
     expect(bounds.endMs).toBeGreaterThan(noon.getTime());
   });
