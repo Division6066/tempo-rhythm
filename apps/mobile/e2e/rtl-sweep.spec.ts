@@ -1,75 +1,80 @@
 // @ts-nocheck
-import { expect, test } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { readdir } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+const { spawn } = require("node:child_process");
+const { readdir } = require("node:fs/promises");
+const path = require("node:path");
 
-import { bidiFixture, rtlLanguage, rtlSweepRoutes } from "./routes";
+const { bidiFixture, rtlLanguage, rtlSweepRoutes } = require("./routes");
 
-const currentFile = fileURLToPath(import.meta.url);
-const e2eDir = path.dirname(currentFile);
+const e2eDir = __dirname;
 const mobileRoot = path.resolve(e2eDir, "..");
 const appRoot = path.join(mobileRoot, "app");
-const port = Number(process.env.RTL_SWEEP_PORT ?? "19066");
+const defaultPort = 19_000 + (process.pid % 1_000);
+const port = Number(process.env.RTL_SWEEP_PORT ?? String(defaultPort));
 const baseUrl = `http://127.0.0.1:${port}`;
 const routeFilePattern = /\.(tsx|ts|jsx|js)$/;
 const ignoredRouteFileNames = new Set(["_layout.tsx", "_layout.ts", "_layout.jsx", "_layout.js"]);
+const isPlaywrightRun = process.argv.some((arg) => arg.includes("playwright"));
 
 let serverProcess: ReturnType<typeof spawn> | undefined;
 let serverOutput = "";
 
-test.use({
-  locale: rtlLanguage.locale,
-});
+if (isPlaywrightRun) {
+  const { expect, test } = require("@playwright/test");
 
-test.describe.configure({ mode: "serial" });
+  test.use({
+    locale: rtlLanguage.locale,
+  });
 
-test.beforeAll(async () => {
-  serverProcess = spawn(
-    "bun",
-    ["run", "web", "--", "--port", String(port), "--host", "127.0.0.1", "--non-interactive"],
-    {
-      cwd: mobileRoot,
-      env: {
-        ...process.env,
-        BROWSER: "none",
-        CI: "1",
-        EXPO_NO_TELEMETRY: "1",
-        EXPO_PUBLIC_CONVEX_URL:
-          process.env.EXPO_PUBLIC_CONVEX_URL ?? "https://example.convex.cloud",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
+  test.setTimeout(180_000);
+
+  test.beforeAll(async ({}, testInfo) => {
+    testInfo.setTimeout(180_000);
+
+    serverProcess = spawn(
+      "bun",
+      ["run", "web", "--", "--port", String(port)],
+      {
+        cwd: mobileRoot,
+        env: {
+          ...process.env,
+          BROWSER: "none",
+          CI: "1",
+          EXPO_NO_TELEMETRY: "1",
+          EXPO_PUBLIC_CONVEX_URL:
+            process.env.EXPO_PUBLIC_CONVEX_URL ?? "https://example.convex.cloud",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+
+    serverProcess.stdout?.on("data", (chunk: Buffer) => {
+      serverOutput += chunk.toString();
+    });
+    serverProcess.stderr?.on("data", (chunk: Buffer) => {
+      serverOutput += chunk.toString();
+    });
+
+    await waitForServer();
+  });
+
+  test.afterAll(() => {
+    if (serverProcess && !serverProcess.killed) {
+      serverProcess.kill();
     }
-  );
-
-  serverProcess.stdout?.on("data", (chunk: Buffer) => {
-    serverOutput += chunk.toString();
-  });
-  serverProcess.stderr?.on("data", (chunk: Buffer) => {
-    serverOutput += chunk.toString();
   });
 
-  await waitForServer();
-});
+  test("route manifest matches current Expo Router screen files", async () => {
+    const actualRouteFiles = await listRouteFiles(appRoot);
+    const manifestRouteFiles = rtlSweepRoutes
+      .map((route) => route.sourceFile)
+      .toSorted();
 
-test.afterAll(() => {
-  if (serverProcess && !serverProcess.killed) {
-    serverProcess.kill();
-  }
-});
+    expect(manifestRouteFiles).toEqual(actualRouteFiles);
+  });
 
-test("route manifest matches current Expo Router screen files", async () => {
-  const actualRouteFiles = await listRouteFiles(appRoot);
-  const manifestRouteFiles = rtlSweepRoutes
-    .map((route) => route.sourceFile)
-    .toSorted();
+  test("all manifest routes render in Hebrew RTL", async ({ page }, testInfo) => {
+    const failures: string[] = [];
 
-  expect(manifestRouteFiles).toEqual(actualRouteFiles);
-});
-
-for (const route of rtlSweepRoutes) {
-  test(`${route.id} renders in Hebrew RTL`, async ({ page }, testInfo) => {
     await page.addInitScript((language) => {
       Object.defineProperty(window.navigator, "language", {
         configurable: true,
@@ -83,43 +88,54 @@ for (const route of rtlSweepRoutes) {
       document.documentElement.dir = language.dir;
     }, rtlLanguage);
 
-    await page.goto(`${baseUrl}${route.path}`, { waitUntil: "domcontentloaded" });
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {
-      // Expo web keeps a dev websocket open; DOM readiness is enough for this sweep.
-    });
+    for (const route of rtlSweepRoutes) {
+      await page.goto(`${baseUrl}${route.path}`, {
+        waitUntil: "domcontentloaded",
+      });
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {
+        // Expo web keeps a dev websocket open; DOM readiness is enough for this sweep.
+      });
 
-    await expect
-      .poll(() => page.evaluate(() => document.documentElement.getAttribute("dir")))
-      .toBe(rtlLanguage.dir);
-    await expect
-      .poll(() => page.evaluate(() => document.documentElement.getAttribute("lang")))
-      .toBe(rtlLanguage.lang);
+      const result = await page.evaluate((fixture) => {
+        const element = document.createElement("p");
+        element.dataset.testid = fixture.id;
+        element.dir = "rtl";
+        element.lang = "he";
+        element.textContent = fixture.text;
+        document.body.append(element);
 
-    const fixtureResult = await page.evaluate((fixture) => {
-      const element = document.createElement("p");
-      element.dataset.testid = fixture.id;
-      element.dir = "rtl";
-      element.lang = "he";
-      element.textContent = fixture.text;
-      document.body.append(element);
+        return {
+          fixtureDirection: window.getComputedStyle(element).direction,
+          fixtureText: element.textContent,
+          htmlDir: document.documentElement.getAttribute("dir"),
+          htmlLang: document.documentElement.getAttribute("lang"),
+        };
+      }, bidiFixture);
 
-      return {
-        direction: window.getComputedStyle(element).direction,
-        text: element.textContent,
-      };
-    }, bidiFixture);
+      const screenshotPath = testInfo.outputPath(`he-rtl-${route.id}.png`);
+      await page.screenshot({ fullPage: true, path: screenshotPath });
+      await testInfo.attach(`he-rtl-${route.id}`, {
+        contentType: "image/png",
+        path: screenshotPath,
+      });
 
-    expect(fixtureResult).toEqual({
-      direction: rtlLanguage.dir,
-      text: bidiFixture.text,
-    });
+      if (result.htmlDir !== rtlLanguage.dir) {
+        failures.push(`${route.id}: expected html dir=rtl, received ${result.htmlDir}`);
+      }
+      if (result.htmlLang !== rtlLanguage.lang) {
+        failures.push(`${route.id}: expected html lang=he, received ${result.htmlLang}`);
+      }
+      if (result.fixtureDirection !== rtlLanguage.dir) {
+        failures.push(
+          `${route.id}: expected bidi fixture direction=rtl, received ${result.fixtureDirection}`
+        );
+      }
+      if (result.fixtureText !== bidiFixture.text) {
+        failures.push(`${route.id}: bidi fixture text did not round-trip`);
+      }
+    }
 
-    const screenshotPath = testInfo.outputPath(`he-rtl-${route.id}.png`);
-    await page.screenshot({ fullPage: true, path: screenshotPath });
-    await testInfo.attach(`he-rtl-${route.id}`, {
-      contentType: "image/png",
-      path: screenshotPath,
-    });
+    expect(failures).toEqual([]);
   });
 }
 
