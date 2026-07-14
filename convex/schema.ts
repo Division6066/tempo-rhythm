@@ -144,6 +144,18 @@ export default defineSchema({
     .index("by_userId_dueAt", ["userId", "dueAt"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  calendarEvents: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    startsAtMs: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt_startsAtMs", ["userId", "deletedAt", "startsAtMs"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
   notes: defineTable({
     userId: v.id("users"),
     title: v.string(),
