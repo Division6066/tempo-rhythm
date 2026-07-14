@@ -6,19 +6,15 @@
  * @summary: Mobile journal.
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { TempoEmptyState } from "@/components/TempoEmptyState";
 
 export default function Screen() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6 gap-3">
-        <Text className="text-2xl font-semibold text-foreground">Journal</Text>
-        <Text className="text-sm text-muted-foreground">Mobile journal.</Text>
-        <Text className="text-xs text-muted-foreground font-mono">
-          scaffold · port from mobile/mobile-screens-b.jsx
-        </Text>
-      </View>
-    </SafeAreaView>
+    <TempoEmptyState
+      screenId="journal"
+      title="Journal"
+      summary="No journal entries are here yet. A blank page is allowed to stay blank until reflection helps."
+      actionLabel="Write one line"
+    />
   );
 }

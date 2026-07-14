@@ -6,19 +6,15 @@
  * @summary: Tasks list with quick-check.
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { TempoEmptyState } from "@/components/TempoEmptyState";
 
 export default function Screen() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6 gap-3">
-        <Text className="text-2xl font-semibold text-foreground">Tasks</Text>
-        <Text className="text-sm text-muted-foreground">Tasks list with quick-check.</Text>
-        <Text className="text-xs text-muted-foreground font-mono">
-          scaffold · port from mobile/mobile-screens-a.jsx
-        </Text>
-      </View>
-    </SafeAreaView>
+    <TempoEmptyState
+      screenId="tasks"
+      title="Tasks"
+      summary="Your task list is clear. Add something only when it would make today feel easier to hold."
+      actionLabel="Add a task"
+    />
   );
 }

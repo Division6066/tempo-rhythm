@@ -6,19 +6,15 @@
  * @summary: Mobile routines.
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { TempoEmptyState } from "@/components/TempoEmptyState";
 
 export default function Screen() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6 gap-3">
-        <Text className="text-2xl font-semibold text-foreground">Routines</Text>
-        <Text className="text-sm text-muted-foreground">Mobile routines.</Text>
-        <Text className="text-xs text-muted-foreground font-mono">
-          scaffold · port from mobile/mobile-screens-b.jsx
-        </Text>
-      </View>
-    </SafeAreaView>
+    <TempoEmptyState
+      screenId="routines"
+      title="Routines"
+      summary="No routines are set up yet. You can build one gentle sequence when a repeated moment needs support."
+      actionLabel="Create a soft routine"
+    />
   );
 }
