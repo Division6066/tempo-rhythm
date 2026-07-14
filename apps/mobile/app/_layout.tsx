@@ -3,7 +3,8 @@ import { ConvexReactClient } from 'convex/react';
 import { Slot } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../global.css';
 
@@ -17,10 +18,6 @@ import { getConvexUrl } from '@/utils/convexConfig';
 // 3. סידור ידני של טאבים - מטפל ב-Tab Bar בכל הסביבות
 //
 // הגישה ההיברידית מבטיחה תמיכה עקבית בעברית/RTL בכל הסביבות.
-
-// שימוש בפונקציית הקונפיגורציה לבחירת כתובת Convex לפי הסביבה
-const convexUrl = getConvexUrl();
-const convex = new ConvexReactClient(convexUrl);
 
 // אחסון מאובטח של הטוקן (Token) באמצעות expo-secure-store
 // זה קריטי לשמירה על אבטחת המידע של המשתמש
@@ -49,12 +46,37 @@ const secureStorage = {
 };
 
 export default function RootLayout() {
+  const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL;
+  const convex = useMemo(() => {
+    if (!convexUrl) {
+      return null;
+    }
+
+    return new ConvexReactClient(getConvexUrl());
+  }, [convexUrl]);
+
   // Bootstrap RTL for Expo Go on first mount
   useEffect(() => {
     bootstrapRTL().catch(() => {
       // Silently handle errors - bootstrap will reload app if needed
     });
   }, []);
+
+  if (!convex) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="light" translucent={false} backgroundColor="#0a0a0a" />
+        <View className="flex-1 items-center justify-center bg-background px-6">
+          <Text className="text-center font-serif text-2xl text-foreground">
+            Missing app configuration
+          </Text>
+          <Text className="mt-3 text-center text-base text-muted-foreground">
+            Set EXPO_PUBLIC_CONVEX_URL before starting the mobile app.
+          </Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
