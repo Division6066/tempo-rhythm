@@ -9,6 +9,8 @@ const { expect, test } = runnerRequire("playwright/test") as {
   test: typeof playwrightTest;
 };
 
+test.setTimeout(120_000);
+
 const port = 8099;
 const baseUrl = `http://127.0.0.1:${port}`;
 const appDir = path.resolve(process.cwd(), "apps/mobile");
@@ -39,8 +41,7 @@ async function waitForServer(): Promise<void> {
   );
 }
 
-test.beforeAll(async ({}, testInfo) => {
-  testInfo.setTimeout(120_000);
+test.beforeAll(async () => {
   serverOutput = "";
   server = spawn("bun", ["run", "web", "--", "--port", String(port)], {
     cwd: appDir,
