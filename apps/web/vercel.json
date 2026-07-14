@@ -1,12 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
+  "framework": null,
   "installCommand": "cd ../.. && bun install --frozen-lockfile",
-  "buildCommand": "next build",
-  "outputDirectory": ".next",
-  "devCommand": "next dev",
+  "buildCommand": "bunx expo export --platform web",
+  "outputDirectory": "dist",
+  "devCommand": "bunx expo start --web",
   "ignoreCommand": "bun x turbo-ignore tempo-rhythm-web || exit 1",
   "env": {
-    "NEXT_TELEMETRY_DISABLED": "1"
+    "EXPO_NO_TELEMETRY": "1"
   }
 }
