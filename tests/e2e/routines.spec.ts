@@ -11,6 +11,12 @@ async function waitForRoutinesPath(page: Page) {
 
 async function signIn(page: Page) {
   await page.goto("/sign-in?next=/routines");
+  try {
+    await waitForRoutinesPath(page);
+    return;
+  } catch {
+    // Not already authenticated; continue with the password form below.
+  }
   await page.locator("#signin-email").fill(testEmail);
   await page.locator("#signin-password").fill(testPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
