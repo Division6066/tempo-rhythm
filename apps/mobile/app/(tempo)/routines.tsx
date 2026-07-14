@@ -16,16 +16,21 @@ import {
   seededRoutines,
   sessionLogStorageKey,
   startSession,
+  type Routine,
   type SessionLogEntry,
   type SessionPlayerState,
 } from '@/lib/session-player';
 
-const routine = seededRoutines[0];
+function getSeededRoutine(): Routine {
+  const seededRoutine = seededRoutines[0];
+  if (!seededRoutine) {
+    throw new Error('Expected at least one seeded routine');
+  }
 
-if (!routine) {
-  throw new Error('Expected at least one seeded routine');
+  return seededRoutine;
 }
 
+const routine = getSeededRoutine();
 const initialSession = createIdleSession(routine.id);
 
 async function readString(key: string): Promise<string | null> {

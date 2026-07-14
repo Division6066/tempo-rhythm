@@ -10,8 +10,9 @@
     "types": ["bun", "node"]
   },
   "include": [
+    "apps/mobile/nativewind-env.d.ts",
     "apps/mobile/app/(tempo)/routines.tsx",
     "apps/mobile/lib/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist", ".turbo", "**/*.d.ts", "**/e2e/**"]
+  "exclude": ["node_modules", "dist", ".turbo", "**/e2e/**"]
 }
