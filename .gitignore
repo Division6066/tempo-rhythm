@@ -53,3 +53,7 @@ Thumbs.db
 # Workspace-level .env files (use .env.local instead — see docs/ENVIRONMENTS.md)
 apps/web/.env
 apps/mobile/.env
+
+# Graphify code knowledge graph — rebuilt on demand (~5s, $0), never committed.
+# A committed graph goes stale the moment master moves, and a stale graph is a lie.
+graphify-out/
