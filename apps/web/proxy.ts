@@ -13,6 +13,7 @@ const isPublicRoute = createRouteMatcher([
   "/privacy",
   "/contact",
   "/success",
+  "/skills",
 ]);
 
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
