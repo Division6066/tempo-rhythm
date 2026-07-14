@@ -35,8 +35,6 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
 
   const activeTasks = tasks.filter((task) => task.status !== "done");
-  const visibleTasks = activeTasks.slice(0, 3);
-  const hiddenTaskCount = Math.max(activeTasks.length - visibleTasks.length, 0);
   const hasCompletedEverything = tasks.length > 0 && activeTasks.length === 0;
 
   return (
@@ -60,9 +58,7 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
               ? "Nothing on the plan yet."
               : hasCompletedEverything
                 ? "Everything due today is done."
-                : hiddenTaskCount > 0
-                  ? `Showing ${visibleTasks.length} of ${activeTasks.length} open today.`
-                  : `${activeTasks.length} still open today.`}
+                : `${activeTasks.length} still open today.`}
           </p>
         </div>
       </div>
@@ -80,7 +76,7 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
       ) : (
         <div className="space-y-3">
           <ul className="space-y-3">
-            {visibleTasks.map((task) => {
+            {activeTasks.map((task) => {
               const isDone = task.status === "done";
 
               return (
@@ -144,15 +140,13 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
             })}
           </ul>
 
-          {hiddenTaskCount > 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {hiddenTaskCount} more open {hiddenTaskCount === 1 ? "task is" : "tasks are"} waiting in{" "}
-              <Link href="/tasks" className="font-semibold text-primary underline-offset-4 hover:underline">
-                Tasks
-              </Link>
-              .
-            </p>
-          ) : null}
+          <p className="text-sm text-muted-foreground">
+            Want the full library view?{" "}
+            <Link href="/tasks" className="font-semibold text-primary underline-offset-4 hover:underline">
+              Open Tasks
+            </Link>
+            .
+          </p>
         </div>
       )}
     </section>
