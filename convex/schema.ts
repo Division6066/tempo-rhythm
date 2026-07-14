@@ -74,6 +74,25 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_userId", ["userId"]),
 
+  consentLogs: defineTable({
+    userId: v.id("users"),
+    point: v.union(
+      v.literal("connector_scope"),
+      v.literal("voice_permission"),
+      v.literal("trial_conversion"),
+      v.literal("refund_policy"),
+    ),
+    version: v.string(),
+    copyText: v.string(),
+    acknowledgedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_point", ["userId", "point"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
   conversations: defineTable({
     userId: v.id("users"),
     title: v.string(),
