@@ -9,15 +9,17 @@
  * @auth: required
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
+
+import { habitRoutineCopy } from "@tempo/utils";
 import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
 
 export default function Page() {
   return (
     <ScaffoldScreen
-      title="Routines"
+      title={habitRoutineCopy.routines.title}
       category="Library"
       source="screens-3.jsx"
-      summary="Routine library."
+      summary={habitRoutineCopy.routines.summary}
     />
   );
 }
