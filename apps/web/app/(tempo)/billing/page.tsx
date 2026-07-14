@@ -7,17 +7,10 @@
  * @queries: billing.status
  * @mutations: (none)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @notes: Billing remains visible while live payments stay approval-gated.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { BillingScreen } from "@/components/billing/BillingScreen";
 
 export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Trial & billing"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Trial countdown + RevenueCat entitlement status."
-    />
-  );
+  return <BillingScreen />;
 }

@@ -14,11 +14,12 @@
 // - אם PAYWALL_ENABLED כבוי — אנחנו לא נפריע למשתמש ונציג את התוכן.
 
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import PaywallModal from "@/components/payments/PaywallModal";
 import { MOCK_PAYMENTS, PAYWALL_ENABLED } from "@/config/appConfig";
 import { api } from "@/convex/_generated/api";
+import { canUseCoreApp, getEntitlementState } from "@/lib/entitlement";
 
 type PremiumGateProps = {
   children: React.ReactNode;
@@ -32,9 +33,8 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
 
   const [paywallOpen, setPaywallOpen] = useState(false);
 
-  const isPaid = useMemo(() => {
-    return user?.userType === "paid";
-  }, [user?.userType]);
+  const entitlementState = user ? getEntitlementState(user) : null;
+  const hasCoreAccess = entitlementState ? canUseCoreApp(entitlementState) : false;
 
   // פתיחה אוטומטית של Paywall כשהעמוד "נעול"
   useEffect(() => {
@@ -48,10 +48,10 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
       return;
     }
 
-    if (user && !isPaid) {
+    if (user && !hasCoreAccess) {
       setPaywallOpen(true);
     }
-  }, [forcePreview, isPaid, user]);
+  }, [forcePreview, hasCoreAccess, user]);
 
   const handleMockUpgradeToPaid = async () => {
     if (!MOCK_PAYMENTS) {
@@ -76,8 +76,8 @@ export default function PremiumGate({ children, forcePreview }: PremiumGateProps
     return <>{children}</>;
   }
 
-  // אם המשתמש בתשלום, נציג את התוכן
-  if (isPaid) {
+  // אם המשתמש בתשלום או בטא מאושר, נציג את התוכן
+  if (hasCoreAccess) {
     return <>{children}</>;
   }
 
