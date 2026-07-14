@@ -47,7 +47,7 @@ export const sendMessage = mutation({
 
     const technique = conv.technique ?? "general";
     const assistantBody =
-      REPLIES[technique] ?? REPLIES.general;
+      REPLIES[technique] ?? REPLIES.general ?? "Start with one tiny next step.";
 
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,

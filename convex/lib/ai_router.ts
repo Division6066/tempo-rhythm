@@ -142,6 +142,9 @@ export async function callLLM(opts: AiCallOptions): Promise<AiResult> {
 
   for (let chainIdx = 0; chainIdx < chain.length; chainIdx++) {
     const tier = chain[chainIdx];
+    if (!tier) {
+      throw new AiUpstreamError("Unexpected missing AI tier in escalation chain", 0, "");
+    }
     let lastErr: unknown;
 
     // Each tier gets one retry on rate-limit or upstream error.
