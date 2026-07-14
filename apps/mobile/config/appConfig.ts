@@ -23,6 +23,16 @@ export type AppEnv = 'dev' | 'prod';
 export const APP_ENV: AppEnv = IS_DEV_MODE ? 'dev' : 'prod';
 
 // ============================================================================
+// Web app shell
+// ============================================================================
+
+// The Expo app is a lightweight shell around the hosted web/PWA experience.
+// Override this in Expo Go or preview builds to point at a local tunnel or
+// staging deployment without changing the native bundle.
+export const WEB_APP_URL =
+  process.env.EXPO_PUBLIC_WEB_APP_URL || 'https://temporhythm.app';
+
+// ============================================================================
 // קונפיגורציית מערכת התשלומים
 // ============================================================================
 
