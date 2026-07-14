@@ -20,11 +20,23 @@ const baseUrl = `http://127.0.0.1:${port}`;
 const serverLines: string[] = [];
 
 let server: ChildProcessWithoutNullStreams | undefined;
+let serverExit:
+  | {
+      code: number | null;
+      signal: NodeJS.Signals | null;
+    }
+  | undefined;
 
 async function waitForServer(): Promise<void> {
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
     try {
+      if (serverExit) {
+        throw new Error(
+          `Expo web server exited (${serverExit.code ?? serverExit.signal}).\n${serverLines.join('\n')}`
+        );
+      }
+
       const response = await fetch(baseUrl);
       if (response.ok || response.status < 500) {
         return;
@@ -64,6 +76,8 @@ async function setVisibility(
 }
 
 function registerBreathworkTimerSpec(): void {
+  test.setTimeout(120_000);
+
   test.beforeAll(async () => {
     server = spawn(
       'bun',
@@ -93,6 +107,9 @@ function registerBreathworkTimerSpec(): void {
     });
     server.stderr.on('data', (chunk: Buffer) => {
       serverLines.push(chunk.toString());
+    });
+    server.on('exit', (code, signal) => {
+      serverExit = { code, signal };
     });
 
     await waitForServer();
