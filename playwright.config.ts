@@ -13,7 +13,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `cd apps/web && PLAYWRIGHT_E2E=1 bun run dev --hostname 127.0.0.1 --port ${port}`,
+    command: `cd apps/web && PLAYWRIGHT_E2E=1 NEXT_PUBLIC_CONVEX_URL=https://precious-wildcat-890.eu-west-1.convex.cloud bun run dev --hostname 127.0.0.1 --port ${port}`,
     url: `${baseURL}/projects/aw-34/kanban`,
     reuseExistingServer: true,
     timeout: 120_000,
