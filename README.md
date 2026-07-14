@@ -1,3 +1,4 @@
+<!-- Tempo Flow — loop test, do not merge. -->
 # Tempo Flow
 
 **Your brain's operating system.**
