@@ -4,7 +4,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Circle, Flame, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,12 +116,13 @@ function NewHabitForm() {
 }
 
 function HabitsE2EPreview() {
-  const [checked, setChecked] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return window.localStorage.getItem("tempo:e2e:habit-checked") === "true";
-  });
+  const [checked, setChecked] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setChecked(window.localStorage.getItem("tempo:e2e:habit-checked") === "true");
+    setIsLoaded(true);
+  }, []);
 
   return (
     <main className="mx-auto w-full max-w-4xl p-8">
@@ -135,9 +136,16 @@ function HabitsE2EPreview() {
             window.localStorage.setItem("tempo:e2e:habit-checked", "true");
             setChecked(true);
           }}
-          aria-label={checked ? "Morning water is checked today" : "Check Morning water today"}
+          disabled={!isLoaded}
+          aria-label={
+            !isLoaded
+              ? "Loading Morning water checkoff"
+              : checked
+                ? "Morning water is checked today"
+                : "Check Morning water today"
+          }
         >
-          {checked ? "Checked today" : "Check today"}
+          {!isLoaded ? "Loading habit..." : checked ? "Checked today" : "Check today"}
         </button>
       </SoftCard>
     </main>

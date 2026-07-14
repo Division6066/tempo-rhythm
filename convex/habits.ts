@@ -33,9 +33,10 @@ export const list = query({
     const activeRows = rows.filter((row) => row.deletedAt === undefined);
     const completedHabitIds = new Set<string>();
     if (args.dayKey !== undefined) {
+      const dayKey = args.dayKey;
       const completions = await ctx.db
         .query("habitCompletions")
-        .withIndex("by_userId_dayKey", (q) => q.eq("userId", user._id).eq("dayKey", args.dayKey))
+        .withIndex("by_userId_dayKey", (q) => q.eq("userId", user._id).eq("dayKey", dayKey))
         .collect();
       for (const completion of completions) {
         if (completion.deletedAt === undefined) {
