@@ -1,14 +1,13 @@
-import { mkdirSync } from "node:fs";
+import { type ChildProcess, spawn } from "node:child_process";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { spawn, type ChildProcess } from "node:child_process";
 import { expect, test } from "@playwright/test";
 
-const port = 3107;
-const baseUrl = `http://127.0.0.1:${port}`;
-const screenshotPath = path.join(
-  process.cwd(),
-  "apps/web/e2e/skill-library-grid.png",
-);
+const port = 3117;
+const daemonPort = 3210;
+const baseUrl = `http://localhost:${port}`;
+const screenshotPath = path.join(process.cwd(), "apps/web/e2e/skill-library-grid.png");
+const daemonLogPath = path.join(process.cwd(), "apps/web/e2e/.skills-daemon-log");
 
 type SkillFixture = {
   id: string;
@@ -75,14 +74,14 @@ const scanFixtures = [
     skillId: "shell-runner",
     verdict: "block",
     summary: "Blocked: command execution permission is not allowed.",
-    findings: [
-      "Requests unrestricted shell execution",
-      "Publisher identity is not verified",
-    ],
+    findings: ["Requests unrestricted shell execution", "Publisher identity is not verified"],
   },
 ] as const;
 
 let server: ChildProcess | undefined;
+let daemon: ChildProcess | undefined;
+
+test.describe.configure({ mode: "serial" });
 
 async function waitForServer(): Promise<void> {
   const deadline = Date.now() + 60_000;
@@ -103,11 +102,129 @@ async function waitForServer(): Promise<void> {
   throw new Error(`Timed out waiting for ${baseUrl}: ${String(lastError)}`);
 }
 
+async function waitForDaemon(): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  let lastError: unknown;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${daemonPort}`);
+      if (response.ok) {
+        return;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  throw new Error(`Timed out waiting for daemon: ${String(lastError)}`);
+}
+
+function readDaemonMessages(): Array<{
+  method: string;
+  params?: { skillId?: string; query?: string };
+}> {
+  try {
+    const contents = readFileSync(daemonLogPath, "utf8").trim();
+    if (!contents) return [];
+    return contents.split("\n").map((line) => JSON.parse(line));
+  } catch {
+    return [];
+  }
+}
+
 test.beforeAll(async () => {
+  writeFileSync(daemonLogPath, "");
+
+  daemon = spawn(
+    "bun",
+    [
+      "--eval",
+      `
+const { appendFileSync } = require("node:fs");
+const skills = JSON.parse(process.env.SKILLS_FIXTURE);
+const scans = JSON.parse(process.env.SCANS_FIXTURE);
+const logPath = process.env.DAEMON_LOG_PATH;
+const port = Number(process.env.DAEMON_PORT);
+
+Bun.serve({
+  port,
+  fetch(request, server) {
+    if (server.upgrade(request)) return;
+    return new Response("ok");
+  },
+  websocket: {
+    message(ws, raw) {
+      const request = JSON.parse(String(raw));
+      appendFileSync(logPath, JSON.stringify(request) + "\\n");
+
+      const respond = (result) => {
+        ws.send(JSON.stringify({ id: request.id, result }));
+      };
+
+      if (request.method === "skills.list") {
+        respond(skills);
+        return;
+      }
+
+      if (request.method === "skills.search") {
+        const query = String(request.params?.query ?? "").toLowerCase();
+        respond(
+          skills.filter((skill) =>
+            [skill.name, skill.summary, skill.author, ...skill.tags]
+              .join(" ")
+              .toLowerCase()
+              .includes(query),
+          ),
+        );
+        return;
+      }
+
+      if (request.method === "skillScans") {
+        respond(scans);
+        return;
+      }
+
+      if (request.method === "skill_install") {
+        respond({ installed: true, skillId: request.params?.skillId });
+        return;
+      }
+
+      respond(null);
+    },
+  },
+});
+
+console.log("skill-daemon-ready");
+`,
+    ],
+    {
+      env: {
+        ...process.env,
+        DAEMON_LOG_PATH: daemonLogPath,
+        DAEMON_PORT: String(daemonPort),
+        SCANS_FIXTURE: JSON.stringify(scanFixtures),
+        SKILLS_FIXTURE: JSON.stringify(skillFixtures),
+      },
+      stdio: "pipe",
+    }
+  );
+
+  daemon.stdout?.on("data", (chunk) => {
+    process.stdout.write(`[daemon] ${chunk}`);
+  });
+  daemon.stderr?.on("data", (chunk) => {
+    process.stderr.write(`[daemon] ${chunk}`);
+  });
+
+  await waitForDaemon();
+
   server = spawn("bun", ["run", "dev"], {
     cwd: path.join(process.cwd(), "apps/web"),
     env: {
       ...process.env,
+      NEXT_PUBLIC_AGENTWRIGHT_DAEMON_WS: `ws://127.0.0.1:${daemonPort}`,
       NEXT_PUBLIC_CONVEX_URL: "https://skill-library-test.convex.cloud",
       NEXT_TELEMETRY_DISABLED: "1",
       PORT: String(port),
@@ -129,104 +246,13 @@ test.afterAll(() => {
   if (server?.pid) {
     server.kill("SIGTERM");
   }
+  if (daemon?.pid) {
+    daemon.kill("SIGTERM");
+  }
 });
 
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(
-    ({ skills, scans }) => {
-      const messages: unknown[] = [];
-      Object.defineProperty(window, "__skillDaemonMessages", {
-        configurable: true,
-        value: messages,
-      });
-
-      class MockSkillDaemonSocket extends EventTarget {
-        static CONNECTING = 0;
-        static OPEN = 1;
-        static CLOSING = 2;
-        static CLOSED = 3;
-
-        readonly url: string;
-        readyState = MockSkillDaemonSocket.CONNECTING;
-        onopen: ((event: Event) => void) | null = null;
-        onmessage: ((event: MessageEvent) => void) | null = null;
-        onerror: ((event: Event) => void) | null = null;
-        onclose: ((event: CloseEvent) => void) | null = null;
-
-        constructor(url: string) {
-          super();
-          this.url = url;
-          setTimeout(() => {
-            this.readyState = MockSkillDaemonSocket.OPEN;
-            const event = new Event("open");
-            this.dispatchEvent(event);
-            this.onopen?.(event);
-          }, 0);
-        }
-
-        send(raw: string) {
-          const request = JSON.parse(raw);
-          messages.push(request);
-
-          const respond = (result: unknown) => {
-            const event = new MessageEvent("message", {
-              data: JSON.stringify({ id: request.id, result }),
-            });
-            this.dispatchEvent(event);
-            this.onmessage?.(event);
-          };
-
-          if (request.method === "skills.list") {
-            respond(skills);
-            return;
-          }
-
-          if (request.method === "skills.search") {
-            const query = String(request.params?.query ?? "").toLowerCase();
-            respond(
-              skills.filter((skill) => {
-                const haystack = [
-                  skill.name,
-                  skill.summary,
-                  skill.author,
-                  ...skill.tags,
-                ]
-                  .join(" ")
-                  .toLowerCase();
-                return haystack.includes(query);
-              }),
-            );
-            return;
-          }
-
-          if (request.method === "skillScans") {
-            respond(scans);
-            return;
-          }
-
-          if (request.method === "skill_install") {
-            respond({ installed: true, skillId: request.params?.skillId });
-            return;
-          }
-
-          respond(null);
-        }
-
-        close() {
-          this.readyState = MockSkillDaemonSocket.CLOSED;
-          const event = new CloseEvent("close");
-          this.dispatchEvent(event);
-          this.onclose?.(event);
-        }
-      }
-
-      Object.defineProperty(window, "WebSocket", {
-        configurable: true,
-        value: MockSkillDaemonSocket,
-      });
-    },
-    { skills: skillFixtures, scans: scanFixtures },
-  );
+test.beforeEach(() => {
+  writeFileSync(daemonLogPath, "");
 });
 
 test("search narrows the skill library grid and captures the committed screenshot", async ({
@@ -247,18 +273,11 @@ test("search narrows the skill library grid and captures the committed screensho
   await expect(page.getByRole("heading", { name: "Focus sprint" })).toBeHidden();
 
   await expect
-    .poll(async () =>
-      page.evaluate(() =>
-        (window as unknown as { __skillDaemonMessages: Array<{ method: string }> })
-          .__skillDaemonMessages.some((message) => message.method === "skills.search"),
-      ),
-    )
+    .poll(async () => readDaemonMessages().some((message) => message.method === "skills.search"))
     .toBe(true);
 });
 
-test("warn skill installs only after the consent dialog is confirmed", async ({
-  page,
-}) => {
+test("warn skill installs only after the consent dialog is confirmed", async ({ page }) => {
   await page.goto(`${baseUrl}/skills`);
 
   const warnCard = page.getByTestId("skill-card-inbox-scanner");
@@ -269,29 +288,25 @@ test("warn skill installs only after the consent dialog is confirmed", async ({
   await expect(page.getByText("Requests read access to local export files")).toBeVisible();
 
   await expect
-    .poll(async () =>
-      page.evaluate(() =>
-        (window as unknown as { __skillDaemonMessages: Array<{ method: string }> })
-          .__skillDaemonMessages.filter((message) => message.method === "skill_install")
-          .length,
-      ),
+    .poll(
+      async () =>
+        readDaemonMessages().filter((message) => message.method === "skill_install").length
     )
     .toBe(0);
 
   await page.getByRole("button", { name: "Confirm install" }).click();
 
   await expect(page.getByText("Inbox scanner installed.")).toBeVisible();
+  await expect(warnCard.getByText("Installed", { exact: true })).toBeVisible();
+  await expect(
+    warnCard.getByRole("button", { name: "Inbox scanner installed" }),
+  ).toBeDisabled();
   await expect
     .poll(async () =>
-      page.evaluate(() =>
-        (window as unknown as { __skillDaemonMessages: Array<{ method: string }> })
-          .__skillDaemonMessages.some(
-            (message) =>
-              message.method === "skill_install" &&
-              (message as { params?: { skillId?: string } }).params?.skillId ===
-                "inbox-scanner",
-          ),
-      ),
+      readDaemonMessages().some(
+        (message) =>
+          message.method === "skill_install" && message.params?.skillId === "inbox-scanner"
+      )
     )
     .toBe(true);
 });
@@ -300,11 +315,9 @@ test("block skill install is disabled and the verdict is shown", async ({ page }
   await page.goto(`${baseUrl}/skills`);
 
   const blockCard = page.getByTestId("skill-card-shell-runner");
-  await expect(blockCard.getByText("Blocked")).toBeVisible();
+  await expect(blockCard.getByText("Blocked", { exact: true })).toBeVisible();
   await expect(
-    blockCard.getByText("Blocked: command execution permission is not allowed."),
+    blockCard.getByText("Blocked: command execution permission is not allowed.")
   ).toBeVisible();
-  await expect(
-    blockCard.getByRole("button", { name: "Shell runner blocked" }),
-  ).toBeDisabled();
+  await expect(blockCard.getByRole("button", { name: "Shell runner blocked" })).toBeDisabled();
 });

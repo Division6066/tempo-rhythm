@@ -40,8 +40,7 @@ type PendingRequest = {
   reject: (reason?: unknown) => void;
 };
 
-const daemonUrl =
-  process.env.NEXT_PUBLIC_AGENTWRIGHT_DAEMON_WS ?? "ws://127.0.0.1:3210";
+const daemonUrl = process.env.NEXT_PUBLIC_AGENTWRIGHT_DAEMON_WS ?? "ws://127.0.0.1:3210";
 
 const verdictCopy: Record<
   ScanVerdict,
@@ -60,28 +59,29 @@ const verdictCopy: Record<
   block: {
     label: "Blocked",
     tone: "brick",
-    action: "Blocked",
+    action: "Unavailable",
   },
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item): item is string => typeof item === "string");
+}
 
 function isSkillList(value: unknown): value is SkillManifest[] {
   return (
     Array.isArray(value) &&
     value.every(
-      (skill) =>
-        typeof skill === "object" &&
-        skill !== null &&
-        "id" in skill &&
-        "name" in skill &&
-        "summary" in skill &&
-        "author" in skill &&
-        "tags" in skill &&
+      (skill): skill is SkillManifest =>
+        isRecord(skill) &&
         typeof skill.id === "string" &&
         typeof skill.name === "string" &&
         typeof skill.summary === "string" &&
         typeof skill.author === "string" &&
-        Array.isArray(skill.tags) &&
-        skill.tags.every((tag) => typeof tag === "string"),
+        isStringArray(skill.tags)
     )
   );
 }
@@ -90,20 +90,12 @@ function isScanList(value: unknown): value is SkillScan[] {
   return (
     Array.isArray(value) &&
     value.every(
-      (scan) =>
-        typeof scan === "object" &&
-        scan !== null &&
-        "skillId" in scan &&
-        "verdict" in scan &&
-        "summary" in scan &&
-        "findings" in scan &&
+      (scan): scan is SkillScan =>
+        isRecord(scan) &&
         typeof scan.skillId === "string" &&
-        (scan.verdict === "allow" ||
-          scan.verdict === "warn" ||
-          scan.verdict === "block") &&
+        (scan.verdict === "allow" || scan.verdict === "warn" || scan.verdict === "block") &&
         typeof scan.summary === "string" &&
-        Array.isArray(scan.findings) &&
-        scan.findings.every((finding) => typeof finding === "string"),
+        isStringArray(scan.findings)
     )
   );
 }
@@ -112,11 +104,10 @@ export function SkillLibrary() {
   const [skills, setSkills] = useState<SkillManifest[]>([]);
   const [scans, setScans] = useState<Record<string, SkillScan>>({});
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"connecting" | "ready" | "error">(
-    "connecting",
-  );
+  const [status, setStatus] = useState<"connecting" | "ready" | "error">("connecting");
   const [message, setMessage] = useState<string | null>(null);
   const [reviewSkillId, setReviewSkillId] = useState<string | null>(null);
+  const [installedSkillIds, setInstalledSkillIds] = useState<Set<string>>(() => new Set());
 
   const socketRef = useRef<WebSocket | null>(null);
   const requestIdRef = useRef(0);
@@ -142,7 +133,7 @@ export function SkillLibrary() {
       socket.send(JSON.stringify({ id, method, params }));
       return await response;
     },
-    [],
+    []
   );
 
   const loadLibrary = useCallback(async () => {
@@ -156,9 +147,7 @@ export function SkillLibrary() {
     }
 
     setSkills(nextSkills);
-    setScans(
-      Object.fromEntries(nextScans.map((scan) => [scan.skillId, scan])),
-    );
+    setScans(Object.fromEntries(nextScans.map((scan) => [scan.skillId, scan])));
   }, [requestDaemon]);
 
   useEffect(() => {
@@ -192,9 +181,9 @@ export function SkillLibrary() {
     });
 
     return () => {
-      pendingRef.current.forEach((pending) =>
-        pending.reject(new Error("Skill daemon connection closed")),
-      );
+      pendingRef.current.forEach((pending) => {
+        pending.reject(new Error("Skill daemon connection closed"));
+      });
       pendingRef.current.clear();
       socket.close();
     };
@@ -222,17 +211,22 @@ export function SkillLibrary() {
 
   const reviewSkill = useMemo(
     () => skills.find((skill) => skill.id === reviewSkillId) ?? null,
-    [reviewSkillId, skills],
+    [reviewSkillId, skills]
   );
   const reviewScan = reviewSkill ? scans[reviewSkill.id] : undefined;
 
   const installSkill = useCallback(
     async (skill: SkillManifest) => {
       await requestDaemon("skill_install", { skillId: skill.id });
+      setInstalledSkillIds((current) => {
+        const next = new Set(current);
+        next.add(skill.id);
+        return next;
+      });
       setMessage(`${skill.name} installed.`);
       setReviewSkillId(null);
     },
-    [requestDaemon],
+    [requestDaemon]
   );
 
   return (
@@ -245,13 +239,10 @@ export function SkillLibrary() {
               <Pill tone="slate">Web app skills</Pill>
             </div>
             <div className="space-y-3">
-              <h1 className="text-h1 font-serif leading-tight">
-                Skill library
-              </h1>
+              <h1 className="text-h1 font-serif leading-tight">Skill library</h1>
               <p className="max-w-2xl text-body leading-relaxed text-muted-foreground">
-                Browse installable skills with scan verdicts before anything
-                reaches your local daemon. Warned skills pause for a consent
-                check; blocked skills stay unavailable.
+                Browse installable skills with scan verdicts before anything reaches your local
+                daemon. Warned skills pause for a consent check; blocked skills stay unavailable.
               </p>
             </div>
           </div>
@@ -282,9 +273,7 @@ export function SkillLibrary() {
 
           {message ? (
             <SoftCard padding="sm" className="border-[color:var(--color-moss)]">
-              <p className="text-small text-[color:var(--color-moss)]">
-                {message}
-              </p>
+              <p className="text-small text-[color:var(--color-moss)]">{message}</p>
             </SoftCard>
           ) : null}
         </section>
@@ -301,62 +290,74 @@ export function SkillLibrary() {
               summary: "Scan pending. Review before installing.",
               findings: ["Scan result has not arrived yet."],
             };
-            const copy = verdictCopy[scan.verdict];
+            const isInstalled = installedSkillIds.has(skill.id);
+            const copy = isInstalled
+              ? {
+                  label: "Installed",
+                  tone: "slate" as const,
+                  action: "Done",
+                }
+              : verdictCopy[scan.verdict];
             const actionLabel =
-              scan.verdict === "block"
-                ? `${skill.name} blocked`
-                : `${copy.action} ${skill.name}`;
+              isInstalled
+                ? `${skill.name} installed`
+                : scan.verdict === "block"
+                  ? `${skill.name} blocked`
+                  : `${copy.action} ${skill.name}`;
 
             return (
               <SoftCard
                 as="article"
                 className="flex min-h-[280px] flex-col gap-4"
-                data-testid={`skill-card-${skill.id}`}
+                data-testid="skill-card"
                 key={skill.id}
                 padding="md"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <h2 className="text-h3 font-serif">{skill.name}</h2>
-                    <p className="text-caption text-muted-foreground">
-                      by {skill.author}
-                    </p>
+                <div className="flex h-full flex-col gap-4" data-testid={`skill-card-${skill.id}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h2 className="text-h3 font-serif">{skill.name}</h2>
+                      <p className="text-caption text-muted-foreground">by {skill.author}</p>
+                    </div>
+                    <Pill tone={copy.tone}>{copy.label}</Pill>
                   </div>
-                  <Pill tone={copy.tone}>{copy.label}</Pill>
-                </div>
 
-                <p className="text-small leading-relaxed text-muted-foreground">
-                  {skill.summary}
-                </p>
+                  <p className="text-small leading-relaxed text-muted-foreground">
+                    {skill.summary}
+                  </p>
 
-                <div className="flex flex-wrap gap-2">
-                  {skill.tags.map((tag) => (
-                    <span
-                      className="rounded-full bg-surface-sunken px-2.5 py-1 text-caption text-muted-foreground"
-                      key={tag}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                  <div className="flex flex-wrap gap-2">
+                    {skill.tags.map((tag) => (
+                      <span
+                        className="rounded-full bg-surface-sunken px-2.5 py-1 text-caption text-muted-foreground"
+                        key={tag}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
 
-                <div className="mt-auto space-y-3">
-                  <p className="text-small leading-relaxed">{scan.summary}</p>
-                  <Button
-                    aria-label={actionLabel}
-                    disabled={scan.verdict === "block"}
-                    onClick={() => {
-                      if (scan.verdict === "warn") {
-                        setReviewSkillId(skill.id);
-                        return;
+                  <div className="mt-auto space-y-3">
+                    <p className="text-small leading-relaxed">{scan.summary}</p>
+                    <Button
+                      aria-label={actionLabel}
+                      disabled={isInstalled || scan.verdict === "block"}
+                      onClick={() => {
+                        if (isInstalled) return;
+                        if (scan.verdict === "warn") {
+                          setReviewSkillId(skill.id);
+                          return;
+                        }
+                        void installSkill(skill);
+                      }}
+                      size="sm"
+                      variant={
+                        isInstalled || scan.verdict === "block" ? "subtle" : "primary"
                       }
-                      void installSkill(skill);
-                    }}
-                    size="sm"
-                    variant={scan.verdict === "block" ? "subtle" : "primary"}
-                  >
-                    {copy.action}
-                  </Button>
+                    >
+                      {copy.action}
+                    </Button>
+                  </div>
                 </div>
               </SoftCard>
             );
@@ -379,9 +380,7 @@ export function SkillLibrary() {
               </DialogHeader>
 
               <div className="space-y-3">
-                <p className="text-small font-medium">
-                  Findings to review before install
-                </p>
+                <p className="text-small font-medium">Findings to review before install</p>
                 <ul className="list-disc space-y-2 pl-5 text-small text-muted-foreground">
                   {reviewScan.findings.map((finding) => (
                     <li key={finding}>{finding}</li>
@@ -390,11 +389,7 @@ export function SkillLibrary() {
               </div>
 
               <DialogFooter>
-                <Button
-                  onClick={() => setReviewSkillId(null)}
-                  size="sm"
-                  variant="ghost"
-                >
+                <Button onClick={() => setReviewSkillId(null)} size="sm" variant="ghost">
                   Cancel
                 </Button>
                 <Button onClick={() => void installSkill(reviewSkill)} size="sm">
