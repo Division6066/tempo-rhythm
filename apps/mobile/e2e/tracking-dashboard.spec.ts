@@ -18,4 +18,8 @@ test("logs-session: completing a session writes a visible log entry", async ({ p
   await expect(logList).toBeVisible();
   await expect(logList).toContainText("Focus session");
   await expect(logList).toContainText("Completed just now");
+
+  await page.reload();
+  await expect(page.getByTestId("session-log-list")).toContainText("Focus session");
+  await expect(page.getByTestId("session-log-list")).toContainText("Completed just now");
 });

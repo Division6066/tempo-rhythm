@@ -109,6 +109,7 @@ export default function Screen() {
               accessibilityHint="Starts a focus session for your current routine."
               accessibilityLabel="Start focus session"
               accessibilityRole="button"
+              accessibilityState={{ disabled: isSessionActive }}
               accessible={true}
               className={`min-h-12 flex-1 items-center justify-center rounded-2xl px-4 ${
                 isSessionActive ? "bg-muted" : "bg-primary"
@@ -117,7 +118,13 @@ export default function Screen() {
               onPress={handleStartSession}
               testID="start-session-button"
             >
-              <Text className="font-semibold text-primary-foreground">
+              <Text
+                className={`font-semibold ${
+                  isSessionActive
+                    ? "text-muted-foreground"
+                    : "text-primary-foreground"
+                }`}
+              >
                 Start
               </Text>
             </Pressable>
@@ -126,6 +133,7 @@ export default function Screen() {
               accessibilityHint="Completes this session and adds it to the session log."
               accessibilityLabel="Complete focus session"
               accessibilityRole="button"
+              accessibilityState={{ disabled: !isSessionActive }}
               accessible={true}
               className={`min-h-12 flex-1 items-center justify-center rounded-2xl px-4 ${
                 isSessionActive ? "bg-emerald-700" : "bg-muted"
@@ -136,7 +144,13 @@ export default function Screen() {
               }}
               testID="complete-session-button"
             >
-              <Text className="font-semibold text-primary-foreground">
+              <Text
+                className={`font-semibold ${
+                  isSessionActive
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
                 Complete
               </Text>
             </Pressable>
