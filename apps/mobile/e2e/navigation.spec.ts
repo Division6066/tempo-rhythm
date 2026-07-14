@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { resolve } from "node:path";
 
