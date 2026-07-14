@@ -169,6 +169,7 @@ export default defineSchema({
     userId: v.id("users"),
     name: v.string(),
     cadence: v.union(v.literal("daily"), v.literal("weekly")),
+    energy: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
     currentStreak: v.number(),
     longestStreak: v.number(),
     lastCompletedAt: v.optional(v.number()),
@@ -177,6 +178,60 @@ export default defineSchema({
     deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  habitCompletions: defineTable({
+    userId: v.id("users"),
+    habitId: v.id("habits"),
+    completedOn: v.string(),
+    completedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_habitId", ["habitId"])
+    .index("by_habitId_completedOn", ["habitId", "completedOn"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  routines: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  routineItems: defineTable({
+    userId: v.id("users"),
+    routineId: v.id("routines"),
+    itemType: v.union(v.literal("habit"), v.literal("task")),
+    habitId: v.optional(v.id("habits")),
+    taskId: v.optional(v.id("tasks")),
+    order: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_routineId_order", ["routineId", "order"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  habitSuggestions: defineTable({
+    userId: v.id("users"),
+    habitId: v.id("habits"),
+    title: v.string(),
+    reason: v.string(),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("rejected")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_status", ["userId", "status"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   goals: defineTable({

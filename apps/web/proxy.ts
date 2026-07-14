@@ -15,7 +15,13 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
+const isE2eHabitsRoute = createRouteMatcher(["/habits", "/routines"]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
+  if (process.env.TEMPO_E2E_AUTH_BYPASS === "1" && isE2eHabitsRoute(request)) {
+    return;
+  }
+
   const { convexAuth } = ctx;
   let isAuthenticated = false;
   try {
