@@ -44,10 +44,16 @@ function base64ToBytes(value: string): Uint8Array {
   return bytes;
 }
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+}
+
 async function deriveVaultKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(passphrase),
+    toArrayBuffer(new TextEncoder().encode(passphrase)),
     "PBKDF2",
     false,
     ["deriveKey"]
@@ -58,7 +64,7 @@ async function deriveVaultKey(passphrase: string, salt: Uint8Array): Promise<Cry
       hash: "SHA-256",
       iterations: keyIterations,
       name: "PBKDF2",
-      salt,
+      salt: toArrayBuffer(salt),
     },
     keyMaterial,
     { length: 256, name: "AES-GCM" },
@@ -72,9 +78,9 @@ async function encryptWithPassphrase(passphrase: string, plaintext: string): Pro
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveVaultKey(passphrase, salt);
   const encrypted = await crypto.subtle.encrypt(
-    { iv, name: "AES-GCM" },
+    { iv: toArrayBuffer(iv), name: "AES-GCM" },
     key,
-    new TextEncoder().encode(plaintext)
+    toArrayBuffer(new TextEncoder().encode(plaintext))
   );
 
   return {
@@ -89,9 +95,9 @@ async function decryptWithPassphrase(passphrase: string, payload: CipherPayload)
   const iv = base64ToBytes(payload.iv);
   const key = await deriveVaultKey(passphrase, salt);
   const decrypted = await crypto.subtle.decrypt(
-    { iv, name: "AES-GCM" },
+    { iv: toArrayBuffer(iv), name: "AES-GCM" },
     key,
-    base64ToBytes(payload.ciphertext)
+    toArrayBuffer(base64ToBytes(payload.ciphertext))
   );
 
   return new TextDecoder().decode(decrypted);
