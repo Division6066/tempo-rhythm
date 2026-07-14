@@ -11,7 +11,7 @@ module.exports = {
   },
   webServer: {
     command:
-      'EXPO_PUBLIC_CONVEX_URL=https://test-agent.convex.cloud bun --cwd apps/mobile run web -- --port 8081',
+      'cd apps/mobile && EXPO_PUBLIC_CONVEX_URL=https://test-agent.convex.cloud bun run web -- --port 8081',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: 'http://127.0.0.1:8081/routines',
