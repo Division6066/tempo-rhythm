@@ -2,7 +2,7 @@ import { expect, test, type Page } from "playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { resolve } from "node:path";
 
-const port = 8099;
+const port = 18_199;
 const baseUrl = `http://127.0.0.1:${port}`;
 const mobileDir = resolve(process.cwd(), "apps/mobile");
 
