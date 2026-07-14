@@ -10,7 +10,9 @@ function renderPage(body: React.ReactElement) {
   return `<!doctype html><html><body>${renderToStaticMarkup(body)}</body></html>`;
 }
 
-test("trial user past image cap sees blurred generated image with upgrade CTA", async ({ page }) => {
+test("trial user past image cap sees blurred generated image with upgrade CTA", async ({
+  page,
+}) => {
   await page.setContent(
     renderPage(
       h(
@@ -32,8 +34,7 @@ test("trial user past image cap sees blurred generated image with upgrade CTA", 
               style: {
                 width: 220,
                 height: 140,
-                background:
-                  "linear-gradient(135deg, #131312 0%, #d97757 45%, #faf6f0 100%)",
+                background: "linear-gradient(135deg, #131312 0%, #d97757 45%, #faf6f0 100%)",
               },
             })
           )
@@ -54,8 +55,7 @@ test("trial user past image cap sees blurred generated image with upgrade CTA", 
               style: {
                 width: 220,
                 height: 140,
-                background:
-                  "linear-gradient(135deg, #131312 0%, #d97757 45%, #faf6f0 100%)",
+                background: "linear-gradient(135deg, #131312 0%, #d97757 45%, #faf6f0 100%)",
               },
             })
           )

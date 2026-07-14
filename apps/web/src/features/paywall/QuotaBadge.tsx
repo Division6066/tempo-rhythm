@@ -1,6 +1,6 @@
-import type { QuotaSnapshot } from "./types";
-import { quotaLine } from "./copy";
 import React from "react";
+import { quotaLine } from "./copy";
+import type { QuotaSnapshot } from "./types";
 
 type QuotaBadgeProps = {
   quota: QuotaSnapshot;

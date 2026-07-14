@@ -1,8 +1,12 @@
+import type { AriaAttributes, CSSProperties, ReactElement, ReactNode } from "react";
 import React, { Children, cloneElement, isValidElement } from "react";
-import type { CSSProperties, ReactElement, ReactNode } from "react";
 
 type BlurOverlayProps = {
   children: ReactNode;
+};
+
+type BlurrableElementProps = AriaAttributes & {
+  style?: CSSProperties;
 };
 
 export function BlurOverlay({ children }: BlurOverlayProps) {
@@ -14,13 +18,14 @@ export function BlurOverlay({ children }: BlurOverlayProps) {
   };
 
   const blurredChildren = Children.map(children, (child) => {
-    if (!isValidElement<{ style?: CSSProperties }>(child)) {
+    if (!isValidElement<BlurrableElementProps>(child)) {
       return child;
     }
 
-    const element = child as ReactElement<{ style?: CSSProperties }>;
+    const element = child as ReactElement<BlurrableElementProps>;
 
     return cloneElement(element, {
+      "aria-hidden": true,
       style: {
         ...element.props.style,
         ...blurStyle,
@@ -31,6 +36,7 @@ export function BlurOverlay({ children }: BlurOverlayProps) {
   return React.createElement(
     "div",
     {
+      "aria-hidden": true,
       "data-paywall": "blurred-content",
       style: {
         display: "contents",

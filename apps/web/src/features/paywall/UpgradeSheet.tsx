@@ -64,7 +64,7 @@ export function UpgradeSheet({ body, ctaLabel, dataPaywall, href, title }: Upgra
           alignItems: "center",
           background: "#d97757",
           borderRadius: 999,
-          color: "#faf6f0",
+          color: "#131312",
           display: "inline-flex",
           fontSize: 15,
           fontWeight: 700,

@@ -1,5 +1,5 @@
-import React from "react";
 import type { ReactNode } from "react";
+import React from "react";
 
 import { BlurOverlay } from "./BlurOverlay";
 import { exhaustedBody, exhaustedTitle, upgradeCtaLabel } from "./copy";
@@ -22,13 +22,7 @@ function fallbackQuota(feature: PaywallFeature): QuotaSnapshot {
   return { status: "unavailable", unit: "voice" };
 }
 
-function GateFrame({
-  children,
-  dataPaywall,
-}: {
-  children?: ReactNode;
-  dataPaywall: string;
-}) {
+function GateFrame({ children, dataPaywall }: { children?: ReactNode; dataPaywall: string }) {
   return h(
     "div",
     {
@@ -71,12 +65,7 @@ export function PaywallGate({
   }
 
   if (quota.status === "unavailable") {
-    return h(
-      GateFrame,
-      { dataPaywall: "quota-unavailable" },
-      h(QuotaBadge, { quota }),
-      children
-    );
+    return h(GateFrame, { dataPaywall: "quota-unavailable" }, h(QuotaBadge, { quota }), children);
   }
 
   if (quota.status === "available") {

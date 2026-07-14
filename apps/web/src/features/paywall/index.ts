@@ -1,7 +1,6 @@
 export { BlurOverlay } from "./BlurOverlay";
 export { PaywallGate } from "./PaywallGate";
 export { QuotaBadge } from "./QuotaBadge";
-export { UpgradeSheet } from "./UpgradeSheet";
 export type {
   PaywallFeature,
   PaywallGateProps,
@@ -9,3 +8,4 @@ export type {
   QuotaSnapshot,
   QuotaUnit,
 } from "./types";
+export { UpgradeSheet } from "./UpgradeSheet";
