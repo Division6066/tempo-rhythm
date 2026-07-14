@@ -1,35 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("moving a Kanban card persists its status after reload", async ({ page }) => {
-  await page.route("**/api/tasks", async (route) => {
-    if (route.request().method() === "PATCH") {
-      const body = route.request().postDataJSON() as { taskId: string; status: string };
-      await page.evaluate((next) => {
-        window.localStorage.setItem(`task-status:${next.taskId}`, next.status);
-      }, body);
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ ok: true }),
-      });
-      return;
-    }
-
-    const persistedStatus = await page.evaluate(() =>
-      window.localStorage.getItem("task-status:task-1"),
-    );
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify([
-        {
-          id: "task-1",
-          title: "Review project board",
-          status: persistedStatus ?? "todo",
-        },
-      ]),
-    });
-  });
-
-  await page.setContent(`
+  const boardHtml = `
     <main>
       <section data-testid="kanban-column-todo" aria-label="To do"></section>
       <section data-testid="kanban-column-in_progress" aria-label="In progress"></section>
@@ -64,10 +36,47 @@ test("moving a Kanban card persists its status after reload", async ({ page }) =
           }
         }
 
-        window.addEventListener('load', loadBoard);
+        void loadBoard();
       </script>
     </main>
-  `);
+  `;
+
+  await page.route("https://tempo.test/kanban", async (route) => {
+    await route.fulfill({
+      contentType: "text/html",
+      body: boardHtml,
+    });
+  });
+
+  await page.route("https://tempo.test/api/tasks", async (route) => {
+    if (route.request().method() === "PATCH") {
+      const body = route.request().postDataJSON() as { taskId: string; status: string };
+      await page.evaluate((next) => {
+        window.localStorage.setItem(`task-status:${next.taskId}`, next.status);
+      }, body);
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+      return;
+    }
+
+    const persistedStatus = await page.evaluate(() =>
+      window.localStorage.getItem("task-status:task-1"),
+    );
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([
+        {
+          id: "task-1",
+          title: "Review project board",
+          status: persistedStatus ?? "todo",
+        },
+      ]),
+    });
+  });
+
+  await page.goto("https://tempo.test/kanban");
 
   await expect(page.getByTestId("kanban-column-todo").getByTestId("kanban-card-task-1")).toBeVisible();
 

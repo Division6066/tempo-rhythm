@@ -142,8 +142,9 @@ export function TaskKanbanBoard() {
         {columns.map((column) => {
           const columnTasks = visibleTasks.filter((task) => task.status === column.status);
           return (
-            <div
+            <section
               key={column.status}
+              aria-labelledby={`kanban-column-${column.status}-heading`}
               data-testid={`kanban-column-${column.status}`}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
@@ -156,7 +157,10 @@ export function TaskKanbanBoard() {
               className="min-h-80 rounded-3xl border border-border bg-card/80 p-4 shadow-[0_10px_30px_rgba(26,25,23,0.08)]"
             >
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="font-heading text-xl font-semibold text-foreground">
+                <h2
+                  id={`kanban-column-${column.status}-heading`}
+                  className="font-heading text-xl font-semibold text-foreground"
+                >
                   {column.title}
                 </h2>
                 <span className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold text-muted-foreground">
@@ -230,7 +234,7 @@ export function TaskKanbanBoard() {
                   })}
                 </ul>
               )}
-            </div>
+            </section>
           );
         })}
       </section>
