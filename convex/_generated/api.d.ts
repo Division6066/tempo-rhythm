@@ -20,6 +20,7 @@ import type * as habits from "../habits.js";
 import type * as http from "../http.js";
 import type * as lib_ai_errors from "../lib/ai_errors.js";
 import type * as lib_ai_router from "../lib/ai_router.js";
+import type * as lib_providerKeys from "../lib/providerKeys.js";
 import type * as lib_requireUser from "../lib/requireUser.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/ai_errors": typeof lib_ai_errors;
   "lib/ai_router": typeof lib_ai_router;
+  "lib/providerKeys": typeof lib_providerKeys;
   "lib/requireUser": typeof lib_requireUser;
   memories: typeof memories;
   messages: typeof messages;

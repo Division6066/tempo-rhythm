@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { normalizeProviderKeyInput } from "./lib/providerKeys";
 import { requireUser } from "./lib/requireUser";
 
 const providerValidator = v.union(v.literal("mistral"));
@@ -12,14 +13,6 @@ const providerKeyReturnValidator = v.union(
   }),
   v.null(),
 );
-
-function normalizeApiKey(apiKey: string): string {
-  const trimmed = apiKey.trim();
-  if (trimmed.length < 8) {
-    throw new Error("Provider key should be at least 8 characters.");
-  }
-  return trimmed;
-}
 
 export const getProviderKey = query({
   args: {
@@ -55,7 +48,7 @@ export const saveProviderKey = mutation({
   returns: providerKeyReturnValidator,
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const apiKey = normalizeApiKey(args.apiKey);
+    const apiKey = normalizeProviderKeyInput(args.apiKey);
     const now = Date.now();
 
     const existing = await ctx.db

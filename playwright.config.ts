@@ -22,7 +22,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `CONVEX_AGENT_MODE=anonymous BETA_FOUNDER_EMAIL=byok-settings@example.test BETA_ALLOWLIST_EMAILS=byok-settings@example.test bun x convex dev --run-sh "bunx @convex-dev/auth --skip-git-check --web-server-url http://127.0.0.1:${port} && cd apps/web && set -a && . ../../.env.local && set +a && NEXT_PUBLIC_CONVEX_URL=\\$CONVEX_URL bun run dev --hostname 127.0.0.1 --port ${port}"`,
+    command: `CONVEX_AGENT_MODE=anonymous bun x convex dev --run-sh "bunx @convex-dev/auth --skip-git-check --web-server-url http://127.0.0.1:${port} && cd apps/web && set -a && . ../../.env.local && set +a && NEXT_PUBLIC_CONVEX_URL=\\$CONVEX_URL bun run dev --hostname 127.0.0.1 --port ${port}"`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
