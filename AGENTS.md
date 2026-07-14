@@ -27,7 +27,7 @@ graphify affected "<symbol>" --depth 2       # reverse traversal: what breaks if
 graphify path "<A>" "<B>"                    # shortest path between two nodes
 ```
 
-The graph output lands in `graphify-out/` (gitignored — it is rebuilt, never committed,
+The graph output lands in `graphify-out/` (gitignored — rebuilt, never committed,
 so it can never go stale).
 
 ### Why this matters
@@ -36,7 +36,7 @@ so it can never go stale).
 
 - The Linear backlog claimed the Convex schema did not exist. It does —
   `convex/schema.ts`, 9 tables, on `master` for weeks.
-- Design docs described patterns nobody knew were already written.
+- Design docs described patterns nobody remembered writing.
 
 **The graph is ground truth. Docs and tickets are intent.**
 When a ticket, a doc, or a comment disagrees with the graph — **the graph wins.**
@@ -112,7 +112,10 @@ direct provider SDKs (`openai`, `@anthropic-ai/*`, `@google/generative-ai`) ·
 `axios` · Redux/Zustand/Jotai.
 
 **Use:** Convex (queries/mutations/actions, always auth-checked, always indexed) ·
-Convex Auth · native `fetch` · Convex reactive queries for state · Bun · Turborepo.
+Convex Auth · native `fetch` · Convex reactive queries for state · **Bun** · Turborepo.
+
+⚠️ **The package manager is Bun** (`packageManager: bun@1.3.9`, `bun.lock`).
+The README's quick-start says `pnpm`. **The README is wrong.** Use Bun.
 
 ---
 
@@ -126,9 +129,39 @@ Convex Auth · native `fetch` · Convex reactive queries for state · Bun · Tur
 
 ---
 
-## Appendix — known-stale references
+## ⚠️ Appendix — known-broken instructions (verified 2026-07-14)
 
-`CLAUDE.md` and `.cursor/rules/tempo-git-workflow.mdc` both instruct agents to read
-**`docs/brain/TASKS.md`**. That file **does not exist** — `docs/brain/` is empty
-(verified 2026-07-14). Do not invent its contents. Task state lives in **Linear**
-(team: Tempo Flow). If you are told to read it, note the broken reference and move on.
+These are real, and they will waste your time if you don't know about them.
+
+### `docs/brain/` is a PRIVATE SUBMODULE. You cannot read it.
+
+```
+[submodule "docs/brain"]
+  url = https://github.com/Division6066/tempo-brain.git   ← PRIVATE
+```
+
+`CLAUDE.md` and `.cursor/rules/tempo-git-workflow.mdc` both order you to read
+**`docs/brain/TASKS.md`** and to use its `T-XXXX` task IDs.
+
+**If you are a cloud agent, you cannot.** Cursor Cloud Agents and Claude Code in
+GitHub Actions clone without submodule credentials, so `docs/brain/` arrives
+**empty**. The file exists — for Amit, locally. Not for you.
+
+**Do not invent its contents. Do not guess at `T-XXXX` IDs.**
+
+### There are TWO task boards. Use the one you can actually see.
+
+| Board | Visible to agents? |
+|---|---|
+| `docs/brain/TASKS.md` (private submodule) | ❌ **No** — and the rules point you here |
+| `docs/TASKS.md` (102 lines, in-repo) | ✅ **Yes** |
+| **Linear** (team: Tempo Flow) | ✅ **Yes** — the real source of truth |
+
+Authoritative task state lives in **Linear**. `docs/TASKS.md` is the visible
+in-repo board. If a rule sends you to `docs/brain/`, note the broken reference
+in your PR and use Linear instead.
+
+### `.agents/skills` and `.claude/skills` are byte-for-byte identical
+
+2.7 MB each — 5.4 MB of the repo's 12 MB is a duplicate. Not your problem to fix,
+but don't edit one and assume the other followed.
