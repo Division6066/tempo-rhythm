@@ -135,6 +135,16 @@ export default defineSchema({
     ),
     priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
     dueAt: v.optional(v.number()),
+    checklist: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          text: v.string(),
+          completed: v.boolean(),
+          completedAt: v.optional(v.number()),
+        }),
+      ),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),

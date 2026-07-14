@@ -6,6 +6,7 @@ import { CheckCircle2, Circle, ListTodo } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { TaskChecklist } from "./TaskChecklist";
 
 type TodayTask = {
   _id: Id<"tasks">;
@@ -13,6 +14,12 @@ type TodayTask = {
   description?: string;
   status: "todo" | "in_progress" | "done" | "cancelled";
   priority: "low" | "medium" | "high";
+  checklist?: {
+    id: string;
+    text: string;
+    completed: boolean;
+    completedAt?: number;
+  }[];
 };
 
 type TodayTaskListProps = {
@@ -137,6 +144,12 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
                       {task.description ? (
                         <p className="mt-1 text-sm text-muted-foreground">{task.description}</p>
                       ) : null}
+
+                      <TaskChecklist
+                        taskId={task._id}
+                        taskTitle={task.title}
+                        checklist={task.checklist ?? []}
+                      />
                     </div>
                   </div>
                 </li>

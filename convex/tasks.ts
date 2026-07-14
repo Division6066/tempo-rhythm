@@ -1,7 +1,19 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import {
+  appendChecklistItem,
+  normalizeChecklistItems,
+  toggleChecklistItemState,
+} from "./lib/checklist";
 import { requireUser } from "./lib/requireUser";
 import { fetchCurrentUser } from "./users";
+
+const checklistItemValidator = v.object({
+  id: v.string(),
+  text: v.string(),
+  completed: v.boolean(),
+  completedAt: v.optional(v.number()),
+});
 
 export const list = query({
   args: {
@@ -87,7 +99,9 @@ export const create = mutation({
       v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
     ),
     dueAt: v.optional(v.number()),
+    checklist: v.optional(v.array(checklistItemValidator)),
   },
+  returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
@@ -98,6 +112,7 @@ export const create = mutation({
       status: args.status ?? "todo",
       priority: args.priority ?? "medium",
       dueAt: args.dueAt,
+      checklist: args.checklist ? normalizeChecklistItems(args.checklist) : undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -121,7 +136,9 @@ export const update = mutation({
       v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
     ),
     dueAt: v.optional(v.union(v.number(), v.null())),
+    checklist: v.optional(v.union(v.array(checklistItemValidator), v.null())),
   },
+  returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
@@ -138,6 +155,10 @@ export const update = mutation({
     if (args.priority !== undefined) patch.priority = args.priority;
     if (args.dueAt !== undefined) {
       patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
+    }
+    if (args.checklist !== undefined) {
+      patch.checklist =
+        args.checklist === null ? undefined : normalizeChecklistItems(args.checklist);
     }
     await ctx.db.patch(args.taskId, patch as typeof task);
     return args.taskId;
@@ -228,5 +249,62 @@ export const toggleCompletion = mutation({
     const next = task.status === "done" ? "todo" : "done";
     await ctx.db.patch(args.taskId, { status: next, updatedAt: Date.now() });
     return { taskId: args.taskId, status: next };
+  },
+});
+
+/** Add a checklist item to an existing task. */
+export const addChecklistItem = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    text: v.string(),
+  },
+  returns: checklistItemValidator,
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== user._id) {
+      throw new Error("Task not found");
+    }
+
+    const checklist = appendChecklistItem(task.checklist ?? [], args.text, crypto.randomUUID());
+    const addedItem = checklist[checklist.length - 1];
+    if (!addedItem) {
+      throw new Error("Checklist item could not be added");
+    }
+
+    await ctx.db.patch(args.taskId, { checklist, updatedAt: Date.now() });
+    return addedItem;
+  },
+});
+
+/** Toggle a checklist item on a task while preserving the rest of the checklist. */
+export const toggleChecklistItem = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    itemId: v.string(),
+    completed: v.boolean(),
+  },
+  returns: v.object({
+    taskId: v.id("tasks"),
+    itemId: v.string(),
+    completed: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== user._id) {
+      throw new Error("Task not found");
+    }
+
+    const updatedAt = Date.now();
+    const checklist = toggleChecklistItemState(
+      task.checklist ?? [],
+      args.itemId,
+      args.completed,
+      updatedAt,
+    );
+
+    await ctx.db.patch(args.taskId, { checklist, updatedAt });
+    return { taskId: args.taskId, itemId: args.itemId, completed: args.completed };
   },
 });
