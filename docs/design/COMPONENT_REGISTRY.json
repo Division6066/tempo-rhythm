@@ -1,0 +1,479 @@
+{
+  "meta": {
+    "sourceRoot": "docs/design/claude-export/design-system/",
+    "idPattern": "TF.<Category>.<Name>[.<Variant>]",
+    "notes": "Registry is design-only. It names reusable UI pieces for later web and React Native implementation without adding runtime code."
+  },
+  "components": [
+    {
+      "id": "TF.Brand.Mark",
+      "category": "foundation.brand",
+      "source": "components.jsx",
+      "purpose": "Gradient Tempo mark.",
+      "variants": ["size"],
+      "states": [],
+      "a11y": "Decorative when paired with visible wordmark; otherwise expose app name.",
+      "rn": "Use shared SVG or native vector equivalent."
+    },
+    {
+      "id": "TF.Brand.Wordmark",
+      "category": "foundation.brand",
+      "source": "components.jsx",
+      "purpose": "TempoFlow text lockup with serif/sans split.",
+      "variants": ["size", "color"],
+      "states": ["light", "dark"],
+      "a11y": "Text should remain readable, not image-only.",
+      "rn": "Use Text with Newsreader/Inter equivalents."
+    },
+    {
+      "id": "TF.Icon.Set",
+      "category": "foundation.icons",
+      "source": "components.jsx",
+      "purpose": "Lucide-like inline icon set with 1.5px stroke.",
+      "variants": ["size", "stroke", "fill"],
+      "states": ["currentColor"],
+      "a11y": "Icon-only controls need text labels.",
+      "rn": "Map to shared icon package or lucide-react-native."
+    },
+    {
+      "id": "TF.Theme.Controller",
+      "category": "foundation.theme",
+      "source": "theme-controller.js",
+      "purpose": "Light/dark/system, dyslexia, and read-aloud preference controller.",
+      "variants": ["light", "dark", "system", "dyslexia", "readAloud"],
+      "states": ["resolvedTheme", "storedPreference"],
+      "a11y": "Respects prefers-color-scheme and exposes dyslexia/read-aloud settings.",
+      "rn": "Use Appearance API plus AsyncStorage."
+    },
+    {
+      "id": "TF.App.Provider",
+      "category": "foundation.state",
+      "source": "components.jsx",
+      "purpose": "Prototype state provider for screen router and theme mirror.",
+      "variants": [],
+      "states": ["screen", "theme", "dyslexia", "readAloud"],
+      "a11y": "N/A",
+      "rn": "Replace with Expo Router and shared theme context."
+    },
+    {
+      "id": "TF.Layout.Sidebar",
+      "category": "layout.navigation",
+      "source": "components.jsx, shell.css",
+      "purpose": "Desktop app navigation with grouped items and profile footer.",
+      "variants": ["desktop", "drawer"],
+      "states": ["active", "hover", "open"],
+      "a11y": "Use nav landmark and aria-current on active route.",
+      "rn": "Replace with native tabs."
+    },
+    {
+      "id": "TF.Nav.Item",
+      "category": "layout.navigation",
+      "source": "shell.css",
+      "purpose": "Icon + label navigation row.",
+      "variants": ["withBadge"],
+      "states": ["active", "hover", "focus"],
+      "a11y": "Button must have route/state semantics.",
+      "rn": "Maps to tab item or list row."
+    },
+    {
+      "id": "TF.Layout.Topbar",
+      "category": "layout.navigation",
+      "source": "components.jsx",
+      "purpose": "Sticky route title, breadcrumb, search hint, theme toggle, notification icon.",
+      "variants": ["withRightAction"],
+      "states": ["sticky", "themeCycle"],
+      "a11y": "Header landmark; icon buttons require aria-label.",
+      "rn": "Use native-stack header."
+    },
+    {
+      "id": "TF.Layout.Page",
+      "category": "layout.container",
+      "source": "shell.css",
+      "purpose": "Responsive page padding and max width.",
+      "variants": ["default", "narrow", "tight"],
+      "states": [],
+      "a11y": "Use a single main region per route.",
+      "rn": "Use SafeArea-aware screen padding."
+    },
+    {
+      "id": "TF.Layout.Stack",
+      "category": "layout.container",
+      "source": "shell.css",
+      "purpose": "Vertical layout with tokenized gaps.",
+      "variants": ["2", "3", "4", "6"],
+      "states": [],
+      "a11y": "N/A",
+      "rn": "Use View gap tokens."
+    },
+    {
+      "id": "TF.Layout.Grid",
+      "category": "layout.container",
+      "source": "shell.css",
+      "purpose": "Two, three, four, and asymmetric responsive grids.",
+      "variants": ["grid-2", "grid-3", "grid-4", "grid-asym"],
+      "states": ["collapsed"],
+      "a11y": "Preserve DOM reading order when columns collapse.",
+      "rn": "Prefer single-column lists; use virtualized grids only where needed."
+    },
+    {
+      "id": "TF.Button.Primary",
+      "category": "action.button",
+      "source": "shell.css",
+      "purpose": "Primary action CTA.",
+      "variants": ["sm", "md", "lg"],
+      "states": ["hover", "active", "disabled", "focus"],
+      "a11y": "One primary button per screen when possible.",
+      "rn": "Pressable with 44dp min target."
+    },
+    {
+      "id": "TF.Button.Gradient",
+      "category": "action.button",
+      "source": "shell.css",
+      "purpose": "Brand emphasis CTA for AI/planning actions.",
+      "variants": ["sm", "md", "lg"],
+      "states": ["hover", "active", "disabled", "focus"],
+      "a11y": "Use sparingly for dominant action only.",
+      "rn": "Native gradient or CSS background image equivalent."
+    },
+    {
+      "id": "TF.Button.Outline",
+      "category": "action.button",
+      "source": "shell.css",
+      "purpose": "Secondary action.",
+      "variants": ["sm", "md", "lg"],
+      "states": ["hover", "active", "disabled", "focus"],
+      "a11y": "Keep label explicit.",
+      "rn": "Bordered Pressable."
+    },
+    {
+      "id": "TF.Button.Ghost",
+      "category": "action.button",
+      "source": "shell.css",
+      "purpose": "Tertiary action.",
+      "variants": ["sm", "md", "lg"],
+      "states": ["hover", "active", "disabled", "focus"],
+      "a11y": "Avoid as only path for required action.",
+      "rn": "Low-emphasis Pressable."
+    },
+    {
+      "id": "TF.Button.Danger",
+      "category": "action.button",
+      "source": "shell.css",
+      "purpose": "Destructive action.",
+      "variants": ["md"],
+      "states": ["hover", "active", "disabled", "focus"],
+      "a11y": "Pair with confirmation and undo where applicable.",
+      "rn": "Use destructive role/action sheet."
+    },
+    {
+      "id": "TF.Button.Icon",
+      "category": "action.button",
+      "source": "shell.css",
+      "purpose": "Icon-only action control.",
+      "variants": ["default", "toolbar"],
+      "states": ["hover", "active", "focus"],
+      "a11y": "Requires aria-label/title.",
+      "rn": "Minimum 44dp target."
+    },
+    {
+      "id": "TF.Card.Base",
+      "category": "surface.card",
+      "source": "shell.css",
+      "purpose": "Cream raised content surface.",
+      "variants": ["default", "sunken", "flat"],
+      "states": [],
+      "a11y": "Use semantic section headings inside cards.",
+      "rn": "SoftCard with shared radius, border, and shadow."
+    },
+    {
+      "id": "TF.Card.Head",
+      "category": "surface.card",
+      "source": "shell.css",
+      "purpose": "Card title/action row.",
+      "variants": ["wrapped"],
+      "states": [],
+      "a11y": "Maintain heading order.",
+      "rn": "Flex row with wrap fallback."
+    },
+    {
+      "id": "TF.Field.Base",
+      "category": "form.input",
+      "source": "shell.css",
+      "purpose": "Label, input/textarea/select, and helper text.",
+      "variants": ["input", "textarea", "select"],
+      "states": ["focus", "disabled", "error"],
+      "a11y": "Label must be associated with control; helper/error via describedby.",
+      "rn": "TextInput with helper Text."
+    },
+    {
+      "id": "TF.Toggle",
+      "category": "form.toggle",
+      "source": "screens-4.jsx",
+      "purpose": "Switch control for preferences.",
+      "variants": ["on", "off"],
+      "states": ["on", "off", "focus"],
+      "a11y": "role=switch and aria-checked on web.",
+      "rn": "Use native Switch or Pressable with accessibilityRole switch."
+    },
+    {
+      "id": "TF.Pill",
+      "category": "data.status",
+      "source": "components.jsx, shell.css",
+      "purpose": "Compact semantic status chip.",
+      "variants": ["neutral", "accent", "moss", "brick", "amber", "slate", "dot"],
+      "states": ["active"],
+      "a11y": "Color must be paired with text or icon.",
+      "rn": "Text chip with token background and 44dp parent row if interactive."
+    },
+    {
+      "id": "TF.TaskRow",
+      "category": "data.task",
+      "source": "components.jsx, shell.css",
+      "purpose": "Task list row with checkbox and metadata.",
+      "variants": ["done", "active", "withAI", "withTag"],
+      "states": ["hover", "done", "focus"],
+      "a11y": "Checkbox needs explicit label; row action must not obscure checkbox semantics.",
+      "rn": "Virtualized row; optional swipe complete."
+    },
+    {
+      "id": "TF.Ring",
+      "category": "data.progress",
+      "source": "components.jsx, shell.css",
+      "purpose": "Circular progress ring for habits/goals.",
+      "variants": ["withLabel", "small", "large"],
+      "states": ["partial", "complete"],
+      "a11y": "Expose percent text outside decorative SVG when meaningful.",
+      "rn": "Use react-native-svg or simple progress fallback."
+    },
+    {
+      "id": "TF.ProgressBar",
+      "category": "data.progress",
+      "source": "components.jsx",
+      "purpose": "Horizontal progress indicator.",
+      "variants": ["tempo", "moss", "amber"],
+      "states": ["empty", "partial", "complete"],
+      "a11y": "Use progressbar semantics when not decorative.",
+      "rn": "View track/fill; respect reduced motion."
+    },
+    {
+      "id": "TF.EnergyBar",
+      "category": "data.energy",
+      "source": "components.jsx",
+      "purpose": "Five-step energy meter.",
+      "variants": ["1", "2", "3", "4", "5"],
+      "states": [],
+      "a11y": "Provide text label, not color alone.",
+      "rn": "Segmented bars with spoken label."
+    },
+    {
+      "id": "TF.Coach.Bubble",
+      "category": "coach.message",
+      "source": "components.jsx, shell.css",
+      "purpose": "Coach message bubble using serif copy.",
+      "variants": ["default", "compact"],
+      "states": [],
+      "a11y": "Message role and author should be available to screen readers.",
+      "rn": "Serif text bubble in chat list."
+    },
+    {
+      "id": "TF.Coach.UserBubble",
+      "category": "coach.message",
+      "source": "components.jsx, shell.css",
+      "purpose": "User message bubble using gradient surface.",
+      "variants": ["default"],
+      "states": [],
+      "a11y": "Preserve contrast on gradient.",
+      "rn": "Right-aligned user bubble."
+    },
+    {
+      "id": "TF.Coach.AcceptStrip",
+      "category": "coach.proposal",
+      "source": "components.jsx, shell.css",
+      "purpose": "AI proposal confirmation strip.",
+      "variants": ["inline", "card"],
+      "states": ["pending", "accepted", "rejected"],
+      "a11y": "Buttons must expose accept/edit/reject labels.",
+      "rn": "Full-width proposal card above composer."
+    },
+    {
+      "id": "TF.Coach.Dock",
+      "category": "coach.overlay",
+      "source": "coach-dock.jsx",
+      "purpose": "Global coach FAB and slide-up panel.",
+      "variants": ["chat", "brainDump"],
+      "states": ["open", "closed", "unread"],
+      "a11y": "Escape closes; focus returns to opener.",
+      "rn": "Bottom sheet controlled by ChatBall."
+    },
+    {
+      "id": "TF.Coach.Dock.FAB",
+      "category": "coach.overlay",
+      "source": "coach-dock.jsx",
+      "purpose": "Floating button to open coach.",
+      "variants": ["default", "unread"],
+      "states": ["idle", "hover", "pressed"],
+      "a11y": "aria-label Open coach.",
+      "rn": "ChatBall positioned above tabs."
+    },
+    {
+      "id": "TF.Voice.Launcher",
+      "category": "voice.controls",
+      "source": "voice-chat.jsx",
+      "purpose": "Mic and voice controls for coach.",
+      "variants": ["walkie", "live"],
+      "states": ["idle", "recording", "speaking", "muted"],
+      "a11y": "Announce recording/listening status.",
+      "rn": "Use expo-av/expo-speech; count real audio minutes."
+    },
+    {
+      "id": "TF.Voice.Waveform",
+      "category": "voice.feedback",
+      "source": "voice-chat.jsx",
+      "purpose": "Animated voice activity bars.",
+      "variants": ["orange", "moss", "slate"],
+      "states": ["active", "inactive"],
+      "a11y": "Decorative; provide text status nearby.",
+      "rn": "Use Reanimated shared values."
+    },
+    {
+      "id": "TF.Overlay.Modal",
+      "category": "overlay",
+      "source": "shell.css",
+      "purpose": "Centered modal/dialog.",
+      "variants": ["default", "wide"],
+      "states": ["open", "closed"],
+      "a11y": "Focus trap, labelled dialog, Escape closes.",
+      "rn": "Prefer native Modal formSheet where suitable."
+    },
+    {
+      "id": "TF.Tabs",
+      "category": "navigation.tabs",
+      "source": "shell.css",
+      "purpose": "Pill tab switcher.",
+      "variants": ["default"],
+      "states": ["active", "inactive"],
+      "a11y": "Use tablist/tab/tabpanel when switching panels.",
+      "rn": "Horizontal chip row or native tabs."
+    },
+    {
+      "id": "TF.SegmentedControl",
+      "category": "navigation.segmented",
+      "source": "shell.css",
+      "purpose": "Compact segmented control.",
+      "variants": ["two", "three", "many"],
+      "states": ["active", "inactive"],
+      "a11y": "Radio group pattern for mutually exclusive choices.",
+      "rn": "Pressable group."
+    },
+    {
+      "id": "TF.Kanban.Board",
+      "category": "domain.projects",
+      "source": "shell.css, screens-3.jsx",
+      "purpose": "Project kanban board.",
+      "variants": ["fourColumn"],
+      "states": ["dragging"],
+      "a11y": "Keyboard drag/drop needed before production.",
+      "rn": "Horizontal scroll board with gesture handler."
+    },
+    {
+      "id": "TF.Kanban.Column",
+      "category": "domain.projects",
+      "source": "shell.css, screens-3.jsx",
+      "purpose": "Sunken kanban column.",
+      "variants": ["status"],
+      "states": [],
+      "a11y": "Column heading and count must be announced.",
+      "rn": "Column list."
+    },
+    {
+      "id": "TF.Kanban.Card",
+      "category": "domain.projects",
+      "source": "shell.css, screens-3.jsx",
+      "purpose": "Kanban task card.",
+      "variants": ["default"],
+      "states": ["dragging", "focused"],
+      "a11y": "Provide non-drag move action.",
+      "rn": "Pressable card."
+    },
+    {
+      "id": "TF.Template.Card",
+      "category": "domain.templates",
+      "source": "screens-templates.jsx",
+      "purpose": "Template gallery tile.",
+      "variants": ["starter", "mine", "featured"],
+      "states": ["hover", "selected"],
+      "a11y": "Action labels should say Run/Edit/Fork template.",
+      "rn": "List/card tile."
+    },
+    {
+      "id": "TF.Template.Builder",
+      "category": "domain.templates",
+      "source": "screens-template-builder*.jsx",
+      "purpose": "Block-based template editor.",
+      "variants": ["edit", "preview"],
+      "states": ["selectedBlock", "slashMenuOpen", "dirty"],
+      "a11y": "Block reorder requires keyboard alternative.",
+      "rn": "Native menu/actions for blocks."
+    },
+    {
+      "id": "TF.Template.RunBlock",
+      "category": "domain.templates",
+      "source": "screens-template-run.jsx",
+      "purpose": "Guided template step renderer.",
+      "variants": ["heading", "checklist", "prompt", "rating", "energy", "coach"],
+      "states": ["current", "complete"],
+      "a11y": "Announce step number and completion.",
+      "rn": "Wizard-like stack screen."
+    },
+    {
+      "id": "TF.EmptyState",
+      "category": "content.empty",
+      "source": "screens-5.jsx, shell.css",
+      "purpose": "Kind empty-state pattern.",
+      "variants": ["tasks", "notes", "journal", "habits"],
+      "states": [],
+      "a11y": "Headline plus support copy; CTA clear.",
+      "rn": "Reuse exact no-shame copy."
+    },
+    {
+      "id": "TF.Mobile.PhoneShell",
+      "category": "mobile.shell",
+      "source": "mobile/mobile-shell.jsx",
+      "purpose": "Preview-only iPhone shell.",
+      "variants": ["light", "dark", "withTabs", "withChatBall"],
+      "states": ["coachOpen"],
+      "a11y": "Preview only; real app uses platform chrome.",
+      "rn": "Do not implement device frame in production app."
+    },
+    {
+      "id": "TF.Mobile.TabBar",
+      "category": "mobile.navigation",
+      "source": "mobile/mobile-shell.jsx",
+      "purpose": "Five-tab mobile navigation.",
+      "variants": ["today", "tasks", "coach", "library", "settings"],
+      "states": ["active", "inactive"],
+      "a11y": "Use native tab role/labels.",
+      "rn": "Prefer Expo native tabs."
+    },
+    {
+      "id": "TF.Mobile.ChatBall",
+      "category": "mobile.coach",
+      "source": "mobile/mobile-shell.jsx",
+      "purpose": "Floating coach entry on mobile.",
+      "variants": ["default", "unread"],
+      "states": ["open", "closed", "pressed"],
+      "a11y": "accessibilityLabel Open coach.",
+      "rn": "Pressable above tab bar."
+    },
+    {
+      "id": "TF.Mobile.CoachPanel",
+      "category": "mobile.coach",
+      "source": "mobile/mobile-shell.jsx",
+      "purpose": "Mobile coach bottom sheet.",
+      "variants": ["chat", "brainDump"],
+      "states": ["open", "closed"],
+      "a11y": "Modal semantics and focus management.",
+      "rn": "Native Modal or bottom sheet pattern."
+    }
+  ]
+}
