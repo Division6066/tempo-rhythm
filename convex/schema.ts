@@ -179,6 +179,21 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  habitCompletions: defineTable({
+    userId: v.id("users"),
+    habitId: v.id("habits"),
+    dayKey: v.string(),
+    completedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_dayKey", ["userId", "dayKey"])
+    .index("by_habitId", ["habitId"])
+    .index("by_habitId_dayKey", ["habitId", "dayKey"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
   goals: defineTable({
     userId: v.id("users"),
     title: v.string(),
