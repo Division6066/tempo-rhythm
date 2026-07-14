@@ -69,16 +69,20 @@ export async function getPrefs(): Promise<Prefs> {
 }
 
 export async function setPrefs(nextPrefs: Partial<Prefs>): Promise<Prefs> {
+  if (Platform.OS === "web") {
+    const prefs = normalizePrefs({
+      ...readWebPrefs(),
+      ...nextPrefs,
+    });
+    writeWebPrefs(prefs);
+    return prefs;
+  }
+
   const prefs = normalizePrefs({
     ...(await getPrefs()),
     ...nextPrefs,
   });
   const serializedPrefs = JSON.stringify(prefs);
-
-  if (Platform.OS === "web") {
-    writeWebPrefs(prefs);
-    return prefs;
-  }
 
   try {
     await AsyncStorage.setItem(prefsStorageKey, serializedPrefs);

@@ -75,6 +75,9 @@ if (!("Bun" in globalThis)) {
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
 
     await page.getByRole("button", { name: "עברית" }).click();
+    await expect(
+      page.evaluate(() => window.localStorage.getItem("tempo:prefs:v1")),
+    ).resolves.toContain('"language":"he"');
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 
     await page.reload();
