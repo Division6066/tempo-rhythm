@@ -20,7 +20,9 @@ test.describe("placeholder routes", () => {
     test(`${route.path} renders the ${route.heading} placeholder heading`, async ({ page }) => {
       await page.goto(route.path);
 
-      await expect(page.getByRole("heading", { level: 1, name: route.heading })).toBeVisible();
+      await expect(
+        page.locator("main").getByRole("heading", { level: 1, name: route.heading })
+      ).toBeVisible();
     });
   }
 });
