@@ -24,11 +24,15 @@ if [ "$ready" -ne 1 ]; then
   exit 1
 fi
 
-jwt_private_key="$(
-  bun -e 'const { generateKeyPairSync } = await import("node:crypto"); const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 }); const pkcs8 = privateKey.export({ type: "pkcs8", format: "pem" }); console.log(String(pkcs8).trimEnd().replace(/\n/g, " "));'
+keys_json="$(
+  bun -e 'const { generateKeyPairSync } = await import("node:crypto"); const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 }); const pkcs8 = String(privateKey.export({ type: "pkcs8", format: "pem" })).trimEnd().replace(/\n/g, " "); const jwk = publicKey.export({ format: "jwk" }); console.log(JSON.stringify({ jwtPrivateKey: pkcs8, jwks: JSON.stringify({ keys: [{ use: "sig", ...jwk }] }) }));'
 )"
 
+jwt_private_key="$(printf "%s" "$keys_json" | bun -e 'const input = await new Response(Bun.stdin.stream()).json(); console.log(input.jwtPrivateKey);')"
+jwks="$(printf "%s" "$keys_json" | bun -e 'const input = await new Response(Bun.stdin.stream()).json(); console.log(input.jwks);')"
+
 printf "%s" "$jwt_private_key" | bun x convex env set JWT_PRIVATE_KEY >/dev/null
+printf "%s" "$jwks" | bun x convex env set JWKS >/dev/null
 printf "http://127.0.0.1:3000" | bun x convex env set SITE_URL >/dev/null
 
 wait "$convex_pid"
