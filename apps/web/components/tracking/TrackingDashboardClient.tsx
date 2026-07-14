@@ -69,10 +69,8 @@ type EnsoRingProps = {
 };
 
 function EnsoRing({ value, max, label }: EnsoRingProps) {
-  const radius = 54;
-  const stroke = 9;
-  const circumference = 2 * Math.PI * radius;
   const percent = Math.max(0, Math.min(1, value / max));
+  const progressDegrees = Math.round(percent * 360);
 
   return (
     <div
@@ -80,33 +78,14 @@ function EnsoRing({ value, max, label }: EnsoRingProps) {
       aria-valuemax={max}
       aria-valuemin={0}
       aria-valuenow={value}
-      className="relative grid size-40 place-items-center rounded-full bg-card shadow-[0_24px_80px_rgba(0,0,0,0.08)]"
+      className="relative grid size-40 place-items-center rounded-full p-3 shadow-[0_24px_80px_rgba(0,0,0,0.08)]"
       data-testid="enso-ring"
       role="progressbar"
+      style={{
+        background: `conic-gradient(var(--color-tempo-orange) ${progressDegrees}deg, var(--color-border-soft) 0deg)`,
+      }}
     >
-      <svg aria-hidden="true" className="absolute inset-0" viewBox="0 0 140 140">
-        <circle
-          cx="70"
-          cy="70"
-          fill="none"
-          r={radius}
-          stroke="var(--color-border-soft)"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx="70"
-          cy="70"
-          fill="none"
-          r={radius}
-          stroke="var(--color-tempo-orange)"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - percent)}
-          strokeLinecap="round"
-          strokeWidth={stroke}
-          transform="rotate(-90 70 70)"
-        />
-      </svg>
-      <div className="relative text-center">
+      <div className="grid size-full place-items-center rounded-full bg-card text-center">
         <div className="font-serif text-5xl leading-none" data-testid="streak-count">
           {value}
         </div>
