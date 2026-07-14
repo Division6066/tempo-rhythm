@@ -190,7 +190,7 @@ function TicketCard({
         </Pill>
       </div>
       <h3 className="mt-3 text-small font-semibold leading-snug">{ticket.title}</h3>
-      <p className="mt-2 line-clamp-3 text-caption leading-relaxed text-muted-foreground">
+      <p className="mt-2 line-clamp-3 pb-1 text-caption leading-relaxed text-muted-foreground">
         {ticket.summary}
       </p>
     </button>
