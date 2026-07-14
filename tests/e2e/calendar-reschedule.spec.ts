@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const testEmail = "amitlevin65@protonmail.com";
+const testEmail = "e2e-calendar@example.test";
 const testPassword = "QAtest123!";
 const taskTitle = `Calendar block ${Date.now()}`;
 
@@ -39,7 +39,8 @@ test("task can become a calendar block and keyboard reschedule persists", async 
   await expect(eventCard).toContainText("9:00 AM");
   await expect(eventCard).toContainText("Owned by you");
 
-  await eventCard.getByRole("button", { name: `Move ${taskTitle} 30 minutes later` }).click();
+  await eventCard.getByRole("button", { name: `Move ${taskTitle} 30 minutes later` }).focus();
+  await page.keyboard.press("Enter");
   await expect(eventCard).toContainText("9:30 AM");
 
   await page.reload();

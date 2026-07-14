@@ -24,7 +24,7 @@ export default defineConfig({
       `bash tests/e2e/start-calendar-e2e-server.sh ${convexAuthEnvPath} ${baseURL} ${port}`,
     ].join(" "),
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });
