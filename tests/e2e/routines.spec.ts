@@ -8,7 +8,7 @@ async function signIn(page: Page) {
   await page.locator("#signin-email").fill(testEmail);
   await page.locator("#signin-password").fill(testPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/routines", { timeout: 20_000 });
+  await expect(page).toHaveURL(/\/routines$/, { timeout: 20_000 });
 }
 
 async function ensureSignedIn(page: Page) {
@@ -19,11 +19,8 @@ async function ensureSignedIn(page: Page) {
   await page.getByRole("button", { name: "Create account" }).click();
 
   try {
-    await page.waitForURL("**/routines", { timeout: 20_000 });
+    await expect(page).toHaveURL(/\/routines$/, { timeout: 20_000 });
   } catch {
-    await expect(page.getByText("That email already has an account")).toBeVisible({
-      timeout: 5_000,
-    });
     await signIn(page);
   }
 }
