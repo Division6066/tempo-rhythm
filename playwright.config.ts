@@ -21,7 +21,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: `NEXT_PUBLIC_CONVEX_URL=${convexUrl} bun --cwd apps/web run dev -- --hostname 127.0.0.1 --port 3000`,
+      command: `NEXT_PUBLIC_CONVEX_URL=${convexUrl} bun run --cwd apps/web dev --hostname 127.0.0.1 --port 3000`,
       url: webUrl,
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
