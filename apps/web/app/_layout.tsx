@@ -10,7 +10,7 @@ export default function RootLayout() {
       <View style={styles.sidebar}>
         <Text style={styles.brand}>Agentwright</Text>
         <Text style={styles.subtitle}>Universal shell</Text>
-        <View accessibilityRole="navigation" style={styles.nav}>
+        <View style={styles.nav}>
           {shellRoutes.map((route) => (
             <Link
               key={route.href}
