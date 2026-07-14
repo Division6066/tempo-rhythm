@@ -78,7 +78,7 @@ async function setVisibility(
 function registerBreathworkTimerSpec(): void {
   test.setTimeout(120_000);
 
-  test.beforeAll(async (_args, testInfo) => {
+  test.beforeAll(async ({ browserName: _browserName }, testInfo) => {
     testInfo.setTimeout(120_000);
     server = spawn(
       'bun',
