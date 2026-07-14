@@ -1,0 +1,17 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "extends": ["../../packages/config/biome.json"],
+  "vcs": {
+    "enabled": false
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": ["check-static.ts", "src/**/*.css"]
+  },
+  "css": {
+    "parser": {
+      "cssModules": false,
+      "tailwindDirectives": false
+    }
+  }
+}
