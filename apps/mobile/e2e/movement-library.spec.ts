@@ -29,9 +29,10 @@ if (process.env.TEMPO_PLAYWRIGHT === "1") {
     await page.getByTestId("routine-card-animal-flow-primer").click();
 
     await expect(page).toHaveURL(/\/routines\/animal-flow-primer/);
-    await expect(page.getByTestId("session-player")).toBeVisible();
-    await expect(page.getByText("Session player")).toBeVisible();
-    await expect(page.getByText("Animal Flow Primer")).toBeVisible();
+    const player = page.getByTestId("session-player");
+    await expect(player).toBeVisible();
+    await expect(player.getByText("Session player")).toBeVisible();
+    await expect(player.getByText("Animal Flow Primer")).toBeVisible();
   });
 
   test("renders the same routine library flow in RTL for Hebrew", async ({
@@ -48,7 +49,7 @@ if (process.env.TEMPO_PLAYWRIGHT === "1") {
     await expect(page).toHaveURL(/\/routines\/animal-flow-primer\?language=he/);
     const player = page.getByTestId("session-player");
     await expect(player).toHaveAttribute("dir", "rtl");
-    await expect(page.getByText("Animal Flow Primer")).toBeVisible();
+    await expect(player.getByText("Animal Flow Primer")).toBeVisible();
   });
   });
 }
