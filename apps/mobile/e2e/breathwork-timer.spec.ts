@@ -1,4 +1,5 @@
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 
 type BrowserCueEvent = {
   cue: 'audio' | 'haptic';
@@ -207,12 +208,9 @@ const launchedByPlaywright = process.argv.some((arg) =>
 );
 
 if (launchedByPlaywright) {
-  const importPlaywright = new Function(
-    'specifier',
-    'return import(specifier)'
-  ) as (specifier: string) => Promise<unknown>;
-  const playwrightModule = (await importPlaywright(
+  const requireFromSpec = createRequire(import.meta.url);
+  const playwrightModule = requireFromSpec(
     '@playwright/test'
-  )) as PlaywrightModule;
+  ) as PlaywrightModule;
   registerBreathworkTimerSpec(playwrightModule);
 }
