@@ -1,11 +1,12 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import type { OnboardingFunnelEvent } from "./track";
 
 declare global {
   interface Window {
-    __tempoOnboardingTrack?: (event: { name: string; step: string }) => void;
-    __tempoOnboardingTrackEvents: Array<{ name: string; step: string }>;
+    __tempoOnboardingTrack?: (event: OnboardingFunnelEvent) => void;
+    __tempoOnboardingTrackEvents: OnboardingFunnelEvent[];
   }
 }
 
