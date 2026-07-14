@@ -134,6 +134,24 @@ export default defineSchema({
       v.literal("cancelled"),
     ),
     priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    energyLevel: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+    projectKey: v.optional(v.string()),
+    checklist: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          text: v.string(),
+          completed: v.boolean(),
+        }),
+      ),
+    ),
+    recurrence: v.optional(
+      v.object({
+        frequency: v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly")),
+        interval: v.number(),
+        nextDueAt: v.number(),
+      }),
+    ),
     dueAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -141,6 +159,7 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
+    .index("by_userId_projectKey", ["userId", "projectKey"])
     .index("by_userId_dueAt", ["userId", "dueAt"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
