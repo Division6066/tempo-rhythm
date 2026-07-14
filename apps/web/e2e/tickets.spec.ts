@@ -5,7 +5,7 @@ import { request as httpRequest } from "node:http";
 import { test, expect, type Page } from "@playwright/test";
 
 const port = Number(process.env.TICKETS_E2E_PORT ?? 4100);
-const baseUrl = `http://127.0.0.1:${port}`;
+const baseUrl = `http://localhost:${port}`;
 const artifactsDir = join(process.cwd(), "apps/web/e2e/artifacts");
 
 let server: ChildProcessWithoutNullStreams | undefined;
