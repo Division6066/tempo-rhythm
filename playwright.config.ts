@@ -13,8 +13,8 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `cd apps/web && bun run dev --hostname 127.0.0.1 --port ${port}`,
-    url: baseURL,
+    command: `cd apps/web && PLAYWRIGHT_E2E=1 bun run dev --hostname 127.0.0.1 --port ${port}`,
+    url: `${baseURL}/projects/aw-34/kanban`,
     reuseExistingServer: true,
     timeout: 120_000,
   },
