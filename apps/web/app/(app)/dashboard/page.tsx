@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { TrackingDashboardClient } from "@/components/tracking/TrackingDashboardClient";
 
 export default function DashboardPage() {
-  redirect("/today");
+  return <TrackingDashboardClient />;
 }
