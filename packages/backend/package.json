@@ -1,0 +1,21 @@
+{
+  "name": "@tempo/backend",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Tempo Flow Convex backend (schema, auth, queries/mutations). Pin @convex-dev/auth exactly — 0.0.x can break on minor bumps.",
+  "scripts": {
+    "typecheck": "tsc -p convex/tsconfig.json --noEmit",
+    "test": "bun test convex",
+    "codegen": "bunx convex codegen"
+  },
+  "dependencies": {
+    "@convex-dev/auth": "0.0.91",
+    "convex": "^1.31.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "@types/node": "^20.19.0",
+    "convex-test": "^0.0.41",
+    "typescript": "^5.9.3"
+  }
+}
