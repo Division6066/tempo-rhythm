@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "./apps/mobile" },
+    { "path": "./apps/web" },
+    { "path": "./convex" },
+    { "path": "./packages/types" },
+    { "path": "./packages/utils" },
+    { "path": "./packages/ui" }
+  ]
+}
