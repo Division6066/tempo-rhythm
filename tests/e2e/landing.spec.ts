@@ -10,7 +10,13 @@ let baseUrl: string;
 test.beforeAll(async () => {
   server = createServer(async (request, response) => {
     const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
-    const filePath = `${landingRoot}${pathname === "/" ? "/index.html" : pathname}`;
+    const filePath = `${landingRoot}${
+      pathname === "/"
+        ? "/index.html"
+        : pathname.includes(".")
+          ? pathname
+          : `${pathname}/index.html`
+    }`;
 
     try {
       const body = await readFile(filePath);
@@ -63,4 +69,9 @@ test("public pre-login landing page has headline, value props, and signup CTA", 
   const cta = page.getByRole("link", { name: /start|sign up|login|sign in/i }).first();
   await expect(cta).toBeVisible();
   await expect(cta).toHaveAttribute("href", /sign-?up|sign-?in|login|auth/);
+
+  const ctaHref = await cta.getAttribute("href");
+  expect(ctaHref).not.toBeNull();
+  const ctaResponse = await page.goto(new URL(ctaHref ?? "", baseUrl).toString());
+  expect(ctaResponse?.ok()).toBe(true);
 });

@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 
 const html = await readFile("src/index.html", "utf8");
 const css = await readFile("src/styles.css", "utf8");
+const signIn = await readFile("src/sign-in/index.html", "utf8");
+const signUp = await readFile("src/sign-up/index.html", "utf8");
 
 function fail(message: string): never {
   process.stderr.write(`${message}\n`);
@@ -16,7 +18,12 @@ function stripTags(value: string): string {
 }
 
 const forbiddenCopy = /lorem ipsum|placeholder text|TODO:/i;
-if (forbiddenCopy.test(html) || forbiddenCopy.test(css)) {
+if (
+  forbiddenCopy.test(html) ||
+  forbiddenCopy.test(css) ||
+  forbiddenCopy.test(signIn) ||
+  forbiddenCopy.test(signUp)
+) {
   fail("Landing page contains forbidden placeholder copy.");
 }
 
@@ -39,6 +46,10 @@ if (!/href="\/(?:sign-up|sign-in|login|auth)[^"]*"/i.test(html)) {
 
 if (!html.includes('href="/styles.css"')) {
   fail("Landing page must reference its stylesheet.");
+}
+
+if (!signIn.includes('href="/styles.css"') || !signUp.includes('href="/styles.css"')) {
+  fail("CTA target pages must reference the shared stylesheet.");
 }
 
 process.stdout.write("landing static content checks passed\n");
