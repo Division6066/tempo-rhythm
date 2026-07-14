@@ -6,6 +6,7 @@ const webUrl = "http://127.0.0.1:3000";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  timeout: 60_000,
   workers: 1,
   reporter: [["list"]],
   use: {
@@ -14,8 +15,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command:
-        "CONVEX_AGENT_MODE=anonymous BETA_ALLOWLIST_EMAILS=e2e-routines@tempo.test BETA_MAX_TESTERS=100 bun x convex dev",
+      command: "CONVEX_AGENT_MODE=anonymous bun x convex dev",
       url: convexUrl,
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
