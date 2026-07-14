@@ -371,7 +371,7 @@ function StarterStep({
       </div>
 
       <ForwardActions>
-        <Button className="min-h-11 rounded-full px-5" onClick={onContinue}>
+        <Button className="min-h-11 min-w-[176px] rounded-full px-5" onClick={onContinue}>
           Send starter
           <ArrowRight aria-hidden="true" />
         </Button>
@@ -418,10 +418,12 @@ function FirstChatStep({
           First chat message
         </label>
         <Input
+          autoComplete="off"
           data-testid="first-chat-input"
           id="first-chat-input"
           onChange={(event) => onChatInputChange(event.currentTarget.value)}
           placeholder="Add one small detail, or press Send when you are ready"
+          spellCheck={false}
           value={chatInput}
         />
       </div>
