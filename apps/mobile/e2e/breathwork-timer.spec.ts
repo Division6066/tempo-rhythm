@@ -68,8 +68,6 @@ function registerBreathworkTimerSpec(): void {
     server = spawn(
       'bun',
       [
-        '--cwd',
-        'apps/mobile',
         'x',
         'expo',
         'start',
@@ -79,7 +77,7 @@ function registerBreathworkTimerSpec(): void {
         '--non-interactive',
       ],
       {
-        cwd: process.cwd(),
+        cwd: `${process.cwd()}/apps/mobile`,
         env: {
           ...process.env,
           CI: '1',
