@@ -10,6 +10,8 @@ dist/
 build/
 out/
 .tmp/
+playwright-report/
+test-results/
 
 # Expo
 .expo/
