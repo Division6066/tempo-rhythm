@@ -15,7 +15,24 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
+const isCoreTaskViewRoute = createRouteMatcher([
+  "/today",
+  "/tasks",
+  "/tasks/priority",
+  "/tasks/energy",
+  "/projects",
+  "/projects/(.*)",
+]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.TEMPO_E2E_AUTH_BYPASS === "1" &&
+    isCoreTaskViewRoute(request)
+  ) {
+    return;
+  }
+
   const { convexAuth } = ctx;
   let isAuthenticated = false;
   try {
