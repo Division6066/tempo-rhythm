@@ -5,7 +5,6 @@ type TempoEmptyStateProps = {
   screenId: string;
   title: string;
   summary: string;
-  source: string;
   actionLabel?: string;
 };
 
@@ -13,7 +12,6 @@ export function TempoEmptyState({
   screenId,
   title,
   summary,
-  source,
   actionLabel = "Start gently",
 }: TempoEmptyStateProps) {
   return (
@@ -48,7 +46,7 @@ export function TempoEmptyState({
             {actionLabel}
           </Text>
           <Text className="text-xs leading-5 text-muted-foreground">
-            scaffold · port from {source}
+            You can leave this empty until the next step feels clear.
           </Text>
         </View>
       </View>

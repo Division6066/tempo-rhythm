@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="templates"
       title="Templates"
       summary="No templates are saved yet. Reuse can come later, after you notice what helps more than once."
-      source="mobile/mobile-screens-b.jsx"
       actionLabel="Browse starter shapes"
     />
   );

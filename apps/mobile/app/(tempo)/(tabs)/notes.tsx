@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="notes"
       title="Notes"
       summary="No notes are saved yet. This can stay quiet until a thought feels worth catching."
-      source="mobile/mobile-screens-a.jsx"
       actionLabel="Capture a note"
     />
   );

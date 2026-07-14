@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="calendar"
       title="Calendar"
       summary="No events are connected yet. The calendar can stay open space until a real commitment belongs here."
-      source="mobile/mobile-screens-b.jsx"
       actionLabel="Connect a calendar"
     />
   );

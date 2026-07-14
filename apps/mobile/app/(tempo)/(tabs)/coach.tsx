@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="coach"
       title="Coach"
       summary="No coach thread has started yet. When you want company, the first message can be simple."
-      source="mobile/mobile-screens-a.jsx"
       actionLabel="Open a gentle check-in"
     />
   );

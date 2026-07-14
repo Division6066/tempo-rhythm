@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="capture"
       title="Capture"
       summary="Nothing has been captured yet. You can drop a thought here without sorting it first."
-      source="mobile/mobile-screens-a.jsx"
       actionLabel="Capture a loose thought"
     />
   );

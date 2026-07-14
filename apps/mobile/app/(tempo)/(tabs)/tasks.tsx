@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="tasks"
       title="Tasks"
       summary="Your task list is clear. Add something only when it would make today feel easier to hold."
-      source="mobile/mobile-screens-a.jsx"
       actionLabel="Add a task"
     />
   );

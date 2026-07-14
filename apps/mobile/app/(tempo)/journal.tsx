@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="journal"
       title="Journal"
       summary="No journal entries are here yet. A blank page is allowed to stay blank until reflection helps."
-      source="mobile/mobile-screens-b.jsx"
       actionLabel="Write one line"
     />
   );

@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="routines"
       title="Routines"
       summary="No routines are set up yet. You can build one gentle sequence when a repeated moment needs support."
-      source="mobile/mobile-screens-b.jsx"
       actionLabel="Create a soft routine"
     />
   );

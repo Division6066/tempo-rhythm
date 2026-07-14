@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="today"
       title="Today"
       summary="No plans are waiting here yet. You can begin with one gentle next step when you want to shape the day."
-      source="mobile/mobile-screens-a.jsx"
       actionLabel="Plan one small thing"
     />
   );

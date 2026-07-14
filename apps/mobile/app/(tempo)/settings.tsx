@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="settings"
       title="Settings"
       summary="No preferences have been changed yet. Defaults are here to help until something needs adjusting."
-      source="mobile/mobile-screens-b.jsx"
       actionLabel="Review preferences"
     />
   );

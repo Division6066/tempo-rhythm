@@ -14,7 +14,6 @@ export default function Screen() {
       screenId="habits"
       title="Habits"
       summary="No habits are tracked yet. Start with something kind and repeatable when it feels useful."
-      source="mobile/mobile-screens-b.jsx"
       actionLabel="Choose a tiny habit"
     />
   );
