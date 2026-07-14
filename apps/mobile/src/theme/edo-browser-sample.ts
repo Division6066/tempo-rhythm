@@ -1,17 +1,8 @@
-import { edoTheme } from "../../../../packages/theme/src/edo";
-
-type EdoLanguage = "en" | "he";
-type EdoDirection = "ltr" | "rtl";
-
-const sampleCopy = {
-  kanji: "道",
-  romaji: "Michi",
-  title: "Edo rhythm tokens",
-  body: "A quiet sumi-e system for planning without pressure.",
-} as const;
-
-const getDirection = (language: EdoLanguage): EdoDirection =>
-  language === "he" ? "rtl" : "ltr";
+import {
+  type EdoLanguage,
+  createEdoSampleModel,
+  edoTheme,
+} from "./edo-sample-model";
 
 export { edoTheme };
 
@@ -108,7 +99,7 @@ const renderTokenCss = (): string => `
 `;
 
 export const renderEdoThemeSampleHtml = (language: EdoLanguage): string => {
-  const direction = getDirection(language);
+  const { copy, direction } = createEdoSampleModel(language);
 
   return `<!doctype html>
     <html lang="${language}" dir="${direction}">
@@ -121,12 +112,12 @@ export const renderEdoThemeSampleHtml = (language: EdoLanguage): string => {
           <section data-testid="edo-token-card">
             <span data-testid="edo-direction-accent"></span>
             <div data-testid="enso-ring" aria-label="Enso ring"></div>
-            <div data-testid="kanji-romaji-pair" aria-label="${sampleCopy.kanji}, ${sampleCopy.romaji}">
-              <span class="edo-kanji">${sampleCopy.kanji}</span>
-              <span class="edo-romaji">${sampleCopy.romaji}</span>
+            <div data-testid="kanji-romaji-pair" aria-label="${copy.kanji}, ${copy.romaji}">
+              <span class="edo-kanji">${copy.kanji}</span>
+              <span class="edo-romaji">${copy.romaji}</span>
             </div>
-            <h1>${sampleCopy.title}</h1>
-            <p>${sampleCopy.body}</p>
+            <h1>${copy.title}</h1>
+            <p>${copy.body}</p>
           </section>
         </main>
       </body>

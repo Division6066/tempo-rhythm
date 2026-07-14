@@ -1,27 +1,20 @@
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { edoTheme } from "../../../../packages/theme/src/edo";
-
-type EdoLanguage = "en" | "he";
-type EdoDirection = "ltr" | "rtl";
-
-const sampleCopy = {
-  kanji: "道",
-  romaji: "Michi",
-  title: "Edo rhythm tokens",
-  body: "A quiet sumi-e system for planning without pressure.",
-} as const;
-
-const getDirection = (language: EdoLanguage): EdoDirection =>
-  language === "he" ? "rtl" : "ltr";
+import {
+  type EdoDirection,
+  type EdoLanguage,
+  createEdoSampleModel,
+  edoSampleCopy,
+  edoTheme,
+} from "./edo-sample-model";
 
 export { edoTheme };
 
 export function KanjiRomajiPair() {
   return (
     <View
-      accessibilityLabel={`${sampleCopy.kanji}, ${sampleCopy.romaji}`}
+      accessibilityLabel={`${edoSampleCopy.kanji}, ${edoSampleCopy.romaji}`}
       testID="kanji-romaji-pair"
       style={{
         gap: edoTheme.spacing.xs,
@@ -35,7 +28,7 @@ export function KanjiRomajiPair() {
           lineHeight: edoTheme.spacing.xxl + edoTheme.spacing.sm,
         }}
       >
-        {sampleCopy.kanji}
+        {edoSampleCopy.kanji}
       </Text>
       <Text
         style={{
@@ -46,13 +39,22 @@ export function KanjiRomajiPair() {
           textTransform: "uppercase",
         }}
       >
-        {sampleCopy.romaji}
+        {edoSampleCopy.romaji}
       </Text>
     </View>
   );
 }
 
-export function EnsoRing() {
+export function EnsoRing({
+  direction = "ltr",
+}: {
+  direction?: EdoDirection;
+}) {
+  const accentBorder =
+    direction === "rtl"
+      ? { borderLeftColor: edoTheme.colors.vermilion }
+      : { borderRightColor: edoTheme.colors.vermilion };
+
   return (
     <View
       accessibilityLabel="Enso ring"
@@ -60,10 +62,10 @@ export function EnsoRing() {
       style={{
         borderColor: edoTheme.colors.indigo,
         borderRadius: edoTheme.radii.full,
-        borderRightColor: edoTheme.colors.vermilion,
         borderWidth: edoTheme.spacing.xs,
         height: edoTheme.spacing.xxl,
         width: edoTheme.spacing.xxl,
+        ...accentBorder,
       }}
     />
   );
@@ -74,7 +76,7 @@ export function EdoSampleScreen({
 }: {
   language?: EdoLanguage;
 }) {
-  const direction = getDirection(language);
+  const { copy, direction } = createEdoSampleModel(language);
   const isRtl = direction === "rtl";
 
   return (
@@ -101,7 +103,7 @@ export function EdoSampleScreen({
             gap: edoTheme.spacing.md,
           }}
         >
-          <EnsoRing />
+          <EnsoRing direction={direction} />
           <KanjiRomajiPair />
         </View>
         <View
@@ -123,7 +125,7 @@ export function EdoSampleScreen({
               fontSize: edoTheme.spacing.xl,
             }}
           >
-            {sampleCopy.title}
+            {copy.title}
           </Text>
           <Text
             style={{
@@ -132,7 +134,7 @@ export function EdoSampleScreen({
               fontSize: edoTheme.spacing.md,
             }}
           >
-            {sampleCopy.body}
+            {copy.body}
           </Text>
         </View>
       </View>
