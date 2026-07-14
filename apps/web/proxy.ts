@@ -5,6 +5,8 @@ import {
 } from "@convex-dev/auth/nextjs/server";
 import type { NextRequest } from "next/server";
 
+const isPlaywrightAuthBypass = process.env.PLAYWRIGHT_BYPASS_AUTH === "1";
+
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in",
@@ -15,7 +17,7 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
-export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
+const authMiddleware = convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   const { convexAuth } = ctx;
   let isAuthenticated = false;
   try {
@@ -34,6 +36,12 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
     // Optional: redirect signed-in users away from marketing/auth-only routes.
   }
 });
+
+function playwrightBypassMiddleware() {
+  return undefined;
+}
+
+export default isPlaywrightAuthBypass ? playwrightBypassMiddleware : authMiddleware;
 
 export const config = {
   matcher: [
