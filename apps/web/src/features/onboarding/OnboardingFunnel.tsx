@@ -86,7 +86,7 @@ export function OnboardingFunnel() {
   }
 
   function sendStarter() {
-    setChatInput(selectedStarter.message);
+    setChatInput("");
     setStep("first-chat");
   }
 
@@ -394,8 +394,8 @@ function FirstChatStep({
   return (
     <div>
       <StepHeader eyebrow="Step 5 · first chat" title="First chat">
-        The thread is interactive now. You can send the starter as-is or soften it before the
-        conversation continues.
+        The thread is interactive now. Your starter opened the conversation; add one more line
+        only if it feels useful.
       </StepHeader>
 
       <div
@@ -421,6 +421,7 @@ function FirstChatStep({
           data-testid="first-chat-input"
           id="first-chat-input"
           onChange={(event) => onChatInputChange(event.currentTarget.value)}
+          placeholder="Add one small detail, or press Send when you are ready"
           value={chatInput}
         />
       </div>
