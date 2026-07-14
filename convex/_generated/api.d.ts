@@ -24,6 +24,7 @@ import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
 import type * as notes from "../notes.js";
 import type * as revenuecat from "../revenuecat.js";
+import type * as routines from "../routines.js";
 import type * as streaks from "../streaks.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   notes: typeof notes;
   revenuecat: typeof revenuecat;
+  routines: typeof routines;
   streaks: typeof streaks;
   tasks: typeof tasks;
   users: typeof users;
