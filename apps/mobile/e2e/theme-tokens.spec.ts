@@ -13,64 +13,73 @@ const tokenColorToCss = (hexColor: string): string => {
   return `rgb(${red}, ${green}, ${blue})`;
 };
 
-test("Edo sample screen renders from tokens and mirrors in RTL", async ({
-  page,
-}) => {
-  await page.setContent(renderEdoThemeSampleHtml("he"));
+const isPlaywrightRunner = process.argv.some((argument) =>
+  argument.includes("playwright")
+);
 
-  const screen = page.getByTestId("edo-sample-screen");
-  await expect(screen).toHaveAttribute("dir", "rtl");
+if (isPlaywrightRunner) {
+  test("Edo sample screen renders from tokens and mirrors in RTL", async ({
+    page,
+  }) => {
+    await page.setContent(renderEdoThemeSampleHtml("he"));
 
-  await expect(page.getByTestId("kanji-romaji-pair")).toContainText("道");
-  await expect(page.getByTestId("kanji-romaji-pair")).toContainText("Michi");
+    const screen = page.getByTestId("edo-sample-screen");
+    await expect(screen).toHaveAttribute("dir", "rtl");
 
-  await expect(page.getByTestId("enso-ring")).toBeVisible();
+    await expect(page.getByTestId("kanji-romaji-pair")).toContainText("道");
+    await expect(page.getByTestId("kanji-romaji-pair")).toContainText("Michi");
 
-  await expect(screen).toHaveCSS(
-    "background-color",
-    tokenColorToCss(edoTheme.colors.washi)
-  );
-  await expect(screen).toHaveCSS("color", tokenColorToCss(edoTheme.colors.sumi));
-  await expect(screen).toHaveCSS(
-    "font-family",
-    new RegExp(edoTheme.type.body)
-  );
-  await expect(screen).toHaveCSS(
-    "padding-inline-start",
-    `${edoTheme.spacing.lg}px`
-  );
+    await expect(page.getByTestId("enso-ring")).toBeVisible();
 
-  const tokenCard = page.getByTestId("edo-token-card");
-  await expect(tokenCard).toHaveCSS(
-    "border-color",
-    tokenColorToCss(edoTheme.colors.goldLeaf)
-  );
-  await expect(tokenCard).toHaveCSS(
-    "padding-inline-start",
-    `${edoTheme.spacing.md}px`
-  );
+    await expect(screen).toHaveCSS(
+      "background-color",
+      tokenColorToCss(edoTheme.colors.washi)
+    );
+    await expect(screen).toHaveCSS(
+      "color",
+      tokenColorToCss(edoTheme.colors.sumi)
+    );
+    await expect(screen).toHaveCSS(
+      "font-family",
+      new RegExp(edoTheme.type.body)
+    );
+    await expect(screen).toHaveCSS(
+      "padding-inline-start",
+      `${edoTheme.spacing.lg}px`
+    );
 
-  const rtlAccent = await page
-    .getByTestId("edo-direction-accent")
-    .boundingBox();
-  const rtlCard = await tokenCard.boundingBox();
+    const tokenCard = page.getByTestId("edo-token-card");
+    await expect(tokenCard).toHaveCSS(
+      "border-color",
+      tokenColorToCss(edoTheme.colors.goldLeaf)
+    );
+    await expect(tokenCard).toHaveCSS(
+      "padding-inline-start",
+      `${edoTheme.spacing.md}px`
+    );
 
-  expect(rtlAccent).not.toBeNull();
-  expect(rtlCard).not.toBeNull();
-  expect(rtlAccent!.x).toBeGreaterThan(rtlCard!.x + rtlCard!.width / 2);
+    const rtlAccent = await page
+      .getByTestId("edo-direction-accent")
+      .boundingBox();
+    const rtlCard = await tokenCard.boundingBox();
 
-  await page.setContent(renderEdoThemeSampleHtml("en"));
-  await expect(page.getByTestId("edo-sample-screen")).toHaveAttribute(
-    "dir",
-    "ltr"
-  );
+    expect(rtlAccent).not.toBeNull();
+    expect(rtlCard).not.toBeNull();
+    expect(rtlAccent!.x).toBeGreaterThan(rtlCard!.x + rtlCard!.width / 2);
 
-  const ltrAccent = await page
-    .getByTestId("edo-direction-accent")
-    .boundingBox();
-  const ltrCard = await page.getByTestId("edo-token-card").boundingBox();
+    await page.setContent(renderEdoThemeSampleHtml("en"));
+    await expect(page.getByTestId("edo-sample-screen")).toHaveAttribute(
+      "dir",
+      "ltr"
+    );
 
-  expect(ltrAccent).not.toBeNull();
-  expect(ltrCard).not.toBeNull();
-  expect(ltrAccent!.x).toBeLessThan(ltrCard!.x + ltrCard!.width / 2);
-});
+    const ltrAccent = await page
+      .getByTestId("edo-direction-accent")
+      .boundingBox();
+    const ltrCard = await page.getByTestId("edo-token-card").boundingBox();
+
+    expect(ltrAccent).not.toBeNull();
+    expect(ltrCard).not.toBeNull();
+    expect(ltrAccent!.x).toBeLessThan(ltrCard!.x + ltrCard!.width / 2);
+  });
+}
