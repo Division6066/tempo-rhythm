@@ -15,8 +15,12 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
+const isPlaywrightFixtureRoute = createRouteMatcher(["/projects/aw-34/kanban"]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   const { convexAuth } = ctx;
+  const canShowPlaywrightFixtures =
+    process.env.PLAYWRIGHT_E2E === "1" && isPlaywrightFixtureRoute(request);
   let isAuthenticated = false;
   try {
     isAuthenticated = await convexAuth.isAuthenticated();
@@ -24,7 +28,7 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
     isAuthenticated = false;
   }
 
-  if (!(isPublicRoute(request) || isAuthenticated)) {
+  if (!(isPublicRoute(request) || canShowPlaywrightFixtures || isAuthenticated)) {
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const params = new URLSearchParams({ next: nextPath });
     return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
