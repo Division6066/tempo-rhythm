@@ -6,6 +6,16 @@ const elapsedSelector = '[data-testid="session-player-elapsed"]';
 const isPlaywrightRunner = process.argv.some((arg) =>
   arg.includes('playwright')
 );
+const walkthroughDelayMs =
+  process.env.SESSION_PLAYER_WALKTHROUGH === '1' ? 900 : 0;
+
+async function pauseForWalkthrough(page: Page, multiplier = 1): Promise<void> {
+  if (walkthroughDelayMs === 0) {
+    return;
+  }
+
+  await page.waitForTimeout(walkthroughDelayMs * multiplier);
+}
 
 async function readElapsedSeconds(page: Page): Promise<number> {
   const text = await page.getByTestId('session-player-elapsed').innerText();
@@ -47,6 +57,7 @@ if (isPlaywrightRunner) {
     await expect(page.getByTestId('session-player-status')).toContainText(
       'running'
     );
+    await pauseForWalkthrough(page);
 
     await page.waitForFunction((selector) => {
       const text = document.querySelector(selector)?.textContent ?? '';
@@ -59,6 +70,7 @@ if (isPlaywrightRunner) {
       'paused'
     );
     const pausedElapsed = await readElapsedSeconds(page);
+    await pauseForWalkthrough(page);
 
     await page.waitForTimeout(600);
     expect(await readElapsedSeconds(page)).toBe(pausedElapsed);
@@ -67,6 +79,7 @@ if (isPlaywrightRunner) {
     await expect(page.getByTestId('session-player-status')).toContainText(
       'running'
     );
+    await pauseForWalkthrough(page);
     await page.waitForFunction(
       ([selector, frozenElapsed]) => {
         const text = document.querySelector(selector)?.textContent ?? '';
@@ -81,6 +94,7 @@ if (isPlaywrightRunner) {
       page.getByTestId('session-player-background-state')
     ).toContainText('Saved while backgrounded');
     const hiddenElapsed = await readElapsedSeconds(page);
+    await pauseForWalkthrough(page);
     await page.waitForTimeout(600);
     expect(await readElapsedSeconds(page)).toBe(hiddenElapsed);
 
@@ -88,6 +102,7 @@ if (isPlaywrightRunner) {
     await expect(
       page.getByTestId('session-player-background-state')
     ).toContainText('Resumed correctly after background');
+    await pauseForWalkthrough(page);
     await page.waitForFunction(
       ([selector, frozenElapsed]) => {
         const text = document.querySelector(selector)?.textContent ?? '';
@@ -104,6 +119,7 @@ if (isPlaywrightRunner) {
     await expect(page.getByTestId('session-log-row')).toContainText(
       'seed-morning-reset'
     );
+    await pauseForWalkthrough(page, 2);
 
     const logPayload = await page.evaluate(
       (key) => window.localStorage.getItem(key),
