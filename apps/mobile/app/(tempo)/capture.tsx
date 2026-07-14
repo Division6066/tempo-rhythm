@@ -6,19 +6,16 @@
  * @summary: Modal capture composer with voice + text.
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { TempoEmptyState } from "@/components/TempoEmptyState";
 
 export default function Screen() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6 gap-3">
-        <Text className="text-2xl font-semibold text-foreground">Capture</Text>
-        <Text className="text-sm text-muted-foreground">Modal capture composer with voice + text.</Text>
-        <Text className="text-xs text-muted-foreground font-mono">
-          scaffold · port from mobile/mobile-screens-a.jsx
-        </Text>
-      </View>
-    </SafeAreaView>
+    <TempoEmptyState
+      screenId="capture"
+      title="Capture"
+      summary="Nothing has been captured yet. You can drop a thought here without sorting it first."
+      source="mobile/mobile-screens-a.jsx"
+      actionLabel="Capture a loose thought"
+    />
   );
 }

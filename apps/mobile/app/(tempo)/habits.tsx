@@ -6,19 +6,16 @@
  * @summary: Mobile habits with ring rows.
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { TempoEmptyState } from "@/components/TempoEmptyState";
 
 export default function Screen() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6 gap-3">
-        <Text className="text-2xl font-semibold text-foreground">Habits</Text>
-        <Text className="text-sm text-muted-foreground">Mobile habits with ring rows.</Text>
-        <Text className="text-xs text-muted-foreground font-mono">
-          scaffold · port from mobile/mobile-screens-b.jsx
-        </Text>
-      </View>
-    </SafeAreaView>
+    <TempoEmptyState
+      screenId="habits"
+      title="Habits"
+      summary="No habits are tracked yet. Start with something kind and repeatable when it feels useful."
+      source="mobile/mobile-screens-b.jsx"
+      actionLabel="Choose a tiny habit"
+    />
   );
 }
