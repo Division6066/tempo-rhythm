@@ -9,6 +9,7 @@
     "types": ["bun", "node"]
   },
   "include": [
+    "apps/mobile/nativewind-env.d.ts",
     "apps/mobile/app/(tempo)/settings.tsx",
     "apps/mobile/e2e/settings.spec.ts",
     "apps/mobile/lib/prefsStore.ts"
