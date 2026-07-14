@@ -26,7 +26,7 @@ function GateFrame({
   children,
   dataPaywall,
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   dataPaywall: string;
 }) {
   return h(
