@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import type { ListRenderItem } from 'react-native';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { rtl } from '@/lib/rtl';
@@ -52,9 +53,45 @@ const routines: Routine[] = [
   },
 ];
 
+const rtlRowDirection = Platform.OS === 'web' ? 'row' : rtl.flexDirection;
+
 const renderRoutine: ListRenderItem<Routine> = ({ item }) => (
   <RoutineCard routine={item} />
 );
+
+function useWebRtlDocumentDirection() {
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      return;
+    }
+
+    const html = globalThis.document?.documentElement;
+    const body = globalThis.document?.body;
+    if (!html || !body) {
+      return;
+    }
+
+    const previousHtmlDir = html.getAttribute('dir');
+    const previousBodyDir = body.getAttribute('dir');
+
+    html.setAttribute('dir', 'rtl');
+    body.setAttribute('dir', 'rtl');
+
+    return () => {
+      restoreDir(html, previousHtmlDir);
+      restoreDir(body, previousBodyDir);
+    };
+  }, []);
+}
+
+function restoreDir(element: HTMLElement, value: string | null) {
+  if (value === null) {
+    element.removeAttribute('dir');
+    return;
+  }
+
+  element.setAttribute('dir', value);
+}
 
 function RoutineLibraryHeader() {
   return (
@@ -161,8 +198,10 @@ function RoutineCard({ routine }: { routine: Routine }) {
 }
 
 export default function Screen() {
+  useWebRtlDocumentDirection();
+
   return (
-    <SafeAreaView className="flex-1 bg-background" style={styles.screen}>
+    <SafeAreaView className="flex-1 bg-background">
       <FlatList
         ListHeaderComponent={<RoutineLibraryHeader />}
         contentContainerStyle={styles.listContent}
@@ -176,9 +215,6 @@ export default function Screen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    writingDirection: 'rtl',
-  },
   listContent: {
     gap: 16,
     padding: 24,
@@ -202,7 +238,7 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   categoryRow: {
-    flexDirection: rtl.flexDirection,
+    flexDirection: rtlRowDirection,
     gap: 8,
     marginTop: 8,
     width: '100%',
@@ -224,7 +260,7 @@ const styles = StyleSheet.create({
   },
   cardTopRow: {
     alignItems: 'center',
-    flexDirection: rtl.flexDirection,
+    flexDirection: rtlRowDirection,
     gap: 12,
     justifyContent: 'space-between',
   },

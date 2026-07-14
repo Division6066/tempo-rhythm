@@ -10,8 +10,13 @@ const convexUrl = 'https://example.convex.cloud';
 let mobileServer: ReturnType<typeof spawn> | undefined;
 let serverOutput = '';
 
+test.setTimeout(120_000);
+
 test.describe('Movement library', () => {
-  test.beforeAll(async () => {
+  test.beforeAll(async ({ browserName }, testInfo) => {
+    void browserName;
+    testInfo.setTimeout(120_000);
+
     mobileServer = spawn('bun', ['run', 'web', '--', '--port', String(port)], {
       cwd: 'apps/mobile',
       env: {
@@ -41,14 +46,10 @@ test.describe('Movement library', () => {
   test('RTL category and routine list renders correctly in Hebrew', async ({
     page,
   }) => {
-    await page.addInitScript(() => {
-      document.documentElement.setAttribute('dir', 'rtl');
-      document.body.setAttribute('dir', 'rtl');
-    });
-
     await page.goto(routinesUrl, { waitUntil: 'networkidle' });
 
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.locator('body')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByTestId('movement-library-list')).toBeVisible();
     await expect(page.getByTestId('movement-library-eyebrow')).toHaveText(
       'ספריית תנועה'
