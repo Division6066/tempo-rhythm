@@ -11,12 +11,13 @@
  * - פיתוח מקומי: `bunx convex dev` (משתמש ב-dev deployment)
  * - ייצור: `bunx convex deploy` (משתמש ב-prod deployment)
  */
-export function getConvexUrl(): string {
-  const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL;
+const DEFAULT_CONVEX_URL = 'https://precious-wildcat-890.eu-west-1.convex.cloud';
 
-  if (!convexUrl) {
-    throw new Error('חסרה כתובת Convex. הגדר EXPO_PUBLIC_CONVEX_URL ב-.env');
-  }
+export function getConvexUrl(): string {
+  const convexUrl =
+    process.env.EXPO_PUBLIC_CONVEX_URL ||
+    process.env.NEXT_PUBLIC_CONVEX_URL ||
+    DEFAULT_CONVEX_URL;
 
   return convexUrl;
 }
