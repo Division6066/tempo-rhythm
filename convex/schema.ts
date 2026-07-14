@@ -144,6 +144,43 @@ export default defineSchema({
     .index("by_userId_dueAt", ["userId", "dueAt"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  calendarEvents: defineTable({
+    userId: v.id("users"),
+    taskId: v.optional(v.id("tasks")),
+    title: v.string(),
+    description: v.optional(v.string()),
+    startAt: v.number(),
+    endAt: v.number(),
+    source: v.union(v.literal("manual"), v.literal("auto_schedule")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_startAt", ["userId", "startAt"])
+    .index("by_userId_deletedAt_startAt", ["userId", "deletedAt", "startAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_taskId", ["taskId"]),
+
+  autoScheduleProposals: defineTable({
+    userId: v.id("users"),
+    taskId: v.id("tasks"),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("rejected")),
+    title: v.string(),
+    description: v.optional(v.string()),
+    proposedStartAt: v.number(),
+    proposedEndAt: v.number(),
+    durationMinutes: v.number(),
+    reason: v.string(),
+    calendarEventId: v.optional(v.id("calendarEvents")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_status", ["userId", "status"])
+    .index("by_userId_status_deletedAt", ["userId", "status", "deletedAt"])
+    .index("by_taskId_status_deletedAt", ["taskId", "status", "deletedAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
   notes: defineTable({
     userId: v.id("users"),
     title: v.string(),
