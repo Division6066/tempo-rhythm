@@ -1,5 +1,5 @@
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { expect, type Page, test } from '@playwright/test';
 
 type BrowserCueEvent = {
   cue: 'audio' | 'haptic';
@@ -20,52 +20,6 @@ const baseUrl = `http://127.0.0.1:${port}`;
 const serverLines: string[] = [];
 
 let server: ChildProcessWithoutNullStreams | undefined;
-
-type LocatorLike = {
-  textContent: () => Promise<string | null>;
-};
-
-type PageLike = {
-  addInitScript: (callback: () => void) => Promise<void>;
-  evaluate: {
-    <Result>(callback: () => Result | Promise<Result>): Promise<Result>;
-    <Arg, Result>(
-      callback: (arg: Arg) => Result | Promise<Result>,
-      arg: Arg
-    ): Promise<Result>;
-  };
-  getByTestId: (testId: string) => LocatorLike;
-  goto: (url: string) => Promise<unknown>;
-  waitForTimeout: (timeoutMs: number) => Promise<void>;
-};
-
-type LocatorAssertion = {
-  toBeVisible: (options?: { timeout?: number }) => Promise<void>;
-  toHaveText: (text: string) => Promise<void>;
-};
-
-type ValueAssertion = {
-  toBeGreaterThanOrEqual: (expected: number) => void;
-  toBeLessThanOrEqual: (expected: number) => void;
-  toEqual: (expected: unknown) => void;
-  toHaveLength: (expected: number) => void;
-};
-
-type PlaywrightExpect = {
-  (actual: LocatorLike): LocatorAssertion;
-  (actual: unknown): ValueAssertion;
-};
-
-type PlaywrightTest = {
-  (title: string, callback: (args: { page: PageLike }) => Promise<void>): void;
-  afterAll: (callback: () => void) => void;
-  beforeAll: (callback: () => Promise<void>) => void;
-};
-
-type PlaywrightModule = {
-  expect: PlaywrightExpect;
-  test: PlaywrightTest;
-};
 
 async function waitForServer(): Promise<void> {
   const deadline = Date.now() + 90_000;
@@ -93,7 +47,7 @@ function readElapsedMs(text: string | null): number {
 }
 
 async function setVisibility(
-  page: PageLike,
+  page: Page,
   visibilityState: 'hidden' | 'visible'
 ): Promise<void> {
   await page.evaluate((nextVisibilityState) => {
@@ -109,7 +63,7 @@ async function setVisibility(
   }, visibilityState);
 }
 
-function registerBreathworkTimerSpec({ expect, test }: PlaywrightModule): void {
+function registerBreathworkTimerSpec(): void {
   test.beforeAll(async () => {
     server = spawn(
       'bun',
@@ -208,9 +162,5 @@ const launchedByPlaywright = process.argv.some((arg) =>
 );
 
 if (launchedByPlaywright) {
-  const requireFromSpec = createRequire(import.meta.url);
-  const playwrightModule = requireFromSpec(
-    '@playwright/test'
-  ) as PlaywrightModule;
-  registerBreathworkTimerSpec(playwrightModule);
+  registerBreathworkTimerSpec();
 }
