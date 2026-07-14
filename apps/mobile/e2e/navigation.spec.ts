@@ -9,57 +9,59 @@ const modules = [
   { key: "settings", label: "Settings", path: "/settings" },
 ] as const;
 
-test.describe("module shell navigation", () => {
-  for (const direction of ["ltr", "rtl"] as const) {
-    test(`renders every module route with styled empty states in ${direction.toUpperCase()}`, async ({
+if (typeof Bun === "undefined") {
+  test.describe("module shell navigation", () => {
+    for (const direction of ["ltr", "rtl"] as const) {
+      test(`renders every module route with styled empty states in ${direction.toUpperCase()}`, async ({
+        page,
+      }) => {
+        await setDirection(page, direction);
+
+        for (const module of modules) {
+          await page.goto(module.path);
+          await assertModuleScreen(page, module.label);
+        }
+      });
+
+      test(`tab navigation works in ${direction.toUpperCase()}`, async ({
+        page,
+      }) => {
+        await setDirection(page, direction);
+        await page.goto("/home");
+
+        for (const module of modules) {
+          await page.getByTestId(`module-nav-${module.key}`).click();
+          await expect(page).toHaveURL(new RegExp(`${module.path}$`));
+          await assertModuleScreen(page, module.label);
+        }
+      });
+    }
+
+    test("RTL mode keeps module navigation reachable by keyboard focus", async ({
       page,
     }) => {
-      await setDirection(page, direction);
-
-      for (const module of modules) {
-        await page.goto(module.path);
-        await assertModuleScreen(page, module.label);
-      }
-    });
-
-    test(`tab navigation works in ${direction.toUpperCase()}`, async ({
-      page,
-    }) => {
-      await setDirection(page, direction);
+      await setDirection(page, "rtl");
       await page.goto("/home");
 
+      const focusedLabels: string[] = [];
+      for (let index = 0; index < modules.length; index += 1) {
+        await page.keyboard.press("Tab");
+        focusedLabels.push(
+          await page.evaluate(() => {
+            const active = document.activeElement;
+            return active?.textContent?.trim() ?? "";
+          }),
+        );
+      }
+
       for (const module of modules) {
-        await page.getByTestId(`module-nav-${module.key}`).click();
-        await expect(page).toHaveURL(new RegExp(`${module.path}$`));
-        await assertModuleScreen(page, module.label);
+        expect(
+          focusedLabels.some((label) => label.includes(module.label)),
+        ).toBeTruthy();
       }
     });
-  }
-
-  test("RTL mode keeps module navigation reachable by keyboard focus", async ({
-    page,
-  }) => {
-    await setDirection(page, "rtl");
-    await page.goto("/home");
-
-    const focusedLabels: string[] = [];
-    for (let index = 0; index < modules.length; index += 1) {
-      await page.keyboard.press("Tab");
-      focusedLabels.push(
-        await page.evaluate(() => {
-          const active = document.activeElement;
-          return active?.textContent?.trim() ?? "";
-        }),
-      );
-    }
-
-    for (const module of modules) {
-      expect(
-        focusedLabels.some((label) => label.includes(module.label)),
-      ).toBeTruthy();
-    }
   });
-});
+}
 
 async function assertModuleScreen(
   page: Page,
