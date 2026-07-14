@@ -72,7 +72,7 @@ async function gotoTickets(page: Page, fixture: "aw34" | "empty") {
 test("renders six tickets in the correct state columns", async ({ page }) => {
   await gotoTickets(page, "aw34");
 
-  await expect(page.getByRole("heading", { name: "Ticket board" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ticket board", exact: true })).toBeVisible();
   await expect(page.getByTestId("column-backlog")).toHaveAttribute("data-count", "2");
   await expect(page.getByTestId("column-ready")).toHaveAttribute("data-count", "1");
   await expect(page.getByTestId("column-in-progress")).toHaveAttribute("data-count", "1");
