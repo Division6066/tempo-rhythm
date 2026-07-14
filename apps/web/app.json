@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Agentwright",
+    "slug": "agentwright-web",
+    "version": "0.1.0",
+    "scheme": "agentwright",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./public/favicon.ico"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
