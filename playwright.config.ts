@@ -15,7 +15,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "CONVEX_AGENT_MODE=anonymous bun x convex dev",
+      command: "bash scripts/start-convex-e2e.sh",
       url: convexUrl,
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
