@@ -3,10 +3,13 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import path from "node:path";
 
 const mobileRoot = path.resolve(__dirname, "..");
-const port = 19086;
+const port = 19176;
 const baseUrl = `http://127.0.0.1:${port}`;
 
 let server: ChildProcessWithoutNullStreams | undefined;
+let serverOutput = "";
+
+test.setTimeout(120_000);
 
 async function waitForMobileWebServer() {
   const deadline = Date.now() + 90_000;
@@ -22,10 +25,19 @@ async function waitForMobileWebServer() {
       lastError = error;
     }
 
+    if (server?.exitCode !== null) {
+      throw new Error(`Expo web server exited before it was ready.\n${serverOutput}`);
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
 
-  throw new Error(`Expo web server did not become ready. Last error: ${String(lastError)}`);
+  if (server?.pid && !server.killed) {
+    server.kill("SIGTERM");
+  }
+  throw new Error(
+    `Expo web server did not become ready. Last error: ${String(lastError)}\n${serverOutput}`,
+  );
 }
 
 async function ringDashOffset(page: Page) {
@@ -39,13 +51,24 @@ async function ringDashOffset(page: Page) {
 }
 
 test.beforeAll(async () => {
-  server = spawn("bun", ["run", "web", "--", "--port", String(port), "--non-interactive"], {
+  test.setTimeout(120_000);
+  serverOutput = "";
+  server = spawn("bunx", ["expo", "start", "--clear", "--web", "--port", String(port)], {
     cwd: mobileRoot,
     env: {
       ...process.env,
+      BROWSER: "none",
+      CI: "1",
+      EXPO_NO_TELEMETRY: "1",
       EXPO_PUBLIC_CONVEX_URL:
         process.env.EXPO_PUBLIC_CONVEX_URL ?? "https://precious-wildcat-890.eu-west-1.convex.cloud",
     },
+  });
+  server.stdout.on("data", (chunk) => {
+    serverOutput += chunk.toString();
+  });
+  server.stderr.on("data", (chunk) => {
+    serverOutput += chunk.toString();
   });
 
   await waitForMobileWebServer();

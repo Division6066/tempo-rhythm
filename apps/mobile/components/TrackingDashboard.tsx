@@ -41,6 +41,9 @@ export function TrackingDashboard() {
             accessibilityLabel={`Streak progress: ${streak} of ${weeklyStreakGoal}`}
             accessibilityRole="progressbar"
             accessibilityValue={{ min: 0, max: weeklyStreakGoal, now: streak }}
+            aria-valuemax={weeklyStreakGoal}
+            aria-valuemin={0}
+            aria-valuenow={streak}
           >
             <Circle
               cx={ringSize / 2}
