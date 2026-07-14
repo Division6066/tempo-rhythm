@@ -15,6 +15,8 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
+const isApprovalsFixtureRoute = createRouteMatcher(["/approvals"]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   const { convexAuth } = ctx;
   let isAuthenticated = false;
@@ -24,7 +26,10 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
     isAuthenticated = false;
   }
 
-  if (!(isPublicRoute(request) || isAuthenticated)) {
+  const allowApprovalsFixture =
+    process.env.APPROVALS_E2E_FIXTURE === "1" && isApprovalsFixtureRoute(request);
+
+  if (!(isPublicRoute(request) || allowApprovalsFixture || isAuthenticated)) {
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const params = new URLSearchParams({ next: nextPath });
     return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
