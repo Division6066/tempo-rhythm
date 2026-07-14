@@ -16,7 +16,8 @@ async function expectMovementCategories(page: Page) {
   }
 }
 
-test.describe("movement routine library", () => {
+if (process.env.TEMPO_PLAYWRIGHT === "1") {
+  test.describe("movement routine library", () => {
   test("lists routines by category and opens a routine in the session player", async ({
     page,
   }) => {
@@ -49,4 +50,5 @@ test.describe("movement routine library", () => {
     await expect(player).toHaveAttribute("dir", "rtl");
     await expect(page.getByText("Animal Flow Primer")).toBeVisible();
   });
-});
+  });
+}

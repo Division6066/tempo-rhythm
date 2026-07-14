@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 const mobileWebPort = 8081;
 const mobileWebUrl = `http://127.0.0.1:${mobileWebPort}`;
 
+process.env.TEMPO_PLAYWRIGHT = "1";
+
 export default defineConfig({
   expect: {
     timeout: 10_000,
