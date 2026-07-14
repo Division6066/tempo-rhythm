@@ -35,6 +35,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
 
   // ---- Library -------------------------------------------------------------
   { slug: "tasks", title: "Tasks", route: "/tasks", category: "Library", icon: "CheckSquare" },
+  { slug: "tickets", title: "Tickets", route: "/tickets", category: "Library", icon: "CheckSquare" },
   { slug: "notes", title: "Notes", route: "/notes", category: "Library", icon: "BookOpen" },
   { slug: "journal", title: "Journal", route: "/journal", category: "Library", icon: "Book" },
   { slug: "calendar", title: "Calendar", route: "/calendar", category: "Library", icon: "Calendar" },
