@@ -1,0 +1,17 @@
+{
+  "name": "airi-companion-landing",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf dist && mkdir -p dist && cp -R src/. dist",
+    "check": "biome check src ../../tests/e2e/landing.spec.ts",
+    "clean": "rm -rf dist",
+    "dev": "python3 -m http.server 4173 --directory src --bind 127.0.0.1",
+    "lint": "biome lint src ../../tests/e2e/landing.spec.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.8",
+    "typescript": "^5.9.3"
+  }
+}

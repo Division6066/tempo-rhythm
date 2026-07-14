@@ -23,9 +23,7 @@ body {
     radial-gradient(circle at 82% 18%, rgba(168, 145, 255, 0.2), transparent 30rem),
     linear-gradient(135deg, #130f18 0%, #1a1223 46%, #0b1218 100%);
   color: var(--ink);
-  font-family:
-    "Avenir Next", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
+  font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body::before {
@@ -189,9 +187,7 @@ h1 {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 48px;
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.12), transparent 45%),
-    var(--panel);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), transparent 45%), var(--panel);
   box-shadow: 0 40px 120px rgba(0, 0, 0, 0.34);
 }
 
