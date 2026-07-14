@@ -65,7 +65,7 @@ test.afterAll(async () => {
 });
 
 async function gotoTickets(page: Page, fixture: "aw34" | "empty") {
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize({ width: 1800, height: 900 });
   await page.goto(`${baseUrl}/tickets?fixture=${fixture}`);
   await page.waitForLoadState("networkidle");
 }
