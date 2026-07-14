@@ -1,8 +1,10 @@
-import { Link, Slot } from "expo-router";
+import { Link, Slot, usePathname } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { shellRoutes } from "../components/shell/routes";
 
 export default function RootLayout() {
+  const pathname = usePathname();
+
   return (
     <View style={styles.shell}>
       <View style={styles.sidebar}>
@@ -10,8 +12,13 @@ export default function RootLayout() {
         <Text style={styles.subtitle}>Universal shell</Text>
         <View accessibilityRole="navigation" style={styles.nav}>
           {shellRoutes.map((route) => (
-            <Link key={route.href} accessibilityRole="link" href={route.href} style={styles.navLink}>
-              <Text style={styles.navText}>{route.label}</Text>
+            <Link
+              key={route.href}
+              accessibilityRole="link"
+              href={route.href}
+              style={[styles.navLink, pathname === route.href ? styles.navLinkActive : null]}
+            >
+              <Text style={[styles.navText, pathname === route.href ? styles.navTextActive : null]}>{route.label}</Text>
             </Link>
           ))}
         </View>
@@ -55,10 +62,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  navLinkActive: {
+    backgroundColor: "#fffaf3",
+  },
   navText: {
     color: "#fffaf3",
     fontSize: 16,
     fontWeight: "700",
+  },
+  navTextActive: {
+    color: "#231f1b",
   },
   content: {
     flex: 1,

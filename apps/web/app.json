@@ -8,8 +8,7 @@
     "userInterfaceStyle": "automatic",
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./public/favicon.ico"
+      "output": "static"
     },
     "plugins": ["expo-router"],
     "experiments": {

@@ -41,6 +41,7 @@
     "expo-status-bar": "~3.0.9",
     "lucide-react": "^0.546.0",
     "next": "^16.0.0",
+    "playwright": "^1.61.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",

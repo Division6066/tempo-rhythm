@@ -1,7 +1,10 @@
-import { createServer, type Server } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join, normalize, resolve, sep } from "node:path";
-import { test, expect } from "@playwright/test";
+const { createServer } = require("node:http");
+const { readFile } = require("node:fs/promises");
+const { createRequire } = require("node:module");
+const { extname, join, normalize, resolve, sep } = require("node:path");
+
+const cliRequire = createRequire(process.argv[1] || __filename);
+const { expect, test } = cliRequire("playwright/test");
 
 const webRoot = resolve(__dirname, "..");
 const exportRoot = join(webRoot, "dist");
@@ -20,7 +23,7 @@ const routes = [
   { path: "/usage", heading: "Usage" },
   { path: "/trash", heading: "Trash" },
   { path: "/settings", heading: "Settings" },
-] as const;
+];
 
 const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -31,13 +34,13 @@ const contentTypes = new Map([
   [".svg", "image/svg+xml"],
 ]);
 
-function safePathname(pathname: string): string {
+function safePathname(pathname) {
   const decodedPath = decodeURIComponent(pathname);
   const normalizedPath = normalize(decodedPath).replace(/^(\.\.(\/|\\|$))+/, "");
   return normalizedPath === sep ? "" : normalizedPath.replace(/^[/\\]+/, "");
 }
 
-async function createStaticServer(): Promise<{ server: Server; baseURL: string }> {
+async function createStaticServer() {
   const server = createServer(async (request, response) => {
     const requestUrl = new URL(request.url ?? "/", `http://${host}`);
     const pathname = safePathname(requestUrl.pathname);
@@ -56,7 +59,7 @@ async function createStaticServer(): Promise<{ server: Server; baseURL: string }
     }
   });
 
-  await new Promise<void>((resolveReady, rejectReady) => {
+  await new Promise((resolveReady, rejectReady) => {
     server.once("error", rejectReady);
     server.listen(0, host, () => {
       server.off("error", rejectReady);
@@ -72,8 +75,8 @@ async function createStaticServer(): Promise<{ server: Server; baseURL: string }
   return { server, baseURL: `http://${host}:${address.port}` };
 }
 
-let server: Server;
-let baseURL: string;
+let server;
+let baseURL;
 
 test.beforeAll(async () => {
   const staticServer = await createStaticServer();
@@ -82,7 +85,7 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  await new Promise<void>((resolveClose, rejectClose) => {
+  await new Promise((resolveClose, rejectClose) => {
     server.close((error) => {
       if (error) {
         rejectClose(error);
@@ -100,3 +103,13 @@ for (const route of routes) {
     await expect(page.getByRole("heading", { level: 1, name: route.heading })).toBeVisible();
   });
 }
+
+test("updates the browser URL when using shell navigation links", async ({ page }) => {
+  await page.goto(`${baseURL}/`);
+
+  for (const route of routes.slice(1)) {
+    await page.getByRole("link", { name: route.heading }).click();
+    await expect(page).toHaveURL(`${baseURL}${route.path}`);
+    await expect(page.getByRole("heading", { level: 1, name: route.heading })).toBeVisible();
+  }
+});
