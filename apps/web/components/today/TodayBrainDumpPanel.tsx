@@ -84,6 +84,18 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
     setSelected(new Set());
   }, []);
 
+  const updatePriorityTitle = useCallback((index: number, title: string) => {
+    setPlan((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        priorities: current.priorities.map((priority, priorityIndex) =>
+          priorityIndex === index ? { ...priority, title } : priority
+        ),
+      };
+    });
+  }, []);
+
   const runLocalPlan = useCallback(() => {
     if (!trimmedDraft) {
       setError("Paste the messy version first. Even a rough list is enough.");
@@ -230,7 +242,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                 if (applyHint) setApplyHint("");
               }}
               disabled={planningDisabled}
-              placeholder="Pay rent, answer Dana, call dentist, I am behind on groceries, maybe plan Sunday, fix the weird task bug, submit that form before tonight..."
+              placeholder="Pay rent, answer Dana, call dentist, groceries are low, maybe plan Sunday, fix the weird task bug, submit that form before tonight..."
               className="min-h-64 w-full resize-y rounded-[1.5rem] border border-border bg-background/85 px-4 py-4 text-base leading-7 text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] outline-none transition focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
             />
           </div>
@@ -454,7 +466,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                   const isChecked = selected.has(index);
                   return (
                     <li
-                      key={`${checkId}-${priority.title}`}
+                      key={checkId}
                       className="rounded-[1.5rem] border border-border/80 bg-card/90 p-4 shadow-[0_8px_24px_rgba(26,25,23,0.05)]"
                     >
                       <div className="flex flex-wrap items-start gap-3">
@@ -465,23 +477,36 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                             checked={isChecked}
                             onChange={() => toggleSelected(index)}
                             disabled={isApplying}
+                            aria-label={`Select proposal ${index + 1}: ${priority.title}`}
                             className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
                           />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <label htmlFor={checkId} className="cursor-pointer">
-                                <div className="flex flex-wrap items-center gap-3">
-                                  <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background">
-                                    {index + 1}
-                                  </span>
-                                  <h4 className="font-medium text-foreground">{priority.title}</h4>
-                                </div>
-                                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                                  {priority.reason}
-                                </p>
-                              </label>
+                              <div className="flex flex-wrap items-center gap-3">
+                                <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background">
+                                  {index + 1}
+                                </span>
+                                <label
+                                  htmlFor={`${checkId}-title`}
+                                  className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                                >
+                                  Task title
+                                </label>
+                              </div>
+                              <input
+                                id={`${checkId}-title`}
+                                type="text"
+                                value={priority.title}
+                                onChange={(event) => updatePriorityTitle(index, event.target.value)}
+                                disabled={isApplying}
+                                aria-label={`Edit proposal ${index + 1} title`}
+                                className="mt-3 min-h-11 w-full rounded-xl border border-border bg-background/80 px-3 py-2 font-medium text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none transition focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
+                              />
+                              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                                {priority.reason}
+                              </p>
                             </div>
 
                             <span

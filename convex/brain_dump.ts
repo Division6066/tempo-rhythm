@@ -40,6 +40,19 @@ export type BrainDumpPlan = {
   priorities: BrainDumpPriority[];
 };
 
+const urgencyValidator = v.union(v.literal("now"), v.literal("soon"), v.literal("later"));
+
+const priorityValidator = v.object({
+  title: v.string(),
+  reason: v.string(),
+  urgency: urgencyValidator,
+});
+
+const planValidator = v.object({
+  summary: v.string(),
+  priorities: v.array(priorityValidator),
+});
+
 function isUrgency(x: unknown): x is BrainDumpUrgency {
   return x === "now" || x === "soon" || x === "later";
 }
@@ -121,6 +134,7 @@ export const prioritize = action({
   args: {
     rawText: v.string(),
   },
+  returns: planValidator,
   handler: async (ctx, args): Promise<BrainDumpPlan> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {

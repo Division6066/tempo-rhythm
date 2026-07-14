@@ -129,9 +129,7 @@ function splitBrainDump(rawText: string) {
   const lines = prepared
     .split("\n")
     .flatMap((line) => line.split(/\s*;\s*/))
-    .flatMap((line) =>
-      line.length > 90 ? line.split(/\s*,\s*(?=[a-zA-Z(])/).filter(Boolean) : [line]
-    )
+    .flatMap((line) => line.split(/\s*,\s*(?=[a-zA-Z(])/).filter(Boolean))
     .map((line) => normalizeWhitespace(trimFiller(line)))
     .filter((line) => line.length >= 3);
 
