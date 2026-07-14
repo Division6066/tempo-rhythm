@@ -1,11 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "paths": {
-      "@/*": ["apps/mobile/*"]
+      "@/*": ["./apps/mobile/*"]
     },
     "types": ["bun", "node"]
   },
