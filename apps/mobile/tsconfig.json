@@ -16,9 +16,5 @@
     "nativewind-env.d.ts",
     ".expo/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".expo",
-    "scripts"
-  ]
+  "exclude": ["node_modules", ".expo", "e2e", "scripts"]
 }
