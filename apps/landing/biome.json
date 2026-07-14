@@ -6,7 +6,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["src/**/*.css", "../../tests/e2e/**/*.ts"]
+    "includes": ["check-static.ts", "src/**/*.css"]
   },
   "css": {
     "parser": {

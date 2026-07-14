@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "build": "rm -rf dist && mkdir -p dist && cp -R src/. dist",
-    "check": "biome check src ../../tests/e2e/landing.spec.ts",
+    "check": "cd ../.. && biome check tests/e2e/landing.spec.ts && cd apps/landing && biome check check-static.ts src/styles.css && bun run check:content",
+    "check:content": "bun check-static.ts",
     "clean": "rm -rf dist",
-    "lint": "biome lint src ../../tests/e2e/landing.spec.ts",
+    "lint": "cd ../.. && biome lint tests/e2e/landing.spec.ts && cd apps/landing && biome lint check-static.ts src/styles.css",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
-import { createServer, type Server } from "node:http";
 import { readFile } from "node:fs/promises";
+import { createServer, type Server } from "node:http";
 import { expect, test } from "@playwright/test";
 
 const landingRoot = `${process.cwd()}/apps/landing/src`;
@@ -16,7 +16,7 @@ test.beforeAll(async () => {
       const body = await readFile(filePath);
       response.setHeader(
         "content-type",
-        filePath.endsWith(".css") ? "text/css; charset=utf-8" : "text/html; charset=utf-8",
+        filePath.endsWith(".css") ? "text/css; charset=utf-8" : "text/html; charset=utf-8"
       );
       response.end(body);
     } catch {
@@ -60,9 +60,7 @@ test("public pre-login landing page has headline, value props, and signup CTA", 
   await expect(page.getByTestId("value-props")).toBeVisible();
   await expect(page.getByTestId("value-prop").first()).toBeVisible();
 
-  const cta = page
-    .getByRole("link", { name: /start|sign up|login|sign in/i })
-    .first();
+  const cta = page.getByRole("link", { name: /start|sign up|login|sign in/i }).first();
   await expect(cta).toBeVisible();
   await expect(cta).toHaveAttribute("href", /sign-?up|sign-?in|login|auth/);
 });
