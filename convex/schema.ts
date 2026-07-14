@@ -193,4 +193,16 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  providerKeys: defineTable({
+    userId: v.id("users"),
+    provider: v.union(v.literal("mistral")),
+    apiKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_provider", ["userId", "provider"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 });
