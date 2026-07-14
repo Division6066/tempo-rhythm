@@ -186,7 +186,7 @@ function TicketCard({
       <div className="flex items-start justify-between gap-3">
         <span className="font-mono text-caption text-muted-foreground">{ticket.id}</span>
         <Pill tone={ticket.dependsOn.length > 0 ? "slate" : "neutral"}>
-          {ticket.dependsOn.length} deps
+          {ticket.dependsOn.length} {ticket.dependsOn.length === 1 ? "dep" : "deps"}
         </Pill>
       </div>
       <h3 className="mt-3 text-small font-semibold leading-snug">{ticket.title}</h3>

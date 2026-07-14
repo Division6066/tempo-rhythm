@@ -85,6 +85,7 @@ test("renders six tickets in the correct state columns", async ({ page }) => {
   await expect(page.getByTestId("column-in-progress").getByTestId("ticket-card")).toHaveCount(1);
   await expect(page.getByTestId("column-review").getByTestId("ticket-card")).toHaveCount(1);
   await expect(page.getByTestId("column-done").getByTestId("ticket-card")).toHaveCount(1);
+  await expect(page.getByText("1 dep")).toHaveCount(2);
 
   await page.screenshot({
     path: join(artifactsDir, "tickets-board.png"),
