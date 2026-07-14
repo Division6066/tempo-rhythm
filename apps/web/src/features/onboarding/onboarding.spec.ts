@@ -132,7 +132,7 @@ test.describe("onboarding funnel", () => {
     }
   });
 
-  test("each step calls track() exactly once with a distinct event name", async ({ page }) => {
+  test("each step calls track exactly once with a distinct event name", async ({ page }) => {
     await installTrackSpy(page);
 
     await page.goto(`${baseUrl}/onboarding`);
