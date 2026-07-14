@@ -1,8 +1,8 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
 import { request as httpRequest } from "node:http";
-import { test, expect, type Page } from "@playwright/test";
+import { join } from "node:path";
+import { expect, type Page, test } from "@playwright/test";
 
 const port = Number(process.env.TICKETS_E2E_PORT ?? 4100);
 const baseUrl = `http://localhost:${port}`;
@@ -12,10 +12,20 @@ let server: ChildProcessWithoutNullStreams | undefined;
 
 async function canReachServer() {
   return new Promise<boolean>((resolve) => {
-    const req = httpRequest(baseUrl, { method: "GET", timeout: 500 }, (res) => {
-      res.resume();
-      resolve(true);
-    });
+    const req = httpRequest(
+      `${baseUrl}/tickets?fixture=empty`,
+      { method: "GET", timeout: 500 },
+      (res) => {
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          body += chunk;
+        });
+        res.on("end", () => {
+          resolve(res.statusCode === 200 && body.includes("No tickets here yet"));
+        });
+      }
+    );
     req.on("timeout", () => {
       req.destroy();
       resolve(false);
@@ -47,8 +57,7 @@ test.beforeAll(async () => {
     cwd: join(process.cwd(), "apps/web"),
     env: {
       ...process.env,
-      NEXT_PUBLIC_CONVEX_URL:
-        process.env.NEXT_PUBLIC_CONVEX_URL ?? "https://example.convex.cloud",
+      NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL ?? "https://example.convex.cloud",
     },
   });
 
@@ -113,7 +122,9 @@ test("empty project renders an empty state", async ({ page }) => {
   await gotoTickets(page, "empty");
 
   await expect(page.getByRole("heading", { name: "No tickets here yet" })).toBeVisible();
-  await expect(page.getByText("When a project has tickets, they will appear by state here.")).toBeVisible();
+  await expect(
+    page.getByText("When a project has tickets, they will appear by state here.")
+  ).toBeVisible();
   await page.screenshot({
     path: join(artifactsDir, "tickets-empty.png"),
     fullPage: true,

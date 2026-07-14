@@ -1,5 +1,5 @@
-import { TicketBoard } from "@/components/tickets/TicketBoard";
 import { aw34FixtureData, emptyTicketBoardData } from "@/components/tickets/fixture-data";
+import { TicketBoard } from "@/components/tickets/TicketBoard";
 import type { TicketBoardData } from "@/components/tickets/types";
 
 type TicketsSearchParams = {

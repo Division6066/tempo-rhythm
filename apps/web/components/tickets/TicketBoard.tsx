@@ -180,6 +180,7 @@ function TicketCard({
         selected ? "border-primary" : "border-border",
       ].join(" ")}
       data-testid="ticket-card"
+      id={ticket.id}
       onClick={onSelect}
       type="button"
     >
@@ -209,7 +210,9 @@ function TicketDetail({ ticket }: { ticket: Ticket | null }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-caption text-muted-foreground">{stateLabels[ticket.state]}</p>
+          <p className="font-mono text-caption text-muted-foreground">
+            {stateLabels[ticket.state]}
+          </p>
           <h2 className="mt-1 text-h2 font-serif">{ticket.id}</h2>
         </div>
         <Pill tone="orange">{ticket.owner}</Pill>
@@ -281,8 +284,8 @@ function TicketsEmptyState({ projectName }: { projectName: string }) {
         <Pill tone="slate">{projectName}</Pill>
         <h1 className="mt-5 text-h1 font-serif">No tickets here yet</h1>
         <p className="mx-auto mt-3 max-w-xl text-body leading-relaxed text-muted-foreground">
-          When a project has tickets, they will appear by state here. You can start with one
-          rough intent and keep the board calm until real work arrives.
+          When a project has tickets, they will appear by state here. You can start with one rough
+          intent and keep the board calm until real work arrives.
         </p>
         <form className="mx-auto mt-6 max-w-lg text-left">
           <label className="font-eyebrow" htmlFor="empty-ticket-intent">
