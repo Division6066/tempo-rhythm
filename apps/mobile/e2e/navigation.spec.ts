@@ -19,29 +19,35 @@ const notFoundCopy = "המסך הזה לא קיים.";
 let server: ChildProcessWithoutNullStreams | undefined;
 let serverOutput = "";
 
+async function isServerReady(): Promise<boolean> {
+  try {
+    const response = await fetch(baseUrl);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function waitForServer(): Promise<void> {
   const deadline = Date.now() + 60_000;
-  let lastError: unknown;
 
   while (Date.now() < deadline) {
-    try {
-      const response = await fetch(baseUrl);
-      if (response.ok) {
-        return;
-      }
-    } catch (error) {
-      lastError = error;
+    if (await isServerReady()) {
+      return;
     }
-
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   throw new Error(
-    `Expo web server did not become ready: ${String(lastError)}\n${serverOutput.slice(-4_000)}`
+    `Expo web server did not become ready.\n${serverOutput.slice(-4_000)}`
   );
 }
 
 test.beforeAll(async () => {
+  if (await isServerReady()) {
+    return;
+  }
+
   serverOutput = "";
   server = spawn("bun", ["run", "web", "--", "--port", String(port)], {
     cwd: appDir,
