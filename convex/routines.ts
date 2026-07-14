@@ -177,11 +177,15 @@ export const list = query({
 });
 
 export const getWithItems = query({
-  args: { routineId: v.id("routines") },
+  args: { routineId: v.string() },
   returns: v.union(routineDetailValidator, v.null()),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const routine = await ctx.db.get(args.routineId);
+    const routineId = ctx.db.normalizeId("routines", args.routineId);
+    if (!routineId) {
+      return null;
+    }
+    const routine = await ctx.db.get(routineId);
     if (!routine || routine.userId !== user._id || routine.deletedAt !== undefined) {
       return null;
     }

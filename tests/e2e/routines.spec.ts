@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const testEmail = "amitlevin65@protonmail.com";
+const testEmail = "e2e-routines@tempo.test";
 const testPassword = "TempoRoutinesE2E!2026";
 
 async function waitForRoutinesPath(page: Page) {

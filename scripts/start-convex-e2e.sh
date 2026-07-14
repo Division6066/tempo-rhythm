@@ -31,8 +31,16 @@ keys_json="$(
 jwt_private_key="$(printf "%s" "$keys_json" | bun -e 'const input = await new Response(Bun.stdin.stream()).json(); console.log(input.jwtPrivateKey);')"
 jwks="$(printf "%s" "$keys_json" | bun -e 'const input = await new Response(Bun.stdin.stream()).json(); console.log(input.jwks);')"
 
-printf "%s" "$jwt_private_key" | bun x convex env set JWT_PRIVATE_KEY >/dev/null
-printf "%s" "$jwks" | bun x convex env set JWKS >/dev/null
-printf "http://127.0.0.1:3000" | bun x convex env set SITE_URL >/dev/null
+set_convex_env() {
+  local name="$1"
+  local value="$2"
+  printf "%s" "$value" | CONVEX_AGENT_MODE=anonymous bun x convex env set "$name" >/dev/null
+}
+
+set_convex_env JWT_PRIVATE_KEY "$jwt_private_key"
+set_convex_env JWKS "$jwks"
+set_convex_env SITE_URL "http://127.0.0.1:3000"
+set_convex_env BETA_ALLOWLIST_EMAILS "e2e-routines@tempo.test"
+set_convex_env BETA_MAX_TESTERS "100"
 
 wait "$convex_pid"

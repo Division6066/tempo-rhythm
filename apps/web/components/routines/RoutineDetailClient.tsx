@@ -21,7 +21,7 @@ export function RoutineDetailClient({ routineId }: RoutineDetailClientProps) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const routine = useQuery(
     api.routines.getWithItems,
-    isAuthenticated ? { routineId: routineId as Id<"routines"> } : "skip"
+    isAuthenticated ? { routineId } : "skip"
   );
   const completeItem = useMutation(api.routines.completeItem);
   const [pendingItemId, setPendingItemId] = useState<string | null>(null);

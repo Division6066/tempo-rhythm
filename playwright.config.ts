@@ -18,13 +18,13 @@ export default defineConfig({
       command: "bash scripts/start-convex-e2e.sh",
       url: convexUrl,
       timeout: 120_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
     {
       command: `NEXT_PUBLIC_CONVEX_URL=${convexUrl} bun run --cwd apps/web dev --hostname 127.0.0.1 --port 3000`,
       url: webUrl,
       timeout: 120_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
   ],
 });
