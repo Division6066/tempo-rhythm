@@ -1,17 +1,3 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "paths": {
-      "@/*": ["./apps/mobile/*"]
-    },
-    "types": ["bun", "node"]
-  },
-  "include": [
-    "apps/mobile/nativewind-env.d.ts",
-    "apps/mobile/app/(tempo)/settings.tsx",
-    "apps/mobile/e2e/settings.spec.ts",
-    "apps/mobile/lib/prefsStore.ts"
-  ]
+  "extends": "./apps/mobile/tsconfig.json"
 }
