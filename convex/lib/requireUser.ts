@@ -48,3 +48,23 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   return user;
 }
+
+/**
+ * Checks if the user is authorized to perform primitive level actions
+ * Also asserts that the subjectUser from Context belongs to the userId passed to operations
+ */
+export async function requireUserAccess(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Doc<"users">> {
+  const user = await requireUser(ctx);
+
+  if (user.deletedAt !== undefined) {
+    throw new Error("This account has been deleted. Please contact support.");
+  }
+  
+  if (user.isActive === false) {
+     throw new Error("This account is currently blocked or inactive.");
+  }
+
+  return user;
+}

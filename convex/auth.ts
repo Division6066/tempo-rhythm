@@ -93,14 +93,27 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   },
   callbacks: {
     async createOrUpdateUser(ctx, args) {
-      // Cast ctx.db to the full app DataModel so we can query custom tables
-      // (subscriptionStates, users indexes) that are outside the auth-only type.
       const db = ctx.db as unknown as GenericMutationCtx<DataModel>["db"];
       const now = Date.now();
       const email = normalizeEmail(args.profile.email);
       const founderEmail = getFounderEmail();
       const allowlistedEmails = getAllowlistedEmails();
-      const isFounder = email === founderEmail;
+      
+      let isFounderAuth = email === founderEmail;
+      let hasAdminOrFounderRole = false;
+      
+      if (args.existingUserId) {
+        const existingUser = await db.get(args.existingUserId);
+        if (existingUser) {
+           hasAdminOrFounderRole = existingUser.role === "admin" || existingUser.role === "founder" || existingUser.betaAccess === "founder";
+        }
+      }
+      
+      const isApproved = allowlistedEmails.has(email) || isFounderAuth || hasAdminOrFounderRole;
+
+      if (!isApproved) {
+        throw new Error("Beta access is invite-only right now. Ask for an invite and we can add you.");
+      }
 
       const profileName = typeof args.profile.name === "string" ? args.profile.name : "User";
 
@@ -110,14 +123,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           email,
           emailVerified: args.profile.emailVerified ?? false,
           fullName: profileName,
-          betaAccess: isFounder ? "founder" : undefined,
-          entitlementTier: isFounder ? "god" : undefined,
-          isGodTier: isFounder || undefined,
-          userType: isFounder ? "paid" : undefined,
+          betaAccess: isFounderAuth ? "founder" : undefined,
+          entitlementTier: isFounderAuth ? "god" : undefined,
+          isGodTier: isFounderAuth || undefined,
+          userType: isFounderAuth ? "paid" : undefined,
           updatedAt: now,
         });
 
-        if (isFounder) {
+        if (isFounderAuth) {
           const existingState = await db
             .query("subscriptionStates")
             .withIndex("by_userId", (q) => q.eq("userId", existingUserId))
@@ -148,11 +161,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return args.existingUserId;
       }
 
-      if (!allowlistedEmails.has(email)) {
-        throw new Error("Beta access is invite-only right now. Ask for an invite and we can add you.");
-      }
-
-      if (!isFounder) {
+      if (!isFounderAuth && !hasAdminOrFounderRole) {
         const activeTesters = await db
           .query("users")
           .withIndex("by_betaAccess", (q) => q.eq("betaAccess", "tester"))
@@ -168,10 +177,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         emailVerified: args.profile.emailVerified ?? false,
         fullName: profileName,
         role: "user",
-        userType: isFounder ? "paid" : "free",
-        betaAccess: isFounder ? "founder" : "tester",
-        entitlementTier: isFounder ? "god" : "none",
-        isGodTier: isFounder,
+        userType: isFounderAuth ? "paid" : "free",
+        betaAccess: isFounderAuth ? "founder" : "tester",
+        entitlementTier: isFounderAuth ? "god" : "none",
+        isGodTier: isFounderAuth,
         betaApprovedAt: now,
         isActive: true,
         createdAt: now,
@@ -180,11 +189,11 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
       await db.insert("subscriptionStates", {
         userId,
-        plan: isFounder ? "max" : "none",
-        billingCycle: isFounder ? "lifetime" : "none",
-        status: isFounder ? "active" : "inactive",
-        trialUsed: isFounder,
-        source: isFounder ? "founder_whitelist_override" : "beta_signup",
+        plan: isFounderAuth ? "max" : "none",
+        billingCycle: isFounderAuth ? "lifetime" : "none",
+        status: isFounderAuth ? "active" : "inactive",
+        trialUsed: isFounderAuth,
+        source: isFounderAuth ? "founder_whitelist_override" : "beta_signup",
         createdAt: now,
         updatedAt: now,
       });
