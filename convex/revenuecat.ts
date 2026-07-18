@@ -1,5 +1,12 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
+
+export function isRevenueCatWebhookAuthorized(
+  authHeader: string | null,
+  webhookSecret: string | undefined,
+): boolean {
+  return webhookSecret !== undefined && webhookSecret.length > 0 && authHeader === webhookSecret;
+}
 
 /**
  * RevenueCat webhook handler.
@@ -16,7 +23,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   const authHeader = request.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
 
-  if (webhookSecret && authHeader !== webhookSecret) {
+  if (!isRevenueCatWebhookAuthorized(authHeader, webhookSecret)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -58,16 +65,21 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
 
   if (appUserId) {
     try {
-      await ctx.runMutation(api.users.updateSubscriptionStatus, {
+      const result = await ctx.runMutation(internal.users.updateSubscriptionStatus, {
         userId: appUserId,
         userType,
         activeEntitlements,
         revenueCatEvent: eventType ?? "UNKNOWN",
       });
+      if (!result.updated) {
+        return new Response("User not found for subscription sync", { status: 500 });
+      }
     } catch (err) {
       console.error("[RevenueCat Webhook] Failed to update user:", err);
-      // Return 200 so RevenueCat doesn't retry on our internal errors
+      return new Response("Failed to update subscription status", { status: 500 });
     }
+  } else {
+    return new Response("Missing app_user_id", { status: 400 });
   }
 
   return new Response(JSON.stringify({ received: true, eventType }), {
