@@ -3,21 +3,47 @@ import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { fetchCurrentUser } from "./users";
 
+const taskStatusValidator = v.union(
+  v.literal("todo"),
+  v.literal("in_progress"),
+  v.literal("done"),
+  v.literal("cancelled"),
+);
+
+const taskPriorityValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
+const taskEnergyValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
+
+const taskReturnValidator = v.object({
+  _id: v.id("tasks"),
+  _creationTime: v.number(),
+  userId: v.id("users"),
+  title: v.string(),
+  description: v.optional(v.string()),
+  status: taskStatusValidator,
+  priority: taskPriorityValidator,
+  energy: v.optional(taskEnergyValidator),
+  projectId: v.optional(v.string()),
+  projectName: v.optional(v.string()),
+  dueAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  deletedAt: v.optional(v.number()),
+});
+
 export const list = query({
   args: {
     status: v.optional(
-      v.union(
-        v.literal("todo"),
-        v.literal("in_progress"),
-        v.literal("done"),
-        v.literal("cancelled"),
-      ),
+      taskStatusValidator,
     ),
     search: v.optional(v.string()),
     /** When both set, only tasks with `dueAt` in [dueFrom, dueTo) (e.g. client “today” window). */
     dueFrom: v.optional(v.number()),
     dueTo: v.optional(v.number()),
+    projectId: v.optional(v.string()),
+    priority: v.optional(taskPriorityValidator),
+    energy: v.optional(taskEnergyValidator),
   },
+  returns: v.array(taskReturnValidator),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     let rows = await ctx.db
@@ -25,8 +51,19 @@ export const list = query({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
+    rows = rows.filter((t) => t.deletedAt === undefined);
+
     if (args.status) {
       rows = rows.filter((t) => t.status === args.status);
+    }
+    if (args.projectId?.trim()) {
+      rows = rows.filter((t) => t.projectId === args.projectId?.trim());
+    }
+    if (args.priority) {
+      rows = rows.filter((t) => t.priority === args.priority);
+    }
+    if (args.energy) {
+      rows = rows.filter((t) => (t.energy ?? "medium") === args.energy);
     }
     if (args.search?.trim()) {
       const q = args.search.trim().toLowerCase();
@@ -55,6 +92,7 @@ export const listDueInRange = query({
     startMs: v.number(),
     endMs: v.number(),
   },
+  returns: v.array(taskReturnValidator),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const rows = await ctx.db
@@ -66,6 +104,7 @@ export const listDueInRange = query({
         t.dueAt !== undefined &&
         t.dueAt >= args.startMs &&
         t.dueAt < args.endMs &&
+        t.deletedAt === undefined &&
         t.status !== "cancelled",
     );
   },
@@ -76,18 +115,15 @@ export const create = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     status: v.optional(
-      v.union(
-        v.literal("todo"),
-        v.literal("in_progress"),
-        v.literal("done"),
-        v.literal("cancelled"),
-      ),
+      taskStatusValidator,
     ),
-    priority: v.optional(
-      v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-    ),
+    priority: v.optional(taskPriorityValidator),
+    energy: v.optional(taskEnergyValidator),
+    projectId: v.optional(v.string()),
+    projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
   },
+  returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
@@ -97,6 +133,9 @@ export const create = mutation({
       description: args.description?.trim(),
       status: args.status ?? "todo",
       priority: args.priority ?? "medium",
+      energy: args.energy ?? "medium",
+      projectId: args.projectId?.trim(),
+      projectName: args.projectName?.trim(),
       dueAt: args.dueAt,
       createdAt: now,
       updatedAt: now,
@@ -110,18 +149,15 @@ export const update = mutation({
     title: v.optional(v.string()),
     description: v.optional(v.union(v.string(), v.null())),
     status: v.optional(
-      v.union(
-        v.literal("todo"),
-        v.literal("in_progress"),
-        v.literal("done"),
-        v.literal("cancelled"),
-      ),
+      taskStatusValidator,
     ),
-    priority: v.optional(
-      v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-    ),
+    priority: v.optional(taskPriorityValidator),
+    energy: v.optional(taskEnergyValidator),
+    projectId: v.optional(v.union(v.string(), v.null())),
+    projectName: v.optional(v.union(v.string(), v.null())),
     dueAt: v.optional(v.union(v.number(), v.null())),
   },
+  returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
@@ -136,6 +172,13 @@ export const update = mutation({
     }
     if (args.status !== undefined) patch.status = args.status;
     if (args.priority !== undefined) patch.priority = args.priority;
+    if (args.energy !== undefined) patch.energy = args.energy;
+    if (args.projectId !== undefined) {
+      patch.projectId = args.projectId === null ? undefined : args.projectId.trim();
+    }
+    if (args.projectName !== undefined) {
+      patch.projectName = args.projectName === null ? undefined : args.projectName.trim();
+    }
     if (args.dueAt !== undefined) {
       patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
     }
@@ -146,6 +189,7 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { taskId: v.id("tasks") },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
@@ -164,7 +208,11 @@ export const createQuick = mutation({
   args: {
     title: v.string(),
     dueAt: v.optional(v.number()),
+    projectId: v.optional(v.string()),
+    projectName: v.optional(v.string()),
+    energy: v.optional(taskEnergyValidator),
   },
+  returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const trimmed = args.title.trim();
@@ -179,6 +227,9 @@ export const createQuick = mutation({
       title,
       status: "todo",
       priority: "medium",
+      energy: args.energy ?? "medium",
+      projectId: args.projectId?.trim(),
+      projectName: args.projectName?.trim(),
       dueAt: args.dueAt,
       createdAt: now,
       updatedAt: now,
@@ -192,6 +243,7 @@ export const listToday = query({
     dueFrom: v.number(),
     dueTo: v.number(),
   },
+  returns: v.array(taskReturnValidator),
   handler: async (ctx, args) => {
     // Match `users.getProfile` (fetchCurrentUser), not requireUser: avoids throwing when
     // the client auth race briefly has no `email` on the identity, and returns [] if
@@ -210,6 +262,7 @@ export const listToday = query({
           t.dueAt !== undefined &&
           t.dueAt >= args.dueFrom &&
           t.dueAt < args.dueTo &&
+          t.deletedAt === undefined &&
           t.status !== "cancelled",
       )
       .sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
@@ -219,13 +272,17 @@ export const listToday = query({
 /** Toggle a task between todo and done. */
 export const toggleCompletion = mutation({
   args: { taskId: v.id("tasks") },
+  returns: v.object({
+    taskId: v.id("tasks"),
+    status: taskStatusValidator,
+  }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
     if (!task || task.userId !== user._id) {
       throw new Error("Task not found");
     }
-    const next = task.status === "done" ? "todo" : "done";
+    const next: "todo" | "done" = task.status === "done" ? "todo" : "done";
     await ctx.db.patch(args.taskId, { status: next, updatedAt: Date.now() });
     return { taskId: args.taskId, status: next };
   },
