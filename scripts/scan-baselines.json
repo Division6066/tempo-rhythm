@@ -1,0 +1,10 @@
+{
+  "comment": "Ratchet baselines for scan scripts. These numbers are the KNOWN debt at the time the scans were introduced (TF-34 / TF-OSS-00). They may only go DOWN. Lower a number in the same PR that removes a violation; never raise one without an issue explaining why.",
+  "ramOnlyAudit": {
+    "hardDeleteCalls": 10
+  },
+  "designTokens": {
+    "arbitraryHexUtilities": 18,
+    "rawHexLiterals": 2
+  }
+}
