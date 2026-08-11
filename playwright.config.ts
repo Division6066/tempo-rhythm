@@ -16,6 +16,7 @@ export default defineConfig({
       NEXT_PUBLIC_CONVEX_URL: "https://example.convex.cloud",
       NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: "1",
       TEMPO_E2E_AUTH_BYPASS: "1",
+      TEMPO_E2E_PUBLIC_CALENDAR: "1",
     },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
