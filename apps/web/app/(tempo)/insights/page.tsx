@@ -1,23 +1,14 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: analytics
  * @category: You
  * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Personal analytics & trends.
+ * @summary: Personal analytics & trends — read-only insights over tasks, habits, and goals.
  * @queries: insights.summary
  * @mutations: (none)
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @auth: required (gentle sign-in card otherwise)
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { InsightsScreen } from "@/components/insights/InsightsScreen";
 
 export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Insights"
-      category="You"
-      source="screens-5.jsx"
-      summary="Personal analytics & trends."
-    />
-  );
+  return <InsightsScreen />;
 }
