@@ -7,10 +7,12 @@ const maxCalendarRangeMs = 32 * 24 * 60 * 60 * 1000;
 const calendarEventValidator = v.object({
   _id: v.id("calendarEvents"),
   _creationTime: v.number(),
+  userId: v.id("users"),
   title: v.string(),
   startsAtMs: v.number(),
   createdAt: v.number(),
   updatedAt: v.number(),
+  deletedAt: v.optional(v.number()),
 });
 
 export const listInRange = query({
