@@ -15,8 +15,29 @@ const isPublicRoute = createRouteMatcher([
   "/success",
 ]);
 
+const isCoreTaskViewRoute = createRouteMatcher([
+  "/today",
+  "/tasks",
+  "/tasks/priority",
+  "/tasks/energy",
+  "/projects",
+  "/projects/(.*)",
+]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.TEMPO_E2E_AUTH_BYPASS === "1" &&
+    isCoreTaskViewRoute(request)
+  ) {
+    return;
+  }
+
   const { convexAuth } = ctx;
+  const isCalendarE2EBypass =
+    process.env.NODE_ENV !== "production" &&
+    process.env.TEMPO_E2E_PUBLIC_CALENDAR === "1" &&
+    request.nextUrl.pathname === "/calendar";
   let isAuthenticated = false;
   try {
     isAuthenticated = await convexAuth.isAuthenticated();
@@ -24,7 +45,7 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
     isAuthenticated = false;
   }
 
-  if (!(isPublicRoute(request) || isAuthenticated)) {
+  if (!(isPublicRoute(request) || isCalendarE2EBypass || isAuthenticated)) {
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const params = new URLSearchParams({ next: nextPath });
     return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
