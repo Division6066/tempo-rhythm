@@ -3,6 +3,8 @@ import {
   filterTasksForView,
   groupTasksByEnergy,
   groupTasksByPriority,
+  slugifyProjectName,
+  titleFromProjectSlug,
   type TaskViewRecord,
 } from "../../apps/web/lib/task-view-filters";
 
@@ -92,5 +94,36 @@ describe("task view filters", () => {
     expect(energyGroups.low.map((task) => task.id)).toEqual(["task-today"]);
     expect(energyGroups.medium.map((task) => task.id)).toEqual(["task-done"]);
     expect(energyGroups.high.map((task) => task.id)).toEqual(["task-inbox"]);
+  });
+
+  test("project view id from URL slug matches id stored on create for irregular slugs", () => {
+    const irregularSlugs = ["Home-Reset", "HOME-Reset", "my--project", "MyProject", "home_reset"];
+
+    for (const projectSlug of irregularSlugs) {
+      // Mirror TaskViewsScreen: filter uses slugified URL; create stores the same.
+      const filterProjectId = slugifyProjectName(projectSlug) || "home-reset";
+      const displayTitle = titleFromProjectSlug(projectSlug);
+      const createdProjectId = filterProjectId;
+
+      const created: TaskViewRecord = {
+        id: `created-${projectSlug}`,
+        title: "Created in project view",
+        status: "todo",
+        priority: "medium",
+        energy: "medium",
+        projectId: createdProjectId,
+        projectName: displayTitle,
+        updatedAt: 50,
+      };
+
+      const visible = filterTasksForView([...records, created], {
+        view: "project",
+        projectId: filterProjectId,
+      });
+
+      expect(visible.map((task) => task.id)).toContain(created.id);
+      // Raw URL slug must not be required for a match after normalization.
+      expect(createdProjectId).toBe(slugifyProjectName(projectSlug) || "home-reset");
+    }
   });
 });
