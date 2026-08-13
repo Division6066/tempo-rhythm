@@ -1,6 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
+import { optionalEnv } from "@tempo/ai";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel } from "./_generated/dataModel";
 
@@ -12,11 +13,11 @@ function normalizeEmail(email: string | undefined | null): string {
 }
 
 function getFounderEmail() {
-  return normalizeEmail(String(process.env.BETA_FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL));
+  return normalizeEmail(optionalEnv("BETA_FOUNDER_EMAIL", DEFAULT_FOUNDER_EMAIL));
 }
 
 function getAllowlistedEmails() {
-  const fromEnv = (String(process.env.BETA_ALLOWLIST_EMAILS ?? ""))
+  const fromEnv = optionalEnv("BETA_ALLOWLIST_EMAILS", "")
     .split(",")
     .map((item: string) => normalizeEmail(item))
     .filter(Boolean);
@@ -26,7 +27,9 @@ function getAllowlistedEmails() {
 }
 
 function getBetaMaxTesters() {
-  const parsed = Number(String(process.env.BETA_MAX_TESTERS ?? DEFAULT_BETA_MAX_TESTERS));
+  const parsed = Number(
+    optionalEnv("BETA_MAX_TESTERS", String(DEFAULT_BETA_MAX_TESTERS)),
+  );
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BETA_MAX_TESTERS;
 }
 
@@ -37,8 +40,8 @@ async function sendMagicLinkEmail({
   identifier: string;
   url: string;
 }) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL ?? "Tempo Flow <onboarding@resend.dev>";
+  const resendApiKey = optionalEnv("RESEND_API_KEY");
+  const from = optionalEnv("RESEND_FROM_EMAIL", "Tempo Flow <onboarding@resend.dev>");
   const to = identifier;
   const subject = "Your Tempo Flow sign-in link";
   const html = `

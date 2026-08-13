@@ -3,6 +3,9 @@ import { IBM_Plex_Mono, Inter, Newsreader } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
+// Side-effect import: validates required NEXT_PUBLIC_* env at build time and
+// fails `next build` loudly when a value is missing or still a placeholder.
+import "@/lib/env";
 import { Providers } from "@/components/providers/providers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { themeInitScript } from "@/lib/theme-script";

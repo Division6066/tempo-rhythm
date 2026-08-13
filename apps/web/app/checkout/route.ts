@@ -13,18 +13,25 @@
 // - כרגע אנו עובדים ב-Sandbox כדי לאפשר בדיקות בטוחות.
 
 import { Checkout } from "@polar-sh/nextjs";
+import type { NextRequest } from "next/server";
+import { requireServerEnv } from "@/lib/env";
 
-export const GET = Checkout({
-  // טוקן ארגוני (OAT) של Polar - נשמר אך ורק בשרת דרך משתני סביבה
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+// The handler is built PER REQUEST (not at module scope) so that a missing
+// Polar cell fails the /checkout request with a named-variable error instead
+// of failing `next build` for deployments that don't use payments yet.
+// requireServerEnv throws with the variable NAME, never the value.
+export const GET = (request: NextRequest) =>
+  Checkout({
+    // טוקן ארגוני (OAT) של Polar - נשמר אך ורק בשרת דרך משתני סביבה
+    accessToken: requireServerEnv("POLAR_ACCESS_TOKEN"),
 
-  // כתובת הצלחה שאליה Polar יפנה לאחר Checkout
-  // מומלץ לכלול `{CHECKOUT_ID}` כדי שנוכל לאמת/לעדכן סטטוס משתמש בהמשך.
-  successUrl: process.env.POLAR_SUCCESS_URL!,
+    // כתובת הצלחה שאליה Polar יפנה לאחר Checkout
+    // מומלץ לכלול `{CHECKOUT_ID}` כדי שנוכל לאמת/לעדכן סטטוס משתמש בהמשך.
+    successUrl: requireServerEnv("POLAR_SUCCESS_URL"),
 
-  // סביבת עבודה: sandbox לבדיקות (בייצור לשנות ל-production או להסיר)
-  server: "sandbox",
+    // סביבת עבודה: sandbox לבדיקות (בייצור לשנות ל-production או להסיר)
+    server: "sandbox",
 
-  // עיצוב חשוך כדי להתאים לתבנית
-  theme: "dark",
-});
+    // עיצוב חשוך כדי להתאים לתבנית
+    theme: "dark",
+  })(request);

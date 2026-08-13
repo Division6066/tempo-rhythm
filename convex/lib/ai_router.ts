@@ -1,3 +1,4 @@
+import { optionalEnv } from "@tempo/ai";
 import {
   AiAuthError,
   AiContextTooLargeError,
@@ -133,9 +134,12 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function callLLM(opts: AiCallOptions): Promise<AiResult> {
-  const apiKey = process.env.MISTRAL_API_KEY;
+  // Sentinel-aware: '', whitespace, and __DUMMY_PASTE_ME__ count as unset.
+  const apiKey = optionalEnv("MISTRAL_API_KEY");
   if (!apiKey) {
-    throw new AiAuthError("MISTRAL_API_KEY not set in Convex env");
+    throw new AiAuthError(
+      "MISTRAL_API_KEY not set in Convex env (missing, empty, or placeholder)",
+    );
   }
 
   const chain = ESCALATION_CHAIN[opts.tier];

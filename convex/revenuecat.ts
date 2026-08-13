@@ -1,3 +1,4 @@
+import { optionalEnv } from "@tempo/ai";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 
@@ -12,11 +13,20 @@ import { api } from "./_generated/api";
  * Set this env var in each Convex deployment's environment variables.
  */
 export const revenueCatWebhook = httpAction(async (ctx, request) => {
-  // Validate authorization header
+  // Validate authorization header. Fail CLOSED: an unset (or placeholder)
+  // secret rejects every webhook instead of silently skipping the check.
+  // Sentinel-aware: '', whitespace, and __DUMMY_PASTE_ME__ count as unset.
   const authHeader = request.headers.get("Authorization");
-  const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
+  const webhookSecret = optionalEnv("REVENUECAT_WEBHOOK_SECRET");
 
-  if (webhookSecret && authHeader !== webhookSecret) {
+  if (!webhookSecret) {
+    console.error(
+      "[RevenueCat Webhook] REVENUECAT_WEBHOOK_SECRET is not configured; rejecting webhook (fail closed). Set it in the Convex dashboard to the Authorization header value configured in RevenueCat → Webhooks.",
+    );
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (authHeader !== webhookSecret) {
     return new Response("Unauthorized", { status: 401 });
   }
 

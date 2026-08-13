@@ -1,3 +1,4 @@
+import { optionalEnv } from '@tempo/ai';
 import { v } from 'convex/values';
 import { mutation, query, action } from './_generated/server';
 import { api } from './_generated/api';
@@ -229,13 +230,20 @@ export const extractMemories = action({
       throw new Error('Not authenticated');
     }
 
-    // Get AI API key from environment (set in Convex dashboard)
-    const aiApiKey = process.env.AI_API_KEY;
-    const aiProvider = process.env.AI_PROVIDER || 'gemini';
-    const aiModel = process.env.AI_MODEL || 'gemini-2.5-flash';
+    // Get AI config from environment (set in Convex dashboard).
+    // Per-modality names (AI_CHAT_*) take precedence; the legacy single-slot
+    // triplet (AI_API_KEY / AI_PROVIDER / AI_MODEL) keeps working.
+    // Sentinel-aware: '', whitespace, and __DUMMY_PASTE_ME__ count as unset.
+    const aiApiKey = optionalEnv('AI_CHAT_API_KEY') ?? optionalEnv('AI_API_KEY');
+    const aiProvider =
+      optionalEnv('AI_CHAT_PROVIDER') ?? optionalEnv('AI_PROVIDER', 'gemini');
+    const aiModel =
+      optionalEnv('AI_CHAT_MODEL') ?? optionalEnv('AI_MODEL', 'gemini-2.5-flash');
 
     if (!aiApiKey) {
-      throw new Error('AI not configured. Please set AI_API_KEY in Convex dashboard.');
+      throw new Error(
+        'AI not configured. Set AI_CHAT_API_KEY (or legacy AI_API_KEY) in the Convex dashboard.',
+      );
     }
 
     const extractionPrompt = `Analyze this conversation and extract important facts, preferences, and information worth remembering about the user.
