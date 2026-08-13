@@ -2,20 +2,39 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 
-const REPLIES: Record<string, string> = {
+/**
+ * English-first, anti-shame coach replies per technique (HARD_RULES §1).
+ * Copy never implies the user is behind, failing, or lazy — it always offers
+ * one small, optional next step.
+ *
+ * Keyed by `conversations.technique`; unknown or missing techniques fall back
+ * to `general`.
+ */
+const COACH_REPLIES: Record<string, string> = {
   pomodoro:
-    "נסה מקטע של 25 דקות עם טיימר אחד בלבד. אחרי הפסקה של 5 דקות, החלט אם להמשיך עוד מקטע או לעבור למשימה הבאה.",
+    "Try one 25-minute stretch with a single timer. After a 5-minute break, you get to choose: another stretch, or move on. Either answer is a win.",
   body_double:
-    "עבוד לצד מישהו (או בשיחת וידאו שקטה) בלי לדבר על המשימה — הנוכחות לבד מורידה הסחות דעת.",
+    "Work alongside someone — in person or on a quiet video call — without talking about the task. Just having company nearby makes it easier to stay with it.",
   eat_the_frog:
-    "בחר את המשימה הכי כבדה היום והתחל ממנה לפני כל השאר. רק צעד ראשון קטן עכשיו.",
+    "Pick the task that feels heaviest today and start there, before anything else. Only the first small step counts right now — nothing more.",
   time_blocking:
-    "חסום ביומן חלון קצר לכל משימה והגדר התראה אחת לסוף החלון — לא לשינוי תוכנית באמצע.",
+    "Block a short window on your calendar for one task, and set a single reminder for the end of the window. No mid-plan changes — the window does the deciding for you.",
   two_minute:
-    "אם זה באמת מתחת לשתי דקות — עשה עכשיו. אם לא, הפוך את זה לצעד קטן שמתחיל בשנייה אחת.",
+    "If it truly takes under two minutes, do it now. If not, shrink it into a step so small it starts in one second.",
   general:
-    "מה הצעד הקטן ביותר שאפשר לעשות בלי התנגדות? התחל משם בלבד.",
+    "What's the smallest step you could take without any resistance? Start there — that's the whole assignment.",
 };
+
+/**
+ * Resolve the coach reply for a conversation technique.
+ * Pure helper so the copy is unit-testable (see coach.test.ts).
+ */
+export function coachReplyForTechnique(technique: string | undefined): string {
+  if (technique !== undefined && Object.prototype.hasOwnProperty.call(COACH_REPLIES, technique)) {
+    return COACH_REPLIES[technique] as string;
+  }
+  return COACH_REPLIES.general as string;
+}
 
 /**
  * Append a user message and a coach reply (template by conversation technique).
@@ -26,6 +45,7 @@ export const sendMessage = mutation({
     conversationId: v.id("conversations"),
     content: v.string(),
   },
+  returns: v.object({ success: v.literal(true) }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const conv = await ctx.db.get(args.conversationId);
@@ -45,9 +65,7 @@ export const sendMessage = mutation({
       createdAt: now,
     });
 
-    const technique = conv.technique ?? "general";
-    const assistantBody =
-      REPLIES[technique] ?? REPLIES.general;
+    const assistantBody = coachReplyForTechnique(conv.technique);
 
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
