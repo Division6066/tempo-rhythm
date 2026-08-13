@@ -51,6 +51,12 @@
           "supportsRTL": true,
           "forcesRTL": true
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Tempo Rhythm records your voice only while you hold the record button, so it can turn what you say into tasks and notes. Recordings are deleted right after transcription."
+        }
       ]
     ],
     "experiments": {

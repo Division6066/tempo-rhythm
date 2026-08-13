@@ -107,6 +107,8 @@ export default function AuthenticatedLayout() {
           }}
         />
       ))}
+      {/* מסך מעבדת קול — מוסתר משורת הטאבים, ניווט ישיר בלבד */}
+      <Tabs.Screen name="voice" options={{ href: null }} />
     </Tabs>
   );
 }
