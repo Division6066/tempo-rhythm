@@ -101,7 +101,7 @@ export default function AuthenticatedLayout() {
           name={tab.name}
           options={{
             title: tab.title,
-            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            tabBarIcon: ({ color, size }) => (
               <tab.icon size={size} color={color} />
             ),
           }}
