@@ -26,7 +26,7 @@ export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
-  // RN ColorSchemeName includes 'unspecified'; only light/dark are themed.
+  // RN ColorSchemeName can be null or 'unspecified'; treat both as light.
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? 'dark' : 'light';
   const colorFromProps = props[theme];
