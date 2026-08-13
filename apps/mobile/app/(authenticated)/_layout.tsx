@@ -102,7 +102,10 @@ export default function AuthenticatedLayout() {
           options={{
             title: tab.title,
             tabBarIcon: ({ color, size }) => (
-              <tab.icon size={size} color={String(color)} />
+              <tab.icon
+                size={size}
+                color={typeof color === 'string' ? color : '#71717a'}
+              />
             ),
           }}
         />
