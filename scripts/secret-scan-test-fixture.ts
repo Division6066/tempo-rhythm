@@ -50,12 +50,19 @@ try {
     encoding: "utf8",
   });
 
-  if (gitleaks.error && (gitleaks.error as NodeJS.ErrnoException).code === "ENOENT") {
-    console.log(
-      "secret-scan:test-fixture OK (config-only) — gitleaks binary not installed locally; " +
-        "workflow wiring verified. The security workflow runs the real detection in CI.",
+  if (gitleaks.error) {
+    const errnoError = gitleaks.error as NodeJS.ErrnoException;
+    if (errnoError.code === "ENOENT") {
+      console.log(
+        "secret-scan:test-fixture OK (config-only) — gitleaks binary not installed locally; " +
+          "workflow wiring verified. The security workflow runs the real detection in CI.",
+      );
+      process.exit(0);
+    }
+    console.error(
+      `secret-scan:test-fixture FAILED — gitleaks could not be launched: ${gitleaks.error.message} (code: ${errnoError.code ?? "unknown"})`,
     );
-    process.exit(0);
+    process.exit(1);
   }
 
   // gitleaks exit codes: 0 = clean, 1 = leaks found, other non-zero = runtime error.
