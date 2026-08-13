@@ -39,7 +39,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run trufflehog (verified + unknown results only)
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@6f3c981e7b77f235fd2702dd74af25fc4b72bf11 # v3.96.0
         with:
           path: ./
           extra_args: --results=verified,unknown
@@ -53,9 +53,19 @@ jobs:
         with:
           bun-version: latest
       - name: Install gitleaks binary
+        env:
+          GITLEAKS_VERSION: v8.24.3
+          # From gitleaks_8.24.3_checksums.txt on the v8.24.3 GitHub release.
+          GITLEAKS_SHA256: 9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c
         run: |
-          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
-            | tar -xz -C /usr/local/bin gitleaks
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+          url="https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/${archive}"
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+          curl -sSfL "$url" -o "$tmpdir/$archive"
+          echo "${GITLEAKS_SHA256}  $tmpdir/$archive" | sha256sum -c -
+          tar -xzf "$tmpdir/$archive" -C /usr/local/bin gitleaks
           gitleaks version
       - name: Prove the scanner catches a canary secret
         run: bun run secret-scan:test-fixture

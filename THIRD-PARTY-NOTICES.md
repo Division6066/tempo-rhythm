@@ -128,14 +128,14 @@ section here. Add the entry in the same PR that adds the dependency.
 
 - Version: 2.1.1
 - License: MIT
-- Source: lukeed/clsx
+- Source: https://github.com/lukeed/clsx
 - Used by: apps/web/package.json, apps/mobile/package.json
 
 ### compression
 
 - Version: 1.8.1
 - License: MIT
-- Source: expressjs/compression
+- Source: https://github.com/expressjs/compression
 - Used by: apps/mobile/package.json
 
 ### convex
@@ -331,7 +331,7 @@ section here. Add the entry in the same PR that adds the dependency.
 
 - Version: 5.1.7
 - License: MIT
-- Source: vercel/styled-jsx
+- Source: https://github.com/vercel/styled-jsx
 - Used by: apps/web/package.json
 
 ### tailwind-merge
