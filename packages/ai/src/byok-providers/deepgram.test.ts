@@ -38,7 +38,9 @@ describe("parseDeepgramCallbackPayload", () => {
 
   test("empty transcript is still a valid completed result", () => {
     const payload = validPayload();
-    payload.results.channels[0].alternatives[0].transcript = "";
+    const alternative = payload.results.channels[0]?.alternatives[0];
+    if (!alternative) throw new Error("fixture shape changed");
+    alternative.transcript = "";
     expect(parseDeepgramCallbackPayload(payload)?.transcript).toBe("");
   });
 
