@@ -3,6 +3,7 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
+import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
@@ -46,7 +47,11 @@ export function TodayScreen() {
     );
   }
 
-  if (!isAuthenticated || !profile || !todayTasks) {
+  if (!isAuthenticated) {
+    return <TaskViewsScreen view="today" />;
+  }
+
+  if (!profile || !todayTasks) {
     return (
       <div className="container mx-auto max-w-5xl px-6 py-16 text-center">
         <SoftCard className="mx-auto max-w-xl">

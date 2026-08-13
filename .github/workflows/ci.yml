@@ -1,13 +1,21 @@
 name: CI
 
+# TF-34: this workflow has TEETH. No `continue-on-error`, no silent no-op
+# steps. A red check means the PR is not mergeable — see docs/merge-runbook.md
+# for the merge process (agents land on `integration` under three gates;
+# only Amit merges `integration` into `master`).
+
 on:
   pull_request:
-    branches: [master]
+    branches: [master, integration]
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  BUN_VERSION: '1.3.9'
 
 # Package manager is `bun` for all CI steps (per HARD_RULES §2).
 # Root package.json declares `packageManager: "bun@1.3.9"` and `bun.lock` is committed.
@@ -23,7 +31,7 @@ jobs:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Run typecheck
@@ -39,7 +47,7 @@ jobs:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Run lint
@@ -48,10 +56,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    # TODO(Phase 3): root `test` script not yet defined in package.json.
-    # Keeping continue-on-error until the script lands so CI does not block
-    # unrelated PRs. Remove `continue-on-error` once `bun run test` exists.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,16 +63,11 @@ jobs:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Run tests (best-effort until script exists)
-        run: |
-          if node -e "process.exit(require('./package.json').scripts?.test ? 0 : 1)" 2>/dev/null; then
-            bun run test
-          else
-            echo "::notice::root 'test' script not yet implemented — Phase 3 will add it"
-          fi
+      - name: Run tests (enforcing — failures block the PR)
+        run: bun run test
 
   scan:
     name: Scans (forbidden-tech, ram-only-audit, design-tokens)
@@ -80,34 +79,34 @@ jobs:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # TODO(Phase 3): each scan script below is referenced by HARD_RULES
-      # (§2 forbidden tech, §5 schema RAM-only, §7 design tokens) but is not
-      # yet implemented in package.json. When a script is missing we log a
-      # notice and succeed; when it exists we run it and fail on non-zero.
+      # HARD_RULES §2 — forbidden dependencies/imports. Zero tolerance.
       - name: Forbidden-tech scan
-        run: |
-          if grep -q '"scan:forbidden-tech"' package.json; then
-            bun run scan:forbidden-tech
-          else
-            echo "::notice::scan:forbidden-tech script not yet implemented"
-          fi
+        run: bun run scan:forbidden-tech
 
+      # HARD_RULES §5 — RAM-only scanner rule + soft-delete ratchet.
       - name: RAM-only audit
-        run: |
-          if grep -q '"scan:ram-only-audit"' package.json; then
-            bun run scan:ram-only-audit
-          else
-            echo "::notice::scan:ram-only-audit script not yet implemented"
-          fi
+        run: bun run scan:ram-only-audit
 
+      # HARD_RULES §7 — design-token ratchet (no new one-off hex values).
       - name: Design-tokens scan
-        run: |
-          if grep -q '"scan:design-tokens"' package.json; then
-            bun run scan:design-tokens
-          else
-            echo "::notice::scan:design-tokens script not yet implemented"
-          fi
+        run: bun run scan:design-tokens
+
+  notices:
+    name: Third-party notices (TF-OSS-00)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Check THIRD-PARTY-NOTICES.md covers every runtime dependency
+        run: bun run check:notices

@@ -134,6 +134,18 @@ export default defineSchema({
       v.literal("cancelled"),
     ),
     priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    // TF-OSS-01: every added field is v.optional(...) — the deployment is
+    // populated and non-optional additions break existing rows.
+    energy: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+    /** Planned effort in ms. */
+    timeEstimate: v.optional(v.number()),
+    /** Record<"YYYY-MM-DD", number> — tracked ms per local day. */
+    timeSpentOnDay: v.optional(v.any()),
+    repeatCfgId: v.optional(v.id("taskRepeatCfgs")),
+    parentTaskId: v.optional(v.id("tasks")),
+    // T-005a: lightweight project grouping until a projects table exists.
+    projectId: v.optional(v.string()),
+    projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -142,6 +154,63 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_dueAt", ["userId", "dueAt"])
+    .index("by_userId_projectId", ["userId", "projectId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /**
+   * TF-OSS-01 — recurrence series config. Field design lifted from
+   * super-productivity (MIT; read for design, nothing vendored).
+   * One row per repeating series; tasks reference it via repeatCfgId.
+   */
+  taskRepeatCfgs: defineTable({
+    userId: v.id("users"),
+    repeatCycle: v.union(
+      v.literal("DAILY"),
+      v.literal("WEEKLY"),
+      v.literal("MONTHLY"),
+      v.literal("YEARLY"),
+    ),
+    /** Repeat every N cycles (every 2 weeks => WEEKLY + 2). */
+    repeatEvery: v.number(),
+    /** Weekdays the series fires on, 0–6 (Sunday = 0). */
+    weekdays: v.array(v.number()),
+    /** 1|2|3|4|-1 — "the Nth week's weekday" monthly pattern. */
+    monthlyWeekOfMonth: v.optional(v.number()),
+    /** 0–6, pairs with monthlyWeekOfMonth. */
+    monthlyWeekday: v.optional(v.number()),
+    monthlyLastDay: v.optional(v.boolean()),
+    /** "YYYY-MM-DD" dates whose single occurrence was deleted. Never mutate the series. */
+    deletedInstanceDates: v.array(v.string()),
+    /** ADHD-critical: advance past missed days silently instead of backfilling overdue walls. */
+    skipOverdue: v.boolean(),
+    /** Don't spawn the next occurrence until the current one closes. */
+    waitForCompletion: v.boolean(),
+    repeatFromCompletionDate: v.boolean(),
+    isPaused: v.boolean(),
+    /** Default effort estimate in ms for spawned occurrences. */
+    defaultEstimate: v.optional(v.number()),
+    /** "YYYY-MM-DD" idempotency cursor — last day occurrences were generated for. */
+    lastTaskCreationDay: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /**
+   * T-006a — single event source shared by Day/Week/Month calendar views.
+   */
+  calendarEvents: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    startsAtMs: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt_startsAtMs", ["userId", "deletedAt", "startsAtMs"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   notes: defineTable({

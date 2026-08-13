@@ -44,16 +44,21 @@ Say so out loud in your PR rather than quietly building the wrong thing.
 
 ---
 
-## 1. Stop at Stage 3. Always.
+## 1. Land on `integration`. Never touch `master`.
 
-- Work on your **own branch**. Never commit to `master`.
-- Open a **DRAFT** pull request against `master`.
-- Then **STOP**. Report the branch name and the PR number.
-- Do **NOT** merge. Do **NOT** approve. Do **NOT** mark ready-for-review.
+- Branch **FROM `integration`**. Never from `master`.
+- Open your pull request **against `integration`**, not `master`.
+- You **may merge into `integration`** once ALL THREE are true:
+  1. CI is green,
+  2. there are no conflicts,
+  3. every changed file is inside your ticket's declared file scope.
+- If any one of those is false: **STOP**, leave the PR open, and report the
+  branch name, the PR number, and which condition failed.
 
-Merging is a human decision. It is never yours. `master` is protected by a
-ruleset with six required checks and bypass restricted to repository admins —
-so this is enforced, not merely requested. Do not try to route around it.
+`master` is Amit's. He merges `integration` into `master` himself, batched
+roughly every 2 days. **Never merge, force-push or rebase `master`** — it is
+protected by the `protect-master` ruleset, so this is enforced, not merely
+requested. Do not try to route around it.
 
 ---
 
@@ -98,8 +103,9 @@ Multiple agents run in parallel on this repo. Expect collisions.
 - If your work collides with another branch, that is **expected** and is **not yours to solve**.
 - **Never** rebase or force-push to resolve someone else's work away.
 
-A human consolidator merges branches serially into `integration/<date>` and
-stops on the first conflict. Let it.
+Each agent lands its own work on `integration` under the three conditions in
+section 1. If your merge would conflict, stop and report — do not resolve
+another agent's work away.
 
 ---
 

@@ -57,3 +57,7 @@ apps/mobile/.env
 # Graphify code knowledge graph — rebuilt on demand (~5s, $0), never committed.
 # A committed graph goes stale the moment master moves, and a stale graph is a lie.
 graphify-out/
+
+# Playwright
+test-results/
+playwright-report/
