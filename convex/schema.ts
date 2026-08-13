@@ -248,6 +248,79 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  /**
+   * BYOK — per-user provider API keys, encrypted at rest (AES-256-GCM with a
+   * per-user key derived via HKDF from the BYOK_MASTER_KEY env var).
+   * Plaintext keys never persist; no "last 4 chars" hint is stored either.
+   */
+  byokKeys: defineTable({
+    userId: v.id("users"),
+    provider: v.union(v.literal("deepgram"), v.literal("mistral")),
+    /** AES-GCM ciphertext, base64. */
+    ciphertextB64: v.string(),
+    /** 12-byte AES-GCM IV, base64, generated with crypto.getRandomValues. */
+    ivB64: v.string(),
+    /** Crypto-scheme version for future rotation/migration. */
+    keyVersion: v.number(),
+    lastValidatedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_provider", ["userId", "provider"]),
+
+  /**
+   * Voice notes — walkie-talkie (batch) recordings and finalized streaming
+   * transcripts. Audio lives in Convex file storage only until the provider
+   * callback lands; the file is deleted immediately after transcription
+   * (storage URLs are public and unrevocable — mint late, delete early).
+   */
+  voiceNotes: defineTable({
+    userId: v.id("users"),
+    /** Unset after the audio file is deleted post-transcription. */
+    storageId: v.optional(v.id("_storage")),
+    status: v.union(
+      v.literal("uploaded"),
+      v.literal("transcribing"),
+      v.literal("done"),
+      v.literal("failed"),
+    ),
+    source: v.union(v.literal("batch"), v.literal("stream")),
+    /** Deepgram request_id — correlates the async transcription callback. */
+    deepgramRequestId: v.optional(v.string()),
+    transcript: v.optional(v.string()),
+    durationSeconds: v.optional(v.number()),
+    /** Sanitized failure summary. Never contains key material. */
+    errorMessage: v.optional(v.string()),
+    audioDeletedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_deepgramRequestId", ["deepgramRequestId"]),
+
+  /**
+   * HARD_RULES §9 — live (streaming) voice is tracked in minutes of real
+   * audio per user-local calendar day. One row per streaming session.
+   */
+  voiceSessions: defineTable({
+    userId: v.id("users"),
+    /** "YYYY-MM-DD" in the user's local timezone (client-supplied). */
+    localDay: v.string(),
+    startedAt: v.number(),
+    endedAt: v.optional(v.number()),
+    durationMs: v.optional(v.number()),
+    /** True when the session ran on the user's own Deepgram key. */
+    usedByok: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_localDay", ["userId", "localDay"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
   goals: defineTable({
     userId: v.id("users"),
     title: v.string(),
