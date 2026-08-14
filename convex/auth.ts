@@ -1,11 +1,13 @@
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Password } from "@convex-dev/auth/providers/Password";
-import { convexAuth } from "@convex-dev/auth/server";
+import { convexAuth, createAccount } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel } from "./_generated/dataModel";
 
 const DEFAULT_FOUNDER_EMAIL = "amitlevin65@protonmail.com";
 const DEFAULT_BETA_MAX_TESTERS = 30;
+const E2E_TEST_AUTH_PROVIDER_ID = "e2e-test-email";
 
 function normalizeEmail(email: string | undefined | null): string {
   return (email ?? "").trim().toLowerCase();
@@ -15,6 +17,10 @@ function getFounderEmail() {
   return normalizeEmail(String(process.env.BETA_FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL));
 }
 
+function getE2eTestAuthEmail() {
+  return normalizeEmail(process.env.E2E_TEST_AUTH_EMAIL);
+}
+
 function getAllowlistedEmails() {
   const fromEnv = (String(process.env.BETA_ALLOWLIST_EMAILS ?? ""))
     .split(",")
@@ -22,7 +28,39 @@ function getAllowlistedEmails() {
     .filter(Boolean);
   const allowlisted = new Set(fromEnv);
   allowlisted.add(getFounderEmail());
+  const e2eTestAuthEmail = getE2eTestAuthEmail();
+  if (e2eTestAuthEmail) {
+    allowlisted.add(e2eTestAuthEmail);
+  }
   return allowlisted;
+}
+
+function getE2eTestAuthProvider() {
+  const e2eTestAuthEmail = getE2eTestAuthEmail();
+  if (!e2eTestAuthEmail) {
+    return [];
+  }
+
+  return [
+    ConvexCredentials({
+      id: E2E_TEST_AUTH_PROVIDER_ID,
+      authorize: async (params, ctx) => {
+        const email = normalizeEmail(
+          typeof params.email === "string" ? params.email : undefined,
+        );
+        if (email !== e2eTestAuthEmail || params.code !== "123456") {
+          return null;
+        }
+
+        const { user } = await createAccount(ctx, {
+          provider: E2E_TEST_AUTH_PROVIDER_ID,
+          account: { id: e2eTestAuthEmail },
+          profile: { email: e2eTestAuthEmail, emailVerified: true },
+        });
+        return { userId: user._id };
+      },
+    }),
+  ];
 }
 
 function getBetaMaxTesters() {
@@ -87,6 +125,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       maxAge: 60 * 30,
       sendVerificationRequest: sendMagicLinkEmail,
     }),
+    ...getE2eTestAuthProvider(),
   ],
   session: {
     totalDurationMs: 30 * 24 * 60 * 60 * 1000,
