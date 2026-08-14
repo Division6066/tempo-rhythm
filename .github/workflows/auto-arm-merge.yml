@@ -1,0 +1,19 @@
+name: Auto-arm merge
+# Arms auto-merge (squash) on any PR opened against integration.
+# GUARD: the job-level "if" means this can never act on a PR targeting
+# master (or any branch other than integration).
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  arm:
+    if: github.event.pull_request.base.ref == 'integration' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Arm auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --auto --squash
