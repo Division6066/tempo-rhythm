@@ -2,7 +2,13 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { AiAuthError } from "./ai_errors";
 import { callLLM } from "./ai_router";
 
-const TRACKED = ["AI_CHAT_API_KEY", "AI_CHAT_BASE_URL", "AI_CHAT_MODEL", "MISTRAL_API_KEY"] as const;
+const TRACKED = [
+  "AI_PROVIDER",
+  "AI_CHAT_API_KEY",
+  "AI_CHAT_BASE_URL",
+  "AI_CHAT_MODEL",
+  "MISTRAL_API_KEY",
+] as const;
 
 const originalFetch = globalThis.fetch;
 
@@ -24,6 +30,7 @@ describe("callLLM", () => {
   });
 
   test("POSTs to the resolved OpenAI-compatible chat URL", async () => {
+    process.env.AI_PROVIDER = "inkling";
     process.env.AI_CHAT_API_KEY = "chat-key";
     process.env.AI_CHAT_BASE_URL = "https://api.inkling.example/v1";
     process.env.AI_CHAT_MODEL = "inkling-chat";
