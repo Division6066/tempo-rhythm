@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? "https://example.convex.cloud";
+
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 30_000,
@@ -13,7 +15,7 @@ export default defineConfig({
   webServer: {
     command: "bun run --cwd apps/web dev",
     env: {
-      NEXT_PUBLIC_CONVEX_URL: "https://example.convex.cloud",
+      NEXT_PUBLIC_CONVEX_URL: convexUrl,
       NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: "1",
       TEMPO_E2E_AUTH_BYPASS: "1",
       TEMPO_E2E_PUBLIC_CALENDAR: "1",
