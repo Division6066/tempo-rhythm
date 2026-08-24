@@ -30,6 +30,9 @@ Featherless endpoint routed through Hermes is a future fixed-subscription lane,
 not a native custom-provider endpoint in Orca 1.4.188. No secret value is
 stored.
 
+The human-gate fixture uses the `human` provider with `manual-human` auth mode,
+no credential reference, and blocked billing semantics. It is not an AI route.
+
 Fixed-subscription lanes fail closed at their allowance boundary. Metered APIs
 are manual-approval-only and never an automatic fallback. Unknown billing is
 blocked.
