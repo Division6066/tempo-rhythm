@@ -37,13 +37,15 @@ jobs:
           if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') fail('unexpected schema dialect');
           if (config.version !== '1') fail('unsupported manifest version');
           if (config.tickets.some((ticket) => ticket.system !== 'github-issue' || ticket.projectView !== 'github-project-ordered-view')) fail('ticket system or queue assumption is not GitHub');
-          if (config.tickets.some((ticket) => !ticket.runId || !ticket.roleId || !ticket.providerSelection?.providerId || !ticket.providerSelection?.accountAlias || !ticket.stage || !ticket.baseCommit || ticket.approvalRequired !== false)) fail('ticket identity or routing fields are incomplete');
-          if (config.roles.length < 8 || !['orchestrator','builder','integrator','ci','security','ux-ui','preview-deployer','human-gate'].every((kind) => config.roles.some((role) => role.kind === kind))) fail('role records are incomplete');
+          if (config.tickets.some((ticket) => !ticket.runId || !ticket.roleId || !ticket.providerSelection?.providerId || !ticket.providerSelection?.accountAlias || !ticket.stage || !ticket.baseCommit || typeof ticket.approvalRequired !== 'boolean')) fail('ticket identity or routing fields are incomplete');
+          const rolePrefixes = { orchestrator: '🧭 ', builder: '🛠 ', integrator: '🔀 ', ci: '⚙️ ', security: '🛡 ', 'ux-ui': '🎨 ', 'preview-deployer': '🚀 ', 'human-gate': '✋ ' };
+          if (config.roles.length < 8 || Object.entries(rolePrefixes).some(([kind, prefix]) => !config.roles.some((role) => role.kind === kind && role.titlePrefix === prefix)) || new Set(config.roles.map((role) => role.titlePrefix)).size !== 8) fail('role records or role-specific prefixes are incomplete');
           if (config.providerAccounts.some((account) => !account.providerId || !account.accountAlias || !account.authRef || account.authRef.includes('=') || (account.billingPolicy === 'manual-approval-before-metered' && account.routingState === 'enabled'))) fail('provider account or billing safety invalid');
           if (config.runs.some((run) => run.mode !== 'dry-run' || run.maxParallelBuilders < 0 || run.activeBuilders.length > run.maxParallelBuilders || run.resultBinding !== 'commit-sha' || run.repairPolicy !== 'code-change-invalidates-later-results-restart-ci')) fail('run model is not dry-run and commit-bound');
           if (config.gates.map((gate) => gate.id).join(',') !== 'integration,ci,security,ux,preview,human-gate') fail('gate sequence is not integration/CI/security/UX/preview/human');
           if (config.gates.slice(0, 5).some((gate) => gate.kind !== 'automated' || gate.production !== false || gate.resultBinding !== 'commit-sha')) fail('automated gate safety invalid');
           if (config.gates[5].kind !== 'human' || config.gates[5].production !== false) fail('human gate safety invalid');
+          if (config.tickets.some((ticket) => (ticket.stage === 'human-gate') !== ticket.approvalRequired)) fail('human-gate approval relationship invalid');
           if (JSON.stringify(config).toLowerCase().includes('linear')) fail('Linear reference found');
           if (JSON.stringify(config).toLowerCase().includes('auto-' + 'merge')) fail('automatic merge reference found');
           console.log('CONTROL_PLANE_DRY_RUN_OK');

@@ -25,9 +25,10 @@ approval role; preview remains preview-only.
 Provider accounts carry an alias, provider ID, auth mode, secret-reference-only
 `authRef`, concurrency, hourly/weekly/monthly remaining usage (number or
 unknown), routing state, and billing policy. The fixture includes Claude Code
-Max as an OAuth subscription lane and Hermes/Featherless as a future fixed-
-subscription lane. The fixture does not claim native Orca support for Hermes.
-No secret value is stored.
+Max as an OAuth subscription lane. Hermes is a built-in Orca agent; a
+Featherless endpoint routed through Hermes is a future fixed-subscription lane,
+not a native custom-provider endpoint in Orca 1.4.188. No secret value is
+stored.
 
 Fixed-subscription lanes fail closed at their allowance boundary. Metered APIs
 are manual-approval-only and never an automatic fallback. Unknown billing is

@@ -26,7 +26,7 @@
     },
     "role": {
       "type": "object", "required": ["id", "kind", "titlePrefix", "humanApprovalRequired"],
-      "properties": { "id": { "type": "string" }, "kind": { "enum": ["orchestrator", "builder", "integrator", "ci", "security", "ux-ui", "preview-deployer", "human-gate"] }, "titlePrefix": { "type": "string", "pattern": "^🧭 " }, "humanApprovalRequired": { "type": "boolean" } },
+      "properties": { "id": { "type": "string" }, "kind": { "enum": ["orchestrator", "builder", "integrator", "ci", "security", "ux-ui", "preview-deployer", "human-gate"] }, "titlePrefix": { "type": "string", "minLength": 1 }, "humanApprovalRequired": { "type": "boolean" } },
       "additionalProperties": false
     },
     "providerAccount": {
