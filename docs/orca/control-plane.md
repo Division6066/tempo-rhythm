@@ -2,52 +2,48 @@
 
 This is a schema and dry-run foundation. It does not dispatch an agent.
 
-## Canonical work
+## Canonical ticket and identity model
 
 - A GitHub Issue in `Division6066/tempo-rhythm` is the canonical ticket.
 - A GitHub Project ordered view is the queue presentation assumption.
-- Linear is deliberately excluded.
-- The title prefix `🎫 ` identifies ticket records.
+- Linear is excluded.
+- `🎫 ` marks tickets, `🧭 ` marks roles, and `🤖 ` marks provider accounts.
+- Ticket, role, provider, and account identities are separate.
 
-## Separate identities
+Each ticket records `runId`, `parentTicket`, `sequence`, `stage`, `roleId`,
+provider/account selection (`auto` or `explicit`), `billingLane`, `status`,
+`dependsOn`, `branch`, `baseCommit`, `resultCommit`, `attempt`, evidence URLs,
+and `approvalRequired`. Stages are `build`, `integration`, `ci`, `security`,
+`ux`, `preview`, `human-gate`, and `repair`.
 
-The manifest keeps three concepts separate:
+## Roles and provider accounts
 
-- `role`: what the worker is allowed to do (`🧭 ` prefix).
-- `providerAccount`: which agent/provider account is used (`🤖 ` prefix).
-- `ticket`: the GitHub Issue being handled (`🎫 ` prefix).
+The role records are: orchestrator, builder, integrator, CI, security, UX/UI,
+preview deployer, and human gate. The human gate is the only production-facing
+approval role; preview remains preview-only.
 
-An account is not a role. A role is not a ticket owner. Provider billing is
-explicit: fixed-subscription routes may be considered; metered or unknown
-routes require manual approval. Overage behavior is fail-closed by default.
+Provider accounts carry an alias, provider ID, auth mode, secret-reference-only
+`authRef`, concurrency, hourly/weekly/monthly remaining usage (number or
+unknown), routing state, and billing policy. The fixture includes Claude Code
+Max as an OAuth subscription lane and Hermes/Featherless as a future fixed-
+subscription lane. The fixture does not claim native Orca support for Hermes.
+No secret value is stored.
 
-## Run and gate model
+Fixed-subscription lanes fail closed at their allowance boundary. Metered APIs
+are manual-approval-only and never an automatic fallback. Unknown billing is
+blocked.
 
-Every run records a full 40-character commit SHA. Every gate result is bound to
-that same SHA. A code-changing repair invalidates downstream results and
-restarts CI; it never silently reuses an earlier result.
+## Runs, builders, and gates
 
-The intended sequence is:
+A run records ordered tickets, maximum parallel builders, active builders, an
+integration ticket, and the sequential chain. Parallel builder branches are
+represented as state only; this foundation dispatches no real agents.
 
-1. Integration gate.
-2. CI gate.
-3. Security gate.
-4. Playwright UX/UI gate.
-5. Preview gate.
+The chain is integration → CI → security → UX → automated preview → separate
+human approval. Every result is bound to the run's commit SHA. A code-changing
+repair invalidates all later results and restarts CI.
 
-Builder branches may be represented in a manifest as planned parallel work,
-but this foundation does not dispatch real agents. Integration remains a
-sequential gate after builder results. Preview is not production deployment.
-Master and production approval remain human-only.
-
-## Operational boundaries
-
-- Manual dispatch only; no schedules.
-- Dry-run validation only; no paid provider invocation.
-- No auto-merge, force-push, production deploy, or Linear integration.
-- No `workflow_run` or `pull_request_target` triggers.
-- Secrets and credential values never belong in the manifest or logs.
-- Future metered exceptions must be documented as explicit rules and manually approved.
-
-The example manifest uses a zero SHA intentionally because it is a dry-run
-fixture, not a claim about a real commit.
+The workflow is manual `workflow_dispatch` with a required dry-run flag. It has
+no schedules, no `workflow_run`, no `pull_request_target`, no agent invocation,
+no auto-merge, no force-push, and no production deployment. Master and
+production remain human-controlled.

@@ -19,7 +19,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout manifests
-        uses: actions/checkout@v4
+        # actions/checkout v4.2.2, official commit pin.
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set up Node 22
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -35,14 +36,15 @@ jobs:
           const fail = (message) => { console.error(`CONTROL_PLANE_INVALID: ${message}`); process.exit(1); };
           if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') fail('unexpected schema dialect');
           if (config.version !== '1') fail('unsupported manifest version');
-          if (config.ticket.system !== 'github-issue') fail('ticket system is not GitHub Issues');
-          if (config.ticket.projectView !== 'github-project-ordered-view') fail('queue assumption is not GitHub Project ordered view');
-          if (config.run.mode !== 'dry-run' || config.run.dispatch !== 'none') fail('dry-run manifest can dispatch work');
-          if (config.run.resultBinding !== 'commit-sha') fail('run is not commit-SHA-bound');
-          if (!/^[0-9a-f]{40}$/.test(config.run.commitSha)) fail('invalid commit SHA');
-          if (config.gates.map((gate) => gate.sequence).join(',') !== '1,2,3,4,5') fail('gate sequence is not sequential');
-          if (config.gates.some((gate) => gate.resultBinding !== 'commit-sha')) fail('gate is not commit-SHA-bound');
-          if (config.providerAccount.billingClass !== 'fixed-subscription' || config.providerAccount.overagePolicy !== 'fail-closed') fail('provider is not fixed-cost fail-closed');
+          if (config.tickets.some((ticket) => ticket.system !== 'github-issue' || ticket.projectView !== 'github-project-ordered-view')) fail('ticket system or queue assumption is not GitHub');
+          if (config.tickets.some((ticket) => !ticket.runId || !ticket.roleId || !ticket.providerSelection?.providerId || !ticket.providerSelection?.accountAlias || !ticket.stage || !ticket.baseCommit || ticket.approvalRequired !== false)) fail('ticket identity or routing fields are incomplete');
+          if (config.roles.length < 8 || !['orchestrator','builder','integrator','ci','security','ux-ui','preview-deployer','human-gate'].every((kind) => config.roles.some((role) => role.kind === kind))) fail('role records are incomplete');
+          if (config.providerAccounts.some((account) => !account.providerId || !account.accountAlias || !account.authRef || account.authRef.includes('=') || (account.billingPolicy === 'manual-approval-before-metered' && account.routingState === 'enabled'))) fail('provider account or billing safety invalid');
+          if (config.runs.some((run) => run.mode !== 'dry-run' || run.maxParallelBuilders < 0 || run.activeBuilders.length > run.maxParallelBuilders || run.resultBinding !== 'commit-sha' || run.repairPolicy !== 'code-change-invalidates-later-results-restart-ci')) fail('run model is not dry-run and commit-bound');
+          if (config.gates.map((gate) => gate.id).join(',') !== 'integration,ci,security,ux,preview,human-gate') fail('gate sequence is not integration/CI/security/UX/preview/human');
+          if (config.gates.slice(0, 5).some((gate) => gate.kind !== 'automated' || gate.production !== false || gate.resultBinding !== 'commit-sha')) fail('automated gate safety invalid');
+          if (config.gates[5].kind !== 'human' || config.gates[5].production !== false) fail('human gate safety invalid');
           if (JSON.stringify(config).toLowerCase().includes('linear')) fail('Linear reference found');
+          if (JSON.stringify(config).toLowerCase().includes('auto-' + 'merge')) fail('automatic merge reference found');
           console.log('CONTROL_PLANE_DRY_RUN_OK');
           NODE

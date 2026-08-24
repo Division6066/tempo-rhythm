@@ -1,38 +1,17 @@
 {
   "version": "1",
-  "ticket": {
-    "system": "github-issue",
-    "repository": "Division6066/tempo-rhythm",
-    "issueNumber": 1,
-    "titlePrefix": "🎫 ",
-    "projectView": "github-project-ordered-view"
-  },
-  "role": {
-    "id": "builder-primary",
-    "kind": "builder",
-    "titlePrefix": "🧭 ",
-    "humanApprovalRequired": false
-  },
-  "providerAccount": {
-    "id": "claude-code-max",
-    "provider": "claude-code",
-    "billingClass": "fixed-subscription",
-    "overagePolicy": "fail-closed",
-    "titlePrefix": "🤖 "
-  },
-  "run": {
-    "id": "run-dry-run-example",
-    "mode": "dry-run",
-    "commitSha": "0000000000000000000000000000000000000000",
-    "dispatch": "none",
-    "resultBinding": "commit-sha",
-    "codeChangingRepair": "restart-ci"
-  },
+  "tickets": [{
+    "id": "ticket-dry-run-example", "system": "github-issue", "repository": "Division6066/tempo-rhythm", "issueNumber": 1, "titlePrefix": "🎫 ", "projectView": "github-project-ordered-view", "runId": "run-dry-run-example", "parentTicket": null, "sequence": 1, "stage": "build", "roleId": "builder-primary", "providerSelection": { "providerId": "claude-code", "accountAlias": "claude-code-max", "selectionMode": "explicit" }, "billingLane": "fixed-subscription", "status": "queued", "dependsOn": [], "branch": "chore/orca-dry-run-example", "baseCommit": "0000000000000000000000000000000000000000", "resultCommit": null, "attempt": 1, "evidenceUrls": [], "approvalRequired": false
+  }],
+  "roles": [
+    { "id": "orchestrator", "kind": "orchestrator", "titlePrefix": "🧭 ", "humanApprovalRequired": false }, { "id": "builder-primary", "kind": "builder", "titlePrefix": "🧭 ", "humanApprovalRequired": false }, { "id": "integrator", "kind": "integrator", "titlePrefix": "🧭 ", "humanApprovalRequired": false }, { "id": "ci", "kind": "ci", "titlePrefix": "🧭 ", "humanApprovalRequired": false }, { "id": "security", "kind": "security", "titlePrefix": "🧭 ", "humanApprovalRequired": false }, { "id": "ux-ui", "kind": "ux-ui", "titlePrefix": "🧭 ", "humanApprovalRequired": false }, { "id": "preview-deployer", "kind": "preview-deployer", "titlePrefix": "🧭 ", "humanApprovalRequired": false }, { "id": "human-gate", "kind": "human-gate", "titlePrefix": "🧭 ", "humanApprovalRequired": true }
+  ],
+  "providerAccounts": [
+    { "providerId": "claude-code", "accountAlias": "claude-code-max", "provider": "claude-code", "authMode": "oauth-subscription", "authRef": "CLAUDE_CODE_OAUTH_TOKEN", "concurrency": 1, "hourlyRemaining": null, "weeklyRemaining": null, "monthlyRemaining": null, "routingState": "enabled", "billingPolicy": "fixed-cost-fail-closed", "titlePrefix": "🤖 ", "nativeOrcaSupport": true },
+    { "providerId": "hermes-featherless", "accountAlias": "hermes-featherless-subscription", "provider": "hermes-featherless", "authMode": "fixed-subscription-api", "authRef": "FEATHERLESS_API_KEY", "concurrency": null, "hourlyRemaining": null, "weeklyRemaining": null, "monthlyRemaining": null, "routingState": "future", "billingPolicy": "fixed-cost-fail-closed", "titlePrefix": "🤖 ", "nativeOrcaSupport": false }
+  ],
+  "runs": [{ "id": "run-dry-run-example", "mode": "dry-run", "orderedTickets": ["ticket-dry-run-example"], "maxParallelBuilders": 2, "activeBuilders": [], "integrationTicket": "ticket-integration-example", "sequentialChain": ["integration", "ci", "security", "ux", "preview", "human-gate"], "baseCommit": "0000000000000000000000000000000000000000", "resultCommit": null, "resultBinding": "commit-sha", "repairPolicy": "code-change-invalidates-later-results-restart-ci" }],
   "gates": [
-    { "id": "integration", "sequence": 1, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
-    { "id": "ci", "sequence": 2, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
-    { "id": "security", "sequence": 3, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
-    { "id": "playwright-ux-ui", "sequence": 4, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
-    { "id": "preview", "sequence": 5, "kind": "human", "required": true, "resultBinding": "commit-sha", "onCodeChange": "stop" }
+    { "id": "integration", "sequence": 1, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci", "production": false }, { "id": "ci", "sequence": 2, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci", "production": false }, { "id": "security", "sequence": 3, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci", "production": false }, { "id": "ux", "sequence": 4, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci", "production": false }, { "id": "preview", "sequence": 5, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci", "production": false }, { "id": "human-gate", "sequence": 6, "kind": "human", "required": true, "resultBinding": "commit-sha", "onCodeChange": "invalidate-later-results", "production": false }
   ]
 }

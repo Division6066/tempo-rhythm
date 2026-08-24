@@ -1,81 +1,47 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tempo-flow.example/schemas/orca-control-plane.schema.json",
+  "$id": "urn:tempo-flow:orca-control-plane-schema",
   "title": "Orca GitHub-first control-plane manifest",
   "type": "object",
-  "required": ["version", "ticket", "role", "providerAccount", "run", "gates"],
+  "required": ["version", "tickets", "roles", "providerAccounts", "runs", "gates"],
   "properties": {
     "version": { "type": "string", "const": "1" },
-    "ticket": { "$ref": "#/$defs/ticket" },
-    "role": { "$ref": "#/$defs/role" },
-    "providerAccount": { "$ref": "#/$defs/providerAccount" },
-    "run": { "$ref": "#/$defs/run" },
-    "gates": {
-      "type": "array",
-      "minItems": 5,
-      "items": { "$ref": "#/$defs/gate" }
-    }
+    "tickets": { "type": "array", "items": { "$ref": "#/$defs/ticket" }, "minItems": 1 },
+    "roles": { "type": "array", "items": { "$ref": "#/$defs/role" }, "minItems": 8 },
+    "providerAccounts": { "type": "array", "items": { "$ref": "#/$defs/providerAccount" }, "minItems": 1 },
+    "runs": { "type": "array", "items": { "$ref": "#/$defs/run" }, "minItems": 1 },
+    "gates": { "type": "array", "items": { "$ref": "#/$defs/gate" }, "minItems": 6 }
   },
   "$defs": {
     "ticket": {
       "type": "object",
-      "required": ["system", "repository", "issueNumber", "titlePrefix"],
+      "required": ["id", "system", "repository", "issueNumber", "titlePrefix", "runId", "parentTicket", "sequence", "stage", "roleId", "providerSelection", "billingLane", "status", "dependsOn", "branch", "baseCommit", "resultCommit", "attempt", "evidenceUrls", "approvalRequired"],
       "properties": {
-        "system": { "type": "string", "const": "github-issue" },
-        "repository": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
-        "issueNumber": { "type": "integer", "minimum": 1 },
-        "titlePrefix": { "type": "string", "pattern": "^🎫 " },
-        "projectView": { "type": "string", "const": "github-project-ordered-view" }
+        "id": { "type": "string", "pattern": "^ticket-[a-z0-9-]+$" }, "system": { "const": "github-issue" }, "repository": { "type": "string", "pattern": "^[^/]+/[^/]+$" }, "issueNumber": { "type": "integer", "minimum": 1 }, "titlePrefix": { "type": "string", "pattern": "^🎫 " }, "projectView": { "const": "github-project-ordered-view" },
+        "runId": { "type": "string", "pattern": "^run-[a-z0-9-]+$" }, "parentTicket": { "type": ["string", "null"] }, "sequence": { "type": "integer", "minimum": 1 }, "stage": { "type": "string", "enum": ["build", "integration", "ci", "security", "ux", "preview", "human-gate", "repair"] }, "roleId": { "type": "string" },
+        "providerSelection": { "type": "object", "required": ["providerId", "accountAlias", "selectionMode"], "properties": { "providerId": { "type": "string" }, "accountAlias": { "type": "string" }, "selectionMode": { "enum": ["auto", "explicit"] } }, "additionalProperties": false },
+        "billingLane": { "enum": ["fixed-subscription", "metered-api-manual-approval", "unknown-blocked"] }, "status": { "enum": ["queued", "running", "blocked", "passed", "failed", "awaiting-approval", "invalidated"] }, "dependsOn": { "type": "array", "items": { "type": "string" } }, "branch": { "type": "string" }, "baseCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }, "resultCommit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" }, "attempt": { "type": "integer", "minimum": 1 }, "evidenceUrls": { "type": "array", "items": { "type": "string", "format": "uri" } }, "approvalRequired": { "type": "boolean" }
       },
       "additionalProperties": false
     },
     "role": {
-      "type": "object",
-      "required": ["id", "kind", "titlePrefix"],
-      "properties": {
-        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-        "kind": { "type": "string", "enum": ["builder", "reviewer", "integrator", "release-observer"] },
-        "titlePrefix": { "type": "string", "pattern": "^🧭 " },
-        "humanApprovalRequired": { "type": "boolean" }
-      },
+      "type": "object", "required": ["id", "kind", "titlePrefix", "humanApprovalRequired"],
+      "properties": { "id": { "type": "string" }, "kind": { "enum": ["orchestrator", "builder", "integrator", "ci", "security", "ux-ui", "preview-deployer", "human-gate"] }, "titlePrefix": { "type": "string", "pattern": "^🧭 " }, "humanApprovalRequired": { "type": "boolean" } },
       "additionalProperties": false
     },
     "providerAccount": {
-      "type": "object",
-      "required": ["id", "provider", "billingClass", "overagePolicy"],
-      "properties": {
-        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-        "provider": { "type": "string", "enum": ["codex", "claude-code", "gemini-cli", "grok", "cursor", "amp", "devin", "hermes"] },
-        "billingClass": { "type": "string", "enum": ["fixed-subscription", "metered-api", "unknown"] },
-        "overagePolicy": { "type": "string", "enum": ["fail-closed", "manual-approval", "unknown"] },
-        "titlePrefix": { "type": "string", "pattern": "^🤖 " }
-      },
+      "type": "object", "required": ["providerId", "accountAlias", "provider", "authMode", "authRef", "concurrency", "hourlyRemaining", "weeklyRemaining", "monthlyRemaining", "routingState", "billingPolicy", "titlePrefix"],
+      "properties": { "providerId": { "type": "string" }, "accountAlias": { "type": "string" }, "provider": { "enum": ["codex", "claude-code", "gemini-cli", "grok", "cursor", "amp", "devin", "hermes-featherless"] }, "authMode": { "enum": ["oauth-subscription", "fixed-subscription-api", "metered-api"] }, "authRef": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }, "concurrency": { "type": ["integer", "null"], "minimum": 0 }, "hourlyRemaining": { "type": ["number", "null"], "minimum": 0 }, "weeklyRemaining": { "type": ["number", "null"], "minimum": 0 }, "monthlyRemaining": { "type": ["number", "null"], "minimum": 0 }, "routingState": { "enum": ["enabled", "manual-only", "disabled", "future"] }, "billingPolicy": { "enum": ["fixed-cost-fail-closed", "manual-approval-before-metered", "blocked"] }, "titlePrefix": { "type": "string", "pattern": "^🤖 " }, "nativeOrcaSupport": { "type": "boolean" } },
       "additionalProperties": false
     },
     "run": {
-      "type": "object",
-      "required": ["id", "mode", "commitSha", "dispatch", "resultBinding"],
-      "properties": {
-        "id": { "type": "string", "pattern": "^run-[a-z0-9-]+$" },
-        "mode": { "type": "string", "enum": ["dry-run", "manual-dispatch", "autonomous"] },
-        "commitSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-        "dispatch": { "type": "string", "enum": ["none", "manual-only", "github-actions"] },
-        "resultBinding": { "type": "string", "const": "commit-sha" },
-        "codeChangingRepair": { "type": "string", "enum": ["restart-ci", "manual-review"] }
-      },
+      "type": "object", "required": ["id", "mode", "orderedTickets", "maxParallelBuilders", "activeBuilders", "integrationTicket", "sequentialChain", "baseCommit", "resultCommit", "resultBinding", "repairPolicy"],
+      "properties": { "id": { "type": "string" }, "mode": { "enum": ["dry-run", "manual-dispatch", "autonomous"] }, "orderedTickets": { "type": "array", "items": { "type": "string" } }, "maxParallelBuilders": { "type": "integer", "minimum": 0 }, "activeBuilders": { "type": "array", "items": { "type": "string" } }, "integrationTicket": { "type": "string" }, "sequentialChain": { "type": "array", "items": { "type": "string" }, "minItems": 6 }, "baseCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }, "resultCommit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" }, "resultBinding": { "const": "commit-sha" }, "repairPolicy": { "const": "code-change-invalidates-later-results-restart-ci" } },
       "additionalProperties": false
     },
     "gate": {
-      "type": "object",
-      "required": ["id", "sequence", "kind", "required", "resultBinding"],
-      "properties": {
-        "id": { "type": "string", "enum": ["integration", "ci", "security", "playwright-ux-ui", "preview"] },
-        "sequence": { "type": "integer", "minimum": 1, "maximum": 5 },
-        "kind": { "type": "string", "enum": ["automated", "human"] },
-        "required": { "type": "boolean", "const": true },
-        "resultBinding": { "type": "string", "const": "commit-sha" },
-        "onCodeChange": { "type": "string", "enum": ["restart-ci", "stop"] }
-      },
+      "type": "object", "required": ["id", "sequence", "kind", "required", "resultBinding", "onCodeChange"],
+      "properties": { "id": { "enum": ["integration", "ci", "security", "ux", "preview", "human-gate"] }, "sequence": { "type": "integer", "minimum": 1, "maximum": 6 }, "kind": { "enum": ["automated", "human"] }, "required": { "const": true }, "resultBinding": { "const": "commit-sha" }, "onCodeChange": { "enum": ["restart-ci", "invalidate-later-results"] }, "production": { "const": false } },
       "additionalProperties": false
     }
   }
