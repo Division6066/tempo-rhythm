@@ -1,0 +1,38 @@
+{
+  "version": "1",
+  "ticket": {
+    "system": "github-issue",
+    "repository": "Division6066/tempo-rhythm",
+    "issueNumber": 1,
+    "titlePrefix": "🎫 ",
+    "projectView": "github-project-ordered-view"
+  },
+  "role": {
+    "id": "builder-primary",
+    "kind": "builder",
+    "titlePrefix": "🧭 ",
+    "humanApprovalRequired": false
+  },
+  "providerAccount": {
+    "id": "claude-code-max",
+    "provider": "claude-code",
+    "billingClass": "fixed-subscription",
+    "overagePolicy": "fail-closed",
+    "titlePrefix": "🤖 "
+  },
+  "run": {
+    "id": "run-dry-run-example",
+    "mode": "dry-run",
+    "commitSha": "0000000000000000000000000000000000000000",
+    "dispatch": "none",
+    "resultBinding": "commit-sha",
+    "codeChangingRepair": "restart-ci"
+  },
+  "gates": [
+    { "id": "integration", "sequence": 1, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
+    { "id": "ci", "sequence": 2, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
+    { "id": "security", "sequence": 3, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
+    { "id": "playwright-ux-ui", "sequence": 4, "kind": "automated", "required": true, "resultBinding": "commit-sha", "onCodeChange": "restart-ci" },
+    { "id": "preview", "sequence": 5, "kind": "human", "required": true, "resultBinding": "commit-sha", "onCodeChange": "stop" }
+  ]
+}
