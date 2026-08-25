@@ -92,6 +92,10 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          base_branch: ${{ inputs.base || 'integration' }}
+          track_progress: true
+          additional_permissions: |
+            actions: read
           prompt: |
             Read issue #${{ needs.route.outputs.issue }} in this repository and do the work it asks for.
             Branch from `${{ inputs.base || 'integration' }}` and open a PR back into it, closing the issue.
@@ -100,6 +104,7 @@ jobs:
           claude_args: |
             --max-turns 40
             --model claude-sonnet-5
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(bun run lint:*),Bash(bun run test:*),Bash(bun run typecheck:*)"
 
   # ── CURSOR + CODEX: mention them, as a real user, so their own app picks it up ──
   mention:
