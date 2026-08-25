@@ -145,7 +145,7 @@ export function SignInForm({
       {isPage && (
         <div className="mb-8 text-center">
           <h1 className="font-heading text-4xl font-semibold tracking-tight text-gradient-primary">
-            Welcome back
+            Log in to TEMPO
           </h1>
           <p className="mt-2 text-muted-foreground">Sign in to Tempo Flow</p>
         </div>
