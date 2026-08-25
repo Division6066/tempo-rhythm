@@ -1,0 +1,129 @@
+# .github/workflows/agent-router.yml
+#
+# GitHub Issues are the tickets. This workflow is the dispatcher. No Linear, no Cyrus.
+#
+# TWO WAYS TO PUSH A TICKET:
+#   1. Put a label on the issue:  agent:claude  |  agent:cursor  |  agent:codex
+#   2. Or fire it by hand:  gh workflow run agent-router.yml -f agent=cursor -f issue=42
+#
+# 🔴 THE ONE FACT THIS WHOLE FILE IS BUILT ON:
+#   Cursor DELIBERATELY IGNORES comments authored by bots, GITHUB_TOKEN included.
+#   Cursor staff, forum.cursor.com/t/148135: "Comments from bots (including GitHub
+#   Actions) may be intentionally filtered for security reasons." Their own fix:
+#   post with a PAT so the comment comes from a real user.
+#   claude-code-action rejects bot actors too. Assume Codex does the same.
+#   => every @mention below is posted with DISPATCH_PAT, never GITHUB_TOKEN.
+#
+# SECRETS
+#   DISPATCH_PAT               fine-grained PAT, issues:write on these repos. THE critical one.
+#   CLAUDE_CODE_OAUTH_TOKEN    from `claude setup-token` -> runs bill to Claude Max, not API.
+
+name: Agent Router
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: "Who takes it"
+        required: true
+        type: choice
+        options: [claude, cursor, codex]
+      issue:
+        description: "Issue number"
+        required: true
+        type: string
+      base:
+        description: "Base branch"
+        required: false
+        default: integration
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+  actions: read
+
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    outputs:
+      agent: ${{ steps.pick.outputs.agent }}
+      issue: ${{ steps.pick.outputs.issue }}
+    steps:
+      - id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            AGENT="${{ inputs.agent }}"; ISSUE="${{ inputs.issue }}"
+          else
+            LABEL="${{ github.event.label.name }}"
+            case "$LABEL" in
+              agent:claude|agent:cursor|agent:codex) AGENT="${LABEL#agent:}" ;;
+              *) echo "not an agent label, stopping"; exit 0 ;;
+            esac
+            ISSUE="${{ github.event.issue.number }}"
+          fi
+          BASE="${{ inputs.base || 'integration' }}"
+          case "$BASE" in
+            master|main) echo "::error::Agents branch from integration. master is yours."; exit 1 ;;
+          esac
+          echo "agent=$AGENT" >> "$GITHUB_OUTPUT"
+          echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
+
+  # ── CLAUDE: runs right here in Actions, on the Max subscription ──────────────
+  claude:
+    needs: route
+    if: needs.route.outputs.agent == 'claude'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.base || 'integration' }}
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: 1.3.9 }
+      - run: bun install --frozen-lockfile
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Read issue #${{ needs.route.outputs.issue }} in this repository and do the work it asks for.
+            Branch from `${{ inputs.base || 'integration' }}` and open a PR back into it, closing the issue.
+            Stay inside the file scope the issue declares. If the work needs a file outside that scope,
+            stop and say so in the PR body instead of widening it. Never touch master.
+          claude_args: |
+            --max-turns 40
+            --model claude-sonnet-5
+
+  # ── CURSOR + CODEX: mention them, as a real user, so their own app picks it up ──
+  mention:
+    needs: route
+    if: needs.route.outputs.agent == 'cursor' || needs.route.outputs.agent == 'codex'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hand the ticket over
+        env:
+          # NOT GITHUB_TOKEN. A bot-authored comment gets filtered and nothing happens.
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+          AGENT: ${{ needs.route.outputs.agent }}
+          ISSUE: ${{ needs.route.outputs.issue }}
+          BASE: ${{ inputs.base || 'integration' }}
+        run: |
+          gh issue comment "$ISSUE" --repo "${{ github.repository }}" --body "@$AGENT Please implement this issue.
+
+          Branch from \`$BASE\` and open a pull request back into \`$BASE\`. Stay inside the file scope
+          this issue declares — if the work needs a file outside it, say so in the PR instead of widening
+          the scope. Do not touch \`master\`."
+
+      - name: Mark it dispatched
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+        run: |
+          gh issue edit "${{ needs.route.outputs.issue }}" --repo "${{ github.repository }}" \
+            --add-label "dispatched:${{ needs.route.outputs.agent }}" || true
