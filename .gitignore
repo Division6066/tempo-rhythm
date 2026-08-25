@@ -61,3 +61,6 @@ graphify-out/
 # Playwright
 test-results/
 playwright-report/
+
+# CodeSpring local config
+.codespring/
