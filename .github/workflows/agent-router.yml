@@ -89,7 +89,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with: { bun-version: 1.3.9 }
       - run: bun install --frozen-lockfile
-      - uses: anthropics/claude-code-action@v1
+      - id: claude_code
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           base_branch: ${{ inputs.base || 'integration' }}
@@ -97,14 +98,47 @@ jobs:
           additional_permissions: |
             actions: read
           prompt: |
-            Read issue #${{ needs.route.outputs.issue }} in this repository and do the work it asks for.
-            Branch from `${{ inputs.base || 'integration' }}` and open a PR back into it, closing the issue.
+            Read issue #${{ needs.route.outputs.issue }} in this repository and implement the work it asks for.
+            Branch from `${{ inputs.base || 'integration' }}`, commit all changes, and push your work branch.
+            Do not open a pull request; a later workflow step will open the draft pull request.
             Stay inside the file scope the issue declares. If the work needs a file outside that scope,
-            stop and say so in the PR body instead of widening it. Never touch master.
+            stop and explain it in the tracking comment instead of widening scope. Never touch master.
           claude_args: |
             --max-turns 40
             --model claude-sonnet-5
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(bun run lint:*),Bash(bun run test:*),Bash(bun run typecheck:*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git:*),Bash(bun run lint:*),Bash(bun run test:*),Bash(bun run typecheck:*)"
+
+      - name: Open draft pull request
+        if: steps.claude_code.outputs.branch_name != ''
+        env:
+          GH_TOKEN: "${{ secrets.DISPATCH_PAT }}"
+          BRANCH: "${{ steps.claude_code.outputs.branch_name }}"
+          BASE: "${{ inputs.base || 'integration' }}"
+          ISSUE: "${{ needs.route.outputs.issue }}"
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::DISPATCH_PAT is empty; cannot open draft pull request"
+            exit 1
+          fi
+
+          EXISTING_PR="$(gh pr list --repo "${{ github.repository }}" --head "$BRANCH" --base "$BASE" --state open --json url --jq '.[0].url')"
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Existing pull request: $EXISTING_PR"
+            exit 0
+          fi
+
+          BODY="Automated Claude implementation for issue #$ISSUE.
+
+          Please review before marking ready.
+
+          Closes #$ISSUE"
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --head "$BRANCH" \
+            --base "$BASE" \
+            --draft \
+            --title "fix: implement issue #$ISSUE" \
+            --body "$BODY"
 
   # ── CURSOR + CODEX: mention them, as a real user, so their own app picks it up ──
   mention:
