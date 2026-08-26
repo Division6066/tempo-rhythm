@@ -2,32 +2,18 @@ import { Email } from "@convex-dev/auth/providers/Email";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
-import type { DataModel } from "./_generated/dataModel";
+import type { DataModel, Id } from "./_generated/dataModel";
+import {
+  buildReturningUserPatch,
+  GRANTED_SUBSCRIPTION,
+  newUserFields,
+  shouldGrantSubscription,
+} from "./lib/entitlements";
 
-const DEFAULT_FOUNDER_EMAIL = "amitlevin65@protonmail.com";
-const DEFAULT_BETA_MAX_TESTERS = 30;
+type AppDb = GenericMutationCtx<DataModel>["db"];
 
 function normalizeEmail(email: string | undefined | null): string {
   return (email ?? "").trim().toLowerCase();
-}
-
-function getFounderEmail() {
-  return normalizeEmail(String(process.env.BETA_FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL));
-}
-
-function getAllowlistedEmails() {
-  const fromEnv = (String(process.env.BETA_ALLOWLIST_EMAILS ?? ""))
-    .split(",")
-    .map((item: string) => normalizeEmail(item))
-    .filter(Boolean);
-  const allowlisted = new Set(fromEnv);
-  allowlisted.add(getFounderEmail());
-  return allowlisted;
-}
-
-function getBetaMaxTesters() {
-  const parsed = Number(String(process.env.BETA_MAX_TESTERS ?? DEFAULT_BETA_MAX_TESTERS));
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BETA_MAX_TESTERS;
 }
 
 async function sendMagicLinkEmail({
@@ -79,6 +65,33 @@ async function sendMagicLinkEmail({
   }
 }
 
+/**
+ * Give the account the subscription row that backs its entitlement tier.
+ * Idempotent: a live paid subscription is left exactly as it is.
+ */
+async function ensureGrantedSubscription(db: AppDb, userId: Id<"users">, now: number) {
+  const existing = await db
+    .query("subscriptionStates")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+
+  if (!shouldGrantSubscription(existing)) {
+    return;
+  }
+
+  if (existing) {
+    await db.patch(existing._id, { ...GRANTED_SUBSCRIPTION, updatedAt: now });
+    return;
+  }
+
+  await db.insert("subscriptionStates", {
+    userId,
+    ...GRANTED_SUBSCRIPTION,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password,
@@ -95,104 +108,38 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     async createOrUpdateUser(ctx, args) {
       // Cast ctx.db to the full app DataModel so we can query custom tables
       // (subscriptionStates, users indexes) that are outside the auth-only type.
-      const db = ctx.db as unknown as GenericMutationCtx<DataModel>["db"];
+      const db = ctx.db as unknown as AppDb;
       const now = Date.now();
-      const email = normalizeEmail(args.profile.email);
-      const founderEmail = getFounderEmail();
-      const allowlistedEmails = getAllowlistedEmails();
-      const isFounder = email === founderEmail;
 
-      const profileName = typeof args.profile.name === "string" ? args.profile.name : "User";
+      const profile = {
+        email: normalizeEmail(args.profile.email),
+        emailVerified: args.profile.emailVerified ?? false,
+        fullName: typeof args.profile.name === "string" ? args.profile.name : "User",
+      };
 
       if (args.existingUserId) {
         const existingUserId = args.existingUserId;
-        await db.patch(existingUserId, {
-          email,
-          emailVerified: args.profile.emailVerified ?? false,
-          fullName: profileName,
-          betaAccess: isFounder ? "founder" : undefined,
-          entitlementTier: isFounder ? "god" : undefined,
-          isGodTier: isFounder || undefined,
-          userType: isFounder ? "paid" : undefined,
-          updatedAt: now,
-        });
+        const existing = await db.get(existingUserId);
 
-        if (isFounder) {
-          const existingState = await db
-            .query("subscriptionStates")
-            .withIndex("by_userId", (q) => q.eq("userId", existingUserId))
-            .unique();
-          if (existingState) {
-            await db.patch(existingState._id, {
-              plan: "max",
-              billingCycle: "lifetime",
-              status: "active",
-              source: "founder_whitelist_override",
-              trialUsed: true,
-              updatedAt: now,
-            });
-          } else {
-            await db.insert("subscriptionStates", {
-              userId: existingUserId,
-              plan: "max",
-              billingCycle: "lifetime",
-              status: "active",
-              source: "founder_whitelist_override",
-              trialUsed: true,
-              createdAt: now,
-              updatedAt: now,
-            });
-          }
-        }
+        // buildReturningUserPatch never returns an undefined value. Assigning
+        // undefined here is what stripped entitlementTier, betaAccess,
+        // isGodTier and userType on a returning user's SECOND sign-in --
+        // Convex reads undefined in a patch as "delete this field".
+        await db.patch(existingUserId, buildReturningUserPatch(existing ?? {}, profile, now));
+        await ensureGrantedSubscription(db, existingUserId, now);
 
-        return args.existingUserId;
+        return existingUserId;
       }
 
-      if (!allowlistedEmails.has(email)) {
-        throw new Error("Beta access is invite-only right now. Ask for an invite and we can add you.");
-      }
-
-      if (!isFounder) {
-        const activeTesters = await db
-          .query("users")
-          .withIndex("by_betaAccess", (q) => q.eq("betaAccess", "tester"))
-          .collect();
-        const testerCount = activeTesters.filter((user) => user.deletedAt === undefined).length;
-        if (testerCount >= getBetaMaxTesters()) {
-          throw new Error("All beta seats are currently filled. We can add you to the next wave.");
-        }
-      }
-
-      const userId = await db.insert("users", {
-        email,
-        emailVerified: args.profile.emailVerified ?? false,
-        fullName: profileName,
-        role: "user",
-        userType: isFounder ? "paid" : "free",
-        betaAccess: isFounder ? "founder" : "tester",
-        entitlementTier: isFounder ? "god" : "none",
-        isGodTier: isFounder,
-        betaApprovedAt: now,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      await db.insert("subscriptionStates", {
-        userId,
-        plan: isFounder ? "max" : "none",
-        billingCycle: isFounder ? "lifetime" : "none",
-        status: isFounder ? "active" : "inactive",
-        trialUsed: isFounder,
-        source: isFounder ? "founder_whitelist_override" : "beta_signup",
-        createdAt: now,
-        updatedAt: now,
-      });
+      // Signup is open. No allowlist, no seat cap -- every account is granted
+      // the max entitlement tier by newUserFields().
+      const userId = await db.insert("users", newUserFields(profile, now));
+      await ensureGrantedSubscription(db, userId, now);
 
       return userId;
     },
     async beforeSessionCreation(ctx, args) {
-      const db = ctx.db as unknown as GenericMutationCtx<DataModel>["db"];
+      const db = ctx.db as unknown as AppDb;
       const user = await db.get(args.userId);
       if (!user) {
         throw new Error("We couldn't load your account yet. Please try again.");
