@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { buildReturningUserPatch, newUserFields } from "./lib/entitlements";
 
 /** Shared resolver for the authenticated app user document. */
 export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
@@ -67,6 +68,17 @@ export const listActive = query({
       .collect(),
 });
 
+/**
+ * SECOND write path for the users table (the first is the Convex Auth
+ * `createOrUpdateUser` callback in convex/auth.ts). It is a public mutation, so
+ * any client can call it.
+ *
+ * It used to build ONE object with `role: "user"` and `userType: "free"` and
+ * patch that onto the existing row, downgrading a granted/paid account back to
+ * free every time it ran. The update path now writes identity fields only and
+ * shares convex/lib/entitlements.ts with auth.ts so the two cannot drift apart
+ * again.
+ */
 export const createOrUpdateUser = mutation({
   args: {},
   handler: async (ctx) => {
@@ -76,27 +88,26 @@ export const createOrUpdateUser = mutation({
     const email = identity.email ?? "";
     const now = Date.now();
 
+    const profile = {
+      email,
+      emailVerified: identity.emailVerified ?? false,
+      fullName: identity.name || identity.nickname || "User",
+    };
+
     const existing = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", email))
       .unique();
 
-    const userData = {
-      email,
-      emailVerified: identity.emailVerified ?? false,
-      fullName: identity.name || identity.nickname || "User",
-      role: "user" as const,
-      userType: "free" as const,
-      isActive: true,
-      updatedAt: now,
-    };
-
     if (existing) {
-      await ctx.db.patch(existing._id, userData);
+      // Identity fields plus self-heal only. This path must never write
+      // `role`, and must never write `userType` unconditionally - that was
+      // the downgrade.
+      await ctx.db.patch(existing._id, buildReturningUserPatch(existing, profile, now));
       return existing._id;
     }
 
-    return ctx.db.insert("users", { ...userData, createdAt: now });
+    return ctx.db.insert("users", newUserFields(profile, now));
   },
 });
 
