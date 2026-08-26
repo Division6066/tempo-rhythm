@@ -64,10 +64,6 @@ export function SignInForm({
         setError("We couldn't find an account for that email yet.");
       } else if (errorMessage.includes("TooManyRequests")) {
         setError("You've tried a few times. Please pause for a moment and try again.");
-      } else if (errorMessage.includes("Beta access is invite-only")) {
-        setError("Beta access is invite-only right now. Ask for an invite and we'll add you.");
-      } else if (errorMessage.includes("All beta seats are currently filled")) {
-        setError("All beta seats are currently filled. We can add you to the next wave.");
       } else {
         setError("We couldn't sign you in yet. Please check your details and try again.");
       }
@@ -91,10 +87,6 @@ export function SignInForm({
       const errorMessage = error.message || "";
       if (errorMessage.includes("TooManyRequests")) {
         setError("You've tried a few times. Please pause for a moment and try again.");
-      } else if (errorMessage.includes("Beta access is invite-only")) {
-        setError("Beta access is invite-only right now. Ask for an invite and we'll add you.");
-      } else if (errorMessage.includes("All beta seats are currently filled")) {
-        setError("All beta seats are currently filled. We can add you to the next wave.");
       } else {
         setError("We couldn't send the link yet. Please check your email and try again.");
       }
