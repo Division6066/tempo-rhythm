@@ -14,9 +14,11 @@ export type EntitlementTier = NonNullable<Doc<"users">["entitlementTier"]>;
 export type UserType = NonNullable<Doc<"users">["userType"]>;
 export type BetaAccess = NonNullable<Doc<"users">["betaAccess"]>;
 
-export const GRANTED_ENTITLEMENT_TIER = "max" satisfies EntitlementTier;
-export const GRANTED_USER_TYPE = "paid" satisfies UserType;
-export const GRANTED_BETA_ACCESS = "tester" satisfies BetaAccess;
+// Annotated, not `satisfies`: `const x = "max" satisfies EntitlementTier` widens
+// the declared type to `string`, which Convex's insert validator rejects.
+export const GRANTED_ENTITLEMENT_TIER: EntitlementTier = "max";
+export const GRANTED_USER_TYPE: UserType = "paid";
+export const GRANTED_BETA_ACCESS: BetaAccess = "tester";
 
 /**
  * The subscription row that backs the grant. `entitlementTier` alone unlocks
