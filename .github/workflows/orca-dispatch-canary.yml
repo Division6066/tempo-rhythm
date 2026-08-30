@@ -1,0 +1,54 @@
+name: Orca subscription canary
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened]
+    branches: [master]
+    paths:
+      - .github/workflows/orca-dispatch-canary.yml
+
+concurrency:
+  group: orca-subscription-canary
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: Claude subscription canary
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'chore/orca-subscription-canary'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Fail closed without Claude subscription OAuth
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "CANARY_BLOCKED: CLAUDE_CODE_OAUTH_TOKEN is not configured"
+            exit 1
+          fi
+
+      - name: Set up Node 22
+        # v7.0.0, pinned for supply-chain stability.
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.233
+
+      - name: Run one-turn ten-second canary
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ''
+        run: |
+          set -eu
+          result="$(timeout --signal=TERM --kill-after=2s 10s claude -p 'Reply exactly: ORCA_CANARY_OK' --model haiku --output-format text --max-turns 1 2>/dev/null || true)"
+          if [ "$result" != "ORCA_CANARY_OK" ]; then
+            echo "CANARY_BLOCKED: Claude subscription canary did not return the expected response"
+            exit 1
+          fi
+          echo "ORCA_CANARY_OK"
