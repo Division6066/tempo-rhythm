@@ -42,6 +42,8 @@ Do not use `bun run check` as a verification-only command until the repo fixes
 that script. On 2026-06-02 it was observed to run `biome check --write` in the
 mobile package and to fail on pre-existing web formatter diagnostics.
 
+See `docs/CI.md` for which GitHub Actions jobs are blocking vs notice-only.
+
 ## Cyrus worktree setup
 
 The repository root includes `cyrus-setup.sh` for Cyrus-created worktrees.
