@@ -4,7 +4,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 /**
  * Resolve the authenticated app user (users table row) from Convex Auth identity.
  */
-async function resolveUserFromSubject(
+export async function resolveUserFromSubject(
   ctx: QueryCtx | MutationCtx,
   subject: string,
 ): Promise<Doc<"users"> | null> {
