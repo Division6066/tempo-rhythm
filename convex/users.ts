@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { requireUser } from "./lib/requireUser";
 
 /** Shared resolver for the authenticated app user document. */
 export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
@@ -106,8 +107,10 @@ export const updateProfile = mutation({
     fullName: v.optional(v.string()),
   },
   handler: async (ctx, { userId, fullName }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await requireUser(ctx);
+    if (user._id !== userId) {
+      throw new Error("Forbidden");
+    }
     await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
     return userId;
   },
@@ -141,6 +144,10 @@ export const updateUserType = mutation({
 
     if (!user) throw new Error("User not found");
 
+    if (userType === "paid" && process.env.MOCK_PAYMENTS !== "true") {
+      throw new Error("Paid upgrades must go through checkout.");
+    }
+
     await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
     return user._id;
   },
@@ -150,7 +157,7 @@ export const updateUserType = mutation({
  * Called by the RevenueCat webhook (convex/revenuecat.ts) to sync subscription status.
  * Uses appUserId (RevenueCat user ID = Convex user email or subject) to find and update the user.
  */
-export const updateSubscriptionStatus = mutation({
+export const updateSubscriptionStatus = internalMutation({
   args: {
     userId: v.string(),
     userType: v.union(v.literal("free"), v.literal("paid")),
@@ -186,8 +193,10 @@ export const updateSubscriptionStatus = mutation({
 export const remove = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await requireUser(ctx);
+    if (user._id !== userId) {
+      throw new Error("Forbidden");
+    }
     await ctx.db.delete(userId);
   },
 });
@@ -195,22 +204,8 @@ export const remove = mutation({
 export const deleteMyAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const userId = identity.subject;
-    let deletedCount = 0;
-
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("_id"), userId))
-      .first();
-
-    if (user) {
-      await ctx.db.delete(user._id);
-      deletedCount += 1;
-    }
-
-    return { success: true, deletedCount };
+    const user = await requireUser(ctx);
+    await ctx.db.delete(user._id);
+    return { success: true, deletedCount: 1 };
   },
 });

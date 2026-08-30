@@ -4,11 +4,19 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 /**
  * Resolve the authenticated app user (users table row) from Convex Auth identity.
  */
+/**
+ * Candidate Convex user IDs embedded in a Convex Auth subject (`accountId|userId`).
+ * Exported for unit tests.
+ */
+export function authSubjectUserIdCandidates(subject: string): string[] {
+  return subject.split("|").filter(Boolean);
+}
+
 async function resolveUserFromSubject(
   ctx: QueryCtx | MutationCtx,
   subject: string,
 ): Promise<Doc<"users"> | null> {
-  for (const part of subject.split("|")) {
+  for (const part of authSubjectUserIdCandidates(subject)) {
     const normalizedId = ctx.db.normalizeId("users", part);
     if (!normalizedId) {
       continue;
