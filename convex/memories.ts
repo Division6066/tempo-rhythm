@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query, action } from './_generated/server';
 import { api } from './_generated/api';
+import { readEnv } from './lib/require_env';
 
 // Memory sector type
 export type MemorySector = 'semantic' | 'episodic' | 'procedural' | 'emotional' | 'general';
@@ -229,10 +230,11 @@ export const extractMemories = action({
       throw new Error('Not authenticated');
     }
 
-    // Get AI API key from environment (set in Convex dashboard)
-    const aiApiKey = process.env.AI_API_KEY;
-    const aiProvider = process.env.AI_PROVIDER || 'gemini';
-    const aiModel = process.env.AI_MODEL || 'gemini-2.5-flash';
+    // Get AI API key from environment (set in Convex dashboard).
+    // Dummy sentinel `__DUMMY_PASTE_ME__` is treated as absent.
+    const aiApiKey = readEnv('AI_API_KEY');
+    const aiProvider = readEnv('AI_PROVIDER') || 'gemini';
+    const aiModel = readEnv('AI_MODEL') || 'gemini-2.5-flash';
 
     if (!aiApiKey) {
       throw new Error('AI not configured. Please set AI_API_KEY in Convex dashboard.');

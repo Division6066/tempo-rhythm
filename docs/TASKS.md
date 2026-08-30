@@ -13,7 +13,11 @@
 
 ## Doing
 
-_(nothing in flight right now — waiting for tomorrow morning's 45-min + overnight test runs)_
+- **Voice / AI spikes (Tasks 1–3, no UI)** — branch `cursor/voice-ai-spikes-4458` off `integration`.
+  - Task 1 Deepgram signed-URL POST: **gated** until `DEEPGRAM_API_KEY` is confirmed and a DEV `storageId` is provided. No live POST in this PR.
+  - Task 2 AES-256-GCM encrypt/decrypt spike: in `convex/lib/aes_gcm.ts`.
+  - Task 3 `AI_CHAT_*` / `AI_STT_*` / `AI_TTS_*` / `AI_EMBEDDINGS_*` + `requireEnv` dummy sentinel + chalk 4.1.2 pin.
+  - Monthly voice ceiling **not implemented** — waiting for Amit to approve the numbers in the PR.
 
 ---
 
