@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { isLive } from "./lib/softDelete";
 
 /**
  * English-first, anti-shame coach replies per technique (HARD_RULES §1).
@@ -49,7 +50,7 @@ export const sendMessage = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const conv = await ctx.db.get(args.conversationId);
-    if (!conv || conv.userId !== user._id) {
+    if (!isLive(conv) || conv.userId !== user._id) {
       throw new Error("Conversation not found");
     }
     const text = args.content.trim();

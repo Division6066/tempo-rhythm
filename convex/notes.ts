@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { filterLive, isLive, softDeleteWithUpdatedAt } from "./lib/softDelete";
 
 export const list = query({
   args: {
@@ -14,6 +15,7 @@ export const list = query({
       .withIndex("by_userId_updatedAt", (q) => q.eq("userId", user._id))
       .order("desc")
       .collect();
+    rows = filterLive(rows);
 
     if (args.pinnedOnly) {
       rows = rows.filter((n) => n.pinned);
@@ -34,7 +36,7 @@ export const get = query({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!isLive(note) || note.userId !== user._id) {
       return null;
     }
     return note;
@@ -88,7 +90,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!isLive(note) || note.userId !== user._id) {
       throw new Error("Note not found");
     }
     const now = Date.now();
@@ -107,7 +109,7 @@ export const togglePin = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!isLive(note) || note.userId !== user._id) {
       throw new Error("Note not found");
     }
     const now = Date.now();
@@ -124,10 +126,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!isLive(note) || note.userId !== user._id) {
       throw new Error("Note not found");
     }
-    await ctx.db.delete(args.noteId);
+    await ctx.db.patch(args.noteId, softDeleteWithUpdatedAt());
     return { success: true };
   },
 });

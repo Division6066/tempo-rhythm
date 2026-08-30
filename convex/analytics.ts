@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { filterLive } from "./lib/softDelete";
 
 /**
  * Aggregated counts for dashboard and analytics screens.
@@ -52,16 +53,23 @@ export const overview = query({
         .collect(),
     ]);
 
-    const taskTodo = tasks.filter((t) => t.status === "todo" || t.status === "in_progress").length;
-    const taskDone = tasks.filter((t) => t.status === "done").length;
-    const notesPinned = notes.filter((n) => n.pinned).length;
-    const goalsActive = goals.filter((g) => g.status === "active").length;
+    const liveTasks = filterLive(tasks);
+    const liveNotes = filterLive(notes);
+    const liveHabits = filterLive(habits);
+    const liveGoals = filterLive(goals);
+    const liveMemories = filterLive(memories);
+    const liveConversations = filterLive(conversations);
+
+    const taskTodo = liveTasks.filter((t) => t.status === "todo" || t.status === "in_progress").length;
+    const taskDone = liveTasks.filter((t) => t.status === "done").length;
+    const notesPinned = liveNotes.filter((n) => n.pinned).length;
+    const goalsActive = liveGoals.filter((g) => g.status === "active").length;
 
     let tasksDueToday = 0;
     if (args.todayStartMs !== undefined && args.todayEndMs !== undefined) {
       const startMs = args.todayStartMs;
       const endMs = args.todayEndMs;
-      tasksDueToday = tasks.filter(
+      tasksDueToday = liveTasks.filter(
         (t) =>
           t.dueAt !== undefined &&
           t.dueAt >= startMs &&
@@ -72,17 +80,17 @@ export const overview = query({
     }
 
     return {
-      tasksTotal: tasks.length,
+      tasksTotal: liveTasks.length,
       taskTodo,
       taskDone,
       tasksDueToday,
-      notesTotal: notes.length,
+      notesTotal: liveNotes.length,
       notesPinned,
-      habitsTotal: habits.length,
+      habitsTotal: liveHabits.length,
       goalsActive,
-      goalsTotal: goals.length,
-      memoriesTotal: memories.length,
-      coachSessionsTotal: conversations.length,
+      goalsTotal: liveGoals.length,
+      memoriesTotal: liveMemories.length,
+      coachSessionsTotal: liveConversations.length,
     };
   },
 });

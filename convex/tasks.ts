@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { filterLive, isLive, softDeleteWithUpdatedAt } from "./lib/softDelete";
 import { fetchCurrentUser } from "./users";
 
 const taskStatusValidator = v.union(
@@ -54,6 +55,7 @@ export const list = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
+    rows = filterLive(rows);
 
     rows = rows.filter((t) => t.deletedAt === undefined);
 
@@ -103,7 +105,7 @@ export const listDueInRange = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows.filter(
+    return filterLive(rows).filter(
       (t) =>
         t.dueAt !== undefined &&
         t.dueAt >= args.startMs &&
@@ -165,7 +167,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!isLive(task) || task.userId !== user._id) {
       throw new Error("Task not found");
     }
     const now = Date.now();
@@ -197,10 +199,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!isLive(task) || task.userId !== user._id) {
       throw new Error("Task not found");
     }
-    await ctx.db.delete(args.taskId);
+    await ctx.db.patch(args.taskId, softDeleteWithUpdatedAt());
     return { success: true };
   },
 });
@@ -260,7 +262,7 @@ export const listToday = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows
+    return filterLive(rows)
       .filter(
         (t) =>
           t.dueAt !== undefined &&
@@ -283,7 +285,7 @@ export const toggleCompletion = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!isLive(task) || task.userId !== user._id) {
       throw new Error("Task not found");
     }
     const next: "todo" | "done" = task.status === "done" ? "todo" : "done";

@@ -8,6 +8,7 @@
 // - ייצור עם מפתחות אמיתיים
 
 import Constants from 'expo-constants';
+import { useQuery } from 'convex/react';
 import {
   createContext,
   useCallback,
@@ -17,6 +18,7 @@ import {
 } from 'react';
 import { Alert } from 'react-native';
 import { MOCK_PAYMENTS, PAYMENT_SYSTEM_ENABLED } from '@/config/appConfig';
+import { api } from '@/convex/_generated/api';
 import {
   getCurrentPlatformRevenueCatApiKey,
   isRevenueCatConfigured,
@@ -119,6 +121,9 @@ export function RevenueCatProvider({
 
   const isExpoGo = isRunningInExpoGo();
   const isConfigured = isRevenueCatConfigured();
+  const user = useQuery(api.users.getCurrentUser);
+  const isUserLoading = user === undefined;
+  const revenueCatAppUserId = user?._id ?? user?.email;
 
   // ============================================================================
   // אתחול
@@ -151,6 +156,20 @@ export function RevenueCatProvider({
         return;
       }
 
+      // RevenueCat webhooks sync by app_user_id. Do not configure a real
+      // purchase session anonymously, or mobile purchases cannot be matched
+      // back to the Convex user row.
+      if (isUserLoading) {
+        return;
+      }
+
+      if (!revenueCatAppUserId) {
+        setPackages(PREVIEW_PACKAGES);
+        setIsLoading(false);
+        setIsInitialized(true);
+        return;
+      }
+
       // ניסיון לאתחל את RevenueCat SDK
       try {
         const apiKey = getCurrentPlatformRevenueCatApiKey();
@@ -162,7 +181,7 @@ export function RevenueCatProvider({
         const Purchases = (await import('react-native-purchases')).default;
 
         Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
-        await Purchases.configure({ apiKey });
+        await Purchases.configure({ apiKey, appUserID: revenueCatAppUserId });
 
         // טעינת ההצעות
         const offerings = await Purchases.getOfferings();
@@ -198,7 +217,7 @@ export function RevenueCatProvider({
     }
 
     initialize();
-  }, [isExpoGo, isConfigured]);
+  }, [isExpoGo, isConfigured, isUserLoading, revenueCatAppUserId]);
 
   // ============================================================================
   // רכישת חבילה

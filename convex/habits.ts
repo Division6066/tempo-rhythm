@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { filterLive, isLive, softDeleteWithUpdatedAt } from "./lib/softDelete";
 
 export const list = query({
   args: {},
@@ -10,8 +11,9 @@ export const list = query({
       .query("habits")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    rows.sort((a, b) => b.updatedAt - a.updatedAt);
-    return rows;
+    const liveRows = filterLive(rows);
+    liveRows.sort((a, b) => b.updatedAt - a.updatedAt);
+    return liveRows;
   },
 });
 
@@ -40,7 +42,7 @@ export const completeToday = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const habit = await ctx.db.get(args.habitId);
-    if (!habit || habit.userId !== user._id) {
+    if (!isLive(habit) || habit.userId !== user._id) {
       throw new Error("Habit not found");
     }
     const now = Date.now();
@@ -79,7 +81,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const habit = await ctx.db.get(args.habitId);
-    if (!habit || habit.userId !== user._id) {
+    if (!isLive(habit) || habit.userId !== user._id) {
       throw new Error("Habit not found");
     }
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -95,10 +97,10 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const habit = await ctx.db.get(args.habitId);
-    if (!habit || habit.userId !== user._id) {
+    if (!isLive(habit) || habit.userId !== user._id) {
       throw new Error("Habit not found");
     }
-    await ctx.db.delete(args.habitId);
+    await ctx.db.patch(args.habitId, softDeleteWithUpdatedAt());
     return { success: true };
   },
 });
