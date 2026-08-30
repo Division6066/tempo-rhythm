@@ -29,6 +29,9 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   const subjectUser = await resolveUserFromSubject(ctx, identity.subject);
   if (subjectUser) {
+    if (subjectUser.deletedAt !== undefined || subjectUser.isActive === false) {
+      throw new Error("This account is not active");
+    }
     return subjectUser;
   }
 
@@ -44,6 +47,10 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   if (!user) {
     throw new Error("User not found");
+  }
+
+  if (user.deletedAt !== undefined || user.isActive === false) {
+    throw new Error("This account is not active");
   }
 
   return user;
