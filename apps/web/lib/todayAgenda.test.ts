@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import {
   mapCalendarEventsToAgenda,
@@ -39,10 +41,11 @@ describe("visibleHabitsFrom", () => {
 });
 
 describe("TodayScreen leftover wiring", () => {
-  test("keeps energy recs and the unauth task-views path", async () => {
-    const source = await Bun.file(
-      "apps/web/components/today/TodayScreen.tsx",
-    ).text();
+  test("keeps energy recs and the unauth task-views path", () => {
+    const source = readFileSync(
+      join(import.meta.dir, "../components/today/TodayScreen.tsx"),
+      "utf8",
+    );
     expect(source).toContain("TodayAgenda");
     expect(source).toContain("TodayHabitStrip");
     expect(source).toContain("TodayEnergyRecommendations");
