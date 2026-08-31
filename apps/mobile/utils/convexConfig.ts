@@ -4,7 +4,7 @@
 // ניהול כתובת Convex
 
 export type PublicEnv = {
-  EXPO_PUBLIC_CONVEX_URL?: string;
+  readonly [key: string]: string | undefined;
 };
 
 /**
