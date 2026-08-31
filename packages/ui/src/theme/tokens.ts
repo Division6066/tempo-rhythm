@@ -83,3 +83,10 @@ export const tempoMotion = {
 } as const;
 
 export type TempoColorToken = keyof typeof tempoColors;
+
+export {
+  accessibleReadingStorageKey,
+  accessibleReadingTokens,
+  type AccessibleReadingTokens,
+} from "./tokens.accessible";
+

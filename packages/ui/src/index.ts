@@ -14,7 +14,10 @@
 export { BrandMark, Wordmark } from "./brand";
 export * from "./primitives";
 export {
+  type AccessibleReadingTokens,
   type TempoColorToken,
+  accessibleReadingStorageKey,
+  accessibleReadingTokens,
   tempoColors,
   tempoColorsDark,
   tempoFonts,
@@ -22,3 +25,4 @@ export {
   tempoRadii,
   tempoSpacing,
 } from "./theme/tokens";
+

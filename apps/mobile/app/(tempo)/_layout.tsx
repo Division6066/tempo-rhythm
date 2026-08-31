@@ -13,6 +13,7 @@ export default function TempoLayout() {
       <Stack.Screen name="journal" />
       <Stack.Screen name="routines" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="accessibility" />
       <Stack.Screen name="templates" />
       <Stack.Screen name="capture" options={{ presentation: "modal" }} />
     </Stack>
