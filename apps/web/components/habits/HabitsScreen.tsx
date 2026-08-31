@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { HabitEnergySuggestions } from "./HabitEnergySuggestions";
 
 type HabitRowData = {
   _id: Id<"habits">;
@@ -194,6 +195,14 @@ export function HabitsScreen() {
       </header>
 
       <NewHabitForm />
+
+      <HabitEnergySuggestions
+        habits={habits.map((habit) => ({
+          _id: habit._id,
+          name: habit.name,
+          completedToday: isHabitCompletedOnUtcDay(habit.lastCompletedAt, now),
+        }))}
+      />
 
       {habits.length === 0 ? (
         <div className="rounded-3xl border border-border/80 bg-card/90 px-6 py-10 text-center">
