@@ -4,6 +4,12 @@ import type { QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { isInactiveAccount, softDeleteUserAccount } from "./lib/accountDeletion";
 import { buildReturningUserPatch, newUserFields } from "./lib/entitlements";
+import {
+  getProviderKeyForUser,
+  providerKeyReturnValidator,
+  providerValidator,
+  saveProviderKeyForUser,
+} from "./lib/providerKeys";
 import { requireUser, resolveUserFromIdentity } from "./lib/requireUser";
 import { assertClientMaySetUserType } from "./lib/subscriptionGuards";
 
@@ -196,5 +202,24 @@ export const deleteMyAccount = mutation({
     const user = await requireUser(ctx);
     const { deletedCount } = await softDeleteUserAccount(ctx, user._id);
     return { success: true, deletedCount };
+  },
+});
+
+export const getProviderKey = query({
+  args: { provider: providerValidator },
+  returns: providerKeyReturnValidator,
+  handler: async (ctx, args) => {
+    return await getProviderKeyForUser(ctx, args.provider);
+  },
+});
+
+export const saveProviderKey = mutation({
+  args: {
+    provider: providerValidator,
+    apiKey: v.string(),
+  },
+  returns: providerKeyReturnValidator,
+  handler: async (ctx, args) => {
+    return await saveProviderKeyForUser(ctx, args);
   },
 });
