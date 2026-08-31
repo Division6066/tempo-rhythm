@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { filterTasksDueInRange } from "./lib/task_filters";
 import { fetchCurrentUser } from "./users";
 
 const taskStatusValidator = v.union(
@@ -78,12 +79,9 @@ export const list = query({
       );
     }
     if (args.dueFrom !== undefined && args.dueTo !== undefined) {
-      rows = rows.filter(
-        (t) =>
-          t.dueAt !== undefined &&
-          t.dueAt >= args.dueFrom! &&
-          t.dueAt < args.dueTo!,
-      );
+      rows = filterTasksDueInRange(rows, args.dueFrom, args.dueTo, {
+        excludeCancelled: false,
+      });
     }
     rows.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt));
     return rows;
@@ -103,13 +101,10 @@ export const listDueInRange = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows.filter(
-      (t) =>
-        t.dueAt !== undefined &&
-        t.dueAt >= args.startMs &&
-        t.dueAt < args.endMs &&
-        t.deletedAt === undefined &&
-        t.status !== "cancelled",
+    return filterTasksDueInRange(
+      rows.filter((t) => t.deletedAt === undefined),
+      args.startMs,
+      args.endMs,
     );
   },
 });
@@ -260,16 +255,11 @@ export const listToday = query({
       .query("tasks")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
-    return rows
-      .filter(
-        (t) =>
-          t.dueAt !== undefined &&
-          t.dueAt >= args.dueFrom &&
-          t.dueAt < args.dueTo &&
-          t.deletedAt === undefined &&
-          t.status !== "cancelled",
-      )
-      .sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
+    return filterTasksDueInRange(
+      rows.filter((t) => t.deletedAt === undefined),
+      args.dueFrom,
+      args.dueTo,
+    ).sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
   },
 });
 
