@@ -36,6 +36,14 @@ export default function Screen() {
               More breath patterns
             </Text>
           </Link>
+          <Link href="/movement" asChild>
+            <Text
+              accessibilityRole="link"
+              className="text-base text-foreground"
+            >
+              Movement library
+            </Text>
+          </Link>
         </View>
         <BreathworkTimer />
         <Text className="text-xs text-muted-foreground font-mono">
