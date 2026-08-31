@@ -1,7 +1,20 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { isHabitCompletedOnUtcDay } from "../../../convex/lib/habitStreak";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+describe("HabitsScreen leftover wiring", () => {
+  test("keeps energy suggestion accept/reject on the landed screen", () => {
+    const source = readFileSync(
+      join(import.meta.dir, "../components/habits/HabitsScreen.tsx"),
+      "utf8",
+    );
+    expect(source).toContain("HabitEnergySuggestions");
+    expect(source).toContain("isHabitCompletedOnUtcDay");
+  });
+});
 
 describe("HabitsScreen completedToday derivation", () => {
   test("matches the landed completeToday alreadyDone window", () => {

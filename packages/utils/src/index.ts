@@ -10,6 +10,14 @@ export {
   getBreathPhaseAt,
 } from "./breathwork";
 
+export {
+  type EnergyLevel,
+  type EnergySuggestion,
+  type EnergySuggestionStatus,
+  habitRoutineCopy,
+  resolveEnergySuggestion,
+} from "./habit-energy-suggestions";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */
