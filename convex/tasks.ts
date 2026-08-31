@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { filterTasksDueInRange } from "./lib/task_filters";
+import { assertRepeatEvery } from "./lib/taskRepeat";
 import { fetchCurrentUser } from "./users";
 
 const taskStatusValidator = v.union(
@@ -279,5 +280,125 @@ export const toggleCompletion = mutation({
     const next: "todo" | "done" = task.status === "done" ? "todo" : "done";
     await ctx.db.patch(args.taskId, { status: next, updatedAt: Date.now() });
     return { taskId: args.taskId, status: next };
+  },
+});
+
+const repeatCycleValidator = v.union(
+  v.literal("DAILY"),
+  v.literal("WEEKLY"),
+  v.literal("MONTHLY"),
+  v.literal("YEARLY"),
+);
+
+const repeatCfgReturnValidator = v.object({
+  _id: v.id("taskRepeatCfgs"),
+  _creationTime: v.number(),
+  userId: v.id("users"),
+  repeatCycle: repeatCycleValidator,
+  repeatEvery: v.number(),
+  weekdays: v.array(v.number()),
+  monthlyWeekOfMonth: v.optional(v.number()),
+  monthlyWeekday: v.optional(v.number()),
+  monthlyLastDay: v.optional(v.boolean()),
+  deletedInstanceDates: v.array(v.string()),
+  skipOverdue: v.boolean(),
+  waitForCompletion: v.boolean(),
+  repeatFromCompletionDate: v.boolean(),
+  isPaused: v.boolean(),
+  defaultEstimate: v.optional(v.number()),
+  lastTaskCreationDay: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  deletedAt: v.optional(v.number()),
+});
+
+export const listRepeatCfgs = query({
+  args: {},
+  returns: v.array(repeatCfgReturnValidator),
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    const rows = await ctx.db
+      .query("taskRepeatCfgs")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+    return rows.filter((row) => row.deletedAt === undefined);
+  },
+});
+
+export const createRepeatCfg = mutation({
+  args: {
+    repeatCycle: repeatCycleValidator,
+    repeatEvery: v.optional(v.number()),
+    weekdays: v.optional(v.array(v.number())),
+    monthlyLastDay: v.optional(v.boolean()),
+    skipOverdue: v.optional(v.boolean()),
+    waitForCompletion: v.optional(v.boolean()),
+    repeatFromCompletionDate: v.optional(v.boolean()),
+  },
+  returns: v.id("taskRepeatCfgs"),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const repeatEvery = assertRepeatEvery(args.repeatEvery ?? 1);
+    const now = Date.now();
+    return ctx.db.insert("taskRepeatCfgs", {
+      userId: user._id,
+      repeatCycle: args.repeatCycle,
+      repeatEvery,
+      weekdays: args.weekdays ?? [],
+      monthlyLastDay: args.monthlyLastDay,
+      deletedInstanceDates: [],
+      skipOverdue: args.skipOverdue ?? true,
+      waitForCompletion: args.waitForCompletion ?? false,
+      repeatFromCompletionDate: args.repeatFromCompletionDate ?? false,
+      isPaused: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const pauseRepeatCfg = mutation({
+  args: {
+    repeatCfgId: v.id("taskRepeatCfgs"),
+    isPaused: v.boolean(),
+  },
+  returns: v.id("taskRepeatCfgs"),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const cfg = await ctx.db.get(args.repeatCfgId);
+    if (!cfg || cfg.userId !== user._id || cfg.deletedAt !== undefined) {
+      throw new Error("Repeat series not found");
+    }
+    await ctx.db.patch(args.repeatCfgId, {
+      isPaused: args.isPaused,
+      updatedAt: Date.now(),
+    });
+    return args.repeatCfgId;
+  },
+});
+
+export const setTaskRepeatCfg = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    repeatCfgId: v.union(v.id("taskRepeatCfgs"), v.null()),
+  },
+  returns: v.id("tasks"),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
+      throw new Error("Task not found");
+    }
+    if (args.repeatCfgId !== null) {
+      const cfg = await ctx.db.get(args.repeatCfgId);
+      if (!cfg || cfg.userId !== user._id || cfg.deletedAt !== undefined) {
+        throw new Error("Repeat series not found");
+      }
+    }
+    await ctx.db.patch(args.taskId, {
+      repeatCfgId: args.repeatCfgId === null ? undefined : args.repeatCfgId,
+      updatedAt: Date.now(),
+    });
+    return args.taskId;
   },
 });
