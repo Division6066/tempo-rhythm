@@ -58,14 +58,44 @@ export function buildBreathCycle(pattern: BreathPatternConfig): BreathCycle {
   };
 }
 
-export function getBreathPhaseAt(pattern: BreathPatternConfig, elapsedMs: number): BreathPhase {
-  const cycle = buildBreathCycle(pattern);
-  const cycleOffsetMs =
-    ((elapsedMs % cycle.totalDurationMs) + cycle.totalDurationMs) % cycle.totalDurationMs;
+export type BreathworkSnapshot = {
+  elapsedMs: number;
+  cycleMs: number;
+  cycleIndex: number;
+  phase: BreathPhase;
+  phaseElapsedMs: number;
+  phaseRemainingMs: number;
+  phaseIndex: number;
+};
 
-  for (const step of cycle.steps) {
-    if (cycleOffsetMs >= step.startsAtMs && cycleOffsetMs < step.endsAtMs) {
-      return step.phase;
+function cycleOffsetMs(elapsedMs: number, cycleMs: number): number {
+  return ((elapsedMs % cycleMs) + cycleMs) % cycleMs;
+}
+
+export function getBreathPhaseAt(pattern: BreathPatternConfig, elapsedMs: number): BreathPhase {
+  return getBreathworkSnapshot(pattern, elapsedMs).phase;
+}
+
+/** Elapsed-time leftover from #189. Same cycle math as getBreathPhaseAt, with remaining ms. */
+export function getBreathworkSnapshot(
+  pattern: BreathPatternConfig,
+  elapsedMs: number,
+): BreathworkSnapshot {
+  const cycle = buildBreathCycle(pattern);
+  const offsetMs = cycleOffsetMs(elapsedMs, cycle.totalDurationMs);
+
+  for (const [phaseIndex, step] of cycle.steps.entries()) {
+    if (offsetMs >= step.startsAtMs && offsetMs < step.endsAtMs) {
+      const phaseElapsedMs = offsetMs - step.startsAtMs;
+      return {
+        elapsedMs: Math.max(0, elapsedMs),
+        cycleMs: cycle.totalDurationMs,
+        cycleIndex: Math.floor(Math.max(0, elapsedMs) / cycle.totalDurationMs),
+        phase: step.phase,
+        phaseElapsedMs,
+        phaseRemainingMs: step.endsAtMs - offsetMs,
+        phaseIndex,
+      };
     }
   }
 
@@ -74,5 +104,13 @@ export function getBreathPhaseAt(pattern: BreathPatternConfig, elapsedMs: number
     throw new Error("Breath pattern must include at least one step");
   }
 
-  return firstStep.phase;
+  return {
+    elapsedMs: Math.max(0, elapsedMs),
+    cycleMs: cycle.totalDurationMs,
+    cycleIndex: 0,
+    phase: firstStep.phase,
+    phaseElapsedMs: 0,
+    phaseRemainingMs: firstStep.endsAtMs - firstStep.startsAtMs,
+    phaseIndex: 0,
+  };
 }

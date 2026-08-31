@@ -6,8 +6,10 @@ export {
   type BreathPatternConfig,
   type BreathPatternStep,
   type BreathPhase,
+  type BreathworkSnapshot,
   buildBreathCycle,
   getBreathPhaseAt,
+  getBreathworkSnapshot,
 } from "./breathwork";
 
 export {

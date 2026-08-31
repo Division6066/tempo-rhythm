@@ -3,6 +3,7 @@ import {
 	type BreathPatternConfig,
 	buildBreathCycle,
 	getBreathPhaseAt,
+	getBreathworkSnapshot,
 } from "../../packages/utils/src/breathwork";
 
 const coherence: BreathPatternConfig = {
@@ -54,5 +55,32 @@ describe("getBreathPhaseAt", () => {
 		expect(getBreathPhaseAt(coherence, 9_999)).toBe("exhale");
 		expect(getBreathPhaseAt(coherence, 10_000)).toBe("inhale");
 		expect(getBreathPhaseAt(coherence, -1)).toBe("exhale");
+	});
+});
+
+describe("getBreathworkSnapshot leftover from #189", () => {
+	test("reports remaining time inside the current phase", () => {
+		expect(getBreathworkSnapshot(coherence, 1_250)).toMatchObject({
+			phase: "inhale",
+			phaseIndex: 0,
+			phaseElapsedMs: 1_250,
+			phaseRemainingMs: 3_750,
+			cycleIndex: 0,
+			cycleMs: 10_000,
+		});
+		expect(getBreathworkSnapshot(coherence, 12_000)).toMatchObject({
+			phase: "inhale",
+			phaseIndex: 0,
+			phaseElapsedMs: 2_000,
+			phaseRemainingMs: 3_000,
+			cycleIndex: 1,
+		});
+		expect(getBreathworkSnapshot(coherence, 16_000)).toMatchObject({
+			phase: "exhale",
+			phaseIndex: 1,
+			phaseElapsedMs: 1_000,
+			phaseRemainingMs: 4_000,
+			cycleIndex: 1,
+		});
 	});
 });
