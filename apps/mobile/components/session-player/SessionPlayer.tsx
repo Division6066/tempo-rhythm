@@ -1,37 +1,46 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   appendSessionLogEntry,
   parseSessionLogEntries,
   serializeSessionLogEntries,
-} from "@/lib/focus-session-log";
+} from '@/lib/focus-session-log';
 import {
   advanceSession,
   createIdleSession,
   createSessionLogEntry,
   getCurrentStep,
   pauseSession,
+  type Routine,
   resumeSession,
+  type SessionLogEntry,
+  type SessionPlayerState,
   seededRoutines,
   sessionLogStorageKey,
   startSession,
-  type SessionLogEntry,
-  type SessionPlayerState,
-} from "@/lib/session-player";
+} from '@/lib/session-player';
 
-const routine = seededRoutines[0];
+const fallbackRoutine = seededRoutines[0];
 
-if (!routine) {
-  throw new Error("Expected seeded routine");
+if (!fallbackRoutine) {
+  throw new Error('Expected seeded routine');
 }
 
-export function SessionPlayer() {
+export function SessionPlayer({
+  routine = fallbackRoutine,
+}: {
+  routine?: Routine;
+}) {
   const [state, setState] = useState<SessionPlayerState>(() =>
-    createIdleSession(routine.id),
+    createIdleSession(routine.id)
   );
   const [log, setLog] = useState<SessionLogEntry[]>([]);
+
+  useEffect(() => {
+    setState(createIdleSession(routine.id));
+  }, [routine.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -47,21 +56,21 @@ export function SessionPlayer() {
   }, []);
 
   useEffect(() => {
-    if (state.status !== "running") {
+    if (state.status !== 'running') {
       return;
     }
 
     const timer = setInterval(() => {
       setState((current) => {
         const next = advanceSession(current, routine, Date.now());
-        if (next.status === "finished" && current.status !== "finished") {
+        if (next.status === 'finished' && current.status !== 'finished') {
           try {
             const entry = createSessionLogEntry(next, routine);
             setLog((entries) => {
               const nextEntries = appendSessionLogEntry(entries, entry);
               void AsyncStorage.setItem(
                 sessionLogStorageKey,
-                serializeSessionLogEntries(nextEntries),
+                serializeSessionLogEntries(nextEntries)
               );
               return nextEntries;
             });
@@ -76,7 +85,7 @@ export function SessionPlayer() {
     return () => {
       clearInterval(timer);
     };
-  }, [state.status]);
+  }, [state.status, routine]);
 
   const current = getCurrentStep(routine, state.elapsedMs);
 
@@ -86,28 +95,32 @@ export function SessionPlayer() {
         <Text className="text-sm font-semibold uppercase text-muted-foreground">
           Session
         </Text>
-        <Text className="text-2xl font-semibold text-foreground">{routine.title}</Text>
+        <Text className="text-2xl font-semibold text-foreground">
+          {routine.title}
+        </Text>
         <Text className="text-sm leading-6 text-muted-foreground">
           {routine.subtitle}
         </Text>
       </View>
 
       <View className="gap-2 rounded-2xl border border-border bg-card p-5">
-        <Text className="text-lg font-semibold text-foreground">{current.step.title}</Text>
+        <Text className="text-lg font-semibold text-foreground">
+          {current.step.title}
+        </Text>
         <Text className="text-sm leading-6 text-muted-foreground">
           {current.step.guidance}
         </Text>
         <Text className="text-xs text-muted-foreground">
-          {state.status === "idle"
-            ? "Ready when you are."
-            : state.status === "finished"
-              ? "That loop is complete enough."
+          {state.status === 'idle'
+            ? 'Ready when you are.'
+            : state.status === 'finished'
+              ? 'That loop is complete enough.'
               : `Step ${current.index + 1} of ${routine.steps.length}`}
         </Text>
       </View>
 
       <View className="flex-row flex-wrap gap-3">
-        {state.status === "idle" || state.status === "finished" ? (
+        {state.status === 'idle' || state.status === 'finished' ? (
           <Pressable
             accessibilityRole="button"
             className="min-h-11 rounded-full border border-border bg-background px-4 py-2"
@@ -116,11 +129,11 @@ export function SessionPlayer() {
             }}
           >
             <Text className="text-sm font-semibold text-foreground">
-              {state.status === "finished" ? "Play again" : "Start this loop"}
+              {state.status === 'finished' ? 'Play again' : 'Start this loop'}
             </Text>
           </Pressable>
         ) : null}
-        {state.status === "running" ? (
+        {state.status === 'running' ? (
           <Pressable
             accessibilityRole="button"
             className="min-h-11 rounded-full border border-border bg-background px-4 py-2"
@@ -131,7 +144,7 @@ export function SessionPlayer() {
             <Text className="text-sm font-semibold text-foreground">Pause</Text>
           </Pressable>
         ) : null}
-        {state.status === "paused" ? (
+        {state.status === 'paused' ? (
           <Pressable
             accessibilityRole="button"
             className="min-h-11 rounded-full border border-border bg-background px-4 py-2"
@@ -139,14 +152,16 @@ export function SessionPlayer() {
               setState((current) => resumeSession(current, Date.now()));
             }}
           >
-            <Text className="text-sm font-semibold text-foreground">Resume</Text>
+            <Text className="text-sm font-semibold text-foreground">
+              Resume
+            </Text>
           </Pressable>
         ) : null}
       </View>
 
       {log.length > 0 ? (
         <Text className="text-sm text-muted-foreground">
-          Logged {log.length} {log.length === 1 ? "loop" : "loops"}.
+          Logged {log.length} {log.length === 1 ? 'loop' : 'loops'}.
         </Text>
       ) : null}
     </View>

@@ -1,3 +1,5 @@
+import type { Routine } from './session-player';
+
 export type MovementCategoryId =
   | 'animal-flow'
   | 'fighter-yoga-mobility'
@@ -153,4 +155,153 @@ export function getMovementRoutineById(
   routineId: string
 ): MovementRoutine | undefined {
   return movementRoutines.find((routine) => routine.id === routineId);
+}
+
+export type GuidedMovementStep = {
+  id: string;
+  title: string;
+  guidance: string;
+  durationMinutes: number;
+};
+
+export type GuidedMovementRoutine = {
+  id: string;
+  title: string;
+  subtitle: string;
+  summary: string;
+  durationMinutes: number;
+  steps: readonly GuidedMovementStep[];
+};
+
+/** Leftover from #221 — timed, guided loops that can open in the session player. */
+export const guidedMovementRoutines: readonly GuidedMovementRoutine[] = [
+  {
+    id: 'morning-reset',
+    title: 'Morning reset',
+    subtitle: 'A gentle start for stiff or scattered mornings.',
+    summary: 'Arrive in your body before the day asks anything from you.',
+    durationMinutes: 6,
+    steps: [
+      {
+        id: 'stand',
+        title: 'Stand and notice',
+        guidance: 'Plant both feet. Let your shoulders drop once.',
+        durationMinutes: 1,
+      },
+      {
+        id: 'roll',
+        title: 'Shoulder rolls',
+        guidance: 'Roll slowly forward, then back. Keep it easy.',
+        durationMinutes: 2,
+      },
+      {
+        id: 'reach',
+        title: 'Side reach',
+        guidance: 'Reach one arm overhead, switch sides, and breathe out.',
+        durationMinutes: 2,
+      },
+      {
+        id: 'choose',
+        title: 'Choose the next tiny move',
+        guidance: 'Name one small thing you can do next.',
+        durationMinutes: 1,
+      },
+    ],
+  },
+  {
+    id: 'desk-unlock',
+    title: 'Desk unlock',
+    subtitle: 'Loosen up after a long sit without changing clothes.',
+    summary: 'Release neck, wrists, and hips enough to keep going.',
+    durationMinutes: 5,
+    steps: [
+      {
+        id: 'neck',
+        title: 'Neck half-circles',
+        guidance: 'Draw small half-circles from shoulder to shoulder.',
+        durationMinutes: 1,
+      },
+      {
+        id: 'wrists',
+        title: 'Wrist circles',
+        guidance: 'Circle both wrists, then shake your hands out.',
+        durationMinutes: 1,
+      },
+      {
+        id: 'hips',
+        title: 'Seated hip shift',
+        guidance: 'Shift your weight side to side and notice what softens.',
+        durationMinutes: 2,
+      },
+      {
+        id: 'eyes',
+        title: 'Look far away',
+        guidance: 'Rest your eyes on something across the room.',
+        durationMinutes: 1,
+      },
+    ],
+  },
+  {
+    id: 'shutdown-stretch',
+    title: 'Shutdown stretch',
+    subtitle: 'Close the day with a low-pressure body check.',
+    summary: 'Signal that work can loosen its grip now.',
+    durationMinutes: 7,
+    steps: [
+      {
+        id: 'breath',
+        title: 'Long exhale',
+        guidance: 'Breathe in naturally, then make the exhale a little longer.',
+        durationMinutes: 2,
+      },
+      {
+        id: 'fold',
+        title: 'Easy forward fold',
+        guidance: 'Bend your knees and let your head be heavy.',
+        durationMinutes: 2,
+      },
+      {
+        id: 'twist',
+        title: 'Gentle twist',
+        guidance: 'Twist from the ribs, not from force.',
+        durationMinutes: 2,
+      },
+      {
+        id: 'done',
+        title: 'Mark one good-enough thing',
+        guidance: 'Say one thing that counted today, even if it was small.',
+        durationMinutes: 1,
+      },
+    ],
+  },
+];
+
+export const guidedMovementRoutineIds = guidedMovementRoutines.map(
+  (routine) => routine.id
+);
+
+export function isGuidedMovementRoutineId(value: string | undefined): boolean {
+  return typeof value === 'string' && guidedMovementRoutineIds.includes(value);
+}
+
+export function getGuidedMovementRoutineById(
+  routineId: string
+): GuidedMovementRoutine | undefined {
+  return guidedMovementRoutines.find((routine) => routine.id === routineId);
+}
+
+export function guidedMovementToSession(
+  routine: GuidedMovementRoutine
+): Routine {
+  return {
+    id: routine.id,
+    title: routine.title,
+    subtitle: routine.subtitle,
+    steps: routine.steps.map((step) => ({
+      id: step.id,
+      title: step.title,
+      guidance: step.guidance,
+      durationMs: step.durationMinutes * 60_000,
+    })),
+  };
 }

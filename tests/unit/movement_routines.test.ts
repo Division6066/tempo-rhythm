@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  getGuidedMovementRoutineById,
   getMovementRoutineById,
+  guidedMovementToSession,
+  guidedMovementRoutineIds,
+  isGuidedMovementRoutineId,
   isMovementRoutineId,
   movementCategories,
   movementRoutineIds,
@@ -47,6 +51,32 @@ describe("movement library leftover from #186", () => {
   });
 });
 
+describe("guided movement leftover from #221", () => {
+  test("maps minute steps onto the session player without inventing duration", () => {
+    expect(guidedMovementRoutineIds).toEqual([
+      "morning-reset",
+      "desk-unlock",
+      "shutdown-stretch",
+    ]);
+    expect(isGuidedMovementRoutineId("desk-unlock")).toBe(true);
+    expect(isGuidedMovementRoutineId("sprint")).toBe(false);
+    expect(getGuidedMovementRoutineById("sprint")).toBeUndefined();
+
+    const desk = getGuidedMovementRoutineById("desk-unlock");
+    expect(desk).toBeDefined();
+    if (!desk) {
+      throw new Error("Expected desk-unlock");
+    }
+    const session = guidedMovementToSession(desk);
+    expect(session.steps.map((step) => step.durationMs)).toEqual([
+      60_000, 60_000, 120_000, 60_000,
+    ]);
+    expect(session.steps[0]?.guidance).toBe(
+      "Draw small half-circles from shoulder to shoulder.",
+    );
+  });
+});
+
 describe("movement route leftover wiring", () => {
   const root = join(import.meta.dir, "../..");
 
@@ -59,10 +89,16 @@ describe("movement route leftover wiring", () => {
       join(root, "apps/mobile/app/(tempo)/routines.tsx"),
       "utf8",
     );
+    const player = readFileSync(
+      join(root, "apps/mobile/app/(tempo)/session-player.tsx"),
+      "utf8",
+    );
 
     expect(screen).toContain("movementRoutineSections");
-    expect(screen).toContain("getMovementRoutineById");
+    expect(screen).toContain("guidedMovementRoutines");
+    expect(screen).toContain("/session-player?routine=");
     expect(routines).toContain("BreathworkTimer");
     expect(routines).toContain('href="/movement"');
+    expect(player).toContain("guidedMovementToSession");
   });
 });
