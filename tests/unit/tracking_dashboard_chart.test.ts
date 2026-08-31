@@ -65,7 +65,7 @@ describe("mobile tracking leftover wiring", () => {
     );
 
     expect(screen).toContain("TrackingDashboardChart");
-    expect(screen).toContain("sessions={[]}");
+    expect(screen).toContain("sessionLogsToTrackingSessions");
     expect(today).toContain("TempoEmptyState");
     expect(today).not.toContain("TrackingDashboardChart");
   });

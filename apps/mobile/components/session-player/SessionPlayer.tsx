@@ -1,6 +1,12 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import {
+  appendSessionLogEntry,
+  parseSessionLogEntries,
+  serializeSessionLogEntries,
+} from "@/lib/focus-session-log";
 import {
   advanceSession,
   createIdleSession,
@@ -9,6 +15,7 @@ import {
   pauseSession,
   resumeSession,
   seededRoutines,
+  sessionLogStorageKey,
   startSession,
   type SessionLogEntry,
   type SessionPlayerState,
@@ -27,6 +34,19 @@ export function SessionPlayer() {
   const [log, setLog] = useState<SessionLogEntry[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
+    void AsyncStorage.getItem(sessionLogStorageKey).then((raw) => {
+      if (!isMounted) {
+        return;
+      }
+      setLog(parseSessionLogEntries(raw));
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (state.status !== "running") {
       return;
     }
@@ -37,11 +57,14 @@ export function SessionPlayer() {
         if (next.status === "finished" && current.status !== "finished") {
           try {
             const entry = createSessionLogEntry(next, routine);
-            setLog((entries) =>
-              entries.some((item) => item.id === entry.id)
-                ? entries
-                : [...entries, entry],
-            );
+            setLog((entries) => {
+              const nextEntries = appendSessionLogEntry(entries, entry);
+              void AsyncStorage.setItem(
+                sessionLogStorageKey,
+                serializeSessionLogEntries(nextEntries),
+              );
+              return nextEntries;
+            });
           } catch {
             // Only finished sessions can be logged; ignore races.
           }
@@ -123,7 +146,7 @@ export function SessionPlayer() {
 
       {log.length > 0 ? (
         <Text className="text-sm text-muted-foreground">
-          Logged {log.length} {log.length === 1 ? "loop" : "loops"} this visit.
+          Logged {log.length} {log.length === 1 ? "loop" : "loops"}.
         </Text>
       ) : null}
     </View>

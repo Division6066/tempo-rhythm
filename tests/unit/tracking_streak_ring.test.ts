@@ -64,7 +64,7 @@ describe("mobile streak ring leftover wiring", () => {
     expect(screen).toContain("TrackingStreakRing");
     expect(screen).toContain("api.streaks.getCurrent");
     expect(screen).toContain("TrackingDashboardChart");
-    expect(screen).toContain("sessions={[]}");
+    expect(screen).toContain("sessions={sessions}");
     expect(screen).not.toContain("initialStreak");
     expect(ring).not.toContain("initialStreak");
     expect(ring).not.toContain("Count today");

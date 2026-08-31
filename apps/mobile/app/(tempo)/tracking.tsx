@@ -1,13 +1,21 @@
 /**
  * @screen: tracking
  * @platform: mobile
- * @summary: Tracking chart leftover from #188 plus honest streak ring leftover from #184.
+ * @summary: Tracking chart leftover from #188, streak ring from #184, persisted session logs from #212.
  * @queries: streaks.getCurrent
  */
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TrackingDashboardChart } from "@/components/tracking/TrackingDashboardChart";
 import { TrackingStreakRing } from "@/components/tracking/TrackingStreakRing";
 import { api } from "@/convex/_generated/api";
+import {
+  parseSessionLogEntries,
+  sessionLogsToTrackingSessions,
+} from "@/lib/focus-session-log";
+import { sessionLogStorageKey } from "@/lib/session-player";
+import type { LoggedTrackingSession } from "@/lib/tracking-dashboard-data";
 import { useConvexAuth, useQuery } from "convex/react";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,6 +28,20 @@ export default function Screen() {
     isAuthenticated && hasConvexUser ? {} : "skip",
   );
   const streakCount = habitStreak?.streakCount ?? 0;
+  const [sessions, setSessions] = useState<LoggedTrackingSession[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    void AsyncStorage.getItem(sessionLogStorageKey).then((raw) => {
+      if (!isMounted) {
+        return;
+      }
+      setSessions(sessionLogsToTrackingSessions(parseSessionLogEntries(raw)));
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -30,7 +52,7 @@ export default function Screen() {
           you already have. An empty ring is still a complete enough start.
         </Text>
         <TrackingStreakRing streakCount={streakCount} />
-        <TrackingDashboardChart sessions={[]} />
+        <TrackingDashboardChart sessions={sessions} />
       </View>
     </SafeAreaView>
   );
