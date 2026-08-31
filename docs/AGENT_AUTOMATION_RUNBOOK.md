@@ -25,7 +25,7 @@ Remaining dashboard/secret items are listed in
 1. Confirm the runtime switch or agent host is online.
 2. Confirm GitHub remote access works with `git ls-remote origin master`.
 3. Confirm the repo branch is clean with `git status --short`.
-4. Confirm the correct base branch is `master`.
+4. Confirm the correct base branch is `integration` (never open agent PRs against `master`).
 5. Confirm no dashboard-only action is being hidden inside a code task.
 6. Confirm Convex local dev is bound with `bunx convex function-spec`.
 7. Run the batch checks:
@@ -41,6 +41,8 @@ bun run build
 Do not use `bun run check` as a verification-only command until the repo fixes
 that script. On 2026-06-02 it was observed to run `biome check --write` in the
 mobile package and to fail on pre-existing web formatter diagnostics.
+
+See `docs/CI.md` for which GitHub Actions jobs are blocking.
 
 ## Cyrus worktree setup
 
