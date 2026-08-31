@@ -2,6 +2,83 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 
+export type OverviewTaskRow = {
+  status: "todo" | "in_progress" | "done" | "cancelled";
+  dueAt?: number;
+};
+
+export type OverviewNoteRow = {
+  pinned: boolean;
+};
+
+export type OverviewGoalRow = {
+  status: "active" | "completed" | "archived";
+};
+
+export type OverviewCounts = {
+  tasksTotal: number;
+  taskTodo: number;
+  taskDone: number;
+  tasksDueToday: number;
+  notesTotal: number;
+  notesPinned: number;
+  habitsTotal: number;
+  goalsActive: number;
+  goalsTotal: number;
+  memoriesTotal: number;
+  coachSessionsTotal: number;
+};
+
+/**
+ * Pure aggregation over already-fetched rows — exported for unit tests
+ * (analytics.test.ts); the query handler is a thin wrapper around this.
+ */
+export function computeOverview(input: {
+  tasks: OverviewTaskRow[];
+  notes: OverviewNoteRow[];
+  habitsCount: number;
+  goals: OverviewGoalRow[];
+  memoriesCount: number;
+  conversationsCount: number;
+  todayStartMs?: number;
+  todayEndMs?: number;
+}): OverviewCounts {
+  const taskTodo = input.tasks.filter(
+    (t) => t.status === "todo" || t.status === "in_progress",
+  ).length;
+  const taskDone = input.tasks.filter((t) => t.status === "done").length;
+  const notesPinned = input.notes.filter((n) => n.pinned).length;
+  const goalsActive = input.goals.filter((g) => g.status === "active").length;
+
+  let tasksDueToday = 0;
+  if (input.todayStartMs !== undefined && input.todayEndMs !== undefined) {
+    const startMs = input.todayStartMs;
+    const endMs = input.todayEndMs;
+    tasksDueToday = input.tasks.filter(
+      (t) =>
+        t.dueAt !== undefined &&
+        t.dueAt >= startMs &&
+        t.dueAt < endMs &&
+        t.status !== "done" &&
+        t.status !== "cancelled",
+    ).length;
+  }
+
+  return {
+    tasksTotal: input.tasks.length,
+    taskTodo,
+    taskDone,
+    tasksDueToday,
+    notesTotal: input.notes.length,
+    notesPinned,
+    habitsTotal: input.habitsCount,
+    goalsActive,
+    goalsTotal: input.goals.length,
+    memoriesTotal: input.memoriesCount,
+    coachSessionsTotal: input.conversationsCount,
+  };
+}
+
 /**
  * Aggregated counts for dashboard and analytics screens.
  *
@@ -22,6 +99,19 @@ export const overview = query({
     /** Epoch ms at the end of the user's local "today" (exclusive). Pair with `todayStartMs`. */
     todayEndMs: v.optional(v.number()),
   },
+  returns: v.object({
+    tasksTotal: v.number(),
+    taskTodo: v.number(),
+    taskDone: v.number(),
+    tasksDueToday: v.number(),
+    notesTotal: v.number(),
+    notesPinned: v.number(),
+    habitsTotal: v.number(),
+    goalsActive: v.number(),
+    goalsTotal: v.number(),
+    memoriesTotal: v.number(),
+    coachSessionsTotal: v.number(),
+  }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
 
@@ -52,37 +142,15 @@ export const overview = query({
         .collect(),
     ]);
 
-    const taskTodo = tasks.filter((t) => t.status === "todo" || t.status === "in_progress").length;
-    const taskDone = tasks.filter((t) => t.status === "done").length;
-    const notesPinned = notes.filter((n) => n.pinned).length;
-    const goalsActive = goals.filter((g) => g.status === "active").length;
-
-    let tasksDueToday = 0;
-    if (args.todayStartMs !== undefined && args.todayEndMs !== undefined) {
-      const startMs = args.todayStartMs;
-      const endMs = args.todayEndMs;
-      tasksDueToday = tasks.filter(
-        (t) =>
-          t.dueAt !== undefined &&
-          t.dueAt >= startMs &&
-          t.dueAt < endMs &&
-          t.status !== "done" &&
-          t.status !== "cancelled",
-      ).length;
-    }
-
-    return {
-      tasksTotal: tasks.length,
-      taskTodo,
-      taskDone,
-      tasksDueToday,
-      notesTotal: notes.length,
-      notesPinned,
-      habitsTotal: habits.length,
-      goalsActive,
-      goalsTotal: goals.length,
-      memoriesTotal: memories.length,
-      coachSessionsTotal: conversations.length,
-    };
+    return computeOverview({
+      tasks,
+      notes,
+      habitsCount: habits.length,
+      goals,
+      memoriesCount: memories.length,
+      conversationsCount: conversations.length,
+      todayStartMs: args.todayStartMs,
+      todayEndMs: args.todayEndMs,
+    });
   },
 });
