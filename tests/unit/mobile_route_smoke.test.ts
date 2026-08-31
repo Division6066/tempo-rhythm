@@ -21,6 +21,7 @@ const TEMPO_SCREENS = [
   ["journal", "apps/mobile/app/(tempo)/journal.tsx"],
   ["routines", "apps/mobile/app/(tempo)/routines.tsx"],
   ["settings", "apps/mobile/app/(tempo)/settings.tsx"],
+  ["accessibility", "apps/mobile/app/(tempo)/accessibility.tsx"],
   ["templates", "apps/mobile/app/(tempo)/templates.tsx"],
   ["capture", "apps/mobile/app/(tempo)/capture.tsx"],
 ] as const;
@@ -41,6 +42,7 @@ describe("mobile tempo route smoke", () => {
       "journal",
       "routines",
       "settings",
+      "accessibility",
       "templates",
       "capture",
     ]) {

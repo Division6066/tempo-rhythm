@@ -6,6 +6,7 @@
  * @summary: Mobile settings.
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
+import { Link } from "expo-router";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -15,6 +16,17 @@ export default function Screen() {
       <View className="flex-1 p-6 gap-3">
         <Text className="text-2xl font-semibold text-foreground">Settings</Text>
         <Text className="text-sm text-muted-foreground">Mobile settings.</Text>
+        <Link href="/accessibility" asChild>
+          <Text
+            accessibilityRole="link"
+            className="text-base text-foreground"
+          >
+            Accessibility
+          </Text>
+        </Link>
+        <Text className="text-xs text-muted-foreground">
+          Comfortable reading and calmer motion live here.
+        </Text>
         <Text className="text-xs text-muted-foreground font-mono">
           scaffold · port from mobile/mobile-screens-b.jsx
         </Text>
