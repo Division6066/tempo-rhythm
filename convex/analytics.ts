@@ -1,6 +1,11 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { computeInsightsSummary } from "./lib/insights_summary";
 import { requireUser } from "./lib/requireUser";
+
+/** Guard against absurd client windows (DST-tolerant day, one-week lookback). */
+const maxDayWindowMs = 48 * 60 * 60 * 1000;
+const maxWeekLookbackMs = 9 * 24 * 60 * 60 * 1000;
 
 export type OverviewTaskRow = {
   status: "todo" | "in_progress" | "done" | "cancelled";
@@ -151,6 +156,73 @@ export const overview = query({
       conversationsCount: conversations.length,
       todayStartMs: args.todayStartMs,
       todayEndMs: args.todayEndMs,
+    });
+  },
+});
+
+/**
+ * Read-only Insights screen summary. Lives on `analytics` so the committed
+ * generated API types already know the module.
+ *
+ * HARD_RULES §10: caller passes local-day and local-week windows.
+ */
+export const insightsSummary = query({
+  args: {
+    todayStartMs: v.number(),
+    todayEndMs: v.number(),
+    weekStartMs: v.number(),
+  },
+  returns: v.object({
+    tasksOpen: v.number(),
+    tasksDueToday: v.number(),
+    tasksOverdue: v.number(),
+    tasksCompletedThisWeek: v.number(),
+    openByEnergy: v.object({ low: v.number(), medium: v.number(), high: v.number() }),
+    openByPriority: v.object({ low: v.number(), medium: v.number(), high: v.number() }),
+    habitsTotal: v.number(),
+    habitsWithActiveStreak: v.number(),
+    bestStreak: v.number(),
+    goalsActive: v.number(),
+    goalsAverageProgressPercent: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    if (args.todayEndMs <= args.todayStartMs) {
+      throw new Error("Today window must end after it starts.");
+    }
+    if (args.todayEndMs - args.todayStartMs > maxDayWindowMs) {
+      throw new Error("Today window is too large.");
+    }
+    if (args.weekStartMs > args.todayStartMs) {
+      throw new Error("Week must start on or before today.");
+    }
+    if (args.todayStartMs - args.weekStartMs > maxWeekLookbackMs) {
+      throw new Error("Week window is too large.");
+    }
+
+    const user = await requireUser(ctx);
+
+    const [tasks, habits, goals] = await Promise.all([
+      ctx.db
+        .query("tasks")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect(),
+      ctx.db
+        .query("habits")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect(),
+      ctx.db
+        .query("goals")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect(),
+    ]);
+
+    return computeInsightsSummary({
+      tasks,
+      habits,
+      goals,
+      todayStartMs: args.todayStartMs,
+      todayEndMs: args.todayEndMs,
+      weekStartMs: args.weekStartMs,
     });
   },
 });

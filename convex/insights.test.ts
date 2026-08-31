@@ -4,7 +4,7 @@ import {
   type InsightsGoalRow,
   type InsightsHabitRow,
   type InsightsTaskRow,
-} from "./insights";
+} from "./lib/insights_summary";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

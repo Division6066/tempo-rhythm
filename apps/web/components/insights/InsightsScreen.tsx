@@ -11,7 +11,7 @@ import { startOfLocalWeekMondayMs } from "@/lib/localDay";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 
 /**
- * Read-only insights surface (reads `insights.summary`; mutates nothing).
+ * Read-only insights surface (reads `analytics.insightsSummary`; mutates nothing).
  * Copy follows HARD_RULES §1 — numbers are framed as information, never as
  * a judgment. Overdue work is "waiting", not "late".
  */
@@ -109,7 +109,7 @@ export function InsightsScreen() {
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
   const summary = useQuery(
-    api.insights.summary,
+    api.analytics.insightsSummary,
     isAuthenticated && hasConvexUser
       ? { todayStartMs: bounds.startMs, todayEndMs: bounds.endMs, weekStartMs }
       : "skip",
