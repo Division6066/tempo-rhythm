@@ -1,5 +1,5 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { mapRevenueCatEventToUserType } from "./lib/revenuecat_events";
 
 /**
@@ -17,7 +17,12 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   const authHeader = request.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
 
-  if (webhookSecret && authHeader !== webhookSecret) {
+  if (!webhookSecret) {
+    console.error("[RevenueCat Webhook] REVENUECAT_WEBHOOK_SECRET is not configured");
+    return new Response("Webhook not configured", { status: 503 });
+  }
+
+  if (authHeader !== webhookSecret) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -35,7 +40,6 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
 
   const eventType = event.type as string | undefined;
   const appUserId = event.app_user_id as string | undefined;
-  const entitlements = event.subscriber_attributes as Record<string, unknown> | undefined;
 
   // Determine new user tier from entitlements
   // RevenueCat sends entitlement identifiers in the event
@@ -45,7 +49,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
 
   if (appUserId) {
     try {
-      await ctx.runMutation(api.users.updateSubscriptionStatus, {
+      await ctx.runMutation(internal.users.updateSubscriptionStatus, {
         userId: appUserId,
         userType,
         activeEntitlements,

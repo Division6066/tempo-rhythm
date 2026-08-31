@@ -1,5 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { isInactiveAccount } from "./accountDeletion";
 
 /**
  * Resolve the authenticated app user (users table row) from Convex Auth identity.
@@ -29,6 +30,9 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   const subjectUser = await resolveUserFromSubject(ctx, identity.subject);
   if (subjectUser) {
+    if (isInactiveAccount(subjectUser)) {
+      throw new Error("This account is not active");
+    }
     return subjectUser;
   }
 
@@ -44,6 +48,10 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 
   if (!user) {
     throw new Error("User not found");
+  }
+
+  if (isInactiveAccount(user)) {
+    throw new Error("This account is not active");
   }
 
   return user;

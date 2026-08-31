@@ -3,6 +3,7 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel, Id } from "./_generated/dataModel";
+import { isInactiveAccount } from "./lib/accountDeletion";
 import {
   buildReturningUserPatch,
   GRANTED_SUBSCRIPTION,
@@ -125,7 +126,16 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // undefined here is what stripped entitlementTier, betaAccess,
         // isGodTier and userType on a returning user's SECOND sign-in --
         // Convex reads undefined in a patch as "delete this field".
-        await db.patch(existingUserId, buildReturningUserPatch(existing ?? {}, profile, now));
+        //
+        // Soft-delete recovery is the one intentional undefined: clearing
+        // `deletedAt` brings the row back to live so beforeSessionCreation
+        // can issue a session.
+        await db.patch(existingUserId, {
+          ...buildReturningUserPatch(existing ?? {}, profile, now),
+          ...(existing && isInactiveAccount(existing)
+            ? { deletedAt: undefined, isActive: true }
+            : {}),
+        });
         await ensureGrantedSubscription(db, existingUserId, now);
 
         return existingUserId;
