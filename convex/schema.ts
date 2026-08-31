@@ -147,6 +147,16 @@ export default defineSchema({
     projectId: v.optional(v.string()),
     projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
+    // Leftover from #206 — optional steps on a task, not a new table.
+    checklist: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          text: v.string(),
+          completed: v.boolean(),
+        }),
+      ),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),

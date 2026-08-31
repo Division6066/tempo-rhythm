@@ -68,6 +68,22 @@ describe("task view filters", () => {
     expect(result.map((task) => task.id)).toEqual(["task-done", "task-today"]);
   });
 
+  test("checklists view keeps only non-cancelled tasks that have steps", () => {
+    const inboxSeed = records[2];
+    if (!inboxSeed) {
+      throw new Error("expected inbox seed record");
+    }
+    const withChecklist: TaskViewRecord = {
+      ...inboxSeed,
+      id: "task-checklist",
+      checklist: [{ id: "a", text: "one step", completed: false }],
+      updatedAt: 50,
+    };
+    const result = filterTasksForView([...records, withChecklist], { view: "checklists" });
+
+    expect(result.map((task) => task.id)).toEqual(["task-checklist"]);
+  });
+
   test("inbox view includes all non-cancelled task records", () => {
     const result = filterTasksForView(records, { view: "inbox" });
 

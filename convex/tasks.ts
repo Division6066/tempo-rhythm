@@ -2,8 +2,15 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { filterTasksDueInRange } from "./lib/task_filters";
+import { normalizeChecklist } from "./lib/taskChecklists";
 import { assertRepeatEvery } from "./lib/taskRepeat";
 import { fetchCurrentUser } from "./users";
+
+const checklistItemValidator = v.object({
+  id: v.string(),
+  text: v.string(),
+  completed: v.boolean(),
+});
 
 const taskStatusValidator = v.union(
   v.literal("todo"),
@@ -31,6 +38,7 @@ const taskReturnValidator = v.object({
   projectId: v.optional(v.string()),
   projectName: v.optional(v.string()),
   dueAt: v.optional(v.number()),
+  checklist: v.optional(v.array(checklistItemValidator)),
   createdAt: v.number(),
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()),
@@ -122,6 +130,7 @@ export const create = mutation({
     projectId: v.optional(v.string()),
     projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
+    checklist: v.optional(v.array(checklistItemValidator)),
   },
   returns: v.id("tasks"),
   handler: async (ctx, args) => {
@@ -137,6 +146,7 @@ export const create = mutation({
       projectId: args.projectId?.trim(),
       projectName: args.projectName?.trim(),
       dueAt: args.dueAt,
+      checklist: normalizeChecklist(args.checklist),
       createdAt: now,
       updatedAt: now,
     });
@@ -156,6 +166,7 @@ export const update = mutation({
     projectId: v.optional(v.union(v.string(), v.null())),
     projectName: v.optional(v.union(v.string(), v.null())),
     dueAt: v.optional(v.union(v.number(), v.null())),
+    checklist: v.optional(v.union(v.array(checklistItemValidator), v.null())),
   },
   returns: v.id("tasks"),
   handler: async (ctx, args) => {
@@ -181,6 +192,9 @@ export const update = mutation({
     }
     if (args.dueAt !== undefined) {
       patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
+    }
+    if (args.checklist !== undefined) {
+      patch.checklist = args.checklist === null ? undefined : normalizeChecklist(args.checklist);
     }
     await ctx.db.patch(args.taskId, patch as typeof task);
     return args.taskId;
