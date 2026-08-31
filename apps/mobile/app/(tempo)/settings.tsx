@@ -27,6 +27,17 @@ export default function Screen() {
         <Text className="text-xs text-muted-foreground">
           Comfortable reading and calmer motion live here.
         </Text>
+        <Link href="/tracking" asChild>
+          <Text
+            accessibilityRole="link"
+            className="text-base text-foreground"
+          >
+            Tracking
+          </Text>
+        </Link>
+        <Text className="text-xs text-muted-foreground">
+          Focus minutes from sessions you already logged.
+        </Text>
         <Text className="text-xs text-muted-foreground font-mono">
           scaffold · port from mobile/mobile-screens-b.jsx
         </Text>
