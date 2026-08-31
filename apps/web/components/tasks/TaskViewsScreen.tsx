@@ -307,6 +307,14 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                 {link.label}
               </Link>
             ))}
+            {view === "project" && projectSlug ? (
+              <Link
+                href={`/projects/${projectSlug}/kanban`}
+                className="rounded-pill border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-surface-sunken"
+              >
+                Board
+              </Link>
+            ) : null}
           </nav>
         </header>
 
