@@ -2,91 +2,74 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { isInactiveAccount, softDeleteUserAccount } from "./lib/accountDeletion";
+import {
+	isInactiveAccount,
+	softDeleteUserAccount,
+} from "./lib/accountDeletion";
 import { buildReturningUserPatch, newUserFields } from "./lib/entitlements";
-import { requireUser } from "./lib/requireUser";
+import { requireUser, resolveUserFromIdentity } from "./lib/requireUser";
 import { assertClientMaySetUserType } from "./lib/subscriptionGuards";
 
 /** Shared resolver for the authenticated app user document. */
-export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | null> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    return null;
-  }
+export async function fetchCurrentUser(
+	ctx: QueryCtx,
+): Promise<Doc<"users"> | null> {
+	const identity = await ctx.auth.getUserIdentity();
+	if (!identity) {
+		return null;
+	}
 
-  // In Convex Auth the subject is: authAccountId|userId
-  const subjectParts = identity.subject.split("|");
-  if (subjectParts.length >= 2) {
-    const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-    try {
-      const user = await ctx.db.get(userId);
-      if (user) {
-        if (isInactiveAccount(user)) return null;
-        return user;
-      }
-    } catch {
-      // invalid ID, fall through to email lookup
-    }
-  }
-
-  if (identity.email) {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
-      .unique();
-    if (user) {
-      if (isInactiveAccount(user)) return null;
-      return user;
-    }
-  }
-
-  return null;
+	const user = await resolveUserFromIdentity(ctx, identity);
+	if (!user || isInactiveAccount(user)) {
+		return null;
+	}
+	return user;
 }
 
 export const getCurrentUser = query({
-  args: {},
-  handler: async (ctx) => fetchCurrentUser(ctx),
+	args: {},
+	handler: async (ctx) => fetchCurrentUser(ctx),
 });
 
 /** Profile for dashboard greeting and header; extends user with `greetingName`. */
 export const getProfile = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await fetchCurrentUser(ctx);
-    if (!user) return null;
-    const greetingName =
-      user.fullName?.trim() || user.email?.split("@")[0] || "there";
-    return {
-      ...user,
-      greetingName,
-    };
-  },
+	args: {},
+	handler: async (ctx) => {
+		const user = await fetchCurrentUser(ctx);
+		if (!user) return null;
+		const greetingName =
+			user.fullName?.trim() || user.email?.split("@")[0] || "there";
+		return {
+			...user,
+			greetingName,
+		};
+	},
 });
 
 export const getById = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
-    const currentUser = await requireUser(ctx);
-    if (currentUser._id !== userId && currentUser.role !== "admin") {
-      throw new Error("Access denied");
-    }
-    return ctx.db.get(userId);
-  },
+	args: { userId: v.id("users") },
+	handler: async (ctx, { userId }) => {
+		const currentUser = await requireUser(ctx);
+		if (currentUser._id !== userId && currentUser.role !== "admin") {
+			throw new Error("Access denied");
+		}
+		return ctx.db.get(userId);
+	},
 });
 
 export const listActive = query({
-  args: {},
-  handler: async (ctx) => {
-    const currentUser = await requireUser(ctx);
-    if (currentUser.role !== "admin") {
-      throw new Error("Access denied");
-    }
-    const rows = await ctx.db
-      .query("users")
-      .withIndex("by_deletedAt", (q) => q.eq("deletedAt", undefined))
-      .collect();
-    return rows.filter((user) => user.isActive !== false);
-  },
+	args: {},
+	handler: async (ctx) => {
+		const currentUser = await requireUser(ctx);
+		if (currentUser.role !== "admin") {
+			throw new Error("Access denied");
+		}
+		const rows = await ctx.db
+			.query("users")
+			.withIndex("by_deletedAt", (q) => q.eq("deletedAt", undefined))
+			.collect();
+		return rows.filter((user) => user.isActive !== false);
+	},
 });
 
 /**
@@ -101,67 +84,67 @@ export const listActive = query({
  * again.
  */
 export const createOrUpdateUser = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Not authenticated");
 
-    const email = identity.email ?? "";
-    const now = Date.now();
+		const email = identity.email ?? "";
+		const now = Date.now();
 
-    const profile = {
-      email,
-      emailVerified: identity.emailVerified ?? false,
-      fullName: identity.name || identity.nickname || "User",
-    };
+		const profile = {
+			email,
+			emailVerified: identity.emailVerified ?? false,
+			fullName: identity.name || identity.nickname || "User",
+		};
 
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .unique();
+		const existing = await ctx.db
+			.query("users")
+			.withIndex("by_email", (q) => q.eq("email", email))
+			.unique();
 
-    if (existing) {
-      // Identity fields plus self-heal only. This path must never write
-      // `role`, and must never write `userType` unconditionally - that was
-      // the downgrade.
-      await ctx.db.patch(existing._id, {
-        ...buildReturningUserPatch(existing, profile, now),
-        ...(isInactiveAccount(existing)
-          ? { deletedAt: undefined, isActive: true }
-          : {}),
-      });
-      return existing._id;
-    }
+		if (existing) {
+			// Identity fields plus self-heal only. This path must never write
+			// `role`, and must never write `userType` unconditionally - that was
+			// the downgrade.
+			await ctx.db.patch(existing._id, {
+				...buildReturningUserPatch(existing, profile, now),
+				...(isInactiveAccount(existing)
+					? { deletedAt: undefined, isActive: true }
+					: {}),
+			});
+			return existing._id;
+		}
 
-    return ctx.db.insert("users", newUserFields(profile, now));
-  },
+		return ctx.db.insert("users", newUserFields(profile, now));
+	},
 });
 
 export const updateProfile = mutation({
-  args: {
-    userId: v.id("users"),
-    fullName: v.optional(v.string()),
-  },
-  handler: async (ctx, { userId, fullName }) => {
-    const currentUser = await requireUser(ctx);
-    if (currentUser._id !== userId && currentUser.role !== "admin") {
-      throw new Error("Access denied");
-    }
-    await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
-    return userId;
-  },
+	args: {
+		userId: v.id("users"),
+		fullName: v.optional(v.string()),
+	},
+	handler: async (ctx, { userId, fullName }) => {
+		const currentUser = await requireUser(ctx);
+		if (currentUser._id !== userId && currentUser.role !== "admin") {
+			throw new Error("Access denied");
+		}
+		await ctx.db.patch(userId, { fullName, updatedAt: Date.now() });
+		return userId;
+	},
 });
 
 export const updateUserType = mutation({
-  args: {
-    userType: v.union(v.literal("free"), v.literal("paid")),
-  },
-  handler: async (ctx, { userType }) => {
-    assertClientMaySetUserType(userType);
-    const user = await requireUser(ctx);
-    await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
-    return user._id;
-  },
+	args: {
+		userType: v.union(v.literal("free"), v.literal("paid")),
+	},
+	handler: async (ctx, { userType }) => {
+		assertClientMaySetUserType(userType);
+		const user = await requireUser(ctx);
+		await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
+		return user._id;
+	},
 });
 
 /**
@@ -169,54 +152,64 @@ export const updateUserType = mutation({
  * Uses appUserId (RevenueCat user ID = Convex user email or subject) to find and update the user.
  */
 export const updateSubscriptionStatus = internalMutation({
-  args: {
-    userId: v.string(),
-    userType: v.union(v.literal("free"), v.literal("paid")),
-    activeEntitlements: v.array(v.string()),
-    revenueCatEvent: v.string(),
-  },
-  handler: async (ctx, { userId, userType, activeEntitlements: _entitlements, revenueCatEvent: _event }) => {
-    // Try to find user by email (RevenueCat appUserId is typically the user's email)
-    let user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", userId))
-      .unique();
+	args: {
+		userId: v.string(),
+		userType: v.union(v.literal("free"), v.literal("paid")),
+		activeEntitlements: v.array(v.string()),
+		revenueCatEvent: v.string(),
+	},
+	handler: async (
+		ctx,
+		{
+			userId,
+			userType,
+			activeEntitlements: _entitlements,
+			revenueCatEvent: _event,
+		},
+	) => {
+		// Try to find user by email (RevenueCat appUserId is typically the user's email)
+		let user = await ctx.db
+			.query("users")
+			.withIndex("by_email", (q) => q.eq("email", userId))
+			.unique();
 
-    // Fallback: try to find by ID if userId looks like a Convex ID
-    if (!user) {
-      try {
-        user = await ctx.db.get(userId as import("./_generated/dataModel").Id<"users">);
-      } catch {
-        // Not a valid Convex ID — user not found
-      }
-    }
+		// Fallback: try to find by ID if userId looks like a Convex ID
+		if (!user) {
+			try {
+				user = await ctx.db.get(
+					userId as import("./_generated/dataModel").Id<"users">,
+				);
+			} catch {
+				// Not a valid Convex ID — user not found
+			}
+		}
 
-    if (!user) {
-      console.warn(`[RevenueCat] User not found for appUserId: ${userId}`);
-      return { updated: false };
-    }
+		if (!user) {
+			console.warn(`[RevenueCat] User not found for appUserId: ${userId}`);
+			return { updated: false };
+		}
 
-    await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
-    return { updated: true, userId: user._id };
-  },
+		await ctx.db.patch(user._id, { userType, updatedAt: Date.now() });
+		return { updated: true, userId: user._id };
+	},
 });
 
 export const remove = mutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
-    const currentUser = await requireUser(ctx);
-    if (currentUser._id !== userId && currentUser.role !== "admin") {
-      throw new Error("Access denied");
-    }
-    await ctx.db.delete(userId);
-  },
+	args: { userId: v.id("users") },
+	handler: async (ctx, { userId }) => {
+		const currentUser = await requireUser(ctx);
+		if (currentUser._id !== userId && currentUser.role !== "admin") {
+			throw new Error("Access denied");
+		}
+		await ctx.db.delete(userId);
+	},
 });
 
 export const deleteMyAccount = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const user = await requireUser(ctx);
-    const { deletedCount } = await softDeleteUserAccount(ctx, user._id);
-    return { success: true, deletedCount };
-  },
+	args: {},
+	handler: async (ctx) => {
+		const user = await requireUser(ctx);
+		const { deletedCount } = await softDeleteUserAccount(ctx, user._id);
+		return { success: true, deletedCount };
+	},
 });
