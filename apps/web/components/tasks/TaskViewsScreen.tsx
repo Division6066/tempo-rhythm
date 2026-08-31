@@ -35,12 +35,15 @@ type LocalTaskRecord = TaskViewRecord & {
   createdAt: number;
 };
 
+type RepeatDraft = "none" | "daily" | "weekly";
+
 type Draft = {
   title: string;
   projectName: string;
   priority: TaskPriority;
   energy: TaskEnergy;
   dueToday: boolean;
+  repeat: RepeatDraft;
 };
 
 const localStorageKey = "tempo:task-views-core:v1";
@@ -59,6 +62,7 @@ const defaultDraft: Draft = {
   priority: "medium",
   energy: "medium",
   dueToday: false,
+  repeat: "none",
 };
 
 const allowLocalTaskViews =
@@ -125,6 +129,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const convexTasks = useQuery(api.tasks.list, isAuthenticated ? {} : "skip");
   const createTask = useMutation(api.tasks.create);
+  const createRepeatCfg = useMutation(api.tasks.createRepeatCfg);
+  const setTaskRepeatCfg = useMutation(api.tasks.setTaskRepeatCfg);
   const updateTask = useMutation(api.tasks.update);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
   const [localTasks, setLocalTasks] = useState<LocalTaskRecord[]>([]);
@@ -210,7 +216,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     const dueAt = draft.dueToday ? bounds.endMs - 1 : undefined;
 
     if (usesConvex) {
-      await createTask({
+      const taskId = await createTask({
         title,
         priority: draft.priority,
         energy: draft.energy,
@@ -218,6 +224,15 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         projectId: normalizedProjectId,
         projectName: normalizedProjectName,
       });
+      if (draft.repeat === "daily" || draft.repeat === "weekly") {
+        const cfgId = await createRepeatCfg({
+          repeatCycle: draft.repeat === "daily" ? "DAILY" : "WEEKLY",
+          repeatEvery: 1,
+          weekdays: draft.repeat === "weekly" ? [new Date().getUTCDay()] : [],
+          skipOverdue: true,
+        });
+        await setTaskRepeatCfg({ taskId, repeatCfgId: cfgId });
+      }
     } else if (usesLocalStore) {
       const now = Date.now();
       persistLocal((tasks) => [
@@ -319,7 +334,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         </header>
 
         <section className="rounded-3xl border border-border bg-card p-5 shadow-card" aria-label="Create task">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_150px_150px_auto] lg:items-end">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_150px_150px_150px_auto] lg:items-end">
             <label className="space-y-2">
               <span className="text-sm font-medium text-foreground">Task title</span>
               <input
@@ -379,6 +394,25 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-foreground">Repeat</span>
+              <select
+                aria-label="Repeat"
+                value={draft.repeat}
+                disabled={!taskStoreReady}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    repeat: event.target.value as RepeatDraft,
+                  }))
+                }
+                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Every day</option>
+                <option value="weekly">Every week</option>
               </select>
             </label>
             <Button
