@@ -12,6 +12,7 @@ export default function TempoLayout() {
       <Stack.Screen name="habits" />
       <Stack.Screen name="journal" />
       <Stack.Screen name="routines" />
+      <Stack.Screen name="breathwork" />
       <Stack.Screen name="session-player" />
       <Stack.Screen name="tracking" />
       <Stack.Screen name="settings" />

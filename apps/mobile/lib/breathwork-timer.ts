@@ -1,4 +1,4 @@
-export type BreathworkPhaseId = "inhale" | "hold" | "exhale";
+export type BreathworkPhaseId = "inhale" | "hold" | "exhale" | "rest";
 
 export type BreathworkPhase = {
   id: BreathworkPhaseId;

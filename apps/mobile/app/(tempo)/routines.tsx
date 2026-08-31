@@ -28,6 +28,14 @@ export default function Screen() {
               Open the session player
             </Text>
           </Link>
+          <Link href="/breathwork" asChild>
+            <Text
+              accessibilityRole="link"
+              className="text-base text-foreground"
+            >
+              More breath patterns
+            </Text>
+          </Link>
         </View>
         <BreathworkTimer />
         <Text className="text-xs text-muted-foreground font-mono">
