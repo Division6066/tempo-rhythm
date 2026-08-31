@@ -65,6 +65,18 @@ same PR that removes a violation.
 2. Purge it from history only after rotation (history rewrite is Amit's call).
 3. Add a gitleaks rule or fixture if the pattern was missed.
 
+## Dependabot + `bun.lock`
+
+Dependabot is configured with `package-ecosystem: bun` (not `npm`) in
+`.github/dependabot.yml`. The npm updater used to bump workspace
+`package.json` files and leave `bun.lock` unchanged, which made
+`bun install --frozen-lockfile` fail before lint/typecheck/test ran.
+
+If a Dependabot PR still arrives without a lockfile update, do not merge it.
+Regenerate with bun@1.3.9 (`bun install`), commit `bun.lock`, and only then
+re-run CI. Do not paste an older `bun.lock` from a stacked branch — that
+desyncs the lockfile from the manifests on `integration`.
+
 ## Convex deployments
 
 Schema/function changes do not deploy from CI. After merging a `convex/`

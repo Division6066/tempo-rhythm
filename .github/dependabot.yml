@@ -12,7 +12,10 @@ updates:
       - dependencies
       - automation
 
-  - package-ecosystem: npm
+  # Use bun, not npm: the npm updater rewrites package.json and leaves
+  # bun.lock stale, so `bun install --frozen-lockfile` fails in CI.
+  # The bun ecosystem updates the lockfile in the same PR (bun@1.3.9 / lockfile v1).
+  - package-ecosystem: bun
     directory: /
     schedule:
       interval: weekly
