@@ -7,9 +7,12 @@ import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { mapCalendarEventsToAgenda } from "@/lib/todayAgenda";
+import { TodayAgenda } from "./TodayAgenda";
 import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
 import { TodayEnergyRecommendations } from "./TodayEnergyRecommendations";
 import { TodayGreeting } from "./TodayGreeting";
+import { TodayHabitStrip } from "./TodayHabitStrip";
 import { TodayQuickAdd } from "./TodayQuickAdd";
 import { TodayTaskList } from "./TodayTaskList";
 
@@ -28,10 +31,25 @@ export function TodayScreen() {
     api.tasks.listToday,
     isAuthenticated && hasConvexUser ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip"
   );
+  const habits = useQuery(
+    api.habits.list,
+    isAuthenticated && hasConvexUser ? {} : "skip",
+  );
+  const calendarEvents = useQuery(
+    api.calendar_events.listInRange,
+    isAuthenticated && hasConvexUser
+      ? { startMs: bounds.startMs, endMs: bounds.endMs }
+      : "skip",
+  );
 
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated && (profile === undefined || (hasConvexUser && todayTasks === undefined)));
+    (isAuthenticated &&
+      (profile === undefined ||
+        (hasConvexUser &&
+          (todayTasks === undefined ||
+            habits === undefined ||
+            calendarEvents === undefined))));
 
   if (isLoading) {
     return (
@@ -52,7 +70,7 @@ export function TodayScreen() {
     return <TaskViewsScreen view="today" />;
   }
 
-  if (!profile || !todayTasks) {
+  if (!profile || !todayTasks || !habits || !calendarEvents) {
     return (
       <div className="container mx-auto max-w-5xl px-6 py-16 text-center">
         <SoftCard className="mx-auto max-w-xl">
@@ -73,6 +91,10 @@ export function TodayScreen() {
       <div className="space-y-8">
         <TodayGreeting greetingName={profile.greetingName} />
         <TodayBrainDumpPanel dueAt={bounds.endMs - 1} />
+        <div className="grid gap-6 xl:grid-cols-2">
+          <TodayAgenda events={mapCalendarEventsToAgenda(calendarEvents)} />
+          <TodayHabitStrip habits={habits} />
+        </div>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:items-start">
           <TodayQuickAdd dueAt={bounds.endMs - 1} />
           <TodayTaskList tasks={todayTasks} />
