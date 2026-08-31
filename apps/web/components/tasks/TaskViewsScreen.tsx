@@ -142,7 +142,12 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     }
   }, []);
 
-  const projectId = view === "project" ? (projectSlug ?? "home-reset") : undefined;
+  // Normalize URL slug the same way create does, so mixed-case / irregular
+  // slugs still match newly created tasks in this project view.
+  const projectId =
+    view === "project"
+      ? slugifyProjectName(projectSlug ?? "home-reset") || "home-reset"
+      : undefined;
   const projectName = view === "project" ? getViewTitle(view, projectSlug) : undefined;
   const usesConvex = isAuthenticated && convexTasks !== undefined;
   const usesLocalStore = !usesConvex && allowLocalTaskViews;
@@ -196,7 +201,12 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 
     const normalizedProjectName =
       view === "project" ? (projectName ?? draft.projectName) : draft.projectName.trim();
-    const normalizedProjectId = slugifyProjectName(normalizedProjectName);
+    // Project view must reuse the filter's projectId — do not re-slugify the
+    // display title alone, or URL slug and stored id can diverge.
+    const normalizedProjectId =
+      view === "project" && projectId
+        ? projectId
+        : slugifyProjectName(normalizedProjectName);
     const dueAt = draft.dueToday ? bounds.endMs - 1 : undefined;
 
     if (usesConvex) {
