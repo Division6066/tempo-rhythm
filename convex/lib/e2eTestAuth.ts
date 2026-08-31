@@ -10,9 +10,9 @@ export function normalizeE2eTestAuthEmail(
   return (email ?? "").trim().toLowerCase();
 }
 
-export function readE2eTestAuthEmail(
-  env: { E2E_TEST_AUTH_EMAIL?: string } = process.env,
-): string {
+type PublicEnv = { [key: string]: string | undefined };
+
+export function readE2eTestAuthEmail(env: PublicEnv = process.env): string {
   return normalizeE2eTestAuthEmail(env.E2E_TEST_AUTH_EMAIL);
 }
 

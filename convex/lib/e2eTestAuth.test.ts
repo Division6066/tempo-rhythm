@@ -21,7 +21,9 @@ describe("e2eTestAuth", () => {
 
   test("readE2eTestAuthEmail trims and lowercases a configured address", () => {
     expect(
-      readE2eTestAuthEmail({ E2E_TEST_AUTH_EMAIL: " Tester@Example.com " }),
+      readE2eTestAuthEmail({
+        E2E_TEST_AUTH_EMAIL: " Tester@Example.com ",
+      } satisfies { [key: string]: string | undefined }),
     ).toBe("tester@example.com");
     expect(shouldRegisterE2eTestAuthProvider("tester@example.com")).toBe(true);
   });
