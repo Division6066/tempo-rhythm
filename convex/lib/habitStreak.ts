@@ -1,5 +1,16 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** True when `lastCompletedAt` falls on the same UTC day as `now`. */
+export function isHabitCompletedOnUtcDay(
+	lastCompletedAt: number | undefined,
+	now: number,
+): boolean {
+	if (lastCompletedAt === undefined) {
+		return false;
+	}
+	return Math.floor((now - lastCompletedAt) / DAY_MS) === 0;
+}
+
 export type HabitStreakUpdate =
 	| { alreadyDone: true; currentStreak: number }
 	| { alreadyDone: false; currentStreak: number; longestStreak: number };

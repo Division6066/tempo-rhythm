@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { computeHabitStreakUpdate } from "./habitStreak";
+import { computeHabitStreakUpdate, isHabitCompletedOnUtcDay } from "./habitStreak";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -55,5 +55,21 @@ describe("computeHabitStreakUpdate", () => {
 			expect(result.currentStreak).toBe(3);
 			expect(result.longestStreak).toBe(7);
 		}
+	});
+});
+
+describe("isHabitCompletedOnUtcDay", () => {
+	test("never-completed habit is not done today", () => {
+		expect(isHabitCompletedOnUtcDay(undefined, 1_700_000_000_000)).toBe(false);
+	});
+
+	test("same UTC day counts as done", () => {
+		const last = 1_700_000_000_000;
+		expect(isHabitCompletedOnUtcDay(last, last + 6 * 60 * 60 * 1000)).toBe(true);
+	});
+
+	test("next UTC day is not done", () => {
+		const last = 1_700_000_000_000;
+		expect(isHabitCompletedOnUtcDay(last, last + DAY_MS)).toBe(false);
 	});
 });
