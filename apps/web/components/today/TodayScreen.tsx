@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
+import { TodayEnergyRecommendations } from "./TodayEnergyRecommendations";
 import { TodayGreeting } from "./TodayGreeting";
 import { TodayQuickAdd } from "./TodayQuickAdd";
 import { TodayTaskList } from "./TodayTaskList";
@@ -76,6 +77,11 @@ export function TodayScreen() {
           <TodayQuickAdd dueAt={bounds.endMs - 1} />
           <TodayTaskList tasks={todayTasks} />
         </div>
+        <TodayEnergyRecommendations
+          dueAt={bounds.endMs - 1}
+          todayStartMs={bounds.startMs}
+          todayEndMs={bounds.endMs}
+        />
       </div>
     </div>
   );
