@@ -47,6 +47,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
   { slug: "analytics", title: "Insights", route: "/insights", category: "You", icon: "Chart" },
   { slug: "history", title: "Conversation history", route: "/history", category: "You", icon: "Book" },
   { slug: "activity", title: "Recent activity", route: "/activity", category: "You", icon: "Clock" },
+  { slug: "tracking", title: "Session tracking", route: "/tracking", category: "You", icon: "Chart" },
   { slug: "templates", title: "Templates", route: "/templates", category: "You", icon: "Layers" },
   { slug: "search", title: "Search", route: "/search", category: "You", icon: "Search" },
   { slug: "empty-states", title: "Empty states", route: "/empty-states", category: "You", icon: "Leaf" },
