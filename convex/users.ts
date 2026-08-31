@@ -4,7 +4,7 @@ import type { QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { isInactiveAccount, softDeleteUserAccount } from "./lib/accountDeletion";
 import { buildReturningUserPatch, newUserFields } from "./lib/entitlements";
-import { requireUser } from "./lib/requireUser";
+import { requireUser, resolveUserFromIdentity } from "./lib/requireUser";
 import { assertClientMaySetUserType } from "./lib/subscriptionGuards";
 
 /** Shared resolver for the authenticated app user document. */
@@ -14,33 +14,11 @@ export async function fetchCurrentUser(ctx: QueryCtx): Promise<Doc<"users"> | nu
     return null;
   }
 
-  // In Convex Auth the subject is: authAccountId|userId
-  const subjectParts = identity.subject.split("|");
-  if (subjectParts.length >= 2) {
-    const userId = subjectParts[1] as import("./_generated/dataModel").Id<"users">;
-    try {
-      const user = await ctx.db.get(userId);
-      if (user) {
-        if (isInactiveAccount(user)) return null;
-        return user;
-      }
-    } catch {
-      // invalid ID, fall through to email lookup
-    }
+  const user = await resolveUserFromIdentity(ctx, identity);
+  if (!user || isInactiveAccount(user)) {
+    return null;
   }
-
-  if (identity.email) {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
-      .unique();
-    if (user) {
-      if (isInactiveAccount(user)) return null;
-      return user;
-    }
-  }
-
-  return null;
+  return user;
 }
 
 export const getCurrentUser = query({
