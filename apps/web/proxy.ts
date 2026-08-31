@@ -20,6 +20,7 @@ const isCoreTaskViewRoute = createRouteMatcher([
   "/tasks",
   "/tasks/priority",
   "/tasks/energy",
+  "/tasks/checklists",
   "/projects",
   "/projects/(.*)",
 ]);

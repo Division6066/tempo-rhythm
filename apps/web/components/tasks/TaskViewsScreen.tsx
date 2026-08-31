@@ -7,6 +7,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import {
+  getChecklistProgress,
+  parseChecklistText,
+  toggleChecklistItem,
+} from "@/convex/lib/taskChecklists";
+import {
   filterTasksForView,
   groupTasksByEnergy,
   groupTasksByPriority,
@@ -44,6 +49,7 @@ type Draft = {
   energy: TaskEnergy;
   dueToday: boolean;
   repeat: RepeatDraft;
+  checklistText: string;
 };
 
 const localStorageKey = "tempo:task-views-core:v1";
@@ -54,6 +60,7 @@ const viewLinks = [
   { href: "/projects/home-reset", label: "Project" },
   { href: "/tasks/priority", label: "Priority" },
   { href: "/tasks/energy", label: "Energy" },
+  { href: "/tasks/checklists", label: "Checklists" },
 ] as const;
 
 const defaultDraft: Draft = {
@@ -63,6 +70,7 @@ const defaultDraft: Draft = {
   energy: "medium",
   dueToday: false,
   repeat: "none",
+  checklistText: "",
 };
 
 const allowLocalTaskViews =
@@ -106,6 +114,7 @@ function getViewTitle(view: TaskView, projectSlug?: string): string {
   if (view === "inbox") return "Inbox";
   if (view === "priority") return "Priority";
   if (view === "energy") return "Energy";
+  if (view === "checklists") return "Checklists";
   return titleFromProjectSlug(projectSlug ?? "project");
 }
 
@@ -120,6 +129,7 @@ function toViewRecord(task: ConvexTaskRecord): TaskViewRecord {
     projectId: task.projectId,
     projectName: task.projectName,
     dueAt: task.dueAt,
+    checklist: task.checklist,
     updatedAt: task.updatedAt,
   };
 }
@@ -214,6 +224,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         ? projectId
         : slugifyProjectName(normalizedProjectName);
     const dueAt = draft.dueToday ? bounds.endMs - 1 : undefined;
+    const checklist = parseChecklistText(draft.checklistText);
 
     if (usesConvex) {
       const taskId = await createTask({
@@ -223,6 +234,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         dueAt,
         projectId: normalizedProjectId,
         projectName: normalizedProjectName,
+        checklist,
       });
       if (draft.repeat === "daily" || draft.repeat === "weekly") {
         const cfgId = await createRepeatCfg({
@@ -245,6 +257,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           projectId: normalizedProjectId,
           projectName: normalizedProjectName,
           dueAt,
+          checklist,
           createdAt: now,
           updatedAt: now,
         },
@@ -254,7 +267,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
       return;
     }
 
-    setDraft((current) => ({ ...current, title: "" }));
+    setDraft((current) => ({ ...current, title: "", checklistText: "" }));
   };
 
   const handleToggle = async (task: TaskViewRecord) => {
@@ -301,6 +314,28 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 
     setEditingId(null);
     setEditingTitle("");
+  };
+
+  const handleChecklistToggle = async (task: TaskViewRecord, itemId: string) => {
+    if (!task.checklist || !taskStoreReady) {
+      return;
+    }
+    const checklist = toggleChecklistItem(task.checklist, itemId);
+
+    if (usesConvex) {
+      await updateTask({ taskId: task.id as Id<"tasks">, checklist });
+      return;
+    }
+
+    if (!usesLocalStore) {
+      return;
+    }
+
+    persistLocal((tasks) =>
+      tasks.map((item) =>
+        item.id === task.id ? { ...item, checklist, updatedAt: Date.now() } : item,
+      ),
+    );
   };
 
   return (
@@ -434,6 +469,20 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
             />
             Show on Today
           </label>
+          <label className="mt-4 block space-y-2">
+            <span className="text-sm font-medium text-foreground">Checklist (one step per line)</span>
+            <textarea
+              aria-label="Checklist steps"
+              value={draft.checklistText}
+              disabled={!taskStoreReady}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, checklistText: event.target.value }))
+              }
+              rows={3}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
+              placeholder="Unpack the bag&#10;Put the kettle on"
+            />
+          </label>
         </section>
 
         {view === "priority" ? (
@@ -447,6 +496,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
             onEdit={startEditing}
             onSave={(task) => void saveEdit(task)}
             onToggle={(task) => void handleToggle(task)}
+            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
           />
         ) : view === "energy" ? (
           <GroupedTaskList
@@ -459,6 +509,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
             onEdit={startEditing}
             onSave={(task) => void saveEdit(task)}
             onToggle={(task) => void handleToggle(task)}
+            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
           />
         ) : (
           <TaskList
@@ -470,6 +521,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
             onEdit={startEditing}
             onSave={(task) => void saveEdit(task)}
             onToggle={(task) => void handleToggle(task)}
+            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
           />
         )}
       </div>
@@ -486,6 +538,7 @@ type TaskListProps = {
   onEdit: (task: TaskViewRecord) => void;
   onSave: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
+  onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
 
 function TaskList({
@@ -497,6 +550,7 @@ function TaskList({
   onEdit,
   onSave,
   onToggle,
+  onChecklistToggle,
 }: TaskListProps) {
   if (tasks.length === 0) {
     return (
@@ -520,6 +574,7 @@ function TaskList({
           onEdit={onEdit}
           onSave={onSave}
           onToggle={onToggle}
+          onChecklistToggle={onChecklistToggle}
         />
       ))}
     </ul>
@@ -541,6 +596,7 @@ function GroupedTaskList<TGroup extends string>({
   onEdit,
   onSave,
   onToggle,
+  onChecklistToggle,
 }: GroupedTaskListProps<TGroup>) {
   return (
     <div className="space-y-6">
@@ -558,6 +614,7 @@ function GroupedTaskList<TGroup extends string>({
             onEdit={onEdit}
             onSave={onSave}
             onToggle={onToggle}
+            onChecklistToggle={onChecklistToggle}
           />
         </section>
       ))}
@@ -574,6 +631,7 @@ type TaskRowProps = {
   onEdit: (task: TaskViewRecord) => void;
   onSave: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
+  onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
 
 function TaskRow({
@@ -585,8 +643,10 @@ function TaskRow({
   onEdit,
   onSave,
   onToggle,
+  onChecklistToggle,
 }: TaskRowProps) {
   const isDone = task.status === "done";
+  const checklistProgress = getChecklistProgress(task.checklist);
 
   return (
     <li
@@ -643,7 +703,32 @@ function TaskRow({
             <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.projectName ?? "Inbox"}</span>
             <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.priority} priority</span>
             <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.energy} energy</span>
+            {checklistProgress.total > 0 ? (
+              <span className="rounded-pill bg-surface-sunken px-3 py-1">
+                {checklistProgress.completed}/{checklistProgress.total} steps
+              </span>
+            ) : null}
           </div>
+          {task.checklist && task.checklist.length > 0 ? (
+            <ul className="space-y-2 pt-1" aria-label={`${task.title} checklist`}>
+              {task.checklist.map((item) => (
+                <li key={item.id}>
+                  <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={item.completed}
+                      disabled={actionsDisabled}
+                      onChange={() => onChecklistToggle(task, item.id)}
+                      className="h-4 w-4 rounded border-border text-primary"
+                    />
+                    <span className={cn(item.completed && "text-muted-foreground line-through")}>
+                      {item.text}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
         {!editing ? (
           <Button
