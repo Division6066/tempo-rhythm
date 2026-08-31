@@ -15,10 +15,12 @@ describe("startOfLocalDayMs / endOfLocalDayMs", () => {
   });
 
   test("start aligns to local midnight", () => {
-    const sample = new Date(2026, 5, 18, 23, 59, 59);
+    const sample = new Date(2026, 5, 18, 23, 59, 59, 999);
     const start = new Date(startOfLocalDayMs(sample));
     expect(start.getHours()).toBe(0);
     expect(start.getMinutes()).toBe(0);
+    expect(start.getSeconds()).toBe(0);
+    expect(start.getMilliseconds()).toBe(0);
     expect(start.getDate()).toBe(18);
   });
 });
@@ -38,6 +40,14 @@ describe("startOfLocalWeekMondayMs", () => {
     expect(monday.getDay()).toBe(1);
     expect(monday.getDate()).toBe(15);
   });
+
+  test("Monday stays on the same calendar Monday", () => {
+    const monday = new Date(2026, 5, 15, 9, 30, 0);
+    const mondayStart = new Date(startOfLocalWeekMondayMs(monday));
+    expect(mondayStart.getDay()).toBe(1);
+    expect(mondayStart.getDate()).toBe(15);
+    expect(mondayStart.getHours()).toBe(0);
+  });
 });
 
 describe("endOfLocalWeekMondayMs", () => {
@@ -46,5 +56,11 @@ describe("endOfLocalWeekMondayMs", () => {
     expect(endOfLocalWeekMondayMs(sample) - startOfLocalWeekMondayMs(sample)).toBe(
       7 * 24 * 60 * 60 * 1000,
     );
+  });
+
+  test("consecutive weeks do not overlap", () => {
+    const week1End = endOfLocalWeekMondayMs(new Date(2026, 5, 17, 12, 0, 0));
+    const week2Start = startOfLocalWeekMondayMs(new Date(2026, 5, 22, 12, 0, 0));
+    expect(week1End).toBe(week2Start);
   });
 });
