@@ -7,6 +7,7 @@
  * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
 import { BreathworkTimer } from "@/components/breathwork/BreathworkTimer";
+import { Link } from "expo-router";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,6 +20,14 @@ export default function Screen() {
           <Text className="text-sm text-muted-foreground">
             A gentle breathwork timer is ready when a reset would help.
           </Text>
+          <Link href="/session-player" asChild>
+            <Text
+              accessibilityRole="link"
+              className="text-base text-foreground"
+            >
+              Open the session player
+            </Text>
+          </Link>
         </View>
         <BreathworkTimer />
         <Text className="text-xs text-muted-foreground font-mono">
