@@ -22,6 +22,7 @@ describe("USER_OWNED_TABLES", () => {
         "habits",
         "memories",
         "notes",
+        "providerKeys",
         "taskRepeatCfgs",
         "tasks",
       ].sort(),
