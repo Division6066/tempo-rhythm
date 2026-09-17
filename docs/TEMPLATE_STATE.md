@@ -51,3 +51,19 @@ After any merge that changes source layout (or the next W0 / S8 pass):
 - 17 sources produced zero nodes (mostly `metadata.json` / settings JSON). Listed under `failed_sources` with repo-relative paths.
 - Clustering was skipped (`--no-cluster`) so the snapshot is deterministic AST only.
 - `graphify-out/` stays gitignored. AGENTS.md is correct that the live graph must be rebuilt; this committed file is a portable snapshot for agents who cannot run Graphify yet.
+
+## Block A verify 2026-09-17
+
+Live observation for factory docs PR (handoff `template-state/<repo>.md` drafts were **not** present under `/workspace/factory-tonight/handoff-work/template-state/` at run time).
+
+| Check | Result |
+|-------|--------|
+| Graphify | See Knowledge graph table above — durable path under `docs/graphs/` where listed |
+| Understand Anything | **not generated** — do not invent `.ua/knowledge-graph.json` |
+| Bolt | No Bolt prototypes as product code; bolt shells are reference specs only |
+| process-plan | **missing** (not found in-repo / handoff) |
+| products-state | **missing** (not found in-repo / handoff) |
+| agent:ready | Never applied by this docs pass |
+
+| Repo defaults | Base `integration`; GitHub wiki tab off — docs/ only |
+| Stack | bun workspaces · Next.js web · Expo mobile · Convex |
