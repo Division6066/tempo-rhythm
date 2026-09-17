@@ -1,0 +1,53 @@
+# Template state — knowledge graph
+
+Registry of committed vs live knowledge-graph artefacts for this repo.
+Update this file in the same PR that regenerates a graph.
+
+Generated: 2026-09-17  
+Graphify CLI: `graphifyy==0.9.40` (`graphify update . --no-cluster`)  
+Graphify snapshot: **9870 nodes**, **11882 edges** (undirected AST, no clustering, $0, no LLM)
+
+## Knowledge graph
+
+| Item | Path | Status |
+|---|---|---|
+| Graphify artefact | `docs/graphs/tempo-rhythm.json` | generated |
+| Graphify live graph | `graphify-out/graph.json` | generated locally (gitignored) |
+| Understand Anything | `.ua/knowledge-graph.json` | not generated |
+| Skills | `.agents/skills/graphify`, `.agents/skills/understand-anything` | present |
+
+## What each path is
+
+- **`docs/graphs/tempo-rhythm.json`** — durable, committed snapshot of the Graphify AST graph. Absolute machine paths (`/workspace/...`) are stripped to repo-relative paths. Rebuild after merge; a stale snapshot is a hint, not ground truth.
+- **`graphify-out/graph.json`** — live graph. Gitignored. Rebuild on demand (`~8s`, deterministic AST, no API key). This is the file `graphify query` / `explain` / `affected` read.
+- **`.ua/knowledge-graph.json`** — Understand Anything semantic dashboard graph. **Not generated** in W0: the Cursor plugin `understand-anything` / `/understand` writes it. Do not invent this file.
+
+## Regenerate on merge
+
+After any merge that changes source layout (or the next W0 / S8 pass):
+
+1. From repo root, no LLM and no secrets:
+
+   ```bash
+   pip install 'graphifyy==0.9.40'   # package name is graphifyy (double-y)
+   graphify update . --no-cluster
+   ```
+
+2. Copy `graphify-out/graph.json` → `docs/graphs/tempo-rhythm.json`. Strip absolute machine paths. If the file exceeds ~15 MB, commit a compact summary (node/edge counts + sha of the full graph) instead and note that the full live graph is `graphify-out/graph.json`.
+
+3. Run `/understand` (Cursor plugin **understand-anything**) to write `.ua/knowledge-graph.json`. Do **not** invent semantic graph content.
+
+4. Update the table in this file (paths + status + node/edge counts).
+
+5. Open a **draft** PR. Do not merge from a code agent.
+
+## Commit hook
+
+`graphify hook install` is **not** enabled on this repo. Parallel agents commit frequently; a local post-commit rebuild is not checked in and would surprise other sessions. Use the regenerate-on-merge steps above. See `.agents/skills/graphify/references/hooks.md`.
+
+## Graphify snapshot notes
+
+- First W0 build processed 972 code files.
+- 17 sources produced zero nodes (mostly `metadata.json` / settings JSON). Listed under `failed_sources` with repo-relative paths.
+- Clustering was skipped (`--no-cluster`) so the snapshot is deterministic AST only.
+- `graphify-out/` stays gitignored. AGENTS.md is correct that the live graph must be rebuilt; this committed file is a portable snapshot for agents who cannot run Graphify yet.
