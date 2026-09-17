@@ -1,152 +1,177 @@
-# Harness — factory verify
+# Factory HARNESS
 
-How a coding agent proves a change without leaking secrets, inventing graphs,
-or shipping product by accident. Pair with [`CI.md`](./CI.md),
-[`TECH_STACK.md`](./TECH_STACK.md), and [`HOW_TO_ADD_A_FEATURE.md`](./HOW_TO_ADD_A_FEATURE.md).
-
-`tempo-rhythm` documentation is **`docs/` only** (this tree plus
-[`docs/wiki/`](./wiki/)). There is no GitHub Wiki tab to update.
+Canonical agent harness for Amit Levin’s software factory.  
+**Landed on:** `Division6066/tempo-rhythm` (`docs/HARNESS.md`). Source copy lives on `Division6066/monorepo-template`.  
+**This repo:** base branch **`integration`**. Documentation is **`docs/` only** — `tempo-rhythm` has no GitHub Wiki tab.  
+**Authority:** GitHub Issues is the only queue. Agents open **draft** PRs; **Amit merges**. Never apply `agent:ready`. Never merge. Never print secrets.
 
 ---
 
-## What this harness is
+## 1. Roles (Scout / Builder / Janitor / Checker)
 
-| Layer | Purpose |
-|---|---|
-| Local commands | Same checks CI will run |
-| Graphify | AST ground truth (`graphifyy`, no LLM, no key) |
-| Understand Anything | Semantic dashboard graph — **optional, plugin-written** |
-| CI | Typecheck, lint, test, policy scans, notices, Playwright, secret scan |
-| Draft PR | Human review surface. Agents stop here. |
+| Role | Who | Does | Does not |
+|------|-----|------|----------|
+| **Scout** | Squad (Grok) + Grok Bot routines | Read the queue; confirm seven fields; propose the next ready set; comment/label for triage | Merge; flip `agent:ready` without Amit’s Gate 1; invent product decisions |
+| **Builder** | Claude Code lane (Squad) **or** Cursor Cloud Agent | Implement the ticket on a feature branch; open a **draft** PR | Merge; touch secrets/ENV dashboards; use forbidden models |
+| **Janitor** | Squad (Grok) + Grok Bot | Hygiene: close/rewrite stale issues, ledger lines, evidence packs, Graphify regen notes after Amit merges | Ship product code as primary path; merge |
+| **Checker** | Squad (Grok) + Grok Bot | Preflight on PRs (`PREFLIGHT: checks=… \| files=… \| secret-scan=…`); escalate stop-codes | Merge; approve Gate 2 |
 
-This file does **not** authorize product feature code, dashboard clicks,
-deploys, or env-value edits.
+**Lane split (locked):**
 
----
+- **Claude Code lane** — Builder work that needs Anthropic’s first-party binary / `claude-code-action`. OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`) lives in **GitHub Actions secrets only** — never Squad, never Cursor Secrets.
+- **Squad Grok lanes** — Scout / Janitor / Checker (and research). Grok via OAuth subscription.
+- **OpenCode Zen (Squad)** — free models only: **Big Pickle**, **Union Alpha**. **No OpenRouter.** OpenCode provider keys (HF / Venice / Abliteration when configured) are lane config, not chat paste.
 
-## Factory coding-agent MODEL allowlist (mid-tier only)
-
-Who **writes the repo** (Cursor Cloud / Composer / similar). Separate from
-product inference (Mistral via `convex/lib/ai_router.ts`).
-
-**Allowed**
-
-- GPT 5.6 Terra
-- GLM 5.3 Flash
-- DeepSeek V4.1 Flash
-- Claude Sonnet 5
-- Grok 4.5 / Grok 4.6
-
-**Never**
-
-- Fable
-- Astra
-- Opus
-- Soul
-
-If the session is on a forbidden model, stop and say so. Do not "just this
-once."
+Cursor Cloud Agents execute `exec:cursor-cloud` tickets. Astra (Codex on the PC) is PC-only (`claude setup-token`, local `check-env`, CLI logins) — not a merge authority.
 
 ---
 
-## Hard constraints (every factory pass)
+## 2. Seven-field tickets (GOAL first)
 
-- **No secrets / ENV values.** Do not print, commit, or paste tokens, cookies,
-  deploy keys, or `.env*` contents. Point at [`ENVIRONMENTS.md`](./ENVIRONMENTS.md)
-  for names and modes only.
-- **Never `agent:ready`.** Do not add that label to issues or PRs. Do not close
-  issues as a side effect of a docs or verify pass.
-- **No product feature code** in a factory-docs PR. Schema, routes, and UI stay
-  untouched unless the ticket is a product ticket.
-- **Draft PR only** unless Amit explicitly asks otherwise. Do not merge.
-- **Bolt shells are reference specs only.** Do not treat bolt.new / bolt.diy
-  (or Lovable / v0 / Replit starters) as the app.
-- **Do not invent `.ua/`.** Understand Anything writes
-  `.ua/knowledge-graph.json` via the Cursor plugin. If it is absent, record
-  "not generated" in [`TEMPLATE_STATE.md`](./TEMPLATE_STATE.md).
+Every issue body **starts** with `GOAL:` and includes all seven fields in order:
 
----
+```text
+GOAL:
+<one sentence: done looks like>
 
-## Local verify (docs or code)
+CONTEXT:
+<paths, PRD refs, Graphify artefact pointer, prior PRs — no secrets>
 
-From repo root:
+ACCEPTANCE:
+- <observable checks>
+- <commands that must pass>
 
-```bash
-bun install --frozen-lockfile
-bun run typecheck
-bun run lint
-bun run test
-bun run scan:forbidden-tech
-bun run scan:ram-only-audit
-bun run scan:design-tokens
-bun run check:notices
+CONSTRAINTS:
+Draft PR; files ≤ N; no secrets; base branch = integration|main|master as repo rules say.
+
+BUDGET:
+budget: $<cap> · model: <allowlisted mid-tier id>
+
+STOP:
+<stop-code if blocked; else “none — Checker owns verification”>
+
+EVIDENCE:
+PR URL · CI names+states · Checker PREFLIGHT line · Cursor/Squad run id
 ```
 
-Avoid `bun run check` as a read-only step — mobile/web `check` scripts may
-`--write`.
+Header line (labels / product / generation) may sit above `GOAL:` but **must not** replace it. A body without leading `GOAL:` is invalid — Scout rejects before any `agent:*` flip.
 
-Docs-only PRs still run the scans they can (forbidden-tech / notices) so a
-doc does not reintroduce a forbidden product name as a "use this" dependency.
-
-Web smoke (dev server already up, no secrets in the log):
-
-```bash
-bash ./scripts/smoke-local-web.sh
-```
-
-See [`CURSOR_BROWSER_SMOKE.md`](./CURSOR_BROWSER_SMOKE.md). A single screenshot
-is not verification for a UI change.
+Labels (exactly one `agent:*` at a time): `agent:ready` · `agent:working` · `agent:review` · `agent:blocked` · `agent:done`, plus lane / executor / product / stage / version / control (`needs-amit`, `backend-change`, `template-change`, `stop-test`, …).
 
 ---
 
-## Graphify (already part of W0)
+## 3. MT-STOP and stop-codes
 
-```bash
-pip install 'graphifyy==0.9.40'   # double-y; `graphify` is the wrong package
-graphify update . --no-cluster
-graphify query "how does auth work"
-graphify affected "<symbol>" --depth 2
-```
+### 3.1 Stop tickets (per repo)
 
-- Live graph: `graphify-out/graph.json` (gitignored).
-- Committed snapshot: `docs/graphs/tempo-rhythm.json`.
-- Registry: [`TEMPLATE_STATE.md`](./TEMPLATE_STATE.md).
-- `graphify hook install` is **not** enabled (parallel agents).
+Seed and keep a **stop** ticket that must stay **red** (verifier health):
 
-After a merge that changes source layout, rebuild, strip absolute machine
-paths, update the registry table, and open a **draft** PR. Do not fabricate
-Understand Anything output.
+| Repo | Stop ticket | Intent |
+|------|-------------|--------|
+| `monorepo-template` | `MT-STOP` | If this ever goes green / `agent:done`, **halt the factory** and fix the verifier |
+| `tempo-rhythm` | `TF-W0-STOP` (or product STOP) | Same pattern |
+| `omniagent` | `OA-STOP` | Same |
+| `agentwright` | `AW-STOP` | Same |
+| `mega-memory` | `MM-STOP` (when seeded) | Same |
 
----
+Stop tickets carry `agent:blocked` + `stop-test` (or repo equivalent) + `needs-amit`. **Do not** implement features on them. **Do not** mark them ready. Loop-proof day treats a green STOP as “stop everything.”
 
-## CI mapping
+### 3.2 Stop-codes (write exactly; continue with independent work)
 
-| Job | Command / workflow | Blocks merge? |
-|---|---|---|
-| Typecheck | `bun run typecheck` | yes |
-| Lint | `bun run lint` | yes |
-| Test | `bun run test` | yes |
-| Scans | forbidden-tech, ram-only, design-tokens | yes |
-| Notices | `bun run check:notices` | yes |
-| E2E | Playwright Chromium | yes |
-| Secret scan | Gitleaks + TruffleHog (`.github/workflows/security.yml`) | yes |
+| Code | Meaning | Typical handoff |
+|------|---------|-----------------|
+| `BLOCKED_DEPENDENCY` | Missing key, missing brief, blocked upstream ticket | `needs-amit` or wait for intake |
+| `BLOCKED_VERIFICATION` | Stop ticket went green, secret-scan hit, proof false-positive | Halt lane; fix verifier |
+| `BLOCKED_PATH_DRIFT` | Renamed CI checks, wrong base branch, template path rewrite | `needs-amit` |
+| `BLOCKED_SECRETS` | Masked field, value in log/chat, dashboard paste risk | Rotate; abandon that step |
+| `BLOCKED_BUDGET` | Cap exceeded or 3× timeout | Report; do not retry hot |
+| `BLOCKED_MODEL` | Non-allowlisted model requested | Re-pin mid-tier; do not run |
+| `BLOCKED_MERGE` | Agent attempted merge / push to protected base | Revert intent; draft PR only |
 
-Agents open PRs against **`integration`**. Amit promotes `integration` →
-`master`. See [`merge-runbook.md`](./merge-runbook.md).
+Agents stop on masked fields, missing keys, or product decisions — emit a stop-code, then continue **independent** steps. Never invent a decision.
 
 ---
 
-## Exit report (agent)
+## 4. Graphify regenerate on merge
 
-When the factory pass is done, report:
+Knowledge graph is the map (Blitzy pattern). Ticket `CONTEXT` points at live artefact paths in `docs/TEMPLATE_STATE.md`.
 
-- Branch name
-- PR number (draft)
-- Files changed
-- Anything refused, and why
-- Anything the graph contradicted
-- Graphify: generated / skipped (counts if generated)
-- Understand Anything: **not generated** unless the plugin actually wrote `.ua/`
+**After Amit merges** (agents never merge):
 
-Do not claim `ready`, `done`, or `shipped` unless [`SHIP_STATE.md`](./SHIP_STATE.md)
-says `shipped-and-running` and production matches.
+1. Regenerate Graphify (AST, deterministic): e.g. `graphify update . --no-cluster` / repo `scripts/regenerate-graphs.sh`.
+2. Copy sanitized artefact to the committed path (e.g. `docs/graphs/<repo>.json`). Strip absolute machine paths.
+3. If Understand Anything / `/understand` is available, refresh `.ua/knowledge-graph.json`; else leave status **not generated** — do not invent semantics.
+4. Update `docs/TEMPLATE_STATE.md` paths + status in a **follow-up draft PR**.
+
+Do **not** treat regenerate-on-merge as a silent CI job unless plugins exist in CI (they usually do not). No unrelated corpora. No secrets in graphs.
+
+**This repo:** committed snapshot is `docs/graphs/tempo-rhythm.json`. Understand Anything `.ua/knowledge-graph.json` is **not generated** — do not invent `.ua/`. `graphify hook install` is not enabled.
+
+---
+
+## 5. Mid-tier MODEL allowlist
+
+Pin the runner model. Default factory compute is **mid-tier only**:
+
+| Allowed | Notes |
+|---------|--------|
+| **GPT 5.6 Terra** | Cursor / cloud mid-tier |
+| **GLM 5.3 Flash** | Fast mid-tier |
+| **DeepSeek V4.1 Flash** | Fast mid-tier |
+| **Claude Sonnet 5** | Mid-tier; Claude Code lane when Builder needs Anthropic binary |
+| **Grok 4.5 / Grok 4.6** | Squad Grok lanes / Grok Bot |
+
+**Never use (hard deny):** Fable · Astra · Opus · Soul (any spelling / vendor alias).
+
+OpenCode Zen free (Squad only): **Big Pickle**, **Union Alpha**. Not via OpenRouter. Not a substitute for the mid-tier allowlist on Cursor Cloud tickets unless the ticket `BUDGET`/`model` line explicitly says Zen free.
+
+If a tool offers a higher tier by default, **omit model** only when the platform default is already mid-tier; otherwise pin an allowlisted id. `BLOCKED_MODEL` if forced off-list.
+
+---
+
+## 6. Secrets and chat
+
+- **No secrets in chat**, issues, PR bodies, screenshots, ledgers, or graphs.
+- Names only (`DEEPINFRA_API_KEY = SET|UNSET`). Use `--names-only`, masked `vercel env ls`, `gh auth status`.
+- Never click reveal toggles. Never screenshot masked fields.
+- Intake values go through secret-request cards / provider CLIs / Actions secrets — not transcripts.
+- Retired names stay retired (`OPENROUTER_API_KEY`, `MISTRAL_API_KEY`, etc.). Do not reintroduce OpenRouter for OpenCode.
+
+---
+
+## 7. Draft PRs; Amit merges
+
+1. Scout confirms seven fields → Amit Gate 1 (“go”) → only then may automation apply `agent:ready`.
+2. Builder / Cloud Agent opens a **draft** PR against the repo base (`integration` / `main` / `master` per repo).
+3. Checker posts `PREFLIGHT:`. Janitor comments evidence.
+4. **Amit merges** (Gate 2). Agents set `agent:done` only after merge is observed — they do not press merge.
+5. Graphify regenerate follow-up (draft PR) after merge.
+
+**This repo’s base is `integration`.** Never push to `master`. Never `agent:ready` from an agent’s own initiative on this harness doc’s authority.
+
+---
+
+## 8. Copy checklist (template → products)
+
+When landing from `monorepo-template`:
+
+- [x] `docs/HARNESS.md` (this file) — landed on `tempo-rhythm`
+- [ ] Issue template still renders `GOAL:` first
+- [ ] Stop ticket seeded and red (`TF-W0-STOP` on this repo)
+- [x] `docs/TEMPLATE_STATE.md` lists Graphify paths
+- [ ] Squad docs 00–04 agree: Claude Code lane vs Grok lanes; OpenCode = Big Pickle / Union Alpha only
+- [ ] Cursor Automations still require Amit’s Gate 1 before `agent:ready`
+
+---
+
+## 9. Related docs
+
+- Week-0 factory plan (`software-factory-week0-v2.md` handoff)
+- [`docs/TEMPLATE_STATE.md`](./TEMPLATE_STATE.md) — actual vs intended; Graphify paths
+- [`docs/HARD_RULES.md`](./HARD_RULES.md) / `AGENTS.md` — product constraints
+- [`docs/TECH_STACK.md`](./TECH_STACK.md) — this repo’s observed stack
+- [`docs/HOW_TO_ADD_A_FEATURE.md`](./HOW_TO_ADD_A_FEATURE.md) — operator checklist
+- [`docs/CI.md`](./CI.md) — blocking jobs
+- `GROK-BUILD.md` — Grok Build export notes (sibling handoff)
+
+Last synced: 2026-09-17

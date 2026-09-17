@@ -54,14 +54,14 @@ After any merge that changes source layout (or the next W0 / S8 pass):
 
 ## Block A verify — 2026-09-17
 
-Factory pack (docs only; no product feature code). Wiki surface is `docs/` +
-`docs/wiki/` — `tempo-rhythm` has no GitHub Wiki tab.
+Factory pack (docs only; no product feature code). Wiki surface is `docs/` —
+`tempo-rhythm` has no GitHub Wiki tab.
 
 | Doc | Path | Status |
 |---|---|---|
-| Tech stack | [`docs/TECH_STACK.md`](./TECH_STACK.md) | added |
-| How to add a feature | [`docs/HOW_TO_ADD_A_FEATURE.md`](./HOW_TO_ADD_A_FEATURE.md) | added |
-| Harness | [`docs/HARNESS.md`](./HARNESS.md) | added |
+| Tech stack | [`docs/TECH_STACK.md`](./TECH_STACK.md) | adapted to this repo from factory shared draft |
+| How to add a feature | [`docs/HOW_TO_ADD_A_FEATURE.md`](./HOW_TO_ADD_A_FEATURE.md) | canonical (repo notes: `integration`, no `.ua/`) |
+| Harness | [`docs/HARNESS.md`](./HARNESS.md) | canonical factory HARNESS, landed here |
 
 Graph registry re-checked the same day (no regenerate, no invented `.ua/`):
 
@@ -70,9 +70,10 @@ Graph registry re-checked the same day (no regenerate, no invented `.ua/`):
 - Skills `.agents/skills/graphify` and `.agents/skills/understand-anything`: present.
 - Live `graphify-out/` was absent in this verify session (gitignored; rebuild on demand).
 
-Constraints honored this pass: no secrets / ENV values; no `agent:ready` label;
-no product feature code; mid-tier MODEL allowlist only (GPT 5.6 Terra, GLM 5.3
-Flash, DeepSeek V4.1 Flash, Claude Sonnet 5, Grok 4.5/4.6 — never
-Fable/Astra/Opus/Soul); Bolt shells are reference specs only.
+Constraints honored this pass: no secrets / ENV values; no `agent:ready` label
+applied by the agent; no product feature code; mid-tier MODEL allowlist only
+(GPT 5.6 Terra, GLM 5.3 Flash, DeepSeek V4.1 Flash, Claude Sonnet 5, Grok
+4.5/4.6 — never Fable/Astra/Opus/Soul); Bolt Forge shells (bolt-01…03) are
+reference specs only.
 
 Draft PR only. Do not merge from a code agent.
