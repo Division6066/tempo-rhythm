@@ -51,3 +51,28 @@ After any merge that changes source layout (or the next W0 / S8 pass):
 - 17 sources produced zero nodes (mostly `metadata.json` / settings JSON). Listed under `failed_sources` with repo-relative paths.
 - Clustering was skipped (`--no-cluster`) so the snapshot is deterministic AST only.
 - `graphify-out/` stays gitignored. AGENTS.md is correct that the live graph must be rebuilt; this committed file is a portable snapshot for agents who cannot run Graphify yet.
+
+## Block A verify — 2026-09-17
+
+Factory pack (docs only; no product feature code). Wiki surface is `docs/` +
+`docs/wiki/` — `tempo-rhythm` has no GitHub Wiki tab.
+
+| Doc | Path | Status |
+|---|---|---|
+| Tech stack | [`docs/TECH_STACK.md`](./TECH_STACK.md) | added |
+| How to add a feature | [`docs/HOW_TO_ADD_A_FEATURE.md`](./HOW_TO_ADD_A_FEATURE.md) | added |
+| Harness | [`docs/HARNESS.md`](./HARNESS.md) | added |
+
+Graph registry re-checked the same day (no regenerate, no invented `.ua/`):
+
+- Graphify snapshot `docs/graphs/tempo-rhythm.json`: **generated** — **9870 nodes**, **11882 edges**, `graphifyy==0.9.40`, `--no-cluster`.
+- Understand Anything `.ua/knowledge-graph.json`: **not generated**. `.ua/` is absent. Do not invent it.
+- Skills `.agents/skills/graphify` and `.agents/skills/understand-anything`: present.
+- Live `graphify-out/` was absent in this verify session (gitignored; rebuild on demand).
+
+Constraints honored this pass: no secrets / ENV values; no `agent:ready` label;
+no product feature code; mid-tier MODEL allowlist only (GPT 5.6 Terra, GLM 5.3
+Flash, DeepSeek V4.1 Flash, Claude Sonnet 5, Grok 4.5/4.6 — never
+Fable/Astra/Opus/Soul); Bolt shells are reference specs only.
+
+Draft PR only. Do not merge from a code agent.
