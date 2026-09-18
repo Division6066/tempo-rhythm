@@ -1,0 +1,6 @@
+{
+  "name": "tempo-v0",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Grok-built Tempo Flow surfaces. Source only — not wired into turbo. Graft later."
+}
