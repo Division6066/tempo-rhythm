@@ -1,3 +1,4 @@
+import { chatCompletionsUrl, resolveAiEnv } from "./ai_env";
 import {
   AiAuthError,
   AiContextTooLargeError,
@@ -51,7 +52,8 @@ async function attemptCall(
   opts: AiCallOptions,
   apiKey: string,
 ): Promise<AiResult & { requestedTier: AiTier }> {
-  const model = TIER_MODEL[tier];
+  const env = resolveAiEnv("chat", tier);
+  const model = env.model;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
@@ -62,13 +64,15 @@ async function attemptCall(
       messages: opts.messages,
       max_tokens: opts.maxTokens ?? 1024,
       temperature: opts.temperature ?? 0.3,
-      safe_prompt: false,
     };
+    if (env.provider === "mistral") {
+      body.safe_prompt = false;
+    }
     if (opts.responseFormat === "json_object") {
       body.response_format = { type: "json_object" };
     }
 
-    response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    response = await fetch(chatCompletionsUrl(env.baseUrl), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -92,18 +96,18 @@ async function attemptCall(
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     if (response.status === 401) {
-      throw new AiAuthError(`Mistral auth failed: ${text.slice(0, 200)}`);
+      throw new AiAuthError(`Chat upstream auth failed: ${text.slice(0, 200)}`);
     }
     if (response.status === 429) {
       const retryAfterHeader = response.headers.get("Retry-After");
       const retryAfterMs = retryAfterHeader ? parseFloat(retryAfterHeader) * 1000 : undefined;
-      throw new AiRateLimitedError(`Rate limited by Mistral`, retryAfterMs);
+      throw new AiRateLimitedError(`Rate limited by chat upstream`, retryAfterMs);
     }
     if (response.status === 400 && isContextTooLarge(text)) {
       throw new AiContextTooLargeError(`Context too large for model ${model}`);
     }
     throw new AiUpstreamError(
-      `Mistral returned HTTP ${response.status}`,
+      `Chat upstream returned HTTP ${response.status}`,
       response.status,
       text.slice(0, 200),
     );
@@ -133,9 +137,10 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function callLLM(opts: AiCallOptions): Promise<AiResult> {
-  const apiKey = process.env.MISTRAL_API_KEY;
+  const env = resolveAiEnv("chat", opts.tier);
+  const apiKey = env.apiKey;
   if (!apiKey) {
-    throw new AiAuthError("MISTRAL_API_KEY not set in Convex env");
+    throw new AiAuthError("AI_CHAT_API_KEY / MISTRAL_API_KEY is not set in Convex env");
   }
 
   const chain = ESCALATION_CHAIN[opts.tier];
