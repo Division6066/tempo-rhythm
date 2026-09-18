@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { MapView } from "@/components/tempo/map-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { MapView } from "@tempo-v0/components/tempo/map-view";
 
 export const Route = createFileRoute("/map")({ component: MapPage });
 

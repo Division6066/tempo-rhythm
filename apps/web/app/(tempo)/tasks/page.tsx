@@ -1,5 +1,1 @@
-import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
-
-export default function Page() {
-  return <TaskViewsScreen view="inbox" />;
-}
+export { TasksPage as default } from "@/lib/tempo-graft/flow-pages";

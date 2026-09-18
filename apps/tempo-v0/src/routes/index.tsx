@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { LandingView } from "@/components/marketing/landing-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { LandingView } from "@tempo-v0/components/marketing/landing-view";
 
 export const Route = createFileRoute("/")({ component: Home });
 

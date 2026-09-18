@@ -7,12 +7,16 @@ import type { NextRequest } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
   "/",
+  "/login",
   "/sign-in",
   "/sign-up",
+  "/about",
+  "/changelog",
   "/terms",
   "/privacy",
   "/contact",
   "/success",
+  "/onboarding",
 ]);
 
 const isCoreTaskViewRoute = createRouteMatcher([
@@ -49,7 +53,7 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   if (!(isPublicRoute(request) || isCalendarE2EBypass || isAuthenticated)) {
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const params = new URLSearchParams({ next: nextPath });
-    return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
+    return nextjsMiddlewareRedirect(request, `/login?${params.toString()}`);
   }
 
   if (isPublicRoute(request) && isAuthenticated) {

@@ -1,5 +1,1 @@
-import { redirect } from "next/navigation";
-
-export default function DashboardPage() {
-  redirect("/today");
-}
+export { DashboardPage as default } from "@/lib/tempo-graft/flow-pages";

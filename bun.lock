@@ -69,6 +69,10 @@
         "ultracite": "^6.5.0",
       },
     },
+    "apps/tempo-v0": {
+      "name": "tempo-v0",
+      "version": "0.0.0",
+    },
     "apps/web": {
       "name": "tempo-rhythm-web",
       "version": "0.1.0",
@@ -1661,6 +1665,8 @@
     "tempo-rhythm-mobile": ["tempo-rhythm-mobile@workspace:apps/mobile"],
 
     "tempo-rhythm-web": ["tempo-rhythm-web@workspace:apps/web"],
+
+    "tempo-v0": ["tempo-v0@workspace:apps/tempo-v0"],
 
     "terminal-link": ["terminal-link@2.1.1", "", { "dependencies": { "ansi-escapes": "^4.2.1", "supports-hyperlinks": "^2.0.0" } }, "sha512-un0FmiRUQNr5PJqy9kP7c40F5BOfpGlYTrxonDChEZB7pzZxRNp/bt+ymiy9/npwXya9KH99nJ/GXFIiUkYGFQ=="],
 

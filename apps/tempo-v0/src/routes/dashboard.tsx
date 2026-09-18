@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { DashboardView } from "@/components/tempo/dashboard-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { DashboardView } from "@tempo-v0/components/tempo/dashboard-view";
 
 export const Route = createFileRoute("/dashboard")({ component: DashboardPage });
 

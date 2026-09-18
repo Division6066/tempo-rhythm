@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { MemoryView } from "@/components/tempo/memory-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { MemoryView } from "@tempo-v0/components/tempo/memory-view";
 
 export const Route = createFileRoute("/memory")({ component: MemoryPage });
 

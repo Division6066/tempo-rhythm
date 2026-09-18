@@ -1,5 +1,1 @@
-import { TodayScreen } from "@/components/today/TodayScreen";
-
-export default function TodayPage() {
-  return <TodayScreen />;
-}
+export { TodayPage as default } from "@/lib/tempo-graft/flow-pages";

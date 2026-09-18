@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { NotesView } from "@/components/tempo/notes-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { NotesView } from "@tempo-v0/components/tempo/notes-view";
 
 export const Route = createFileRoute("/notes/")({ component: NotesView });

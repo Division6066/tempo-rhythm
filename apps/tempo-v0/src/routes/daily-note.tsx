@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { DailyNoteView } from "@/components/tempo/daily-note-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { DailyNoteView } from "@tempo-v0/components/tempo/daily-note-view";
 
 type Scope = "day" | "week" | "month" | "year";
 

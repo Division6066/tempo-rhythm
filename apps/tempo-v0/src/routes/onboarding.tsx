@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { OnboardingView } from "@/components/tempo/onboarding-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { OnboardingView } from "@tempo-v0/components/tempo/onboarding-view";
 
 export const Route = createFileRoute("/onboarding")({ component: OnboardingPage });
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@/lib/tempo-graft/router";
 
 export const Route = createFileRoute("/sign-in")({ component: SignInAlias });
 

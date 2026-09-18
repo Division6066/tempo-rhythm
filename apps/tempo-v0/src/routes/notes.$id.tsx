@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { NoteEditor } from "@/components/tempo/note-editor";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { NoteEditor } from "@tempo-v0/components/tempo/note-editor";
 
 export const Route = createFileRoute("/notes/$id")({ component: NotePage });
 

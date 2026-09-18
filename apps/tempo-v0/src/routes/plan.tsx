@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PlanView } from "@/components/tempo/plan-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { PlanView } from "@tempo-v0/components/tempo/plan-view";
 
 export const Route = createFileRoute("/plan")({ component: PlanPage });
 

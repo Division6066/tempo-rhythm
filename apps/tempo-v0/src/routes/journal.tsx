@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { JournalView } from "@/components/tempo/journal-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { JournalView } from "@tempo-v0/components/tempo/journal-view";
 
 export const Route = createFileRoute("/journal")({ component: JournalPage });
 

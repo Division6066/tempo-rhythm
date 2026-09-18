@@ -367,3 +367,75 @@ p {
   background-clip: text;
   color: transparent;
 }
+
+/* tempo-v0 token aliases — used by grafted screens (bg-bg, text-faint, …) */
+@theme {
+  --color-bg: #f3ebe2;
+  --color-surface: #faf6f0;
+  --color-surface-2: #ebe0d2;
+  --color-faint: #9a968f;
+  --color-accent-fg: #fffdf9;
+  --color-accent-soft: rgba(217, 119, 87, 0.12);
+  --color-overdue: #c8553d;
+  --color-overdue-soft: rgba(200, 85, 61, 0.1);
+  --color-ok: #4a7c59;
+  --color-ok-soft: rgba(74, 124, 89, 0.1);
+  --color-amber-soft: rgba(212, 164, 76, 0.14);
+  --color-slate: #6e88a7;
+  --color-mkt-bg: #1e1d1b;
+  --color-mkt-bg-2: #2a2826;
+  --color-mkt-fg: #f7f0e8;
+  --color-mkt-muted: rgba(247, 240, 232, 0.75);
+  --color-mkt-subtle: rgba(247, 240, 232, 0.55);
+  --color-mkt-border: rgba(247, 240, 232, 0.12);
+  --color-mkt-bubble: rgba(247, 240, 232, 0.06);
+  --font-display: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
+}
+
+.tf-v0 {
+  --color-muted: #6b6864;
+  --color-accent: #d97757;
+  --color-bg: #f3ebe2;
+  --color-ink: #131312;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.tf-v0 .font-display {
+  font-family: var(--font-display), var(--font-serif);
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
+[data-theme="dark"] .tf-v0 {
+  --color-bg: #131312;
+  --color-surface: #1c1c1a;
+  --color-surface-2: #161615;
+  --color-ink: #f3ebe2;
+  --color-muted: #a8a49f;
+  --color-faint: #7a7672;
+  --color-accent: #e8a87c;
+  --color-accent-fg: #131312;
+  --color-accent-soft: rgba(232, 168, 124, 0.16);
+  --color-border: #2c2b28;
+  --color-mkt-bg: #1f1e1c;
+  --color-mkt-bg-2: #26241f;
+  --color-mkt-fg: #f3ebe2;
+}
+
+.tempo-feat-warm {
+  background-image: linear-gradient(145deg, #f5eadf 0%, #ebd9c7 100%);
+}
+
+.reading-ruler {
+  pointer-events: none;
+  position: fixed;
+  inset-inline: 0;
+  z-index: 40;
+  height: 2.75rem;
+  translate: 0 -50%;
+  border-block: 1px solid color-mix(in oklab, var(--color-tempo-orange) 45%, transparent);
+  background: color-mix(in oklab, rgba(217, 119, 87, 0.12) 85%, transparent);
+}

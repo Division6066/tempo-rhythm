@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { StudySetView } from "@/components/tempo/study-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { StudySetView } from "@tempo-v0/components/tempo/study-view";
 
 export const Route = createFileRoute("/study/$id")({ component: StudySetPage });
 

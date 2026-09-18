@@ -1,11 +1,11 @@
-import { Link, Navigate } from "@tanstack/react-router";
+import { Link, Navigate } from "@/lib/tempo-graft/router";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { BrandMark, Wordmark } from "@/components/tempo/brand";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
-import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { BrandMark, Wordmark } from "@tempo-v0/components/tempo/brand";
+import { Button } from "@tempo-v0/components/ui/button";
+import { Input } from "@tempo-v0/components/ui/input";
+import { Label } from "@tempo-v0/components/ui/label";
+import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/tempo-graft/auth/client";
+import { useCurrentUserState } from "@/lib/tempo-graft/auth/use-current-user";
 
 export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const { user, isPending } = useCurrentUserState();

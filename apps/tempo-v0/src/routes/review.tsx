@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ReviewView } from "@/components/tempo/review-view";
+import { createFileRoute } from "@/lib/tempo-graft/router";
+import { ReviewView } from "@tempo-v0/components/tempo/review-view";
 
 export const Route = createFileRoute("/review")({ component: ReviewPage });
 
