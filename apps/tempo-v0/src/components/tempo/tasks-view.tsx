@@ -83,7 +83,7 @@ export function TasksView() {
           }
           actionLabel="Back to today"
           onAction={() => {
-            window.location.href = "/";
+            window.location.href = "/today";
           }}
         />
       ) : (
@@ -104,7 +104,7 @@ export function TasksView() {
           ))}
         </div>
       )}
-      <Button variant="outline" onClick={() => (window.location.href = "/")}>
+      <Button variant="outline" onClick={() => (window.location.href = "/today")}>
         Add from today
       </Button>
     </div>

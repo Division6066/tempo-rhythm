@@ -71,7 +71,7 @@ export function DashboardView() {
           body="Finish one small thing and this page will fill with real numbers — not a placeholder chart."
           actionLabel="Go to today"
           onAction={() => {
-            window.location.href = "/";
+            window.location.href = "/today";
           }}
         />
       ) : (

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TodayView } from "@/components/tempo/today-view";
+import { LandingView } from "@/components/marketing/landing-view";
 
-export const Route = createFileRoute("/")({ component: TodayPage });
+export const Route = createFileRoute("/")({ component: Home });
 
-function TodayPage() {
-  return <TodayView />;
+function Home() {
+  return <LandingView />;
 }

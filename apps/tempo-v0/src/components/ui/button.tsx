@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-[opacity,transform,background-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[opacity,transform,background-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98]",
   {
     variants: {
       variant: {
@@ -13,11 +13,14 @@ const buttonVariants = cva(
         outline: "border border-border bg-surface text-ink hover:bg-surface-2",
         ghost: "text-ink hover:bg-surface-2",
         overdue: "bg-overdue-soft text-overdue hover:opacity-90",
+        gradient: "tempo-gradient text-accent-fg hover:opacity-90",
+        inverse: "bg-mkt-fg text-accent hover:opacity-90",
       },
       size: {
         default: "h-11 px-4",
         sm: "h-9 px-3 text-sm",
         lg: "h-12 px-5",
+        xl: "h-12 rounded-full px-6 text-[15px]",
         icon: "size-11",
       },
     },
