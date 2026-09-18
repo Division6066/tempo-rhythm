@@ -2,6 +2,15 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { computeHabitStreakUpdate } from "./lib/habitStreak";
 import { requireUser } from "./lib/requireUser";
+import {
+	completeRoutineItem as completeRoutineItemHandler,
+	completionResultValidator,
+	createRoutineWithItems as createRoutineWithItemsHandler,
+	getRoutineWithItems as getRoutineWithItemsHandler,
+	listRoutineSummaries,
+	routineDetailValidator,
+	routineSummaryValidator,
+} from "./lib/routineBundles";
 
 export const list = query({
 	args: {},
@@ -102,4 +111,33 @@ export const remove = mutation({
 		await ctx.db.delete(args.habitId);
 		return { success: true };
 	},
+});
+
+/** Leftover from #174 — public API stays on `habits` because `api.routines` is not generated. */
+export const listRoutines = query({
+	args: {},
+	returns: v.array(routineSummaryValidator),
+	handler: listRoutineSummaries,
+});
+
+export const getRoutineWithItems = query({
+	args: { routineId: v.string() },
+	returns: v.union(routineDetailValidator, v.null()),
+	handler: getRoutineWithItemsHandler,
+});
+
+export const createRoutineWithItems = mutation({
+	args: {
+		name: v.string(),
+		habitName: v.string(),
+		taskTitle: v.string(),
+	},
+	returns: v.id("routines"),
+	handler: createRoutineWithItemsHandler,
+});
+
+export const completeRoutineItem = mutation({
+	args: { routineItemId: v.id("routineItems") },
+	returns: completionResultValidator,
+	handler: completeRoutineItemHandler,
 });
