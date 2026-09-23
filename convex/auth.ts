@@ -1,9 +1,16 @@
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Password } from "@convex-dev/auth/providers/Password";
-import { convexAuth } from "@convex-dev/auth/server";
+import { convexAuth, createAccount } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel, Id } from "./_generated/dataModel";
 import { isInactiveAccount } from "./lib/accountDeletion";
+import {
+  E2E_TEST_AUTH_PROVIDER_ID,
+  isE2eTestAuthAuthorized,
+  readE2eTestAuthEmail,
+  shouldRegisterE2eTestAuthProvider,
+} from "./lib/e2eTestAuth";
 import {
   buildReturningUserPatch,
   GRANTED_SUBSCRIPTION,
@@ -15,6 +22,31 @@ type AppDb = GenericMutationCtx<DataModel>["db"];
 
 function normalizeEmail(email: string | undefined | null): string {
   return (email ?? "").trim().toLowerCase();
+}
+
+function getE2eTestAuthProvider() {
+  const e2eTestAuthEmail = readE2eTestAuthEmail();
+  if (!shouldRegisterE2eTestAuthProvider(e2eTestAuthEmail)) {
+    return [];
+  }
+
+  return [
+    ConvexCredentials({
+      id: E2E_TEST_AUTH_PROVIDER_ID,
+      authorize: async (params, ctx) => {
+        if (!isE2eTestAuthAuthorized(params, e2eTestAuthEmail)) {
+          return null;
+        }
+
+        const { user } = await createAccount(ctx, {
+          provider: E2E_TEST_AUTH_PROVIDER_ID,
+          account: { id: e2eTestAuthEmail },
+          profile: { email: e2eTestAuthEmail, emailVerified: true },
+        });
+        return { userId: user._id };
+      },
+    }),
+  ];
 }
 
 async function sendMagicLinkEmail({
@@ -101,6 +133,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       maxAge: 60 * 30,
       sendVerificationRequest: sendMagicLinkEmail,
     }),
+    ...getE2eTestAuthProvider(),
   ],
   session: {
     totalDurationMs: 30 * 24 * 60 * 60 * 1000,
