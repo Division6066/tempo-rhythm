@@ -1,3 +1,25 @@
 {
-  "install": "bun install"
+  "name": "Tempo Flow",
+  "install": "bash .cursor/cloud-agent-install.sh",
+  "ports": [
+    { "name": "web", "port": 3000 },
+    { "name": "expo-web", "port": 8081 }
+  ],
+  "terminals": [
+    {
+      "name": "convex",
+      "command": "bunx convex dev",
+      "description": "Convex dev backend. Reads CONVEX_DEPLOYMENT and CONVEX_AGENT_MODE by name. This environment sets no values."
+    },
+    {
+      "name": "web",
+      "command": "cd apps/web && bun run dev -- --hostname 0.0.0.0 --port 3000",
+      "description": "Next.js dev server for apps/web. Reads NEXT_PUBLIC_CONVEX_URL by name. This environment sets no value."
+    },
+    {
+      "name": "mobile",
+      "command": "cd apps/mobile && bunx expo start --web --port 8081",
+      "description": "Expo web for apps/mobile. Reads EXPO_PUBLIC_CONVEX_URL by name. This environment sets no value."
+    }
+  ]
 }
