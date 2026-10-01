@@ -27,6 +27,7 @@
     "convex:codegen": "bun x convex codegen"
   },
   "dependencies": {
+    "@auth/core": "0.37.4",
     "@convex-dev/auth": "^0.0.91",
     "convex": "^1.32.0"
   },

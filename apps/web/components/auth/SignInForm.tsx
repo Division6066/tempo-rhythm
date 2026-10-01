@@ -1,91 +1,54 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Eye, EyeOff } from "lucide-react";
-import type React from "react";
-import { useEffect, useState } from "react";
 import Link from "next/link";
-
-const REMEMBERED_EMAIL_KEY = "remembered_email";
+import type React from "react";
+import { useState } from "react";
 
 export type SignInFormProps = {
   /** Page layout uses Soft Editorial; modal keeps compact dark styling */
   variant?: "page" | "modal";
   nextPath?: string;
+  /** "sign-up" only changes the copy; both flows send the same magic link. */
+  flow?: "sign-in" | "sign-up";
   onSuccess?: () => void;
-  onSwitchToSignUp?: () => void;
+  onSwitch?: () => void;
 };
 
+/**
+ * Magic-link only auth form (Convex Auth Resend provider).
+ * The same link signs in an existing account or creates a new one.
+ */
 export function SignInForm({
   variant = "modal",
   nextPath,
+  flow = "sign-in",
   onSuccess,
-  onSwitchToSignUp,
+  onSwitch,
 }: SignInFormProps) {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [mode, setMode] = useState<"password" | "magic-link">("password");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
-  useEffect(() => {
-    const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-      setRememberMe(true);
-    }
-  }, []);
+  const isPage = variant === "page";
+  const isSignUp = flow === "sign-up";
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     try {
-      await signIn("password", { email, password, flow: "signIn" });
-      if (rememberMe) {
-        localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
-      } else {
-        localStorage.removeItem(REMEMBERED_EMAIL_KEY);
-      }
-      onSuccess?.();
-    } catch (err: unknown) {
-      const error = err as { message?: string };
-      const errorMessage = error.message || "";
-      if (errorMessage.includes("InvalidSecret")) {
-        setError("That password doesn't match yet. Please try again.");
-      } else if (
-        errorMessage.includes("InvalidAccountId") ||
-        errorMessage.includes("Could not find")
-      ) {
-        setError("We couldn't find an account for that email yet.");
-      } else if (errorMessage.includes("TooManyRequests")) {
-        setError("You've tried a few times. Please pause for a moment and try again.");
-      } else {
-        setError("We couldn't sign you in yet. Please check your details and try again.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-    try {
-      await signIn("email", {
+      await signIn("resend", {
         email,
         ...(nextPath ? { redirectTo: nextPath } : {}),
       });
       setMagicLinkSent(true);
+      onSuccess?.();
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      const errorMessage = error.message || "";
-      if (errorMessage.includes("TooManyRequests")) {
+      const message = (err as { message?: string }).message || "";
+      if (message.includes("TooManyRequests")) {
         setError("You've tried a few times. Please pause for a moment and try again.");
       } else {
         setError("We couldn't send the link yet. Please check your email and try again.");
@@ -95,18 +58,20 @@ export function SignInForm({
     }
   };
 
-  const handleSubmit = mode === "password" ? handlePasswordSubmit : handleMagicLinkSubmit;
-
-  const isPage = variant === "page";
-  const signUpHref = nextPath
-    ? { pathname: "/sign-up", query: { next: nextPath } }
-    : "/sign-up";
+  const otherHref = (pathname: string) =>
+    nextPath ? { pathname, query: { next: nextPath } } : pathname;
 
   const inputClass = isPage
     ? "w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground placeholder:text-muted-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] focus:outline-none focus:ring-2 focus:ring-primary"
     : "w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition";
 
-  const labelClass = isPage ? "mb-2 block text-sm font-medium text-foreground" : "block text-sm font-medium text-gray-300 mb-2";
+  const labelClass = isPage
+    ? "mb-2 block text-sm font-medium text-foreground"
+    : "block text-sm font-medium text-gray-300 mb-2";
+
+  const linkClass = isPage
+    ? "font-semibold text-primary hover:underline"
+    : "font-semibold text-orange-500 transition hover:text-orange-400";
 
   if (magicLinkSent) {
     return (
@@ -123,7 +88,10 @@ export function SignInForm({
         </p>
         <button
           type="button"
-          onClick={() => { setMagicLinkSent(false); setError(""); }}
+          onClick={() => {
+            setMagicLinkSent(false);
+            setError("");
+          }}
           className={`text-sm ${isPage ? "text-primary hover:underline" : "text-orange-500 hover:text-orange-400 transition"}`}
         >
           Use a different email
@@ -137,19 +105,21 @@ export function SignInForm({
       {isPage && (
         <div className="mb-8 text-center">
           <h1 className="font-heading text-4xl font-semibold tracking-tight text-gradient-primary">
-            Welcome back
+            {isSignUp ? "Create account" : "Welcome back"}
           </h1>
-          <p className="mt-2 text-muted-foreground">Sign in to Tempo Flow</p>
+          <p className="mt-2 text-muted-foreground">
+            {isSignUp ? "Join Tempo Flow — free to start" : "Sign in to Tempo Flow"}
+          </p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="signin-email" className={labelClass}>
+          <label htmlFor={`${flow}-email`} className={labelClass}>
             Email
           </label>
           <input
-            id="signin-email"
+            id={`${flow}-email`}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -160,60 +130,6 @@ export function SignInForm({
             autoComplete="email"
           />
         </div>
-
-        {mode === "password" && (
-          <>
-            <div>
-              <label htmlFor="signin-password" className={labelClass}>
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="signin-password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${inputClass} pr-12`}
-                  placeholder="••••••••"
-                  required={true}
-                  disabled={isLoading}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className={
-                    isPage
-                      ? "absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      : "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
-                  }
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                id="remember-me-signin"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className={
-                  isPage
-                    ? "h-4 w-4 cursor-pointer rounded border-border text-primary focus:ring-primary"
-                    : "w-4 h-4 rounded border-gray-600 bg-gray-900/50 text-orange-500 focus:ring-orange-500 focus:ring-offset-gray-800 cursor-pointer"
-                }
-                disabled={isLoading}
-              />
-              <label htmlFor="remember-me-signin" className={`cursor-pointer text-sm ${isPage ? "text-foreground" : "text-gray-300"}`}>
-                Remember me
-              </label>
-            </div>
-          </>
-        )}
 
         {error && (
           <div
@@ -240,37 +156,25 @@ export function SignInForm({
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              {mode === "magic-link" ? "Sending link…" : "Signing in…"}
+              Sending link…
             </span>
           ) : (
-            mode === "magic-link" ? "Send magic link" : "Sign in"
+            "Send magic link"
           )}
         </button>
       </form>
 
-      <div className={`mt-4 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
-        <button
-          type="button"
-          onClick={() => { setMode(mode === "password" ? "magic-link" : "password"); setError(""); }}
-          className={`${isPage ? "text-primary hover:underline" : "text-orange-500 hover:text-orange-400 transition"}`}
-        >
-          {mode === "password" ? "Use a magic link instead" : "Use password instead"}
-        </button>
-      </div>
-
-      <p className={`mt-4 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
-        Don&apos;t have an account?{" "}
+      <p
+        className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}
+      >
+        {isSignUp ? "Already have an account? " : "Don't have an account? "}
         {isPage ? (
-          <Link href={signUpHref} className="font-semibold text-primary hover:underline">
-            Create one
+          <Link href={otherHref(isSignUp ? "/sign-in" : "/sign-up")} className={linkClass}>
+            {isSignUp ? "Sign in" : "Create one"}
           </Link>
         ) : (
-          <button
-            type="button"
-            onClick={() => onSwitchToSignUp?.()}
-            className="font-semibold text-orange-500 transition hover:text-orange-400"
-          >
-            Create one
+          <button type="button" onClick={() => onSwitch?.()} className={linkClass}>
+            {isSignUp ? "Sign in" : "Create one"}
           </button>
         )}
       </p>

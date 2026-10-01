@@ -1,5 +1,4 @@
-import { Email } from "@convex-dev/auth/providers/Email";
-import { Password } from "@convex-dev/auth/providers/Password";
+import Resend from "@auth/core/providers/resend";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel, Id } from "./_generated/dataModel";
@@ -17,53 +16,20 @@ function normalizeEmail(email: string | undefined | null): string {
   return (email ?? "").trim().toLowerCase();
 }
 
-async function sendMagicLinkEmail({
-  identifier,
-  url,
-}: {
-  identifier: string;
-  url: string;
-}) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL ?? "Tempo Flow <onboarding@resend.dev>";
-  const to = identifier;
-  const subject = "Your Tempo Flow sign-in link";
-  const html = `
-    <div style="font-family: Inter, Arial, sans-serif; max-width: 560px; margin: 0 auto; line-height: 1.5;">
-      <h2 style="font-family: Newsreader, Georgia, serif;">Sign in to Tempo Flow</h2>
-      <p>Use the button below to continue.</p>
-      <p style="margin: 24px 0;">
-        <a href="${url}" style="background:#D97757;color:white;padding:12px 18px;border-radius:10px;text-decoration:none;display:inline-block;font-weight:600;">
-          Continue to Tempo Flow
-        </a>
-      </p>
-      <p style="color:#6b7280;font-size:14px;">If you didn't request this email, you can ignore it.</p>
-    </div>
-  `;
-
-  if (!resendApiKey) {
-    console.warn(`[auth] RESEND_API_KEY not set. Magic link for ${to}: ${url}`);
-    return;
+/**
+ * Find the live (not soft-deleted) user that already owns this email, so a new
+ * sign-in method (magic link) links to the existing account instead of
+ * creating a duplicate user.
+ */
+async function findLiveUserIdByEmail(db: AppDb, email: string): Promise<Id<"users"> | null> {
+  if (!email) {
+    return null;
   }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject,
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Could not send sign-in email. ${body}`);
-  }
+  const user = await db
+    .query("users")
+    .withIndex("by_email", (q) => q.eq("email", email))
+    .first();
+  return user && user.deletedAt === undefined ? user._id : null;
 }
 
 /**
@@ -94,12 +60,12 @@ async function ensureGrantedSubscription(db: AppDb, userId: Id<"users">, now: nu
 }
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  // Magic link only (Convex Auth + Auth.js Resend provider).
+  // The API key is read from AUTH_RESEND_KEY by Convex Auth.
   providers: [
-    Password,
-    Email({
-      authorize: undefined,
+    Resend({
+      from: process.env.RESEND_FROM_EMAIL ?? "Tempo Flow <onboarding@resend.dev>",
       maxAge: 60 * 30,
-      sendVerificationRequest: sendMagicLinkEmail,
     }),
   ],
   session: {
@@ -118,8 +84,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         fullName: typeof args.profile.name === "string" ? args.profile.name : "User",
       };
 
-      if (args.existingUserId) {
-        const existingUserId = args.existingUserId;
+      // Same email already has a user (e.g. an older password account): link
+      // this sign-in to that user instead of creating a second one.
+      const existingUserId =
+        args.existingUserId ?? (await findLiveUserIdByEmail(db, profile.email));
+
+      if (existingUserId) {
         const existing = await db.get(existingUserId);
 
         // buildReturningUserPatch never returns an undefined value. Assigning
