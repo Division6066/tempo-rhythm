@@ -1,4 +1,5 @@
 import Resend from "@auth/core/providers/resend";
+import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel, Id } from "./_generated/dataModel";
@@ -25,11 +26,15 @@ async function findLiveUserIdByEmail(db: AppDb, email: string): Promise<Id<"user
   if (!email) {
     return null;
   }
-  const user = await db
+  // by_email is not unique and index order is oldest first. A soft-deleted
+  // account can sit ahead of a later live user with the same email, so the
+  // first row is not enough.
+  const matches = await db
     .query("users")
     .withIndex("by_email", (q) => q.eq("email", email))
-    .first();
-  return user && user.deletedAt === undefined ? user._id : null;
+    .collect();
+  const live = matches.find((user) => user.deletedAt === undefined);
+  return live?._id ?? null;
 }
 
 /**
@@ -60,9 +65,11 @@ async function ensureGrantedSubscription(db: AppDb, userId: Id<"users">, now: nu
 }
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  // Magic link only (Convex Auth + Auth.js Resend provider).
-  // The API key is read from AUTH_RESEND_KEY by Convex Auth.
+  // Web sends magic links through Resend. Mobile still calls
+  // signIn("password", ...), and both apps share this deployment, so
+  // Password stays registered. The API key is read from AUTH_RESEND_KEY.
   providers: [
+    Password,
     Resend({
       from: process.env.RESEND_FROM_EMAIL ?? "Tempo Flow <onboarding@resend.dev>",
       maxAge: 60 * 30,
