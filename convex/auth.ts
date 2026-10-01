@@ -148,6 +148,18 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return args.existingUserId;
       }
 
+      // Same email already has a user (e.g. password account): link this sign-in
+      // method (e.g. magic link) to that user instead of creating a duplicate.
+      if (email) {
+        const existingByEmail = await db
+          .query("users")
+          .withIndex("by_email", (q) => q.eq("email", email))
+          .first();
+        if (existingByEmail && existingByEmail.deletedAt === undefined) {
+          return existingByEmail._id;
+        }
+      }
+
       if (!allowlistedEmails.has(email)) {
         throw new Error("Beta access is invite-only right now. Ask for an invite and we can add you.");
       }
