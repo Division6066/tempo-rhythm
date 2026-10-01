@@ -5,7 +5,7 @@
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "devCommand": "next dev",
-  "ignoreCommand": "if [ \"$VERCEL_GIT_PREVIOUS_SHA\" = \"$VERCEL_GIT_COMMIT_SHA\" ]; then exit 1; fi; prev=\"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\"; git rev-parse --verify --quiet \"${prev}^{commit}\" >/dev/null || exit 1; code=0; git diff --quiet \"$prev\" HEAD -- . ../../convex ../../packages ../../package.json ../../bun.lock || code=$?; if [ \"$code\" -eq 0 ]; then exit 0; fi; exit 1",
+  "ignoreCommand": "prev=\"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\"; [ \"$prev\" = \"$VERCEL_GIT_COMMIT_SHA\" ] && exit 1; git cat-file -e \"$prev\" || exit 1; git diff --quiet \"$prev\" HEAD -- . ../../convex ../../packages ../../package.json ../../bun.lock || exit 1",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   }
