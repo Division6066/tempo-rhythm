@@ -13,6 +13,9 @@ name: config-guard
 
 on:
   pull_request_target:
+    # Only PRs into integration. Promotion PRs (integration -> master/main) are Amit's; without this
+    # filter the guard judged them too and posted a failing run on the integration head commit.
+    branches: [integration]
     types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
 
 permissions:
