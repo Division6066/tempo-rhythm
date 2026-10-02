@@ -1,0 +1,98 @@
+name: config-guard
+
+# Goal E11: no automation can weaken a check.
+# Fails when a PR changes CI, review, secret-scan, Playwright or test-threshold
+# config, unless the PR carries the `config-lane` label added by an allowed
+# actor. Uses pull_request_target so the guard logic always comes from the
+# default branch (integration) and a PR cannot rewrite the guard that judges it.
+# It never checks out or runs PR code; it only reads the GitHub API.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: config-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  config-guard:
+    name: config-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check guarded files and config-lane label
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            // Who may apply `config-lane`. Division6066 is Amit; the orchestrator's
+            // gh token and Composio connector writes also appear as Division6066.
+            const ALLOWED = ['Division6066'];
+            const LABEL = 'config-lane';
+            const GUARDED = [
+              /^\.github\//,
+              /(^|\/)greptile\.json$/,
+              /(^|\/)\.gitleaks[^/]*$/,
+              /(^|\/)playwright\.config\.[^/]+$/,
+              /(^|\/)(vitest|jest)\.(config|workspace)\.[^/]+$/,
+              /(^|\/)\.(nycrc|c8rc)[^/]*$/,
+              /(^|\/)codecov\.ya?ml$/,
+              /(^|\/)bunfig\.toml$/,
+            ];
+            const { owner, repo } = context.repo;
+            const number = context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: number });
+            const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: number, per_page: 100 });
+            const touched = [...new Set(files.flatMap(f => [f.filename, f.previous_filename].filter(Boolean)))]
+              .filter(p => GUARDED.some(r => r.test(p)));
+            const hasLabel = pr.labels.some(l => l.name === LABEL);
+            const problems = [];
+
+            let labelEvt = null;
+            if (hasLabel) {
+              const tl = await github.paginate(github.rest.issues.listEventsForTimeline, { owner, repo, issue_number: number, per_page: 100 });
+              const evts = tl.filter(e => e.event === 'labeled' && e.label && e.label.name === LABEL);
+              labelEvt = evts[evts.length - 1] || null;
+              const who = labelEvt && labelEvt.actor ? labelEvt.actor.login : null;
+              if (!who) problems.push(`Could not find who added "${LABEL}".`);
+              else if (!ALLOWED.includes(who)) problems.push(`"${LABEL}" was added by ${who}, who is not allowed. Allowed: ${ALLOWED.join(', ')}.`);
+            }
+
+            if (touched.length && !hasLabel) {
+              problems.push(`This PR changes guarded files but has no "${LABEL}" label.`);
+            }
+
+            // A push after the label (e.g. an automation pushing to the branch)
+            // needs the label applied again, unless an allowed actor pushed it.
+            if (touched.length && labelEvt && labelEvt.actor && ALLOWED.includes(labelEvt.actor.login)) {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, { owner, repo, head_sha: pr.head.sha, per_page: 100 });
+              const prRuns = runs.filter(r => r.event === 'pull_request')
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+              let pushedAt, pusher;
+              if (prRuns.length) {
+                pushedAt = new Date(prRuns[0].created_at);
+                pusher = (prRuns[0].triggering_actor || prRuns[0].actor || {}).login;
+              } else {
+                const { data: c } = await github.rest.repos.getCommit({ owner, repo, ref: pr.head.sha });
+                pushedAt = new Date(c.commit.committer.date);
+                pusher = ['opened', 'synchronize'].includes(context.payload.action) ? context.actor : null;
+              }
+              if (!ALLOWED.includes(pusher) && new Date(labelEvt.created_at) < pushedAt) {
+                problems.push(`The head commit was pushed by ${pusher || 'an unknown actor'} after "${LABEL}" was added. An allowed actor must remove and re-add "${LABEL}".`);
+              }
+            }
+
+            const lines = [
+              `Guarded files changed: ${touched.length ? touched.join(', ') : 'none'}`,
+              `"${LABEL}" label: ${hasLabel ? `yes (added by ${labelEvt && labelEvt.actor ? labelEvt.actor.login : 'unknown'})` : 'no'}`,
+            ];
+            await core.summary.addHeading('config-guard').addList(lines.concat(problems.map(p => `FAIL: ${p}`))).write();
+            lines.forEach(l => core.info(l));
+            if (problems.length) core.setFailed(problems.join('\n'));
+            else core.info('config-guard passed.');
