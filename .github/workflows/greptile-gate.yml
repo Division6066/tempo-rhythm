@@ -1,0 +1,86 @@
+# .github/workflows/greptile-gate.yml
+# Merge bar for integration: Greptile confidence score >= 4/5 AND no open P1 finding.
+# Greptile's own "Greptile Review" check passes regardless of score (greptile.json has no
+# score-threshold option), so this job reads Greptile's latest summary + inline threads and
+# sets the commit status "greptile-score" on the PR head:
+#   pending  - no Greptile summary yet, or the summary is for an older commit
+#   failure  - score < 4, or an unresolved, non-outdated Greptile P1 thread exists
+#   success  - score >= 4 and no open P1
+# Read-only on code: it never checks out or runs PR code. Uses only the built-in GITHUB_TOKEN.
+name: Greptile gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created, edited]
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_review_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to evaluate"
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  statuses: write
+
+concurrency:
+  group: greptile-gate-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    # issue_comment fires for issues too; only PR comments matter here.
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate Greptile result and set greptile-score status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr }}
+          MIN_SCORE: "4"
+        run: |
+          set -euo pipefail
+          owner="${REPO%/*}"; name="${REPO#*/}"
+          head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+
+          # Latest Greptile summary body (one JSON string per comment across all pages; keep the last).
+          last=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq '.[] | select(.user.login=="greptile-apps[bot]") | select(.body|test("greptile_confidence_score:[0-9]")) | .body | @json' \
+            | tail -n 1 | jq -r '. // ""')
+          score=$(printf '%s' "$last" | grep -oE 'greptile_confidence_score:[0-9]' | tail -1 | cut -d: -f2 || true)
+          reviewed=$(printf '%s' "$last" | grep -oE 'Last reviewed commit:.*/commit/[0-9a-f]{40}' | grep -oE '[0-9a-f]{40}$' | tail -1 || true)
+
+          # Open P1 = Greptile review thread with a P1 badge that is neither resolved nor outdated.
+          p1=$(gh api graphql -F owner="$owner" -F name="$name" -F pr="$PR" -f query='
+            query($owner:String!,$name:String!,$pr:Int!){repository(owner:$owner,name:$name){pullRequest(number:$pr){
+              reviewThreads(first:100){nodes{isResolved isOutdated comments(first:1){nodes{author{login} body}}}}}}}' \
+            --jq '[.data.repository.pullRequest.reviewThreads.nodes[]
+                   | select(.isResolved==false and .isOutdated==false)
+                   | .comments.nodes[0] | select(.author.login=="greptile-apps")
+                   | select(.body|test("alt=\"P1\""))] | length')
+
+          # Greptile also lists every still-open finding (with its P-badge) in the latest summary,
+          # even when the original inline thread went outdated; count the larger of the two.
+          p1_summary=$( (printf '%s' "$last" | grep -o 'alt="P1"' || true) | wc -l | tr -d ' ')
+          [ "$p1_summary" -gt "$p1" ] && p1=$p1_summary
+
+          state=success; desc=""
+          if [ -z "$score" ]; then state=pending; desc="Waiting for Greptile summary"
+          elif [ -n "$reviewed" ] && [ "$reviewed" != "$head" ]; then state=pending; desc="Greptile summary is for ${reviewed:0:7}, head is ${head:0:7}"
+          elif [ "$score" -lt "$MIN_SCORE" ]; then state=failure; desc="Confidence $score/5 (needs >= $MIN_SCORE/5); open P1: $p1"
+          elif [ "$p1" -gt 0 ]; then state=failure; desc="Confidence $score/5 but $p1 open P1 finding(s)"
+          else desc="Confidence $score/5, no open P1"; fi
+
+          echo "head=$head score=${score:-none} reviewed=${reviewed:-none} openP1=$p1 -> $state ($desc)"
+          gh api -X POST "repos/$REPO/statuses/$head" \
+            -f state="$state" -f context="greptile-score" -f description="$desc" \
+            -f target_url="${{ github.server_url }}/$REPO/pull/$PR" >/dev/null
