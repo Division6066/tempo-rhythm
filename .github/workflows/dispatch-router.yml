@@ -179,7 +179,10 @@ jobs:
             model: {id: $model},
             repos: [{url: $repo, startingRef: "integration"}],
             autoCreatePR: true}')
-          resp=$(curl -sS --fail-with-body -u "$CURSOR_API_KEY:" -H 'Content-Type: application/json' \
+          # The key goes to curl as a config line on stdin (basic auth, empty password), so it
+          # is never on the command line and no secret-scan allowlist is needed.
+          resp=$(printf 'user = "%s:"\n' "$CURSOR_API_KEY" | curl -sS --fail-with-body -K - \
+            -H 'Content-Type: application/json' \
             -X POST https://api.cursor.com/v1/agents --data "$body")
           echo "started=true" >> "$GITHUB_OUTPUT"
           agent=$(printf '%s' "$resp" | jq -r '.agent.id // .id // "unknown"')
