@@ -1,25 +1,25 @@
 name: config-guard
 
 # Goal E11: no automation can weaken a check.
-# Fails when a PR changes CI, review, secret-scan, Playwright or test-threshold
-# config, unless the PR carries the `config-lane` label added by an allowed
-# actor. Uses pull_request_target so the guard logic always comes from the
-# default branch (integration) and a PR cannot rewrite the guard that judges it.
-# It never checks out or runs PR code; it only reads the GitHub API.
+# Fails when a PR changes CI, review, secret-scan, Playwright, scan or
+# test-threshold config, unless the PR carries the `config-lane` label added by
+# an allowed actor, and no one else pushed after that label was added.
+#
+# Uses pull_request_target so the guard logic comes from the default branch.
+# This repo's default branch is `integration` (checked 2 Oct 2026), so the
+# guard runs on every PR into integration and a PR cannot rewrite the guard
+# that judges it. It never checks out or runs PR code; it only reads the API.
+# Changing this file is itself guarded (.github/**).
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
 
 permissions:
   contents: read
   pull-requests: read
   issues: read
   actions: read
-
-concurrency:
-  group: config-guard-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 jobs:
   config-guard:
@@ -39,21 +39,47 @@ jobs:
               /^\.github\//,
               /(^|\/)greptile\.json$/,
               /(^|\/)\.gitleaks[^/]*$/,
+              /(^|\/)\.trufflehog[^/]*$/,
               /(^|\/)playwright\.config\.[^/]+$/,
               /(^|\/)(vitest|jest)\.(config|workspace)\.[^/]+$/,
               /(^|\/)\.(nycrc|c8rc)[^/]*$/,
               /(^|\/)codecov\.ya?ml$/,
               /(^|\/)bunfig\.toml$/,
+              /^scripts\/ci\//,
+              /^scripts\/(scan-|check-notices|secret-scan)[^/]*$/,
+              /(^|\/)scan-baselines[^/]*$/,
             ];
+            // package.json keys that define what CI runs or its thresholds.
+            const PKG_KEYS = ['scripts', 'jest', 'c8', 'nyc', 'vitest', 'playwright'];
             const { owner, repo } = context.repo;
             const number = context.payload.pull_request.number;
             const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: number });
-            const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: number, per_page: 100 });
-            const touched = [...new Set(files.flatMap(f => [f.filename, f.previous_filename].filter(Boolean)))]
-              .filter(p => GUARDED.some(r => r.test(p)));
-            const hasLabel = pr.labels.some(l => l.name === LABEL);
             const problems = [];
 
+            const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: number, per_page: 100 });
+            if (files.length >= 3000 || files.length < pr.changed_files) {
+              problems.push(`Could not read the full list of changed files (${files.length} of ${pr.changed_files}). Failing closed.`);
+            }
+            const paths = [...new Set(files.flatMap(f => [f.filename, f.previous_filename].filter(Boolean)))];
+            const touched = paths.filter(p => GUARDED.some(r => r.test(p)));
+
+            const readPkg = async (path, ref) => {
+              try {
+                const { data } = await github.rest.repos.getContent({ owner, repo, path, ref });
+                return JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
+              } catch (e) {
+                return e.status === 404 ? {} : null;
+              }
+            };
+            for (const f of files.filter(f => /(^|\/)package\.json$/.test(f.filename))) {
+              const before = await readPkg(f.previous_filename || f.filename, pr.base.sha);
+              const after = f.status === 'removed' ? {} : await readPkg(f.filename, pr.head.sha);
+              const changed = before === null || after === null ||
+                PKG_KEYS.some(k => JSON.stringify(before[k] ?? null) !== JSON.stringify(after[k] ?? null));
+              if (changed) touched.push(`${f.filename} (CI scripts/test config keys)`);
+            }
+
+            const hasLabel = pr.labels.some(l => l.name === LABEL);
             let labelEvt = null;
             if (hasLabel) {
               const tl = await github.paginate(github.rest.issues.listEventsForTimeline, { owner, repo, issue_number: number, per_page: 100 });
@@ -68,22 +94,31 @@ jobs:
               problems.push(`This PR changes guarded files but has no "${LABEL}" label.`);
             }
 
-            // A push after the label (e.g. an automation pushing to the branch)
-            // needs the label applied again, unless an allowed actor pushed it.
+            // The label approves the code as it was when it was added. If someone not
+            // allowed pushed the current head after that, the label must be re-added.
             if (touched.length && labelEvt && labelEvt.actor && ALLOWED.includes(labelEvt.actor.login)) {
-              const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, { owner, repo, head_sha: pr.head.sha, per_page: 100 });
-              const prRuns = runs.filter(r => r.event === 'pull_request')
-                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-              let pushedAt, pusher;
-              if (prRuns.length) {
-                pushedAt = new Date(prRuns[0].created_at);
-                pusher = (prRuns[0].triggering_actor || prRuns[0].actor || {}).login;
+              let pushedAt = null, pusher = null;
+              const action = context.payload.action;
+              if (['opened', 'synchronize', 'reopened'].includes(action) && context.payload.pull_request.head.sha === pr.head.sha) {
+                // This run was started by the push itself: the sender is the pusher (server-recorded).
+                pushedAt = new Date();
+                pusher = context.payload.sender.login;
               } else {
-                const { data: c } = await github.rest.repos.getCommit({ owner, repo, ref: pr.head.sha });
-                pushedAt = new Date(c.commit.committer.date);
-                pusher = ['opened', 'synchronize'].includes(context.payload.action) ? context.actor : null;
+                // Latest CI run for this exact head commit on this PR's branch (server-recorded
+                // creation time; `actor` is who pushed or reopened, not who re-ran it).
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                  owner, repo, workflow_id: 'ci.yml', event: 'pull_request', head_sha: pr.head.sha, per_page: 100 });
+                const mine = runs.filter(r => r.head_branch === pr.head.ref &&
+                  r.head_repository && r.head_repository.full_name === pr.head.repo.full_name)
+                  .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                if (mine.length) {
+                  pushedAt = new Date(mine[0].created_at);
+                  pusher = mine[0].actor && mine[0].actor.login;
+                }
               }
-              if (!ALLOWED.includes(pusher) && new Date(labelEvt.created_at) < pushedAt) {
+              if (!pushedAt) {
+                problems.push(`Could not find when the head commit was pushed (no CI run yet). Failing closed; re-run config-guard after CI starts.`);
+              } else if (!ALLOWED.includes(pusher) && new Date(labelEvt.created_at) < pushedAt) {
                 problems.push(`The head commit was pushed by ${pusher || 'an unknown actor'} after "${LABEL}" was added. An allowed actor must remove and re-add "${LABEL}".`);
               }
             }
