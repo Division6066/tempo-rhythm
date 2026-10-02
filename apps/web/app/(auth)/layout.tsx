@@ -2,12 +2,12 @@
 
 import { useConvexAuth } from "convex/react";
 
-// Layout עבור דפי אימות (כניסה/הרשמה)
-// מטפל בהצגת לוגיקה בזמן טעינה והסתרה אם המשתמש כבר מחובר
+// Layout for auth pages (sign in/sign up)
+// Handles loading-state display logic and hides content if the user is already logged in
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
 
-  // הצגת ספינר טעינה בזמן בדיקת סטטוס האימות
+  // Show a loading spinner while checking authentication status
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -16,12 +16,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  // אם המשתמש כבר מחובר, אין צורך להציג את דפי האימות (ההפניה תתבצע ב-Middleware או בקומפוננטה)
+  // If the user is already logged in, there's no need to show the auth pages (the redirect happens in Middleware or in the component)
   if (isAuthenticated) {
     return null;
   }
 
-  // עיצוב הרקע לדפי האימות
+  // Background styling for the auth pages
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-black">
       {children}
