@@ -64,6 +64,12 @@ EAS secrets                                     # mobile builds only
 
 Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use `.env.local` only. The root `.gitignore` explicitly ignores `apps/web/.env` and `apps/mobile/.env`.
 
+### Key names and where secrets come from (Amit, 2 Oct 2026)
+
+- Sign-in is **magic link only**. The Convex Auth Resend provider reads `AUTH_RESEND_KEY` (Convex Auth default). Older docs that say `RESEND_API_KEY` are out of date.
+- Secrets come from the 1Password `dev` vault through a service account, under rule 1.2: names only, never a value in a file, log, PR, issue or chat.
+- The internal-testing preview is the `integration` branch. There is no `preview` branch.
+
 ---
 
 ## Scope tags reference
@@ -73,7 +79,7 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 | `[local]` | Developer secrets on one machine only | The developer on that machine | Shell env / `.env.local` loaded by Next.js / Convex CLI |
 | `[convex dashboard]` | Runtime secrets for Convex functions | human-amit (dashboard owner) | Convex injects at function invocation |
 | `[vercel production]` | Secrets for production Next.js builds and RSC routes | human-amit (Vercel project owner) | Vercel injects at build and edge runtime |
-| `[vercel preview]` | Secrets for preview branch builds | human-amit (Vercel project owner) | Vercel injects at preview build — currently disabled |
+| `[vercel preview]` | Secrets for Vercel Preview builds (branch `integration` and PR branches; there is no `preview` branch) | human-amit (Vercel project owner) | Vercel injects at preview build — currently disabled |
 | `[EAS secrets]` | Mobile build secrets | human-amit (EAS project owner) | EAS injects during `eas build` |
 
 ---
