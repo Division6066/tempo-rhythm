@@ -48,10 +48,14 @@ Say so out loud in your PR rather than quietly building the wrong thing.
 
 - Branch **FROM `integration`**. Never from `master`.
 - Open your pull request **against `integration`**, not `master`.
-- You **may merge into `integration`** once ALL THREE are true:
-  1. CI is green,
-  2. there are no conflicts,
-  3. every changed file is inside your ticket's declared file scope.
+- You **may merge into `integration`** only under rule 1.4 (Amit, 2 Oct 2026).
+  Auto-merge is OFF until the merge-gate proof (D4) passes. Until then a PR
+  merges into `integration` only when ALL of these are true:
+  1. all required checks are green,
+  2. Greptile passes,
+  3. there are no conflicts,
+  4. every changed file is inside your ticket's MUTATES list (declared file scope).
+  The orchestrator or the tester worker clicks merge, then checks the preview.
 - If any one of those is false: **STOP**, leave the PR open, and report the
   branch name, the PR number, and which condition failed.
 

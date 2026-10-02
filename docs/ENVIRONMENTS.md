@@ -67,7 +67,7 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 ### Key names and where secrets come from (Amit, 2 Oct 2026)
 
 - Sign-in is **magic link only**. The Convex Auth Resend provider reads `AUTH_RESEND_KEY` (Convex Auth default). Older docs that say `RESEND_API_KEY` are out of date.
-- Secrets come from the 1Password `dev` vault through a service account, under rule 1.2: names only, never a value in a file, log, PR, issue or chat.
+- Secrets rule (Amit, 2 Oct 2026): secrets come only from the 1Password `dev` vault, through a service account. Never print, log, echo, screenshot or paste a value (chat, ticket, PR, commit, workflow log, report); names only. Never click reveal/show on masked fields. Save a generated secret to 1Password `dev` before setting it. Convex: never run `convex env list`; use `bun x convex env get <NAME>` only for non-secret values (URLs, numbers, emails).
 - The internal-testing preview is the `integration` branch. There is no `preview` branch.
 
 ---
@@ -79,7 +79,7 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 | `[local]` | Developer secrets on one machine only | The developer on that machine | Shell env / `.env.local` loaded by Next.js / Convex CLI |
 | `[convex dashboard]` | Runtime secrets for Convex functions | human-amit (dashboard owner) | Convex injects at function invocation |
 | `[vercel production]` | Secrets for production Next.js builds and RSC routes | human-amit (Vercel project owner) | Vercel injects at build and edge runtime |
-| `[vercel preview]` | Secrets for Vercel Preview builds (branch `integration` and PR branches; there is no `preview` branch) | human-amit (Vercel project owner) | Vercel injects at preview build — currently disabled |
+| `[vercel preview]` | Secrets for Vercel Preview builds (branch `integration` and PR branches; there is no `preview` branch) | human-amit (Vercel project owner) | Vercel injects at preview build. Live: Preview builds of `integration` serve https://preview.tempoflow.dev (public via the protection exception; see #435) |
 | `[EAS secrets]` | Mobile build secrets | human-amit (EAS project owner) | EAS injects during `eas build` |
 
 ---
