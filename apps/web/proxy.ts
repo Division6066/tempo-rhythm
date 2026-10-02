@@ -4,16 +4,9 @@ import {
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
 import type { NextRequest } from "next/server";
+import { decideEntryRedirect, PUBLIC_ROUTE_PATTERNS } from "./lib/rootEntry";
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/sign-in",
-  "/sign-up",
-  "/terms",
-  "/privacy",
-  "/contact",
-  "/success",
-]);
+const isPublicRoute = createRouteMatcher([...PUBLIC_ROUTE_PATTERNS]);
 
 const isCoreTaskViewRoute = createRouteMatcher([
   "/today",
@@ -46,14 +39,15 @@ export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
     isAuthenticated = false;
   }
 
-  if (!(isPublicRoute(request) || isCalendarE2EBypass || isAuthenticated)) {
-    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-    const params = new URLSearchParams({ next: nextPath });
-    return nextjsMiddlewareRedirect(request, `/sign-in?${params.toString()}`);
-  }
-
-  if (isPublicRoute(request) && isAuthenticated) {
-    // Optional: redirect signed-in users away from marketing/auth-only routes.
+  const redirectTo = decideEntryRedirect({
+    pathname: request.nextUrl.pathname,
+    search: request.nextUrl.search,
+    isAuthenticated,
+    isPublicRoute: isPublicRoute(request),
+    isCalendarE2EBypass,
+  });
+  if (redirectTo) {
+    return nextjsMiddlewareRedirect(request, redirectTo);
   }
 });
 
