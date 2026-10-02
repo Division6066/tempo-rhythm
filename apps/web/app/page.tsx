@@ -39,7 +39,7 @@ const sectionLede = "mt-5 max-w-[62ch] font-serif text-h3 leading-relaxed text-m
 const PROOF = [
   ["42", "handcrafted screens"],
   ["1", "person, one year"],
-  ["$1", "week-long trial"],
+  ["Free", "during beta"],
   ["0", "guilt trips, ever"],
 ] as const;
 
@@ -88,7 +88,7 @@ export default function LandingPage() {
             Sign up
           </Link>
           <Link href="/sign-up" className={`${ctaPrimary} px-4 py-2`}>
-            Start your $1 week
+            Join the free beta
           </Link>
         </div>
       </nav>
@@ -98,7 +98,7 @@ export default function LandingPage() {
           <div className={`${wrap} relative z-[2]`}>
             <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-small text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-tempo-orange" aria-hidden />
-              1.0 ships April 23 · Closed beta open now
+              Closed beta open now
             </p>
             <h1 className="max-w-[12ch] font-serif text-[clamp(2.75rem,6.8vw,5.75rem)] font-normal leading-[1.02] tracking-tight">
               A planner that won&apos;t <em className="italic text-tempo-orange">shame</em>
@@ -112,7 +112,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/sign-up" className={ctaGradient}>
-                Start your seven-day week · $1
+                Join the free beta
               </Link>
               <Link href="/sign-up" className={ctaGhost}>
                 Sign up
@@ -201,7 +201,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <pre className="overflow-x-auto rounded-lg bg-card p-5 font-mono text-caption leading-[1.9] text-foreground shadow-lift">
-                <span className="block text-muted-foreground"># ☀️ Thursday · April 23</span>
+                <span className="block text-muted-foreground"># ☀️ Thursday</span>
                 <span className="block text-tempo-orange">## Intentions</span>
                 <span className="block">Ship launch post by noon. Protect the afternoon.</span>
                 <span className="mt-2 block text-tempo-orange">## Tasks</span>
@@ -521,7 +521,7 @@ export default function LandingPage() {
               a week.
             </p>
             <Link href="/sign-up" className={`${ctaOnDark} mt-8`}>
-              Start my week →
+              Join the free beta
             </Link>
           </div>
         </section>
@@ -600,7 +600,7 @@ export default function LandingPage() {
           </div>
           <div className="mt-10 flex flex-wrap justify-between gap-3 border-t border-mkt-dark-border pt-6 font-mono text-caption text-mkt-dark-fg-subtle">
             <span>© 2026 Tempo Flow · BUSL-1.1</span>
-            <span>v1.0.0 · Shipped April 23</span>
+            <span>v1.0.0 · Closed beta</span>
           </div>
         </div>
       </footer>
