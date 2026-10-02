@@ -141,11 +141,19 @@ jobs:
         uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          track_progress: true
+          # No track_progress: on issue events it forces tag mode, whose built-in prompt only
+          # posts a manual "Create a PR" link (proof run #496, 2 Oct). Automation mode runs this
+          # prompt and sets GH_TOKEN to the Claude app token, so `gh pr create` works and the PR
+          # triggers CI.
           prompt: |
             Implement GitHub issue #${{ github.event.issue.number }} in ${{ github.repository }}. Follow AGENTS.md.
-            Branch from integration, stay inside the ticket's MUTATES list (or SCOPE on older tickets),
-            and open a PR into integration whose body contains "Closes #${{ github.event.issue.number }}".
+            Read the issue with `gh issue view ${{ github.event.issue.number }} --comments`.
+            Create a new branch `claude/issue-${{ github.event.issue.number }}-<short-name>` from integration,
+            stay inside the ticket's MUTATES list (or SCOPE on older tickets), and run the ticket's DONE commands.
+            Commit, push with `git push -u origin <branch>`, then open the PR yourself with
+            `gh pr create --base integration --head <branch>`. Its body must contain
+            "Closes #${{ github.event.issue.number }}" and the ticket's REPORT (first line DONE or a stop code).
+            If you stop with a stop code before any commit, do not push or open a PR.
           # Automation mode only gets the base GitHub tools; it needs git, gh pr and bun to branch,
           # run the ticket's checks and open the PR.
           claude_args: >-
