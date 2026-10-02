@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { PRIVACY_URL, TERMS_URL } from "@/config/appConfig";
 import { SignInForm } from "./SignInForm";
 
 export type SignUpFormProps = {
@@ -31,19 +29,6 @@ export function SignUpForm({
         onSuccess={onSuccess}
         onSwitch={onSwitchToSignIn}
       />
-      <p
-        className={`mt-4 text-center text-xs ${isPage ? "text-muted-foreground" : "text-gray-400"}`}
-      >
-        By continuing you agree to the{" "}
-        <Link href={TERMS_URL} target="_blank" rel="noopener noreferrer" className="underline">
-          Terms of Service
-        </Link>{" "}
-        and{" "}
-        <Link href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="underline">
-          Privacy Policy
-        </Link>
-        .
-      </p>
     </div>
   );
 }

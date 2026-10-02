@@ -25,11 +25,14 @@ async function findLiveUserIdByEmail(db: AppDb, email: string): Promise<Id<"user
   if (!email) {
     return null;
   }
+  // by_email is not unique: skip soft-deleted rows so an older deleted
+  // duplicate can't hide the live account.
   const user = await db
     .query("users")
     .withIndex("by_email", (q) => q.eq("email", email))
+    .filter((q) => q.eq(q.field("deletedAt"), undefined))
     .first();
-  return user && user.deletedAt === undefined ? user._id : null;
+  return user ? user._id : null;
 }
 
 /**

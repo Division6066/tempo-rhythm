@@ -1,9 +1,11 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
+import { PRIVACY_URL, TERMS_URL } from "@/config/appConfig";
 
 export type SignInFormProps = {
   /** Page layout uses Soft Editorial; modal keeps compact dark styling */
@@ -31,12 +33,17 @@ export function SignInForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
 
   const isPage = variant === "page";
   const isSignUp = flow === "sign-up";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSignUp && !consentAccepted) {
+      setError("Please accept the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -131,6 +138,69 @@ export function SignInForm({
           />
         </div>
 
+        {isSignUp ? (
+          <div
+            className={
+              isPage
+                ? "flex items-start gap-3 rounded-xl border border-border bg-card/80 p-4"
+                : "flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-900/30 p-4"
+            }
+          >
+            <div className="relative mt-0.5 shrink-0">
+              <input
+                id="signup-consent"
+                type="checkbox"
+                checked={consentAccepted}
+                onChange={(e) => setConsentAccepted(e.target.checked)}
+                className="sr-only"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setConsentAccepted(!consentAccepted)}
+                disabled={isLoading}
+                aria-pressed={consentAccepted}
+                aria-label="Accept terms and privacy policy"
+                className={`flex h-5 w-5 items-center justify-center rounded border-2 transition ${
+                  consentAccepted
+                    ? "border-primary bg-primary"
+                    : isPage
+                      ? "border-border bg-transparent hover:border-muted-foreground"
+                      : "border-gray-600 bg-transparent hover:border-gray-500"
+                } ${isLoading ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+              >
+                {consentAccepted ? <Check className="h-3 w-3 text-primary-foreground" /> : null}
+              </button>
+            </div>
+            <label
+              htmlFor="signup-consent"
+              className="flex-1 cursor-pointer text-sm text-foreground"
+            >
+              I agree to the{" "}
+              <Link
+                href={TERMS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link
+                href={PRIVACY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Privacy Policy
+              </Link>
+              .
+            </label>
+          </div>
+        ) : null}
+
         {error && (
           <div
             className={
@@ -146,7 +216,7 @@ export function SignInForm({
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || (isSignUp && !consentAccepted)}
           className={
             isPage
               ? "w-full rounded-xl bg-linear-to-r from-[#D97757] to-[#E8A87C] py-3 font-semibold text-primary-foreground shadow-md transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
