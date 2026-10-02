@@ -71,9 +71,15 @@ jobs:
                 return e.status === 404 ? {} : null;
               }
             };
-            for (const f of files.filter(f => /(^|\/)package\.json$/.test(f.filename))) {
-              const before = await readPkg(f.previous_filename || f.filename, pr.base.sha);
-              const after = f.status === 'removed' ? {} : await readPkg(f.filename, pr.head.sha);
+            const PKG = /(^|\/)package\.json$/;
+            for (const f of files.filter(f => PKG.test(f.filename) || PKG.test(f.previous_filename || ''))) {
+              if (f.status !== 'modified' && f.status !== 'added' && f.status !== 'changed' || !PKG.test(f.filename)) {
+                // Renaming, copying or removing a manifest can drop its scripts: always guarded.
+                touched.push(`${f.previous_filename || f.filename} (package.json ${f.status})`);
+                continue;
+              }
+              const before = await readPkg(f.filename, pr.base.sha);
+              const after = await readPkg(f.filename, pr.head.sha);
               const changed = before === null || after === null ||
                 PKG_KEYS.some(k => JSON.stringify(before[k] ?? null) !== JSON.stringify(after[k] ?? null));
               if (changed) touched.push(`${f.filename} (CI scripts/test config keys)`);
@@ -94,33 +100,35 @@ jobs:
               problems.push(`This PR changes guarded files but has no "${LABEL}" label.`);
             }
 
-            // The label approves the code as it was when it was added. If someone not
-            // allowed pushed the current head after that, the label must be re-added.
+            // The label approves the code as it was when it was added. Any push (or
+            // re-push of an older commit) to this PR by someone not allowed after that
+            // time means an allowed actor must re-add the label.
             if (touched.length && labelEvt && labelEvt.actor && ALLOWED.includes(labelEvt.actor.login)) {
-              let pushedAt = null, pusher = null;
-              const action = context.payload.action;
-              if (['opened', 'synchronize', 'reopened'].includes(action) && context.payload.pull_request.head.sha === pr.head.sha) {
-                // This run was started by the push itself: the sender is the pusher (server-recorded).
-                pushedAt = new Date();
-                pusher = context.payload.sender.login;
-              } else {
-                // Latest CI run for this exact head commit on this PR's branch (server-recorded
-                // creation time; `actor` is who pushed or reopened, not who re-ran it).
-                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                  owner, repo, workflow_id: 'ci.yml', event: 'pull_request', head_sha: pr.head.sha, per_page: 100 });
-                const mine = runs.filter(r => r.head_branch === pr.head.ref &&
-                  r.head_repository && r.head_repository.full_name === pr.head.repo.full_name)
-                  .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                if (mine.length) {
-                  pushedAt = new Date(mine[0].created_at);
-                  pusher = mine[0].actor && mine[0].actor.login;
-                }
+              const labelAt = new Date(labelEvt.created_at);
+              const nBefore = problems.length;
+              const sender = context.payload.sender.login;
+              // A synchronize run is started by the push itself: the sender is the pusher
+              // and the payload's updated_at is the server time of that push (not run start).
+              if (context.payload.action === 'synchronize' && !ALLOWED.includes(sender) &&
+                  new Date(context.payload.pull_request.updated_at) >= labelAt) {
+                problems.push(`${sender} pushed after "${LABEL}" was added.`);
               }
-              if (!pushedAt) {
-                problems.push(`Could not find when the head commit was pushed (no CI run yet). Failing closed; re-run config-guard after CI starts.`);
-              } else if (!ALLOWED.includes(pusher) && new Date(labelEvt.created_at) < pushedAt) {
-                problems.push(`The head commit was pushed by ${pusher || 'an unknown actor'} after "${LABEL}" was added. An allowed actor must remove and re-add "${LABEL}".`);
+              // Every push / PR event on this head commit and branch starts CI runs, with a
+              // server-recorded created_at and actor = who pushed, opened or reopened.
+              // Re-runs keep the original actor and time.
+              const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                owner, repo, head_sha: pr.head.sha, per_page: 100 });
+              const mine = runs.filter(r => ['pull_request', 'push'].includes(r.event) &&
+                r.head_branch === pr.head.ref &&
+                r.head_repository && r.head_repository.full_name === pr.head.repo.full_name);
+              if (!mine.length) {
+                problems.push('No CI run found for the head commit yet, so its push time is unknown. Failing closed; re-run config-guard after CI starts.');
               }
+              const late = mine.filter(r => new Date(r.created_at) >= labelAt && !ALLOWED.includes((r.actor || {}).login));
+              if (late.length) {
+                problems.push(`Push/PR activity on the head commit by ${[...new Set(late.map(r => r.actor.login))].join(', ')} after "${LABEL}" was added.`);
+              }
+              if (problems.length > nBefore) problems.push(`An allowed actor must remove and re-add "${LABEL}".`);
             }
 
             const lines = [
