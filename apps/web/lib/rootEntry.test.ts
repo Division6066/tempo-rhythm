@@ -8,9 +8,10 @@ const signedOut = {
 };
 
 describe("default entry", () => {
-  test("does not treat / as a public route", () => {
-    expect(PUBLIC_ROUTE_PATTERNS).not.toContain("/");
+  test("treats / as a public route for the marketing page", () => {
+    expect(PUBLIC_ROUTE_PATTERNS).toContain("/");
     expect(PUBLIC_ROUTE_PATTERNS).toEqual([
+      "/",
       "/sign-in",
       "/sign-up",
       "/terms",
@@ -20,10 +21,16 @@ describe("default entry", () => {
     ]);
   });
 
-  test("sends a signed-out visitor on / to /sign-in", () => {
-    expect(decideEntryRedirect({ ...signedOut, pathname: "/", search: "" })).toBe(
-      "/sign-in?next=%2F",
-    );
+  test("shows the marketing page to a signed-out visitor on /", () => {
+    expect(decideEntryRedirect({ ...signedOut, pathname: "/", search: "" })).toBeNull();
+    expect(
+      decideEntryRedirect({
+        ...signedOut,
+        pathname: "/",
+        search: "",
+        isPublicRoute: true,
+      })
+    ).toBeNull();
   });
 
   test("sends a signed-in visitor on / to /today", () => {
@@ -33,7 +40,7 @@ describe("default entry", () => {
         pathname: "/",
         search: "",
         isAuthenticated: true,
-      }),
+      })
     ).toBe("/today");
   });
 
@@ -46,7 +53,7 @@ describe("default entry", () => {
         pathname: "/",
         search,
         isAuthenticated: true,
-      }),
+      })
     ).toBeNull();
   });
 
@@ -58,14 +65,14 @@ describe("default entry", () => {
           pathname,
           search: "",
           isPublicRoute: true,
-        }),
+        })
       ).toBeNull();
     }
   });
 
   test("still sends signed-out visitors on app routes to /sign-in", () => {
     expect(decideEntryRedirect({ ...signedOut, pathname: "/today", search: "" })).toBe(
-      "/sign-in?next=%2Ftoday",
+      "/sign-in?next=%2Ftoday"
     );
   });
 
@@ -75,7 +82,7 @@ describe("default entry", () => {
         ...signedOut,
         pathname: "/today",
         search: "?code=magic-link-token",
-      }),
+      })
     ).toBe("/sign-in?next=%2Ftoday%3Fcode%3Dmagic-link-token");
   });
 });
