@@ -3,7 +3,7 @@ name: config-guard
 # Goal E11: no automation can weaken a check.
 # Fails when a PR changes CI, review, secret-scan, Playwright, scan or
 # test-threshold config, unless the PR carries the `config-lane` label added by
-# an allowed actor, and no one else pushed after that label was added.
+# an allowed actor, and the head commit has not changed since.
 #
 # Uses pull_request_target so the guard logic comes from the default branch.
 # This repo's default branch is `integration` (checked 2 Oct 2026), so the
@@ -71,7 +71,8 @@ jobs:
                 owner, repo, basehead: `${pr.base.sha}...${pr.head.sha}` });
               baseRef = cmp.merge_base_commit && cmp.merge_base_commit.sha;
             } catch (e) { baseRef = null; }
-            if (!baseRef) problems.push('Could not find the merge base of this PR. Failing closed.');
+            // If the merge base is unknown, changed manifests read as null below and count as
+            // guarded (fail closed); PRs without manifest changes are unaffected.
             // missingOk: a 404 means "no file" ({}). Otherwise a failed read is null (fail closed).
             const readPkg = async (path, ref, missingOk) => {
               if (!ref) return null;
@@ -113,8 +114,7 @@ jobs:
               problems.push(`This PR changes guarded files but has no "${LABEL}" label.`);
             }
 
-            // The label approves the code as it was when it was added. Any push (or
-            // re-push of an older commit) to this PR by someone not allowed after that
+            // The label approves the code as it was when it was added. Any push after that
             // time means an allowed actor must re-add the label.
             if (touched.length && labelEvt && labelEvt.actor && ALLOWED.includes(labelEvt.actor.login)) {
               const labelAt = new Date(labelEvt.created_at);
@@ -126,25 +126,23 @@ jobs:
                   new Date(context.payload.pull_request.updated_at) >= labelAt) {
                 problems.push(`${sender} pushed after "${LABEL}" was added.`);
               }
-              // Every push / PR event on this branch starts CI runs, with a server-recorded
-              // created_at and actor = who pushed, opened or reopened (re-runs keep both).
-              // pull_request runs carry the PR head SHA as head_sha (checked 2 Oct 2026).
-              // Check every run on the PR branch since the label, not only the head commit, so
-              // an unauthorized push followed by an allowed push is still caught.
+              // The label approves exactly the head commit it was added on. That commit is the
+              // head of the newest pull_request/push CI run on this PR branch created before the
+              // label (server time). If the head is different now, someone pushed after the
+              // label (also with [skip ci], or a re-push of an older commit), so an allowed
+              // actor must re-add it. Reopening or re-running CI does not change the head, so it
+              // does not revoke the approval.
               const fromThisPr = r => ['pull_request', 'push'].includes(r.event) &&
                 r.head_branch === pr.head.ref &&
                 r.head_repository && r.head_repository.full_name === pr.head.repo.full_name;
-              const headRuns = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
-                owner, repo, head_sha: pr.head.sha, per_page: 100 })).filter(fromThisPr);
-              if (!headRuns.length) {
-                problems.push('No CI run found for the head commit yet, so its push time is unknown. Failing closed; re-run config-guard after CI starts.');
-              }
-              const sinceLabel = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
-                owner, repo, branch: pr.head.ref, created: `>=${labelAt.toISOString()}`, per_page: 100 })).filter(fromThisPr);
-              const mine = [...new Map([...headRuns, ...sinceLabel].map((r, i) => [r.id ?? `n${i}`, r])).values()];
-              const late = mine.filter(r => new Date(r.created_at) >= labelAt && !ALLOWED.includes((r.actor || {}).login));
-              if (late.length) {
-                problems.push(`Push/PR activity on this PR branch by ${[...new Set(late.map(r => r.actor.login))].join(', ')} after "${LABEL}" was added.`);
+              const earlier = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                owner, repo, branch: pr.head.ref, created: `<${labelAt.toISOString()}`, per_page: 100 }))
+                .filter(fromThisPr).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              const approvedSha = earlier.length ? earlier[0].head_sha : null;
+              if (!approvedSha) {
+                problems.push(`No CI run on this branch before "${LABEL}" was added, so the approved commit is unknown. Failing closed.`);
+              } else if (approvedSha !== pr.head.sha) {
+                problems.push(`The head commit changed after "${LABEL}" was added (approved ${approvedSha.slice(0, 7)}, head now ${pr.head.sha.slice(0, 7)}).`);
               }
               if (problems.length > nBefore) problems.push(`An allowed actor must remove and re-add "${LABEL}".`);
             }
