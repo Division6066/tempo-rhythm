@@ -19,6 +19,7 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/privacy",
   "/contact",
   "/success",
+  "/api/health",
 ] as const;
 
 export function decideEntryRedirect(input: {
