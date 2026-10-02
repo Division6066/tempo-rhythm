@@ -48,14 +48,16 @@ Say so out loud in your PR rather than quietly building the wrong thing.
 
 - Branch **FROM `integration`**. Never from `master`.
 - Open your pull request **against `integration`**, not `master`.
-- You **may merge into `integration`** only under rule 1.4 (Amit, 2 Oct 2026).
-  Auto-merge is OFF until the merge-gate proof (D4) passes. Until then a PR
-  merges into `integration` only when ALL of these are true:
-  1. all required checks are green,
-  2. Greptile passes,
+- **Agents never merge.** The orchestrator merges into `integration` (squash),
+  after the PR is open, only when ALL of these are true (Amit's merge flow,
+  2 Oct 2026 21:46):
+  1. all required CI checks are green,
+  2. UX/UI tests are green where they apply. `E2E (Playwright)` is not a
+     required check yet, so the orchestrator confirms it is green by hand,
   3. there are no conflicts,
   4. every changed file is inside your ticket's MUTATES list (declared file scope).
-  The orchestrator or the tester worker clicks merge, then checks the preview.
+  Greptile reviews **after** the merge; it is not a merge condition. Auto-merge
+  stays OFF. After merging, the orchestrator checks the preview.
 - If any one of those is false: **STOP**, leave the PR open, and report the
   branch name, the PR number, and which condition failed.
 
