@@ -18,6 +18,7 @@ describe("default entry", () => {
       "/privacy",
       "/contact",
       "/success",
+      "/api/health",
     ]);
   });
 
