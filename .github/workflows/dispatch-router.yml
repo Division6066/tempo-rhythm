@@ -113,7 +113,7 @@ jobs:
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
           fi
           gh issue edit "$ISSUE" -R "$REPO" --add-label "dispatched:$lane"
-          gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: lane **$lane** because $why. Running in this lane: $((running+1))/$MAX_PER_LANE. Limits: 30 min per job; Claude max 25 turns."
+          gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: lane **$lane** because $why. Running in this lane: $((running+1))/$MAX_PER_LANE. Limits: 30 min per job; Claude max 40 turns."
           echo "lane=$lane" >> "$GITHUB_OUTPUT"
 
   claude:
@@ -133,6 +133,8 @@ jobs:
         with:
           fetch-depth: 1
           ref: integration
+      - name: Set up Bun (the ticket's DONE commands use bun/bunx)
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - name: Run Claude Code on the ticket
         uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1
         with:
@@ -142,7 +144,11 @@ jobs:
             Implement GitHub issue #${{ github.event.issue.number }} in ${{ github.repository }}. Follow AGENTS.md.
             Branch from integration, stay inside the ticket's MUTATES list (or SCOPE on older tickets),
             and open a PR into integration whose body contains "Closes #${{ github.event.issue.number }}".
-          claude_args: "--model claude-sonnet-5 --max-turns 25"
+          # Automation mode only gets the base GitHub tools; it needs git, gh pr and bun to branch,
+          # run the ticket's checks and open the PR.
+          claude_args: >-
+            --model claude-sonnet-5 --max-turns 40
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(bun:*),Bash(bunx:*),Bash(rg:*)"
       - name: Free the lane slot if the start failed
         if: failure()
         env:
