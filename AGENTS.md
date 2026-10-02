@@ -107,7 +107,7 @@ Multiple agents run in parallel on this repo. Expect collisions.
 - If your work collides with another branch, that is **expected** and is **not yours to solve**.
 - **Never** rebase or force-push to resolve someone else's work away.
 
-Each agent lands its own work on `integration` under the three conditions in
+Each agent lands its own work on `integration` under the four rule 1.4 conditions in
 section 1. If your merge would conflict, stop and report — do not resolve
 another agent's work away.
 

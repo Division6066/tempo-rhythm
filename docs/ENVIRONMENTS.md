@@ -2,6 +2,8 @@
 
 This document defines the four-mode environment model for Tempo Flow. Every agent, contributor, and tool that touches an env var, Convex deployment, or Vercel project must read this first. Where this file and any other doc disagree, this file wins. See also HARD_RULES §13.
 
+> **Out of date in parts (2 Oct 2026).** Since 2 Oct 04:50 IDT the Vercel Preview build of `integration` is live at https://preview.tempoflow.dev and uses the test Convex deployment `ceaseless-dog-617`. Lines below that say preview is "disabled this weekend" or "not yet provisioned" are older text marked *(out of date — see #435)*. The full rewrite of this file is tracked in #435.
+
 ---
 
 ## The four modes
@@ -10,7 +12,7 @@ This document defines the four-mode environment model for Tempo Flow. Every agen
 |---|---|---|---|---|---|
 | **Dev** | Coding, immediate local testing | `dev:<your-slug>` (auto via `bun x convex dev`) | N/A (`next dev` locally) | `.env.local` (git-ignored) | May break at any time. Not a QA surface. |
 | **Test** | Prove behavior | Dev deployment | Local `next build` + CI | `.env.local` + CI env | CI green + local smoke pass. Not a shareable URL. |
-| **Preview** | Branch / PR validation | `preview:<slug>` (target state — not yet provisioned) | Preview URL from PR (**disabled this weekend**) | Vercel env table (preview scope) | Agents MUST NOT treat preview as shipped. |
+| **Preview** | Branch / PR validation | `preview:<slug>` (target state — not yet provisioned) | Preview URL from PR (**disabled this weekend**) *(out of date — see #435)* | Vercel env table (preview scope) | Agents MUST NOT treat preview as shipped. |
 | **Deployment** | Promoted stable surface | `prod:<slug>` | Production domain | Vercel env table (production scope) + Convex dashboard env | Only code that passed preview + explicit human promote. |
 
 ---
@@ -18,7 +20,7 @@ This document defines the four-mode environment model for Tempo Flow. Every agen
 ## Convex: deployments
 
 - **`dev`** — current registry candidate: `dev:tremendous-bass-443` (`https://tremendous-bass-443.convex.cloud`). Every local machine can also get its own `dev:*` slug via `bun x convex dev`.
-- **`preview`** — [placeholder — not yet provisioned]. Documented here as the target model. Provisioning is a `human-amit` / `twin` action: Convex dashboard → Project Settings → Deployments → Add preview deployment. Until then, PRs run against the author's `dev` deployment.
+- **`preview`** — [placeholder — not yet provisioned] *(out of date — see #435)*. Documented here as the target model. Provisioning is a `human-amit` / `twin` action: Convex dashboard → Project Settings → Deployments → Add preview deployment. Until then, PRs run against the author's `dev` deployment.
 - **`staging`** — current registry candidate: `staging:ceaseless-dog-617` (`https://ceaseless-dog-617.convex.cloud`).
 - **`prod`** — current production deployment: `prod:precious-wildcat-890` (`https://precious-wildcat-890.eu-west-1.convex.cloud`).
 
@@ -37,7 +39,7 @@ Known local CLI state on 2026-06-02:
 
 ## Vercel: production domain only this weekend
 
-Preview builds are explicitly disabled for the weekend. To disable via the Vercel dashboard [human-amit action]:
+*(Out of date — see #435: preview builds of `integration` are live.)* Preview builds are explicitly disabled for the weekend. To disable via the Vercel dashboard [human-amit action]:
 
 1. Open Vercel → Project `tempo-rhythm-web` → Settings → Git.
 2. Set "Ignored Build Step" to: `if [ "$VERCEL_GIT_COMMIT_REF" = "master" ]; then exit 1; else exit 0; fi`
@@ -86,8 +88,8 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 
 ## What is NOT decided yet
 
-- **Preview Convex provisioned.** The `preview:*` deployment is planned but not provisioned. Do not reference preview Convex URLs in any config.
-- **Vercel preview re-enablement plan.** Previews are disabled this weekend. When re-enabled, this file must be updated with the actual scope of preview secrets and the confirmation step.
+- **Preview Convex provisioned.** The `preview:*` deployment is planned but not provisioned. Do not reference preview Convex URLs in any config. *(Out of date — see #435.)*
+- **Vercel preview re-enablement plan.** *(Out of date — see #435: re-enabled 2 Oct.)* Previews are disabled this weekend. When re-enabled, this file must be updated with the actual scope of preview secrets and the confirmation step.
 - **Convex local dev attachment.** Choose existing `dev:tremendous-bass-443` vs a new personal `dev:*` deployment before running an interactive `bun x convex dev` configuration.
 - **EAS project identity.** Resolved on 2026-06-04: `apps/mobile/app.json` points at the accessible Expo/EAS project `@amitlevin/tempi` with project ID `90dfac90-0baa-461b-946c-351d2306e607`. The `tempi` slug is the existing Tempo Rhythm Expo project name; app display name, bundle identifier, Android package, and URL scheme remain Tempo Rhythm / `com.temporhythm.app` / `tempo-rhythm`.
 
