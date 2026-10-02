@@ -1,0 +1,25 @@
+{
+  "strictness": 2,
+  "commentTypes": [
+    "logic",
+    "syntax",
+    "style"
+  ],
+  "triggerOnUpdates": true,
+  "statusCheck": true,
+  "includeConfidenceScore": true,
+  "ignorePatterns": "bun.lock\nbun.lockb\npnpm-lock.yaml\npackage-lock.json\nyarn.lock\nskills-lock.json\n**/node_modules/**\n**/.next/**\n**/dist/**\n**/build/**\n**/out/**\n**/coverage/**\n**/.turbo/**\n**/.vercel/**\n**/convex/_generated/**\n**/*.generated.*\n**/*.min.js\n**/next-env.d.ts",
+  "customContext": {
+    "rules": [
+      {
+        "rule": "No email+password sign-in anywhere; sign-in is magic link only."
+      },
+      {
+        "rule": "No secret values in code, tests, logs or docs."
+      },
+      {
+        "rule": "Changes must stay inside the ticket's MUTATES list."
+      }
+    ]
+  }
+}
