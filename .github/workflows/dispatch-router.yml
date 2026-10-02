@@ -11,15 +11,20 @@
 #               .github/**, docs/**, *.md                       -> codex
 #   3. No match -> no dispatch; the router comments asking for an area: label.
 #
-# Capacity: max 2 running tickets per lane per repo. "Running" = open issue labeled
+# Guards: the person who applied `ready` must have write/maintain/admin on the repo (triage is not
+# enough), and nothing dispatches on Friday or Saturday (Asia/Jerusalem), per the cloud-agent policy.
+# Capacity: max 2 running tickets per lane per repo (claude, cursor). "Running" = open issue labeled
 # dispatched:<lane> with no linked merged PR. Over capacity -> label queued:<lane>, no run.
+# If a lane job fails, it removes dispatched:<lane> so a failed start never holds a slot.
+# Codex has no automatic start, so it gets handoff:codex (not counted as running).
 # Output: label dispatched:<lane> + a comment with the lane and why.
 #
 # Lane triggers (see PHASE-B-REPORT Addendum for doc links):
 #   claude - runs anthropics/claude-code-action in this job with a `prompt` (automation mode).
 #            A bot-posted "@claude" comment would be ignored (claude.yml skips bots), so no comment trigger.
 #            Needs secret CLAUDE_CODE_OAUTH_TOKEN. The action re-checks the labeler has write access.
-#   cursor - Cursor Cloud Agents API POST https://api.cursor.com/v1/agents. Needs secret CURSOR_API_KEY.
+#   cursor - Cursor Cloud Agents API POST https://api.cursor.com/v1/agents. Needs secret CURSOR_API_KEY
+#            and repo variable CURSOR_MODEL_ID (explicit model pin required by policy; no default model).
 #   codex  - no documented way for a workflow/bot to start Codex cloud on an issue; the router only
 #            labels + comments and a maintainer writes "@codex ..." (Codex GitHub app, ChatGPT plan).
 # Security: issue title/body are never interpolated into shell; they go through env + jq only.
@@ -52,9 +57,19 @@ jobs:
           ISSUE: ${{ github.event.issue.number }}
           LABELS_JSON: ${{ toJSON(github.event.issue.labels.*.name) }}
           BODY: ${{ github.event.issue.body }}
+          SENDER: ${{ github.event.sender.login }}
           MAX_PER_LANE: "2"
         run: |
           set -euo pipefail
+          perm=$(gh api "repos/$REPO/collaborators/$SENDER/permission" --jq .permission 2>/dev/null || echo none)
+          case "$perm" in admin|maintain|write) ;; *)
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: \`ready\` was applied by someone without write access ($perm). Not dispatched."
+            echo "lane=" >> "$GITHUB_OUTPUT"; exit 0;; esac
+          dow=$(TZ=Asia/Jerusalem date +%u)
+          if [ "$dow" = 5 ] || [ "$dow" = 6 ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: no agent runs on Friday or Saturday (Asia/Jerusalem). Re-apply \`ready\` on Sunday."
+            echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           has() { printf '%s' "$LABELS_JSON" | jq -e --arg l "$1" 'index($l) != null' >/dev/null; }
           lane=""; why=""
           for l in area:ui area:frontend; do has "$l" && { lane=cursor; why="label $l"; break; }; done
@@ -71,6 +86,13 @@ jobs:
           if [ -z "$lane" ]; then
             gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: no lane matched. Add one area: label (area:ui, area:frontend, area:convex, area:backend, area:auth, area:tests, area:ci, area:docs, area:refactor) or list MUTATES paths, then re-apply \`ready\`."
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          if [ "$lane" = codex ]; then
+            gh label create "handoff:codex" -R "$REPO" --color BFD4F2 --force >/dev/null
+            gh issue edit "$ISSUE" -R "$REPO" --add-label "handoff:codex"
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: lane **codex** because $why. Not started automatically; see the next comment."
+            echo "lane=codex" >> "$GITHUB_OUTPUT"; exit 0
           fi
 
           # Capacity: open issues with dispatched:<lane> and no linked merged PR.
@@ -115,8 +137,18 @@ jobs:
           prompt: |
             Implement GitHub issue #${{ github.event.issue.number }} in ${{ github.repository }}. Follow AGENTS.md.
             Branch from integration, stay inside the ticket's MUTATES list (or SCOPE on older tickets),
-            and open a PR into integration that links the issue.
+            and open a PR into integration whose body contains "Closes #${{ github.event.issue.number }}".
           claude_args: "--model claude-sonnet-5 --max-turns 25"
+      - name: Free the lane slot if the start failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          LANE: claude
+        run: |
+          gh issue edit "$ISSUE" -R "$REPO" --remove-label "dispatched:$LANE" || true
+          gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: $LANE run failed; slot freed. See the Actions run log."
 
   cursor:
     needs: route
@@ -133,21 +165,33 @@ jobs:
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
           TITLE: ${{ github.event.issue.title }}
+          CURSOR_MODEL_ID: ${{ vars.CURSOR_MODEL_ID }}
         run: |
           set -euo pipefail
-          if [ -z "${CURSOR_API_KEY:-}" ]; then
-            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: cursor lane needs the CURSOR_API_KEY secret; not started."
+          if [ -z "${CURSOR_API_KEY:-}" ] || [ -z "${CURSOR_MODEL_ID:-}" ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: cursor lane needs the CURSOR_API_KEY secret and the CURSOR_MODEL_ID variable (explicit model pin); not started."
             exit 1
           fi
-          body=$(jq -n --arg repo "https://github.com/$REPO" --arg n "$ISSUE" --arg t "$TITLE" '{
+          body=$(jq -n --arg repo "https://github.com/$REPO" --arg n "$ISSUE" --arg t "$TITLE" --arg model "$CURSOR_MODEL_ID" '{
             name: ("Issue #" + $n + ": " + $t)[0:100],
-            prompt: {text: ("Implement GitHub issue #" + $n + " (" + $repo + "/issues/" + $n + "). Follow AGENTS.md. Stay inside the ticket MUTATES list (or SCOPE on older tickets). Open a PR into integration that links the issue.")},
+            prompt: {text: ("Implement GitHub issue #" + $n + " (" + $repo + "/issues/" + $n + "). Follow AGENTS.md. Stay inside the ticket MUTATES list (or SCOPE on older tickets). Open a PR into integration whose body contains Closes #" + $n + ".")},
+            model: {id: $model},
             repos: [{url: $repo, startingRef: "integration"}],
             autoCreatePR: true}')
           resp=$(curl -sS --fail-with-body -u "$CURSOR_API_KEY:" -H 'Content-Type: application/json' \
             -X POST https://api.cursor.com/v1/agents --data "$body")
           agent=$(printf '%s' "$resp" | jq -r '.agent.id // .id // "unknown"')
           gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: Cursor cloud agent started (id \`$agent\`)."
+      - name: Free the lane slot if the start failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          LANE: cursor
+        run: |
+          gh issue edit "$ISSUE" -R "$REPO" --remove-label "dispatched:$LANE" || true
+          gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: $LANE run failed; slot freed. See the Actions run log."
 
   codex:
     needs: route
