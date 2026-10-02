@@ -18,6 +18,13 @@ section here. Add the entry in the same PR that adds the dependency.
 
 ---
 
+### @auth/core
+
+- Version: 0.37.4
+- License: ISC
+- Source: https://github.com/nextauthjs/next-auth
+- Used by: package.json (convex/auth.ts Resend magic-link provider)
+
 ### @convex-dev/auth
 
 - Version: 0.0.91
