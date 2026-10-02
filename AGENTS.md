@@ -71,6 +71,9 @@ requested. Do not try to route around it.
 - Touch **only** the files your task names. A stated file scope is a hard boundary.
 - If you believe you must go outside that scope: **stop and say so.** Do not do it.
 - Never modify `.github/workflows/**`, branch protection, repository settings, or billing.
+  - Exception: Weekend agent runs allowed by Amit 2026-10-02; config-lane PRs may modify .github/workflows
+- The Grok 4.5/4.6 model pin applies to Cursor (Cloud Agents and Automations) only. The Claude lane uses a
+  mid-tier code model (claude-sonnet-5), which is on Amit's mid-tier list (2026-10-02).
 - Never add a dependency that is not already in `bun.lock` without flagging it explicitly.
 - Run `graphify affected "<thing you're changing>"` before a non-trivial edit.
   If the blast radius surprises you, stop and report it.

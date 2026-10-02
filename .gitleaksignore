@@ -1,0 +1,4 @@
+# False positive, not a secret: commit a4c9aea had `curl -u "$CURSOR_API_KEY:"` (an Actions secret
+# reference with an empty password) in the dispatch router; later commits pass the key via curl -K.
+# Exactly one fingerprint; every other finding still fails the scan.
+a4c9aea180e5eee81ab02d64fdbbe44b561140db:.github/workflows/dispatch-router.yml:curl-auth-user:147
