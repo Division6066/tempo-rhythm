@@ -162,9 +162,30 @@ jobs:
             ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::trusted ref is not allowed"; exit 1 ;;
           esac
           git fetch --depth=1 origin "$TRUSTED_REF"
-          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
-          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
-          chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
+          # Install as root and drop the write bit. A scratch-file symlink must
+          # not be able to replace these, and the model must not be able to
+          # write over them either. rm removes a symlink; it does not follow it.
+          sudo -n mkdir -p /usr/local/bin /usr/local/lib
+          for tool in tempo-safe-git tempo-safe-bun; do
+            sudo -n rm -f "/usr/local/bin/${tool}"
+            git show "origin/${TRUSTED_REF}:.github/scripts/${tool}" | sudo -n tee "/usr/local/bin/${tool}" >/dev/null
+            sudo -n chown root:root "/usr/local/bin/${tool}"
+            sudo -n chmod 0555 "/usr/local/bin/${tool}"
+            sudo -n chattr +i "/usr/local/bin/${tool}" || true
+          done
+          case "$REPO" in
+            [A-Za-z0-9._-]*/[A-Za-z0-9._-]*) ;;
+            *) echo "::error::repository name is not allowed"; exit 1 ;;
+          esac
+          printf '%s\n' "https://github.com/${REPO}.git" | sudo -n tee /usr/local/lib/tempo-git-origin >/dev/null
+          header=$(git config --local --get http.extraheader || true)
+          case "$header" in
+            *'['*|*']'*) echo "::error::http.extraheader is not a single safe line"; exit 1 ;;
+          esac
+          printf '%s' "$header" | sudo -n tee /usr/local/lib/tempo-git-extraheader >/dev/null
+          sudo -n chown root:root /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chattr +i /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader || true
           BRANCH="claude/issue-${ISSUE}"
           git fetch --depth=1 origin "$BRANCH" || true
           if git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
@@ -173,7 +194,9 @@ jobs:
             git checkout -b "$BRANCH"
           fi
           # Write after checkout. An older branch can replace the tree, and
-          # its .gitignore may not list this file.
+          # its .gitignore may not list this file. rm -f drops a symlink so
+          # the redirect cannot follow it into /usr/local/bin.
+          rm -f .tempo-issue.md
           gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
       - name: Run Claude Code on the ticket
         id: claude_code
@@ -213,6 +236,8 @@ jobs:
         run: |
           set -euo pipefail
           git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
+          # Rewrite .git/config through the wrapper before any later git call.
+          /usr/local/bin/tempo-safe-git status >/dev/null
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
           esac
@@ -228,7 +253,7 @@ jobs:
             gh issue edit "$ISSUE" -R "$REPO" --remove-label "dispatched:claude" || true
             exit 0
           fi
-          if ! git push -u origin "$BRANCH"; then
+          if ! /usr/local/bin/tempo-safe-git push; then
             gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: push of \`$BRANCH\` failed. Refusing to force-push. No pull request opened."
             gh issue edit "$ISSUE" -R "$REPO" --remove-label "dispatched:claude" || true
             exit 1

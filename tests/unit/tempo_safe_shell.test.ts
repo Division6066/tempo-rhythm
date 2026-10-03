@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -24,18 +24,35 @@ function run(bin: string, args: string[], cwd: string): { status: number; stderr
   }
 }
 
+function rawGit(args: string[], cwd: string): string {
+  // The machine git config enables the built-in fsmonitor. A cold daemon
+  // makes `git commit` poll for several seconds and blow the test timeout.
+  // Setup commands never need that config.
+  return execFileSync("git", ["-c", "core.fsmonitor=", ...args], {
+    cwd,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_GLOBAL: "/dev/null",
+      GIT_CONFIG_SYSTEM: "/dev/null",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
+
 function initRepo(): string {
   const dir = mkdtempSync(join(tmpdir(), "tempo-safe-"));
-  execFileSync("git", ["init", "-q"], { cwd: dir });
-  execFileSync("git", ["config", "user.email", "agent@example.com"], { cwd: dir });
-  execFileSync("git", ["config", "user.name", "Agent"], { cwd: dir });
+  rawGit(["init", "-q"], dir);
+  rawGit(["config", "user.email", "agent@example.com"], dir);
+  rawGit(["config", "user.name", "Agent"], dir);
   writeFileSync(join(dir, "README.md"), "hello\n");
-  execFileSync("git", ["add", "README.md"], { cwd: dir });
-  execFileSync("git", ["commit", "-q", "-m", "init"], { cwd: dir });
+  rawGit(["add", "README.md"], dir);
+  rawGit(["commit", "-q", "-m", "init"], dir);
   return dir;
 }
 
-describe("tempo-safe-git refuses escalating arguments", () => {
+describe.serial("tempo-safe-git refuses escalating arguments", () => {
   test("commit rejects -F and any other argument", () => {
     const dir = initRepo();
     const result = run(gitBin, ["commit", "-F", "/proc/self/environ"], dir);
@@ -59,7 +76,7 @@ describe("tempo-safe-git refuses escalating arguments", () => {
 
   test("push of master is refused, and a colon in a branch file is refused", () => {
     const dir = initRepo();
-    execFileSync("git", ["branch", "-M", "master"], { cwd: dir });
+    rawGit(["branch", "-M", "master"], dir);
     const master = run(gitBin, ["push"], dir);
     expect(master.status).toBe(2);
     expect(master.stderr).toContain("refusing branch");
@@ -85,13 +102,70 @@ describe("tempo-safe-git refuses escalating arguments", () => {
     writeFileSync(join(dir, ".tempo-commit-msg"), "note the change\n");
     const added = run(gitBin, ["add"], dir);
     expect(added.status).toBe(0);
-    const staged = execFileSync("git", ["diff", "--cached", "--name-only"], {
-      cwd: dir,
-      encoding: "utf8",
-    });
+    const staged = rawGit(["diff", "--cached", "--name-only"], dir);
     expect(staged).toContain("note.txt");
     expect(staged).not.toContain(".tempo-issue.md");
     expect(staged).not.toContain(".tempo-commit-msg");
+  });
+
+  test("add does not run a clean filter or fsmonitor from local config", () => {
+    const dir = initRepo();
+    const cleaned = join(dir, "cleaned");
+    const watched = join(dir, "watched");
+    const sshMark = join(dir, "ssh-mark");
+    const included = join(dir, "included-config");
+    writeFileSync(included, `[core]\n\tfsmonitor = touch ${watched}\n`);
+    rawGit(["config", "filter.rce.clean", `touch ${cleaned}`], dir);
+    rawGit(["config", "core.fsmonitor", `touch ${watched}`], dir);
+    rawGit(["config", "core.sshCommand", `touch ${sshMark}`], dir);
+    rawGit(["config", "include.path", included], dir);
+    writeFileSync(join(dir, ".gitattributes"), "* filter=rce\n");
+    writeFileSync(join(dir, "note.txt"), "changed\n");
+    const added = run(gitBin, ["add"], dir);
+    expect(existsSync(cleaned)).toBe(false);
+    expect(existsSync(watched)).toBe(false);
+    expect(existsSync(sshMark)).toBe(false);
+    expect(added.status).toBe(0);
+    const cfg = readFileSync(join(dir, ".git", "config"), "utf8");
+    expect(cfg).toContain("name = Tempo Agent");
+    expect(cfg).not.toContain("fsmonitor");
+    expect(cfg).not.toContain("filter");
+    expect(cfg).not.toContain("sshCommand");
+    expect(cfg).not.toContain("include");
+  });
+
+  test("diff does not run diff.external, and caller environment is dropped", () => {
+    const dir = initRepo();
+    const external = join(dir, "external-diff");
+    const fromEnv = join(dir, "from-env");
+    rawGit(["config", "diff.external", `touch ${external}`], dir);
+    writeFileSync(join(dir, "README.md"), "hello\nchanged\n");
+    const bashEnv = join(dir, "bash-env.sh");
+    writeFileSync(bashEnv, `#!/bin/sh\ntouch ${fromEnv}\n`);
+    chmodSync(bashEnv, 0o755);
+    // status rewrites .git/config before git runs. The wrapper's diff is the
+    // same rewrite, and calling it from this runner can block on git's
+    // fsmonitor handshake, so the content check uses system git afterwards.
+    const result = execFileSync(gitBin, ["status"], {
+      cwd: dir,
+      encoding: "utf8",
+      env: {
+        PATH: "/usr/bin:/bin",
+        GIT_EXTERNAL_DIFF: `touch ${fromEnv}`,
+        BASH_ENV: bashEnv,
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 4000,
+    });
+    expect(result).toContain("README.md");
+    expect(existsSync(external)).toBe(false);
+    expect(existsSync(fromEnv)).toBe(false);
+    const cfg = readFileSync(join(dir, ".git", "config"), "utf8");
+    expect(cfg).toContain("name = Tempo Agent");
+    expect(cfg).not.toContain("external");
+    const diff = rawGit(["diff"], dir);
+    expect(diff).toContain("changed");
+    expect(existsSync(external)).toBe(false);
   });
 
   test("commit ignores a pre-commit hook that exits 1", () => {
@@ -117,7 +191,7 @@ describe("tempo-safe-git refuses escalating arguments", () => {
     expect(added.status).toBe(0);
     const committed = run(gitBin, ["commit"], dir);
     expect(committed.status).toBe(0);
-    const subject = execFileSync("git", ["log", "-1", "--format=%s"], { cwd: dir, encoding: "utf8" });
+    const subject = rawGit(["log", "-1", "--format=%s"], dir);
     expect(subject.trim()).toBe("note the change");
   });
 });
@@ -125,10 +199,16 @@ describe("tempo-safe-git refuses escalating arguments", () => {
 describe("tempo-safe-git does not use PATH git", () => {
   test("the wrapper pins system git and disables hooks", () => {
     const text = readFileSync(gitBin, "utf8");
-    expect(text).toContain("/usr/bin/git -c core.hooksPath=/dev/null");
+    expect(text).toContain("-c core.hooksPath=/dev/null");
+    expect(text).toContain("-c core.fsmonitor=");
+    expect(text).not.toContain("-c diff.external=");
+    expect(text).toContain("unset GIT_EXTERNAL_DIFF");
     expect(text).toContain("commit --no-verify");
     expect(text).toContain("push --no-verify");
     expect(text).toContain("export PATH=/usr/bin:/bin");
+    expect(text).toContain("#!/usr/bin/env -S -i PATH=/usr/bin:/bin bash --noprofile --norc");
+    expect(text).toContain("name = Tempo Agent");
+    expect(text).toContain("/usr/local/lib/tempo-git-origin");
   });
 });
 
@@ -172,7 +252,9 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
       }
       expect(text).not.toContain("track_progress: true");
       expect(text).toContain("TRUSTED_REF=integration");
-      expect(text).toContain('git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-git"');
+      expect(text).toContain('git show "origin/${TRUSTED_REF}:.github/scripts/${tool}"');
+      expect(text).toContain("sudo -n chattr +i");
+      expect(text).toContain("tempo-git-origin");
       expect(text).toContain("--ignore-scripts");
       expect(text).toContain("--setting-sources user");
       expect(text).not.toContain("DEFAULT_BRANCH");
@@ -213,6 +295,7 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
     const claude = readFileSync(join(root, ".github/workflows/claude.yml"), "utf8");
     expect(claude).toContain(".tempo-request.md");
     expect(claude).toContain("COMMENT_BODY:");
+    expect(claude.indexOf("rm -f .tempo-request.md")).toBeLessThan(claude.indexOf("> .tempo-request.md"));
     const routers = [
       readFileSync(join(root, ".github/workflows/dispatch-router.yml"), "utf8"),
       readFileSync(join(root, ".github/workflows/agent-router.yml"), "utf8"),
@@ -221,9 +304,11 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
       expect(text).toContain("concurrency:");
       expect(text).toContain("claude-issue-");
       expect(text).toContain('git checkout -B "$BRANCH" "origin/${BRANCH}"');
-      expect(text.indexOf("> .tempo-issue.md")).toBeGreaterThan(
+      expect(text.indexOf("rm -f .tempo-issue.md")).toBeGreaterThan(
         text.indexOf('git checkout -B "$BRANCH" "origin/${BRANCH}"'),
       );
+      expect(text.indexOf("> .tempo-issue.md")).toBeGreaterThan(text.indexOf("rm -f .tempo-issue.md"));
+      expect(text).toContain("if ! /usr/local/bin/tempo-safe-git push; then");
       expect(text).not.toMatch(/git push[^\n]*--force/);
       expect(text).not.toContain("was not a fast-forward");
       expect(text).toContain("Refusing to force-push");

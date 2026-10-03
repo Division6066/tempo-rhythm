@@ -66,6 +66,8 @@ jobs:
         run: bun install --frozen-lockfile --ignore-scripts
       - name: Install command wrappers from integration
         if: steps.gate.outputs.allowed == 'true'
+        env:
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
@@ -77,9 +79,30 @@ jobs:
             ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::trusted ref is not allowed"; exit 1 ;;
           esac
           git fetch --depth=1 origin "$TRUSTED_REF"
-          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
-          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
-          chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
+          # Install as root and drop the write bit. A scratch-file symlink must
+          # not be able to replace these, and the model must not be able to
+          # write over them either. rm removes a symlink; it does not follow it.
+          sudo -n mkdir -p /usr/local/bin /usr/local/lib
+          for tool in tempo-safe-git tempo-safe-bun; do
+            sudo -n rm -f "/usr/local/bin/${tool}"
+            git show "origin/${TRUSTED_REF}:.github/scripts/${tool}" | sudo -n tee "/usr/local/bin/${tool}" >/dev/null
+            sudo -n chown root:root "/usr/local/bin/${tool}"
+            sudo -n chmod 0555 "/usr/local/bin/${tool}"
+            sudo -n chattr +i "/usr/local/bin/${tool}" || true
+          done
+          case "$REPO" in
+            [A-Za-z0-9._-]*/[A-Za-z0-9._-]*) ;;
+            *) echo "::error::repository name is not allowed"; exit 1 ;;
+          esac
+          printf '%s\n' "https://github.com/${REPO}.git" | sudo -n tee /usr/local/lib/tempo-git-origin >/dev/null
+          header=$(git config --local --get http.extraheader || true)
+          case "$header" in
+            *'['*|*']'*) echo "::error::http.extraheader is not a single safe line"; exit 1 ;;
+          esac
+          printf '%s' "$header" | sudo -n tee /usr/local/lib/tempo-git-extraheader >/dev/null
+          sudo -n chown root:root /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chattr +i /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader || true
       - name: Save the request for Claude
         if: steps.gate.outputs.allowed == 'true'
         env:
@@ -87,6 +110,9 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           set -euo pipefail
+          # rm -f drops a symlink so the redirect cannot follow it into
+          # /usr/local/bin/tempo-safe-git.
+          rm -f .tempo-request.md
           if [ -n "${COMMENT_BODY:-}" ]; then
             printf '%s\n' "$COMMENT_BODY" > .tempo-request.md
           else
