@@ -239,6 +239,19 @@ Fable, Astra, Opus, Soul or Sol models.
 
 ---
 
+### 8.8 Convex: generated files and the test deploy (Phase 05)
+
+- The data ticket **commits the regenerated `convex/_generated/` files** (`bunx convex codegen`)
+  in its PR, so the component PRs' typecheck sees the new functions. A data PR without them is
+  incomplete. Template: `.github/ISSUE_TEMPLATE/factory-data-ticket.md`.
+- `convex codegen` needs Convex auth (a login or a deploy key; it fails with 401 without one).
+  Agents never get a live key. If you have no Convex auth, say so in REPORT instead of
+  hand-editing `convex/_generated/`.
+- When a `convex/**` change merges into `integration`, `convex-deploy-test` deploys it to the
+  TEST deployment `ceaseless-dog-617` with secret `CONVEX_DEPLOY_KEY_TEST`. It has no pause check
+  (a merged data PR must reach test) and refuses any key that is not `dev:ceaseless-dog-617`.
+- Nobody but Amit deploys to the live deployment `precious-wildcat-890`.
+
 ## ⚠️ Appendix — known-broken instructions (verified 2026-07-14)
 
 These are real, and they will waste your time if you don't know about them.
