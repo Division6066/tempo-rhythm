@@ -21,6 +21,12 @@
       "sourceType": "github",
       "computedHash": "b3f2de87bbd2e0fe97792cc45ee33c9fa38b161980ccf05d7f6d7ee8952c2382"
     },
+    "codespring": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/codespring/SKILL.md",
+      "computedHash": "3e3c60f8c9e104917fbea344032ed90cfdb07d14229f34e591ac051fbf08527b"
+    },
     "convex": {
       "source": "get-convex/agent-skills",
       "sourceType": "github",
@@ -50,6 +56,90 @@
       "source": "get-convex/agent-skills",
       "sourceType": "github",
       "computedHash": "36d7a5c86a60a2eb75a5590e16ac5a92a93dc010681ad8c7dbc9d456dc426895"
+    },
+    "cs-build-audit-codebase": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-audit-codebase/SKILL.md",
+      "computedHash": "6da01236879dc0e3d52bfffca3eaf16d748723089a5b6622a56dd0ccde324b07"
+    },
+    "cs-build-create-prd": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-create-prd/SKILL.md",
+      "computedHash": "cadfcde65cf334022580b97022db175762dea51feb4bc74d3b7daa93e44350a5"
+    },
+    "cs-build-create-tasks": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-create-tasks/SKILL.md",
+      "computedHash": "39fbfddb7f126be3606e872930c98f4bbb3875d70fc7f9d751975426b7bdbfcb"
+    },
+    "cs-build-feature": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-feature/SKILL.md",
+      "computedHash": "7b1023451444bd03675b4e6cb2920036ad7efd47c9849308fcecf48abe184062"
+    },
+    "cs-build-getting-started": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-getting-started/SKILL.md",
+      "computedHash": "046f5ac170eee7875da7d3524c03275b94e5443a7ce1abb805af56e0da6d6bf9"
+    },
+    "cs-build-handoff": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-handoff/SKILL.md",
+      "computedHash": "08af4c2239da8a915bad1974fccf25786dc42a1f4fed881c459e4cdf02e2d1c2"
+    },
+    "cs-build-import-codebase": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-import-codebase/SKILL.md",
+      "computedHash": "22350a4403cd5f4bc31e3f1883e96e5168a00c93d5052f756fd4ec168f48bc7c"
+    },
+    "cs-build-plan-app": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-plan-app/SKILL.md",
+      "computedHash": "fefa818c1398e29fb90cd4301a88d9c93685377d9a9ef46e6e20a0eb11b0f5cd"
+    },
+    "cs-build-resync-codebase": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-resync-codebase/SKILL.md",
+      "computedHash": "a046a7b4e93e6c2e3874a78367ad26dd9c8958a43f2f6d892599f69a0748981b"
+    },
+    "cs-build-ui-mockup": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-build-ui-mockup/SKILL.md",
+      "computedHash": "982de23623d8f5d1ca3e14a61a23d8f1057ac2ea420ba2dff38410924e594dfe"
+    },
+    "cs-marketing-offer-creation": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-marketing-offer-creation/SKILL.md",
+      "computedHash": "3a017ab9a12c316a6cc47334c9bf662953739da6fdeb4e941c10af1001c15a30"
+    },
+    "cs-marketing-research": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-marketing-research/SKILL.md",
+      "computedHash": "1f38b0f00152a1b28efa12f9dcf6c8cf55691ea461b9442b442955eb0032ac83"
+    },
+    "cs-marketing-website": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-marketing-website/SKILL.md",
+      "computedHash": "8036ce2e26e0eabff624da0203145289d9ab6d9cbbafcfe29831b96b3207f714"
+    },
+    "cs-seo-website": {
+      "source": "CodeSpringApp/codespring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/cs-seo-website/SKILL.md",
+      "computedHash": "877e29ddc300462f2d069a5527cba1400a1cc0bc04fcfe906d6f194ccdcd99c9"
     },
     "deep-research": {
       "source": "199-biotechnologies/claude-deep-research-skill",
