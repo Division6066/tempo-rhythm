@@ -86,14 +86,91 @@ describe("buildReturningUserPatch", () => {
   });
 });
 
+const BETA_PLACEHOLDER = {
+  plan: "none",
+  billingCycle: "none",
+  status: "inactive",
+  source: "beta_signup",
+} as const;
+
 describe("shouldGrantSubscription", () => {
-  it("grants when there is no row, or the row is the pre-open-signup placeholder", () => {
+  it("grants a missing row and the exact pre-open-signup placeholder", () => {
     expect(shouldGrantSubscription(null)).toBe(true);
-    expect(shouldGrantSubscription({ plan: "none", status: "inactive" })).toBe(true);
-    expect(shouldGrantSubscription({ plan: "max", status: "inactive" })).toBe(true);
+    expect(shouldGrantSubscription(undefined)).toBe(true);
+    expect(shouldGrantSubscription(BETA_PLACEHOLDER)).toBe(true);
+  });
+
+  it("does not grant a paid row just because deletion marked it inactive", () => {
+    expect(
+      shouldGrantSubscription({
+        plan: "max",
+        billingCycle: "lifetime",
+        status: "inactive",
+        source: "open_signup_grant",
+      }),
+    ).toBe(false);
+  });
+
+  it("does not grant plan none unless every placeholder field matches", () => {
+    expect(shouldGrantSubscription({ plan: "none", status: "inactive" })).toBe(false);
+    expect(
+      shouldGrantSubscription({
+        plan: "none",
+        billingCycle: "none",
+        status: "inactive",
+        source: "revenuecat",
+      }),
+    ).toBe(false);
+    expect(
+      shouldGrantSubscription({
+        plan: "none",
+        billingCycle: "monthly",
+        status: "inactive",
+        source: "beta_signup",
+      }),
+    ).toBe(false);
+    expect(
+      shouldGrantSubscription({
+        plan: "none",
+        billingCycle: "none",
+        status: "cancelled",
+        source: "beta_signup",
+      }),
+    ).toBe(false);
+    expect(
+      shouldGrantSubscription({
+        plan: "none",
+        billingCycle: "none",
+        status: "active",
+        source: "beta_signup",
+      }),
+    ).toBe(false);
+    expect(
+      shouldGrantSubscription({
+        plan: "none",
+        billingCycle: "none",
+        status: "grace",
+        source: "beta_signup",
+      }),
+    ).toBe(false);
   });
 
   it("leaves a live paid subscription alone", () => {
-    expect(shouldGrantSubscription({ plan: "pro", status: "active" })).toBe(false);
+    expect(
+      shouldGrantSubscription({
+        plan: "pro",
+        billingCycle: "monthly",
+        status: "active",
+        source: "revenuecat",
+      }),
+    ).toBe(false);
+    expect(
+      shouldGrantSubscription({
+        plan: "max",
+        billingCycle: "lifetime",
+        status: "active",
+        source: "open_signup_grant",
+      }),
+    ).toBe(false);
   });
 });
