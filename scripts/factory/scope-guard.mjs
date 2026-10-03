@@ -15,14 +15,15 @@
 // g. The `test:overlap` label only skips the dispatcher's "no two open tickets share a folder"
 //    check (Phase 04). It changes nothing here.
 // Promotion PRs (integration -> master/main) pass.
-// Data folders per repo: scripts/factory/scope-guard.config.json.
+// Per repo (scripts/factory/scope-guard.config.json): dataFolders, and extraHotFiles (regex strings
+// added to the shared hot-file list, e.g. the backend's own config file).
 import { readFile } from "node:fs/promises";
 import { gh, ghAll, repoParts, summary, linkedTickets, isPromotion } from "./gh-api.mjs";
 
 export const HOT = [
   /(^|\/)package\.json$/,
   /(^|\/)(bun\.lockb?|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|npm-shrinkwrap\.json)$/,
-  /(^|\/)pnpm-workspace\.yaml$/, /^turbo\.json$/, /^vercel\.json$/, /(^|\/)convex\.json$/,
+  /(^|\/)pnpm-workspace\.yaml$/, /^turbo\.json$/, /^vercel\.json$/,
   /(^|\/)tsconfig[^/]*\.json$/, /(^|\/)(next|vite|tailwind|postcss|eslint|metro|babel)\.config\.[^/]+$/,
   /(^|\/)biome\.jsonc?$/, /(^|\/)app\.json$/, /(^|\/)\.env[^/]*$/,
   /(^|\/)routes?\.(t|j|mj)sx?$/,
@@ -70,6 +71,7 @@ export function judge({ pr, labels, ticket, fm, files, commitFiles, config }) {
   if (!["data", "component"].includes(type)) problems.push(`Ticket #${ticket} front-matter type must be data or component (got: ${type ?? "none"}).`);
   if (problems.length) return { problems, notes };
   const data = config.dataFolders || [];
+  const hot = [...HOT, ...(config.extraHotFiles || []).map((x) => new RegExp(x))];
   notes.push(`Ticket #${ticket} (${fm.ticket ?? "?"}), type ${type}, scope: ${scope.join(", ")}. Data folders: ${data.join(", ") || "none configured"}.`);
   if (labels.includes("test:overlap")) notes.push("test:overlap: only the dispatcher's folder-overlap check is skipped; rules c-f still apply.");
 
@@ -82,7 +84,7 @@ export function judge({ pr, labels, ticket, fm, files, commitFiles, config }) {
   const paths = [...new Set(files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean)))];
   for (const p of paths) {
     const t = touch.get(p) || { normal: true, fix: false }; // unknown origin -> strict rules (fail closed)
-    const isData = inFolders(p, data), isHot = HOT.some((r) => r.test(p)), inScope = inFolders(p, scope);
+    const isData = inFolders(p, data), isHot = hot.some((r) => r.test(p)), inScope = inFolders(p, scope);
     if (t.fix && isData) problems.push(`${p}: a Factory-Merge-Fix commit may not change the data folders (rule f).`);
     if (!t.normal) continue;
     if (type === "component") {
