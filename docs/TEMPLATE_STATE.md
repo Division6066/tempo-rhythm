@@ -4,8 +4,8 @@ Registry of committed vs live knowledge-graph artefacts for this repo.
 Update this file in the same PR that regenerates a graph.
 
 Generated: 2026-09-17  
-Graphify CLI: `graphifyy==0.9.40` (`graphify update . --no-cluster`)  
-Graphify snapshot: **9870 nodes**, **11882 edges** (undirected AST, no clustering, $0, no LLM)
+Graphify CLI: `graphifyy==0.9.74` (`graphify update . --no-cluster`)  
+Graphify snapshot: **9870 nodes**, **11882 edges** (committed 2026-09-17; not regenerated here)
 
 ## Knowledge graph
 
@@ -13,13 +13,15 @@ Graphify snapshot: **9870 nodes**, **11882 edges** (undirected AST, no clusterin
 |---|---|---|
 | Graphify artefact | `docs/graphs/tempo-rhythm.json` | generated |
 | Graphify live graph | `graphify-out/graph.json` | generated locally (gitignored) |
+| Graphify CI artifact | Actions artifact `graphify-graph` | rebuilt on every push to `integration` by `.github/workflows/graphify.yml` (`graphifyy==0.9.74`, kept 14 days, not committed) |
 | Understand Anything | `.ua/knowledge-graph.json` | not generated |
 | Skills | `.agents/skills/graphify`, `.agents/skills/understand-anything` | present |
 
 ## What each path is
 
 - **`docs/graphs/tempo-rhythm.json`** — durable, committed snapshot of the Graphify AST graph. Absolute machine paths (`/workspace/...`) are stripped to repo-relative paths. Rebuild after merge; a stale snapshot is a hint, not ground truth.
-- **`graphify-out/graph.json`** — live graph. Gitignored. Rebuild on demand (`~8s`, deterministic AST, no API key). This is the file `graphify query` / `explain` / `affected` read.
+- **`graphify-out/graph.json`** — live graph. Gitignored. Rebuild on demand (`~8s`, deterministic AST, no API key). This is the file `graphify query` / `explain` / `affected` read. CI uploads the same file as the Actions artifact `graphify-graph` (`.github/workflows/graphify.yml`, `graphifyy==0.9.74`, retention 14 days). It is not committed.
+- **Actions artifact `graphify-graph`** — the CI copy of `graphify-out/graph.json` from the latest push to `integration`.
 - **`.ua/knowledge-graph.json`** — Understand Anything semantic dashboard graph. **Not generated** in W0: the Cursor plugin `understand-anything` / `/understand` writes it. Do not invent this file.
 
 ## Regenerate on merge
@@ -29,7 +31,7 @@ After any merge that changes source layout (or the next W0 / S8 pass):
 1. From repo root, no LLM and no secrets:
 
    ```bash
-   pip install 'graphifyy==0.9.40'   # package name is graphifyy (double-y)
+   pip install 'graphifyy==0.9.74'   # package name is graphifyy (double-y)
    graphify update . --no-cluster
    ```
 
