@@ -11,7 +11,9 @@ export default defineConfig({
   },
   use: {
     baseURL: previewBaseURL ?? "http://localhost:3000",
-    trace: "retain-on-failure",
+    // Preview runs (e2e-preview check) keep screenshots and traces of every test as EVIDENCE.
+    trace: previewBaseURL ? "on" : "retain-on-failure",
+    screenshot: previewBaseURL ? "on" : "only-on-failure",
     ...(previewBaseURL && bypassSecret
       ? { extraHTTPHeaders: { "x-vercel-protection-bypass": bypassSecret } }
       : {}),
