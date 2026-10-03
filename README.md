@@ -148,3 +148,5 @@ Third-party plugins built against the public plugin API (published in Tempo 1.5)
 Business Source License 1.1. Converts to Apache License 2.0 four years after each versioned release. Full text in [`LICENSE`](./LICENSE).
 
 Copyright © 2026 Amit Levin.
+
+<!-- Factory check proof (Phase 03 Step 5): this line is a scratch change and will not be merged. -->
