@@ -29,15 +29,31 @@ test.describe("coach screen", () => {
     const assistantBubbles = page.locator('[data-role="assistant"]');
     const bubblesBefore = await assistantBubbles.count();
 
+    // The reply can resolve in well under a second, so a post-click
+    // `toBeDisabled()` check races isSending flipping back to false. Record
+    // the disabled transition with an observer attached before the click
+    // instead of polling for it afterwards.
+    await page.evaluate(() => {
+      (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending = false;
+      const input = document.querySelector('input[aria-label="Message"]');
+      if (input) {
+        new MutationObserver(() => {
+          if ((input as HTMLInputElement).disabled) {
+            (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending = true;
+          }
+        }).observe(input, { attributes: true, attributeFilter: ["disabled"] });
+      }
+    });
+
     await messageInput.fill(prompt);
     await page.getByRole("button", { name: "Send" }).click();
 
     await expect(page.getByText(prompt)).toBeVisible();
-    // The input is disabled purely by isSending (unlike the Send button, which
-    // also disables on empty text), so it's a race-free signal of "in flight".
-    await expect(messageInput).toBeDisabled();
 
     await expect(assistantBubbles).toHaveCount(bubblesBefore + 1, { timeout: 10_000 });
+    expect(
+      await page.evaluate(() => (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending),
+    ).toBe(true);
     await expect(page.getByRole("status", { name: "Coach is typing" })).toHaveCount(0);
     await expect(messageInput).toBeEnabled();
 
