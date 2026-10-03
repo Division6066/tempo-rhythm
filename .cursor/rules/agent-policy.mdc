@@ -25,7 +25,11 @@ HANDOFF: stop at anything that costs money, needs an identity, or signs an agree
 purchase, a store submission, a signing key, an OAuth screen. Prepare everything up to that
 point and hand back a one-tap action, naming exactly where the tap is.
 
-SCHEDULE: never run on Friday or Saturday, Asia/Jerusalem.
+SCHEDULE: building runs every day (ticket → agent → PR → checks + Bugbot →
+merge to `integration` → preview). On Friday and Saturday (Asia/Jerusalem)
+there is no configuration and no patching. Product builds still run. Agents
+still never merge. Only Amit promotes `integration` to live (`master`) and
+deploys.
 
 DONE: complete the named change, run only the named checks, report results and remaining
 UNKNOWNs, then stop. Do not look for more work.

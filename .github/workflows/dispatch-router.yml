@@ -12,8 +12,8 @@
 #   3. No match -> no dispatch; the router comments asking for an area: label.
 #
 # Guards: the person who applied `ready` must have write/maintain/admin on the repo (triage is not
-# enough), and nothing dispatches on Friday or Saturday (Asia/Jerusalem), per the cloud-agent policy,
-# except the weekend of 2026-10-02/03, which Amit allowed.
+# enough). Building dispatches every day. On Friday and Saturday (Asia/Jerusalem) configuration
+# and patching are not dispatched; product tickets still run.
 # Capacity: max 2 running tickets per lane per repo (claude, cursor). "Running" = open issue labeled
 # dispatched:<lane> with no linked merged PR. Over capacity -> label queued:<lane>, no run.
 # If a lane job fails, it removes dispatched:<lane> so a failed start never holds a slot.
@@ -67,12 +67,23 @@ jobs:
             gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: \`ready\` was applied by someone without write access ($perm). Not dispatched."
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0;; esac
           dow=$(TZ=Asia/Jerusalem date +%u)
-          # One-off weekend exception: Amit allowed agent runs on Fri 2026-10-02 and Sat 2026-10-03.
-          # Every other Friday/Saturday stays blocked.
-          case "$(TZ=Asia/Jerusalem date +%F)" in 2026-10-02|2026-10-03) dow=0 ;; esac
+          # Friday=5, Saturday=6 (Asia/Jerusalem). Product builds still run.
+          # Configuration and patching wait until Sunday.
           if [ "$dow" = 5 ] || [ "$dow" = 6 ]; then
-            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: no agent runs on Friday or Saturday (Asia/Jerusalem). Re-apply \`ready\` on Sunday."
-            echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
+            weekend_hold=0
+            if printf '%s' "$LABELS_JSON" | jq -e 'map(ascii_downcase) | any(. == "area:ci" or . == "config-lane" or . == "dependencies" or . == "patch")' >/dev/null; then
+              weekend_hold=1
+            fi
+            if [ "$weekend_hold" = 0 ]; then
+              paths=$(printf '%s\n' "${BODY:-}" | awk '/^[#* ]*(MUTATES|SCOPE)([*: ]|$)/{f=1} f&&/^[#]+ /&&!/(MUTATES|SCOPE)/{f=0} f' | grep -oE '[A-Za-z0-9_./*@-]+/[A-Za-z0-9_./*@-]*|[A-Za-z0-9_.*-]+\.[a-z]{1,5}' || true)
+              if printf '%s\n' "$paths" | grep -qiE '(^|/)\.github/|dependabot\.yml'; then
+                weekend_hold=1
+              fi
+            fi
+            if [ "$weekend_hold" = 1 ]; then
+              gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: Friday and Saturday (Asia/Jerusalem) run product builds only. Configuration and patching wait until Sunday. Re-apply \`ready\` then."
+              echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
+            fi
           fi
           has() { printf '%s' "$LABELS_JSON" | jq -e --arg l "$1" 'index($l) != null' >/dev/null; }
           lane=""; why=""
