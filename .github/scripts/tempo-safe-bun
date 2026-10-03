@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fixed bun commands for unattended agents.
+# `bun run <script>` executes whatever package.json currently says, and Write
+# can change that script before this binary is called. This wrapper therefore
+# never runs lint, test, or typecheck. CI runs those on the pull request.
+set -euo pipefail
+
+printf 'tempo-safe-bun: %s\n' "refusing '${1:-}'. CI runs lint, test, and typecheck." >&2
+exit 2

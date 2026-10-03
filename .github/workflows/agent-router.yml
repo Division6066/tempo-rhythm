@@ -53,25 +53,65 @@ jobs:
     outputs:
       agent: ${{ steps.pick.outputs.agent }}
       issue: ${{ steps.pick.outputs.issue }}
+      base: ${{ steps.pick.outputs.base }}
     steps:
       - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SENDER: ${{ github.event.sender.login }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_AGENT: ${{ inputs.agent }}
+          INPUT_ISSUE: ${{ inputs.issue }}
+          INPUT_BASE: ${{ inputs.base }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            AGENT="${{ inputs.agent }}"; ISSUE="${{ inputs.issue }}"
+          set -euo pipefail
+          # Label and workflow_dispatch both spend a write token. Triage and
+          # read collaborators must not be able to start an agent.
+          perm=$(gh api "repos/$REPO/collaborators/$SENDER/permission" --jq .permission 2>/dev/null || echo none)
+          case "$perm" in
+            admin|maintain|write) ;;
+            *)
+              echo "agent=" >> "$GITHUB_OUTPUT"
+              echo "issue=" >> "$GITHUB_OUTPUT"
+              echo "Sender ${SENDER:-unknown} has permission $perm; agent router requires write."
+              exit 0
+              ;;
+          esac
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            AGENT="$INPUT_AGENT"
+            ISSUE="$INPUT_ISSUE"
           else
-            LABEL="${{ github.event.label.name }}"
-            case "$LABEL" in
-              agent:claude|agent:cursor|agent:codex) AGENT="${LABEL#agent:}" ;;
+            case "$LABEL_NAME" in
+              agent:claude|agent:cursor|agent:codex) AGENT="${LABEL_NAME#agent:}" ;;
               *) echo "not an agent label, stopping"; exit 0 ;;
             esac
-            ISSUE="${{ github.event.issue.number }}"
+            ISSUE="$ISSUE_NUMBER"
           fi
-          BASE="${{ inputs.base || 'integration' }}"
-          case "$BASE" in
-            master|main) echo "::error::Agents branch from integration. master is yours."; exit 1 ;;
+          case "$AGENT" in
+            claude|cursor|codex) ;;
+            *) echo "::error::agent must be claude, cursor, or codex"; exit 1 ;;
           esac
-          echo "agent=$AGENT" >> "$GITHUB_OUTPUT"
-          echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
+          case "$ISSUE" in
+            ''|*[!0-9]*) echo "::error::issue must be digits"; exit 1 ;;
+          esac
+          BASE="${INPUT_BASE:-integration}"
+          case "$BASE" in
+            master|main|*/master|*/main)
+              echo "::error::Agents branch from integration. master is yours."
+              exit 1
+              ;;
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*)
+              echo "::error::base branch is not allowed"
+              exit 1
+              ;;
+          esac
+          # Values are charset-checked above, so a newline cannot inject another output.
+          printf 'agent=%s\n' "$AGENT" >> "$GITHUB_OUTPUT"
+          printf 'issue=%s\n' "$ISSUE" >> "$GITHUB_OUTPUT"
+          printf 'base=%s\n' "$BASE" >> "$GITHUB_OUTPUT"
 
   # ── CLAUDE: runs right here in Actions, on the Max subscription ──────────────
   claude:
@@ -79,61 +119,205 @@ jobs:
     if: needs.route.outputs.agent == 'claude'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    concurrency:
+      group: claude-issue-${{ needs.route.outputs.issue }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.base || 'integration' }}
+          ref: ${{ needs.route.outputs.base }}
           fetch-depth: 1
       - uses: actions/setup-node@v7
         with: { node-version: 24 }
       - uses: oven-sh/setup-bun@v2
         with: { bun-version: 1.3.9 }
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - name: Install command wrappers and create the agent branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ needs.route.outputs.issue }}
+        run: |
+          set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
+          case "$ISSUE" in
+            ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
+          esac
+          # Wrappers live on integration. master does not have them until Amit
+          # merges, and a workflow_dispatch base can rewrite the checkout scripts.
+          TRUSTED_REF=integration
+          case "$TRUSTED_REF" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::trusted ref is not allowed"; exit 1 ;;
+          esac
+          git fetch --depth=1 origin "$TRUSTED_REF"
+          # Install as root and drop the write bit. A scratch-file symlink must
+          # not be able to replace these, and the model must not be able to
+          # write over them either. rm removes a symlink; it does not follow it.
+          sudo -n mkdir -p /usr/local/bin /usr/local/lib
+          for tool in tempo-safe-git tempo-safe-bun; do
+            sudo -n rm -f "/usr/local/bin/${tool}"
+            git show "origin/${TRUSTED_REF}:.github/scripts/${tool}" | sudo -n tee "/usr/local/bin/${tool}" >/dev/null
+            sudo -n chown root:root "/usr/local/bin/${tool}"
+            sudo -n chmod 0555 "/usr/local/bin/${tool}"
+            sudo -n chattr +i "/usr/local/bin/${tool}" || true
+          done
+          case "$REPO" in
+            [A-Za-z0-9._-]*/[A-Za-z0-9._-]*) ;;
+            *) echo "::error::repository name is not allowed"; exit 1 ;;
+          esac
+          printf '%s\n' "https://github.com/${REPO}.git" | sudo -n tee /usr/local/lib/tempo-git-origin >/dev/null
+          # checkout@v6 keeps the token in an included file as a URL-scoped
+          # extraheader. A local get of the unscoped key misses it.
+          # --get-urlmatch follows that include. Do not print the value.
+          header=$(git config --get-urlmatch http.extraheader "https://github.com/${REPO}.git" || true)
+          case "$header" in
+            *'['*|*']'*|*$'\n'*) echo "::error::http.extraheader is not a single safe line"; exit 1 ;;
+          esac
+          if [ -z "$header" ]; then
+            echo "::error::checkout credential was not found"
+            exit 1
+          fi
+          printf '%s' "$header" | sudo -n tee /usr/local/lib/tempo-git-extraheader >/dev/null
+          sudo -n chown root:root /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin
+          # 0400 root: the model can Read a 0444 file. The workflow push step
+          # reads this with sudo after the model has exited. Do not print it.
+          sudo -n chmod 0400 /usr/local/lib/tempo-git-extraheader
+          sudo -n chattr +i /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader || true
+          unset header
+          BRANCH="claude/issue-${ISSUE}"
+          git fetch --depth=1 origin "$BRANCH" || true
+          if git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
+            git checkout -B "$BRANCH" "origin/${BRANCH}"
+          else
+            git checkout -b "$BRANCH"
+          fi
+          # Write after checkout. An older branch can replace the tree, and
+          # its .gitignore may not list this file. rm -f drops a symlink so
+          # the redirect cannot follow it into /usr/local/bin.
+          rm -f .tempo-issue.md
+          gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
+          # Checkout's includeIf file is still runner-readable. Lock it, then
+          # drop includeIf from .git/config before the model starts.
+          while read -r _key path; do
+            [ -n "${path:-}" ] || continue
+            # checkout@v6 also records /github/runner_temp/... for container
+            # jobs. That path is absent on the host runner. Skip it. An
+            # existing file outside the temp dirs still fails the step.
+            if [ ! -e "$path" ]; then
+              continue
+            fi
+            case "$path" in
+              "${RUNNER_TEMP:-/tmp}"/*|/home/runner/*|/tmp/*|/github/runner_temp/*) ;;
+              *) echo "::error::refusing to lock unexpected credential path"; exit 1 ;;
+            esac
+            if [ -f "$path" ] && [ ! -L "$path" ]; then
+              sudo -n chown root:root "$path"
+              sudo -n chmod 0400 "$path"
+              sudo -n chattr +i "$path" || true
+            fi
+          done < <(git config --local --get-regexp '^includeIf\.' || true)
+          /usr/local/bin/tempo-safe-git status >/dev/null
       - id: claude_code
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          base_branch: ${{ inputs.base || 'integration' }}
-          track_progress: true
+          base_branch: ${{ needs.route.outputs.base }}
+          # No track_progress: tag mode prepends Bash(git add:*), Bash(git commit:*),
+          # Bash(git rm:*), and a git-push helper. Those prefixes are unioned with
+          # claude_args, so the wrapper list would not replace them.
           additional_permissions: |
             actions: read
           prompt: |
-            Read issue #${{ needs.route.outputs.issue }} in this repository and implement the work it asks for.
-            Branch from `${{ inputs.base || 'integration' }}`, commit all changes, and push your work branch.
-            Do not open a pull request; a later workflow step will open the draft pull request.
+            The issue text is in `.tempo-issue.md`. Read that file and implement the work it asks for.
+            You are already on branch `claude/issue-${{ needs.route.outputs.issue }}`, created from `${{ needs.route.outputs.base }}`.
+            Do not push and do not open a pull request. A later step pushes this branch and opens the draft.
             Stay inside the file scope the issue declares. If the work needs a file outside that scope,
-            stop and explain it in the tracking comment instead of widening scope. Never touch master.
+            stop and explain it in the pull request instead of widening scope. Never touch master.
+            Do not run lint, test, or typecheck. CI runs those on the pull request.
+            To commit, write `.tempo-commit-msg`, then run
+            `/usr/local/bin/tempo-safe-git add` and `/usr/local/bin/tempo-safe-git commit`.
+            Do not run `git`, `bun`, or `bunx` directly.
           claude_args: |
             --max-turns 40
             --model claude-sonnet-5
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git:*),Bash(bun run lint:*),Bash(bun run test:*),Bash(bun run typecheck:*)"
+            --setting-sources user
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit)"
 
       - name: Open draft pull request
-        if: steps.claude_code.outputs.branch_name != ''
         env:
-          GH_TOKEN: "${{ secrets.DISPATCH_PAT }}"
-          BRANCH: "${{ steps.claude_code.outputs.branch_name }}"
-          BASE: "${{ inputs.base || 'integration' }}"
-          ISSUE: "${{ needs.route.outputs.issue }}"
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+          BASE: ${{ needs.route.outputs.base }}
+          ISSUE: ${{ needs.route.outputs.issue }}
+          REPO: ${{ github.repository }}
         run: |
+          set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
+          # Rewrite .git/config through the wrapper before any later git call.
+          /usr/local/bin/tempo-safe-git status >/dev/null
+          case "$ISSUE" in
+            ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
+          esac
+          case "$BASE" in
+            master|main|*/master|*/main|''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*)
+              echo "::error::base branch is not allowed"
+              exit 1
+              ;;
+          esac
+          BRANCH="claude/issue-${ISSUE}"
           if [ -z "$GH_TOKEN" ]; then
             echo "::error::DISPATCH_PAT is empty; cannot open draft pull request"
             exit 1
           fi
-
-          EXISTING_PR="$(gh pr list --repo "${{ github.repository }}" --head "$BRANCH" --base "$BASE" --state open --json url --jq '.[0].url')"
-          if [ -n "$EXISTING_PR" ]; then
+          head=$(git rev-parse --abbrev-ref HEAD)
+          ahead=$(git rev-list --count "${BASE}..HEAD" || echo 0)
+          if [ "$head" != "$BRANCH" ] || [ "$ahead" = "0" ]; then
+            echo "No commits on $BRANCH; not opening a pull request."
+            exit 0
+          fi
+          # Token stays in the environment of this one git process. It is not
+          # written to .git/config and it is not printed.
+          auth_push() {
+            local branch="$1"
+            local header
+            header=$(sudo -n cat /usr/local/lib/tempo-git-extraheader)
+            case "$header" in
+              ''|*'['*|*']'*|*$'\n'*)
+                unset header
+                echo "::error::checkout credential is not usable"
+                return 1
+                ;;
+            esac
+            if GIT_CONFIG_COUNT=1 \
+                GIT_CONFIG_KEY_0=http.extraheader \
+                GIT_CONFIG_VALUE_0="$header" \
+                /usr/bin/git \
+                  -c core.hooksPath=/dev/null \
+                  -c core.fsmonitor= \
+                  -c core.sshCommand= \
+                  push --no-verify -u origin "$branch"; then
+              unset header
+              return 0
+            fi
+            unset header
+            return 1
+          }
+          if ! auth_push "$BRANCH"; then
+            echo "::error::Push of $BRANCH failed. Refusing to force-push."
+            exit 1
+          fi
+          EXISTING_PR="$(gh pr list --repo "$REPO" --head "$BRANCH" --base "$BASE" --state open --json url --jq 'if length == 0 then "" else .[0].url // "" end')"
+          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
             echo "Existing pull request: $EXISTING_PR"
             exit 0
           fi
-
           BODY="Automated Claude implementation for issue #$ISSUE.
 
           Please review before marking ready.
 
           Closes #$ISSUE"
           gh pr create \
-            --repo "${{ github.repository }}" \
+            --repo "$REPO" \
             --head "$BRANCH" \
             --base "$BASE" \
             --draft \
@@ -152,9 +336,10 @@ jobs:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
           AGENT: ${{ needs.route.outputs.agent }}
           ISSUE: ${{ needs.route.outputs.issue }}
-          BASE: ${{ inputs.base || 'integration' }}
+          BASE: ${{ needs.route.outputs.base }}
+          REPO: ${{ github.repository }}
         run: |
-          gh issue comment "$ISSUE" --repo "${{ github.repository }}" --body "@$AGENT Please implement this issue.
+          gh issue comment "$ISSUE" --repo "$REPO" --body "@$AGENT Please implement this issue.
 
           Branch from \`$BASE\` and open a pull request back into \`$BASE\`. Stay inside the file scope
           this issue declares — if the work needs a file outside it, say so in the PR instead of widening
@@ -163,6 +348,9 @@ jobs:
       - name: Mark it dispatched
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+          AGENT: ${{ needs.route.outputs.agent }}
+          ISSUE: ${{ needs.route.outputs.issue }}
+          REPO: ${{ github.repository }}
         run: |
-          gh issue edit "${{ needs.route.outputs.issue }}" --repo "${{ github.repository }}" \
-            --add-label "dispatched:${{ needs.route.outputs.agent }}" || true
+          gh issue edit "$ISSUE" --repo "$REPO" \
+            --add-label "dispatched:${AGENT}" || true

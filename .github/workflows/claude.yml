@@ -29,27 +29,204 @@ jobs:
       actions: read        # lets Claude read CI results on the PR
 
     steps:
+      - name: Require write access
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SENDER: ${{ github.event.sender.login }}
+        run: |
+          set -euo pipefail
+          perm=$(gh api "repos/$REPO/collaborators/$SENDER/permission" --jq .permission 2>/dev/null || echo none)
+          case "$perm" in
+            admin|maintain|write)
+              echo "allowed=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "allowed=false" >> "$GITHUB_OUTPUT"
+              echo "Sender ${SENDER:-unknown} has permission $perm; @claude requires write."
+              ;;
+          esac
+
       - uses: actions/checkout@v6
+        if: steps.gate.outputs.allowed == 'true'
         with:
           fetch-depth: 1
 
       # --- the repo uses Bun 1.3.9, with Node 24 for the action runtime ---
       - uses: actions/setup-node@v7
+        if: steps.gate.outputs.allowed == 'true'
         with:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
+        if: steps.gate.outputs.allowed == 'true'
         with:
           bun-version: 1.3.9
-      - run: bun install --frozen-lockfile
+      - if: steps.gate.outputs.allowed == 'true'
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Install command wrappers from integration
+        if: steps.gate.outputs.allowed == 'true'
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
+          # pull_request_review_comment checks out the PR merge commit. A fork
+          # can replace .github/scripts. Install the blobs from integration,
+          # where this lane's workflows land. master does not have them yet.
+          TRUSTED_REF=integration
+          case "$TRUSTED_REF" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::trusted ref is not allowed"; exit 1 ;;
+          esac
+          git fetch --depth=1 origin "$TRUSTED_REF"
+          # Install as root and drop the write bit. A scratch-file symlink must
+          # not be able to replace these, and the model must not be able to
+          # write over them either. rm removes a symlink; it does not follow it.
+          sudo -n mkdir -p /usr/local/bin /usr/local/lib
+          for tool in tempo-safe-git tempo-safe-bun; do
+            sudo -n rm -f "/usr/local/bin/${tool}"
+            git show "origin/${TRUSTED_REF}:.github/scripts/${tool}" | sudo -n tee "/usr/local/bin/${tool}" >/dev/null
+            sudo -n chown root:root "/usr/local/bin/${tool}"
+            sudo -n chmod 0555 "/usr/local/bin/${tool}"
+            sudo -n chattr +i "/usr/local/bin/${tool}" || true
+          done
+          case "$REPO" in
+            [A-Za-z0-9._-]*/[A-Za-z0-9._-]*) ;;
+            *) echo "::error::repository name is not allowed"; exit 1 ;;
+          esac
+          printf '%s\n' "https://github.com/${REPO}.git" | sudo -n tee /usr/local/lib/tempo-git-origin >/dev/null
+          # checkout@v6 keeps the token in an included file as a URL-scoped
+          # extraheader. A local get of the unscoped key misses it.
+          # --get-urlmatch follows that include. Do not print the value.
+          header=$(git config --get-urlmatch http.extraheader "https://github.com/${REPO}.git" || true)
+          case "$header" in
+            *'['*|*']'*|*$'\n'*) echo "::error::http.extraheader is not a single safe line"; exit 1 ;;
+          esac
+          if [ -z "$header" ]; then
+            echo "::error::checkout credential was not found"
+            exit 1
+          fi
+          printf '%s' "$header" | sudo -n tee /usr/local/lib/tempo-git-extraheader >/dev/null
+          sudo -n chown root:root /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin
+          # 0400 root: the model can Read a 0444 file. The workflow push step
+          # reads this with sudo after the model has exited. Do not print it.
+          sudo -n chmod 0400 /usr/local/lib/tempo-git-extraheader
+          sudo -n chattr +i /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader || true
+          unset header
+          # Checkout's includeIf file is still runner-readable. Lock it, then
+          # drop includeIf from .git/config before the model starts.
+          while read -r _key path; do
+            [ -n "${path:-}" ] || continue
+            # checkout@v6 also records /github/runner_temp/... for container
+            # jobs. That path is absent on the host runner. Skip it. An
+            # existing file outside the temp dirs still fails the step.
+            if [ ! -e "$path" ]; then
+              continue
+            fi
+            case "$path" in
+              "${RUNNER_TEMP:-/tmp}"/*|/home/runner/*|/tmp/*|/github/runner_temp/*) ;;
+              *) echo "::error::refusing to lock unexpected credential path"; exit 1 ;;
+            esac
+            if [ -f "$path" ] && [ ! -L "$path" ]; then
+              sudo -n chown root:root "$path"
+              sudo -n chmod 0400 "$path"
+              sudo -n chattr +i "$path" || true
+            fi
+          done < <(git config --local --get-regexp '^includeIf\.' || true)
+          /usr/local/bin/tempo-safe-git status >/dev/null
+      - name: Save the request for Claude
+        if: steps.gate.outputs.allowed == 'true'
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          # rm -f drops a symlink so the redirect cannot follow it into
+          # /usr/local/bin/tempo-safe-git.
+          rm -f .tempo-request.md
+          if [ -n "${COMMENT_BODY:-}" ]; then
+            printf '%s\n' "$COMMENT_BODY" > .tempo-request.md
+          else
+            printf '%s\n' "${ISSUE_BODY:-}" > .tempo-request.md
+          fi
       # ----------------------------------------------------------------------
 
       - uses: anthropics/claude-code-action@v1
+        if: steps.gate.outputs.allowed == 'true'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # THE TRAP: the action rejects bot actors outright. If Zo / Hermes / Linear
           # ever comments "@claude" as an app, uncomment and name that bot login,
           # otherwise the run is refused with no useful error.
           # allowed_bots: "linear[bot],zo-agent[bot]"
+          # Exact wrapper commands only. A trailing :* still matches --force, --delete,
+          # HEAD:integration, and commit -F. The wrappers refuse extra arguments.
+          # Do not open a pull request from the model; the action's own GitHub token
+          # still comments. A write collaborator is required before this step runs.
+          prompt: |
+            The request is in `.tempo-request.md`. Read that file and do what it asks.
+            Use only `/usr/local/bin/tempo-safe-git`.
+            Do not run `git`, `bun`, or `bunx` directly.
+            Do not run lint, test, or typecheck. CI runs those on the pull request.
+            To name a branch, write one line starting with `claude/` to `.tempo-branch-name`,
+            then run `/usr/local/bin/tempo-safe-git branch-new`.
+            To commit, write `.tempo-commit-msg`, then run `add` and `commit` on that wrapper.
+            Do not push. A later workflow step publishes the current `claude/` branch.
+            Never push `master`, `main`, or `integration`.
           claude_args: |
             --max-turns 25
             --model claude-sonnet-5
+            --setting-sources user
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new)"
+      - name: Push the claude branch
+        if: steps.gate.outputs.allowed == 'true'
+        run: |
+          set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
+          /usr/local/bin/tempo-safe-git status >/dev/null
+          head=$(git rev-parse --abbrev-ref HEAD)
+          case "$head" in
+            claude/*) ;;
+            *)
+              echo "Nothing to push from ${head}."
+              exit 0
+              ;;
+          esac
+          case "$head" in
+            master|main|integration|''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*|HEAD)
+              echo "::error::refusing branch"
+              exit 1
+              ;;
+          esac
+          # Token stays in the environment of this one git process. It is not
+          # written to .git/config and it is not printed.
+          auth_push() {
+            local branch="$1"
+            local header
+            header=$(sudo -n cat /usr/local/lib/tempo-git-extraheader)
+            case "$header" in
+              ''|*'['*|*']'*|*$'\n'*)
+                unset header
+                echo "::error::checkout credential is not usable"
+                return 1
+                ;;
+            esac
+            if GIT_CONFIG_COUNT=1 \
+                GIT_CONFIG_KEY_0=http.extraheader \
+                GIT_CONFIG_VALUE_0="$header" \
+                /usr/bin/git \
+                  -c core.hooksPath=/dev/null \
+                  -c core.fsmonitor= \
+                  -c core.sshCommand= \
+                  push --no-verify -u origin "$branch"; then
+              unset header
+              return 0
+            fi
+            unset header
+            return 1
+          }
+          if ! auth_push "$head"; then
+            echo "::error::Push of $head failed. Refusing to force-push."
+            exit 1
+          fi
