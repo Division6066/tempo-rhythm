@@ -5,6 +5,9 @@ import { order } from "./merge-train.mjs";
 import { classify } from "./failures.mjs";
 import { labelsFor } from "./label-pr.mjs";
 import { agentBody } from "./cursor-lane.mjs";
+import { plan } from "./promote.mjs";
+import { validate } from "./validate-tickets.mjs";
+import { isTicketPath, MARKER } from "./tickets-lib.mjs";
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log(`ok ${n} - ${name}`); };
 const T = (number, ticket, batch, type, scope, labels = ["status:ready"], extra = {}) => ({ number, title: ticket, labels, fm: { ticket, batch, type, scope, ...extra } });
@@ -67,4 +70,39 @@ t("Cursor API body (v1)", () => {
   const r = agentBody({ prompt: "p", model: "", params: "", repoUrl: "u", ref: "x", prUrl: "https://github.com/o/r/pull/5", name: "n" });
   assert.equal(r.autoCreatePR, false); assert.equal(r.repos[0].prUrl, "https://github.com/o/r/pull/5"); assert.equal(r.model, undefined);
 });
+
+// Phase 06: promoter + ticket-writer check
+const TF = (id, type, scope, extra = "") => ({ path: `docs/tickets/DRY/${id}.md`, text: `---\nticket: ${id}\nbatch: DRY\ntype: ${type}\nlane: ${type === "data" ? "claude" : "auto"}\nscope:\n  - ${scope}\nhold: false\n${extra}---\n\nFOR: x\nGOAL: Goal of ${id}\n` });
+const BATCH9 = [TF("T-DRY-01", "data", "convex/"), ...Array.from({ length: 8 }, (_, i) => TF(`T-DRY-0${i + 2}`, "component", `apps/web/components/f${i + 2}/`))];
+t("ticket paths: batch files only, never _templates/README", () => {
+  assert.ok(isTicketPath("docs/tickets/B1/T-1.md"));
+  assert.ok(!isTicketPath("docs/tickets/_templates/component.md"));
+  assert.ok(!isTicketPath("docs/tickets/README.md"));
+  assert.ok(!isTicketPath("docs/tickets/B1/README.md"));
+});
+t("promoter: 9 creates with labels; invalid skipped", () => {
+  const bad = { path: "docs/tickets/DRY/bad.md", text: "no front matter" };
+  const r = plan({ files: [...BATCH9, bad], issues: [] });
+  assert.equal(r.actions.length, 9); assert.equal(r.skipped.length, 1);
+  assert.deepEqual(r.actions[0].labels, ["status:ready", "factory", "ticket:data", "batch:DRY", "lane:claude"]);
+  assert.deepEqual(r.actions[1].labels, ["status:ready", "factory", "ticket:component", "batch:DRY"]);
+  assert.equal(r.actions[1].title, "[T-DRY-02] Goal of T-DRY-02");
+  assert.ok(r.actions[1].body.endsWith(MARKER("docs/tickets/DRY/T-DRY-02.md") + "\n"));
+});
+t("promoter: existing marker -> no duplicate; status labels untouched; deleted -> paused:dependency", () => {
+  const first = plan({ files: BATCH9, issues: [] }).actions;
+  const issues = first.map((a, i) => ({ number: 100 + i, state: "open", title: a.title, body: a.body, labels: a.labels.filter((l) => l !== "status:ready").concat("status:in-pr") }));
+  assert.equal(plan({ files: BATCH9, issues }).actions.length, 0);
+  const r = plan({ files: BATCH9.slice(1), issues, deleted: [BATCH9[0].path] });
+  assert.deepEqual(r.actions, [{ op: "deleted", path: BATCH9[0].path, issue: 100 }]);
+});
+t("writer check: 9 = 1 data + 8 separate components, contract, only batch files", () => {
+  const ok = validate({ batch: "DRY", size: 9, hold: false, files: BATCH9, changed: [...BATCH9.map((f) => f.path), "docs/contracts/DRY.md"], contractExists: true });
+  assert.deepEqual(ok.problems, []);
+  const shared = [...BATCH9.slice(0, 8), TF("T-DRY-09", "component", "apps/web/components/f2/sub/")];
+  assert.ok(validate({ batch: "DRY", size: 9, hold: false, files: shared, contractExists: true }).problems.some((p) => p.includes("share scope")));
+  assert.ok(validate({ batch: "DRY", size: 9, hold: true, files: BATCH9, contractExists: false }).problems.length >= 9);
+  assert.ok(validate({ batch: "DRY", size: 9, hold: false, files: BATCH9, changed: ["package.json"], contractExists: true }).problems.some((p) => p.includes("outside the batch")));
+});
+
 console.log(`all ${n} passed`);

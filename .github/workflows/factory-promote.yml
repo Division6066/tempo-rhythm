@@ -1,0 +1,76 @@
+name: factory-promote
+
+# Phase 06 Step 6. The promoter: docs/tickets/<batch>/*.md on integration -> one GitHub issue per ticket file
+# (scripts/factory/promote.mjs). Create or update; never duplicate (hidden marker <!-- ticket-file: <path> -->);
+# a deleted file -> comment + paused:dependency, never closed.
+# NO pause check on purpose (plan Phase 06 Step 6): promoting is not building. Nothing is dispatched until the batch
+# is in FACTORY_ACTIVE_BATCHES (Phase 04).
+# Writes ONLY with the Factory App token (FACTORY_APP_ID / FACTORY_APP_PRIVATE_KEY). PARKED until the App exists:
+# without it the run prints the plan and fails if there is anything to write. dry_run=true writes nothing.
+
+on:
+  push:
+    branches: [integration]
+    paths: ["docs/tickets/**"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print what would be created/updated; write nothing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: factory-promote-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Deleted ticket files in this push
+        id: del
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          d=""
+          if [ "${{ github.event_name }}" = push ] && [ -n "$BEFORE" ] && ! [[ "$BEFORE" =~ ^0+$ ]]; then
+            d=$(git diff --name-only --diff-filter=D "$BEFORE" "$AFTER" -- docs/tickets/ || true)
+          fi
+          { echo "list<<EOF_DEL"; echo "$d"; echo "EOF_DEL"; } >> "$GITHUB_OUTPUT"
+      - name: Plan (dry run, read-only token)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DELETED: ${{ steps.del.outputs.list }}
+        run: node scripts/factory/promote.mjs --dry-run
+      - name: Factory App configured?
+        id: app
+        if: github.event_name == 'push' || inputs.dry_run == false
+        env:
+          APP_ID: ${{ secrets.FACTORY_APP_ID }}
+        run: |
+          if [ -n "$APP_ID" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"
+          else echo "ok=false" >> "$GITHUB_OUTPUT"; echo "::warning::PARKED: Factory App secrets missing; promote.mjs writes nothing without them."; fi
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: token
+        if: steps.app.outputs.ok == 'true'
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - name: Promote (Factory App token)
+        if: steps.app.outputs.ok == 'true' || steps.app.outputs.ok == 'false'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          DELETED: ${{ steps.del.outputs.list }}
+        run: node scripts/factory/promote.mjs
