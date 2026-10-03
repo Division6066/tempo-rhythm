@@ -258,6 +258,35 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  /**
+   * Leftover from #174 — bundle one habit with one task. New tables must
+   * stay on USER_OWNED_TABLES so account deletion covers them.
+   */
+  routines: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  routineItems: defineTable({
+    userId: v.id("users"),
+    routineId: v.id("routines"),
+    itemType: v.union(v.literal("habit"), v.literal("task")),
+    habitId: v.optional(v.id("habits")),
+    taskId: v.optional(v.id("tasks")),
+    position: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_routineId_deletedAt", ["routineId", "deletedAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
   goals: defineTable({
     userId: v.id("users"),
     title: v.string(),
