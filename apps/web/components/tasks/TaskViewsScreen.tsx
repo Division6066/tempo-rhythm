@@ -16,6 +16,7 @@ import {
   groupTasksByEnergy,
   groupTasksByPriority,
   slugifyProjectName,
+  type TaskChecklistItem,
   type TaskEnergy,
   type TaskPriority,
   type TaskStatus,
@@ -111,7 +112,7 @@ function isLocalTaskRecord(value: unknown): value is LocalTaskRecord {
   );
 }
 
-function isChecklistItem(value: unknown): boolean {
+function isChecklistItem(value: unknown): value is TaskChecklistItem {
   if (typeof value !== "object" || value === null) return false;
   const item = value as Record<string, unknown>;
   return (
@@ -125,12 +126,8 @@ function readLocalTask(value: unknown): LocalTaskRecord | null {
   if (!isLocalTaskRecord(value)) return null;
   const row = value as LocalTaskRecord & { checklist?: unknown; projectName?: unknown };
   const projectName = typeof row.projectName === "string" ? row.projectName : undefined;
-  const checklist =
-    row.checklist === undefined
-      ? undefined
-      : Array.isArray(row.checklist) && row.checklist.every(isChecklistItem)
-        ? row.checklist
-        : undefined;
+  const validChecklist = Array.isArray(row.checklist) ? row.checklist.filter(isChecklistItem) : [];
+  const checklist = validChecklist.length > 0 ? validChecklist : undefined;
   return { ...row, projectName, checklist };
 }
 
