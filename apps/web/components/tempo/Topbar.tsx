@@ -1,6 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { findScreen, TEMPO_SCREENS } from "@/lib/tempo-nav";
 import { Command, Moon, Search, Sun } from "@tempo/ui/icons";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -21,6 +23,13 @@ export function Topbar({ onOpenPalette }: Props) {
     findScreen("today");
 
   const { resolvedTheme, setTheme } = useTheme();
+  const { signOut } = useAuthActions();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/sign-in");
+  };
 
   return (
     <header className="flex items-center h-14 px-5 border-b border-border-soft bg-background sticky top-0 z-10">
@@ -51,6 +60,16 @@ export function Topbar({ onOpenPalette }: Props) {
           className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:bg-surface-sunken hover:text-foreground transition-colors"
         >
           {resolvedTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+
+        {/* @action signOut */}
+        <button
+          type="button"
+          onClick={handleSignOut}
+          aria-label="Sign out"
+          className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:bg-surface-sunken hover:text-foreground transition-colors"
+        >
+          <LogOut size={16} />
         </button>
       </div>
     </header>

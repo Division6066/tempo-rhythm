@@ -1,17 +1,17 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 
 const messageRoleValidator = v.union(
   v.literal("user"),
   v.literal("assistant"),
-  v.literal("system"),
+  v.literal("system")
 );
 
 async function requireOwnedLiveConversation(
   ctx: QueryCtx | MutationCtx,
-  conversationId: Id<"conversations">,
+  conversationId: Id<"conversations">
 ) {
   const user = await requireUser(ctx);
   const conversation = await ctx.db.get(conversationId);
@@ -32,7 +32,7 @@ export const list = query({
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversationId_deletedAt", (q) =>
-        q.eq("conversationId", args.conversationId).eq("deletedAt", undefined),
+        q.eq("conversationId", args.conversationId).eq("deletedAt", undefined)
       )
       .collect();
 
@@ -65,9 +65,7 @@ export const searchMine = query({
 
     const conversations = await ctx.db
       .query("conversations")
-      .withIndex("by_userId_deletedAt", (q) =>
-        q.eq("userId", user._id).eq("deletedAt", undefined),
-      )
+      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
       .collect();
 
     const lower = needle.toLowerCase();
@@ -83,7 +81,7 @@ export const searchMine = query({
       const messages = await ctx.db
         .query("messages")
         .withIndex("by_conversationId_deletedAt", (q) =>
-          q.eq("conversationId", conversation._id).eq("deletedAt", undefined),
+          q.eq("conversationId", conversation._id).eq("deletedAt", undefined)
         )
         .collect();
 

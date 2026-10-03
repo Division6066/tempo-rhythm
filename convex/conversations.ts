@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 
 async function requireOwnedLiveConversation(
   ctx: QueryCtx | MutationCtx,
-  conversationId: Id<"conversations">,
+  conversationId: Id<"conversations">
 ): Promise<{ userId: Id<"users">; conversation: Doc<"conversations"> }> {
   const user = await requireUser(ctx);
   const conversation = await ctx.db.get(conversationId);
@@ -23,9 +23,7 @@ export const list = query({
 
     const conversations = await ctx.db
       .query("conversations")
-      .withIndex("by_userId_deletedAt", (q) =>
-        q.eq("userId", user._id).eq("deletedAt", undefined),
-      )
+      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
       .collect();
 
     conversations.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -110,6 +108,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireOwnedLiveConversation(ctx, args.conversationId);
 
+    // Delete all messages in this conversation first
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversationId", (q) => q.eq("conversationId", args.conversationId))
