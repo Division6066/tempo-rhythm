@@ -17,6 +17,7 @@ describe("USER_OWNED_TABLES", () => {
   test("covers current user-owned schema tables with by_userId", () => {
     expect([...USER_OWNED_TABLES].sort()).toEqual(
       [
+        "autoScheduleProposals",
         "calendarEvents",
         "goals",
         "habits",
