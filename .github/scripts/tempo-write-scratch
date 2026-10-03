@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Write stdin to an absolute path without following a symlink.
+
+Agent workflows used to `rm -f` a scratch name inside the checkout and then
+redirect into it. A symlink recreated in that window is followed by `>`.
+This helper unlinks the destination (a symlink is removed, not followed)
+and creates a new file with O_CREAT|O_EXCL|O_WRONLY|O_NOFOLLOW.
+"""
+
+from __future__ import annotations
+
+import os
+import stat
+import sys
+
+
+def fail(message: str) -> int:
+    print(f"tempo-write-scratch: {message}", file=sys.stderr)
+    return 1
+
+
+def assert_real_parents(dest: str) -> None:
+    normalized = os.path.normpath(dest)
+    if normalized != dest or not dest.startswith("/") or dest.endswith("/"):
+        raise OSError("dest must be a normalized absolute file path")
+    if not hasattr(os, "O_NOFOLLOW"):
+        raise OSError("O_NOFOLLOW is required")
+    current = "/"
+    parent = os.path.dirname(dest)
+    for part in parent.split("/"):
+        if part == "":
+            continue
+        current = os.path.join(current, part)
+        info = os.lstat(current)
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+            raise OSError("parent contains a symlink or is not a directory")
+
+
+def write_exclusive(dest: str, data: bytes) -> None:
+    try:
+        os.unlink(dest)
+    except FileNotFoundError:
+        pass
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW
+    fd = os.open(dest, flags, 0o600)
+    try:
+        view = memoryview(data)
+        while view:
+            written = os.write(fd, view)
+            if written <= 0:
+                raise OSError("short write")
+            view = view[written:]
+    finally:
+        os.close(fd)
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        return fail("usage: tempo-write-scratch DEST")
+    dest = sys.argv[1]
+    try:
+        assert_real_parents(dest)
+        write_exclusive(dest, sys.stdin.buffer.read())
+    except OSError as exc:
+        return fail(str(exc))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

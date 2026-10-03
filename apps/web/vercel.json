@@ -5,7 +5,7 @@
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "devCommand": "next dev",
-  "ignoreCommand": "bun x turbo-ignore tempo-rhythm-web || exit 1",
+  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- . ../../convex ../../packages ../../package.json ../../bun.lock",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   }

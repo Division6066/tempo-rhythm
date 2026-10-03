@@ -48,10 +48,16 @@ Say so out loud in your PR rather than quietly building the wrong thing.
 
 - Branch **FROM `integration`**. Never from `master`.
 - Open your pull request **against `integration`**, not `master`.
-- You **may merge into `integration`** once ALL THREE are true:
-  1. CI is green,
-  2. there are no conflicts,
-  3. every changed file is inside your ticket's declared file scope.
+- **Agents never merge.** The orchestrator merges into `integration` (squash),
+  after the PR is open, only when ALL of these are true (Amit's merge flow,
+  2 Oct 2026 21:46):
+  1. all required CI checks are green,
+  2. UX/UI tests are green where they apply. `E2E (Playwright)` is not a
+     required check yet, so the orchestrator confirms it is green by hand,
+  3. there are no conflicts,
+  4. every changed file is inside your ticket's MUTATES list (declared file scope).
+  Greptile reviews **after** the merge; it is not a merge condition. Auto-merge
+  stays OFF. After merging, the orchestrator checks the preview.
 - If any one of those is false: **STOP**, leave the PR open, and report the
   branch name, the PR number, and which condition failed.
 
@@ -67,6 +73,9 @@ requested. Do not try to route around it.
 - Touch **only** the files your task names. A stated file scope is a hard boundary.
 - If you believe you must go outside that scope: **stop and say so.** Do not do it.
 - Never modify `.github/workflows/**`, branch protection, repository settings, or billing.
+  - Exception: Weekend agent runs allowed by Amit 2026-10-02; config-lane PRs may modify .github/workflows
+- The Grok 4.5/4.6 model pin applies to Cursor (Cloud Agents and Automations) only. The Claude lane uses a
+  mid-tier code model (claude-sonnet-5), which is on Amit's mid-tier list (2026-10-02).
 - Never add a dependency that is not already in `bun.lock` without flagging it explicitly.
 - Run `graphify affected "<thing you're changing>"` before a non-trivial edit.
   If the blast radius surprises you, stop and report it.
@@ -103,7 +112,7 @@ Multiple agents run in parallel on this repo. Expect collisions.
 - If your work collides with another branch, that is **expected** and is **not yours to solve**.
 - **Never** rebase or force-push to resolve someone else's work away.
 
-Each agent lands its own work on `integration` under the three conditions in
+Each agent lands its own work on `integration` under the four rule 1.4 conditions in
 section 1. If your merge would conflict, stop and report — do not resolve
 another agent's work away.
 

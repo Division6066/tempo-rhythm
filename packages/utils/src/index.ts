@@ -1,5 +1,25 @@
 // @tempo/utils — shared utility exports
 
+export {
+  type BreathCycle,
+  type BreathCycleStep,
+  type BreathPatternConfig,
+  type BreathPatternStep,
+  type BreathPhase,
+  type BreathworkSnapshot,
+  buildBreathCycle,
+  getBreathPhaseAt,
+  getBreathworkSnapshot,
+} from "./breathwork";
+
+export {
+  type EnergyLevel,
+  type EnergySuggestion,
+  type EnergySuggestionStatus,
+  habitRoutineCopy,
+  resolveEnergySuggestion,
+} from "./habit-energy-suggestions";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */

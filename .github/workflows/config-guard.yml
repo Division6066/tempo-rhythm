@@ -1,0 +1,160 @@
+name: config-guard
+
+# Goal E11: no automation can weaken a check.
+# Fails when a PR changes CI, review, secret-scan, Playwright, scan or
+# test-threshold config, unless the PR carries the `config-lane` label added by
+# an allowed actor, and the head commit has not changed since.
+#
+# Uses pull_request_target so the guard logic comes from the default branch.
+# This repo's default branch is `integration` (checked 2 Oct 2026), so the
+# guard runs on every PR into integration and a PR cannot rewrite the guard
+# that judges it. It never checks out or runs PR code; it only reads the API.
+# Changing this file is itself guarded (.github/**).
+
+on:
+  pull_request_target:
+    # Only PRs into integration. Promotion PRs (integration -> master/main) are Amit's; without this
+    # filter the guard judged them too and posted a failing run on the integration head commit.
+    branches: [integration]
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+
+jobs:
+  config-guard:
+    name: config-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check guarded files and config-lane label
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            // Who may apply `config-lane`. Division6066 is Amit; the orchestrator's
+            // gh token and Composio connector writes also appear as Division6066.
+            const ALLOWED = ['Division6066'];
+            const LABEL = 'config-lane';
+            const GUARDED = [
+              /^\.github\//,
+              /(^|\/)greptile\.json$/,
+              /(^|\/)\.gitleaks[^/]*$/,
+              /(^|\/)\.trufflehog[^/]*$/,
+              /(^|\/)playwright\.config\.[^/]+$/,
+              /(^|\/)(vitest|jest)\.(config|workspace)\.[^/]+$/,
+              /(^|\/)\.(nycrc|c8rc)[^/]*$/,
+              /(^|\/)codecov\.ya?ml$/,
+              /(^|\/)bunfig\.toml$/,
+              /^scripts\/ci\//,
+              /^scripts\/(scan-|check-notices|secret-scan)[^/]*$/,
+              /(^|\/)scan-baselines[^/]*$/,
+            ];
+            // package.json keys that define what CI runs or its thresholds.
+            const PKG_KEYS = ['scripts', 'jest', 'c8', 'nyc', 'vitest', 'playwright'];
+            const { owner, repo } = context.repo;
+            const number = context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: number });
+            const problems = [];
+
+            const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: number, per_page: 100 });
+            if (files.length >= 3000 || files.length < pr.changed_files) {
+              problems.push(`Could not read the full list of changed files (${files.length} of ${pr.changed_files}). Failing closed.`);
+            }
+            const paths = [...new Set(files.flatMap(f => [f.filename, f.previous_filename].filter(Boolean)))];
+            const touched = paths.filter(p => GUARDED.some(r => r.test(p)));
+
+            // Compare against the merge base, so changes that landed on the base branch after
+            // the PR branched are not counted as the PR's own changes.
+            let baseRef = null;
+            try {
+              const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
+                owner, repo, basehead: `${pr.base.sha}...${pr.head.sha}` });
+              baseRef = cmp.merge_base_commit && cmp.merge_base_commit.sha;
+            } catch (e) { baseRef = null; }
+            // If the merge base is unknown, changed manifests read as null below and count as
+            // guarded (fail closed); PRs without manifest changes are unaffected.
+            // missingOk: a 404 means "no file" ({}). Otherwise a failed read is null (fail closed).
+            const readPkg = async (path, ref, missingOk) => {
+              if (!ref) return null;
+              try {
+                const { data } = await github.rest.repos.getContent({ owner, repo, path, ref });
+                return JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
+              } catch (e) {
+                return e.status === 404 && missingOk ? {} : null;
+              }
+            };
+            const PKG = /(^|\/)package\.json$/;
+            for (const f of files.filter(f => PKG.test(f.filename) || PKG.test(f.previous_filename || ''))) {
+              if (f.status !== 'modified' && f.status !== 'added' && f.status !== 'changed' || !PKG.test(f.filename)) {
+                // Renaming, copying or removing a manifest can drop its scripts: always guarded.
+                touched.push(`${f.previous_filename || f.filename} (package.json ${f.status})`);
+                continue;
+              }
+              // The file list says the manifest exists at head, so a failed head read (e.g. a
+              // fork commit the base repo cannot serve) fails closed instead of reading as {}.
+              const before = await readPkg(f.filename, baseRef, f.status === 'added');
+              const after = await readPkg(f.filename, pr.head.sha, false);
+              const changed = before === null || after === null ||
+                PKG_KEYS.some(k => JSON.stringify(before[k] ?? null) !== JSON.stringify(after[k] ?? null));
+              if (changed) touched.push(`${f.filename} (CI scripts/test config keys)`);
+            }
+
+            const hasLabel = pr.labels.some(l => l.name === LABEL);
+            let labelEvt = null;
+            if (hasLabel) {
+              const tl = await github.paginate(github.rest.issues.listEventsForTimeline, { owner, repo, issue_number: number, per_page: 100 });
+              const evts = tl.filter(e => e.event === 'labeled' && e.label && e.label.name === LABEL);
+              labelEvt = evts[evts.length - 1] || null;
+              const who = labelEvt && labelEvt.actor ? labelEvt.actor.login : null;
+              if (!who) problems.push(`Could not find who added "${LABEL}".`);
+              else if (!ALLOWED.includes(who)) problems.push(`"${LABEL}" was added by ${who}, who is not allowed. Allowed: ${ALLOWED.join(', ')}.`);
+            }
+
+            if (touched.length && !hasLabel) {
+              problems.push(`This PR changes guarded files but has no "${LABEL}" label.`);
+            }
+
+            // The label approves the code as it was when it was added. Any push after that
+            // time means an allowed actor must re-add the label.
+            if (touched.length && labelEvt && labelEvt.actor && ALLOWED.includes(labelEvt.actor.login)) {
+              const labelAt = new Date(labelEvt.created_at);
+              const nBefore = problems.length;
+              const sender = context.payload.sender.login;
+              // A synchronize run is started by the push itself: the sender is the pusher
+              // and the payload's updated_at is the server time of that push (not run start).
+              if (context.payload.action === 'synchronize' && !ALLOWED.includes(sender) &&
+                  new Date(context.payload.pull_request.updated_at) >= labelAt) {
+                problems.push(`${sender} pushed after "${LABEL}" was added.`);
+              }
+              // The label approves exactly the head commit it was added on. That commit is the
+              // head of the newest pull_request/push CI run on this PR branch created before the
+              // label (server time). If the head is different now, someone pushed after the
+              // label (also with [skip ci], or a re-push of an older commit), so an allowed
+              // actor must re-add it. Reopening or re-running CI does not change the head, so it
+              // does not revoke the approval.
+              const fromThisPr = r => ['pull_request', 'push'].includes(r.event) &&
+                r.head_branch === pr.head.ref &&
+                r.head_repository && r.head_repository.full_name === pr.head.repo.full_name;
+              const earlier = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                owner, repo, branch: pr.head.ref, created: `<${labelAt.toISOString()}`, per_page: 100 }))
+                .filter(fromThisPr).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              const approvedSha = earlier.length ? earlier[0].head_sha : null;
+              if (!approvedSha) {
+                problems.push(`No CI run on this branch before "${LABEL}" was added, so the approved commit is unknown. Failing closed.`);
+              } else if (approvedSha !== pr.head.sha) {
+                problems.push(`The head commit changed after "${LABEL}" was added (approved ${approvedSha.slice(0, 7)}, head now ${pr.head.sha.slice(0, 7)}).`);
+              }
+              if (problems.length > nBefore) problems.push(`An allowed actor must remove and re-add "${LABEL}".`);
+            }
+
+            const lines = [
+              `Guarded files changed: ${touched.length ? touched.join(', ') : 'none'}`,
+              `"${LABEL}" label: ${hasLabel ? `yes (added by ${labelEvt && labelEvt.actor ? labelEvt.actor.login : 'unknown'})` : 'no'}`,
+            ];
+            await core.summary.addHeading('config-guard').addList(lines.concat(problems.map(p => `FAIL: ${p}`))).write();
+            lines.forEach(l => core.info(l));
+            if (problems.length) core.setFailed(problems.join('\n'));
+            else core.info('config-guard passed.');

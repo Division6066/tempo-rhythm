@@ -50,11 +50,25 @@ try {
     encoding: "utf8",
   });
 
-  if (gitleaks.error && (gitleaks.error as NodeJS.ErrnoException).code === "ENOENT") {
-    console.log(
-      "secret-scan:test-fixture OK (config-only) — gitleaks binary not installed locally; " +
-        "workflow wiring verified. The security workflow runs the real detection in CI.",
+  if (gitleaks.error) {
+    const errnoError = gitleaks.error as NodeJS.ErrnoException;
+    if (errnoError.code === "ENOENT") {
+      console.log(
+        "secret-scan:test-fixture OK (config-only) — gitleaks binary not installed locally; " +
+          "workflow wiring verified. The security workflow runs the real detection in CI.",
+      );
+      process.exit(0);
+    }
+    console.error(
+      `secret-scan:test-fixture FAILED — gitleaks could not be launched: ${gitleaks.error.message} (code: ${errnoError.code ?? "unknown"})`,
     );
+    process.exit(1);
+  }
+
+  // gitleaks exit codes: 0 = clean, 1 = leaks found, other non-zero = runtime error.
+  // Only exit code 1 proves the canary was detected. Treat crashes/usage errors as failure.
+  if (gitleaks.status === 1) {
+    console.log("secret-scan:test-fixture OK — gitleaks detected the canary secret as expected.");
     process.exit(0);
   }
 
@@ -63,10 +77,15 @@ try {
       "secret-scan:test-fixture FAILED — gitleaks did NOT detect the canary secret. " +
         "The secret-scanning gate is not actually catching leaks.",
     );
-    process.exit(1);
+  } else {
+    console.error(
+      `secret-scan:test-fixture FAILED — gitleaks exited with status ${String(gitleaks.status)} ` +
+        "(expected 1 = leaks found). A scanner crash or usage error must not count as detection.",
+    );
   }
-
-  console.log("secret-scan:test-fixture OK — gitleaks detected the canary secret as expected.");
+  if (gitleaks.stdout?.trim()) console.error(`gitleaks stdout:\n${gitleaks.stdout.trim()}`);
+  if (gitleaks.stderr?.trim()) console.error(`gitleaks stderr:\n${gitleaks.stderr.trim()}`);
+  process.exit(1);
 } finally {
   fs.rmSync(fixtureDir, { recursive: true, force: true });
 }
