@@ -14,7 +14,7 @@
 // Env: GH_TOKEN (Factory App), CURSOR_API_KEY, GITHUB_REPOSITORY, ISSUE_NUMBER, CURSOR_MODE,
 //      MODEL, MODEL_PARAMS, FIX_NOTE, DRY_RUN=1 (print the API body, send nothing).
 import { gh, repoParts, summary } from "./gh-api.mjs";
-import { frontMatter, renderLanePrompt, findTicketPR, addLabels, removeLabel, comment, BASE } from "./factory-lib.mjs";
+import { frontMatter, renderLanePrompt, findTicketPR, addLabels, removeLabel, comment, BASE, assertDispatchable } from "./factory-lib.mjs";
 
 export function agentBody({ prompt, model, params, repoUrl, ref, prUrl, name }) {
   const body = { prompt: { text: prompt }, name: name.slice(0, 100), autoCreatePR: !prUrl, workOnCurrentBranch: true };
@@ -34,6 +34,7 @@ async function main() {
   if (!["automation", "api"].includes(mode)) throw new Error(`FACTORY_CURSOR_MODE must be automation | api (got ${mode})`);
   const dry = process.env.DRY_RUN === "1";
   const issue = await gh(`/repos/${owner}/${repo}/issues/${n}`);
+  assertDispatchable(issue);
   const fm = frontMatter(issue.body);
   if (!fm || !fm.ticket || !/^[A-Za-z0-9._-]+$/.test(fm.ticket)) throw new Error(`#${n} has no valid front-matter ticket id`);
   const pr = await findTicketPR(owner, repo, n);

@@ -47,3 +47,12 @@ export async function allTickets(owner, repo) {
   const issues = await ghAll(`/repos/${owner}/${repo}/issues?state=all`, (j) => j.filter((i) => !i.pull_request), 5000);
   return issues.map((i) => ({ issue: i, fm: frontMatter(i.body) })).filter((t) => t.fm && t.fm.ticket);
 }
+
+// Lanes refuse tickets the dispatcher could not have picked (defence in depth: the dispatcher's
+// agent is only allowed to dispatch tickets from ready.json, this re-checks on the lane side).
+export function assertDispatchable(issue) {
+  const labels = labelNames(issue);
+  if (issue.state !== "open") throw new Error(`#${issue.number} is ${issue.state}`);
+  if (!labels.some((l) => ["status:ready", "status:dispatched", "status:in-pr"].includes(l))) throw new Error(`#${issue.number} has no status:ready/dispatched/in-pr label`);
+  for (const l of ["blocked:amit", "paused:dependency", "status:done"]) if (labels.includes(l)) throw new Error(`#${issue.number} is ${l}`);
+}

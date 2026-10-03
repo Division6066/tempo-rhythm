@@ -12,7 +12,7 @@
 // Env: GH_TOKEN (Factory App token for mode pr; APP_OK=true when it is one), MENTION_TOKEN (CODEX_MENTION_PAT),
 //      GITHUB_REPOSITORY, ISSUE_NUMBER, CODEX_MODE, FIX_NOTE.
 import { gh, repoParts, summary } from "./gh-api.mjs";
-import { frontMatter, renderLanePrompt, findTicketPR, BASE } from "./factory-lib.mjs";
+import { frontMatter, renderLanePrompt, findTicketPR, BASE, assertDispatchable } from "./factory-lib.mjs";
 
 const API = process.env.GITHUB_API_URL || "https://api.github.com";
 async function postAsAmit(owner, repo, n, body) {
@@ -34,6 +34,7 @@ if (mode === "pr" && process.env.APP_OK !== "true") { await summary(["PARKED: mo
 if (!process.env.MENTION_TOKEN) { await summary(["PARKED: secret CODEX_MENTION_PAT is not set."]); process.exit(1); }
 
 const issue = await gh(`/repos/${owner}/${repo}/issues/${n}`);
+assertDispatchable(issue);
 const fm = frontMatter(issue.body);
 if (!fm || !fm.ticket || !/^[A-Za-z0-9._-]+$/.test(fm.ticket)) throw new Error(`#${n} has no valid front-matter ticket id`);
 const prompt = await renderLanePrompt({ issueUrl: issue.html_url, issueNumber: n, ticketId: fm.ticket });

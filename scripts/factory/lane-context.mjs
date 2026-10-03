@@ -3,12 +3,13 @@
 // in), pr_number / pr_url / pr_branch (an open PR for this ticket already exists = retry).
 // Env: GH_TOKEN, GITHUB_REPOSITORY, ISSUE_NUMBER, FIX_NOTE (optional, failure-rule retry).
 import { gh, repoParts, summary } from "./gh-api.mjs";
-import { frontMatter, renderLanePrompt, findTicketPR, setOutput } from "./factory-lib.mjs";
+import { frontMatter, renderLanePrompt, findTicketPR, setOutput, assertDispatchable } from "./factory-lib.mjs";
 
 const { owner, repo } = repoParts();
 const n = Number(process.env.ISSUE_NUMBER);
 const issue = await gh(`/repos/${owner}/${repo}/issues/${n}`);
 if (issue.pull_request) throw new Error(`#${n} is a pull request, not a ticket`);
+assertDispatchable(issue);
 const fm = frontMatter(issue.body);
 if (!fm || !fm.ticket || !/^[A-Za-z0-9._-]+$/.test(fm.ticket)) throw new Error(`#${n} has no valid front-matter ticket id`);
 let prompt = await renderLanePrompt({ issueUrl: issue.html_url, issueNumber: n, ticketId: fm.ticket });
