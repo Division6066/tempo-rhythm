@@ -54,7 +54,7 @@ export function HistoryScreen() {
     api.messages.list,
     selectedConversationId ? { conversationId: selectedConversationId } : "skip"
   );
-  const trimmedQuery = query.trim();
+  const trimmedQuery = query.trim().slice(0, 200);
   const searchHits = useQuery(
     api.messages.searchMine,
     isAuthenticated && hasConvexUser && trimmedQuery.length > 0 ? { query: trimmedQuery } : "skip"
@@ -106,10 +106,8 @@ export function HistoryScreen() {
 
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated &&
-      (profile === undefined ||
-        (hasConvexUser && conversations === undefined) ||
-        (hasConvexUser && trimmedQuery.length > 0 && searchHits === undefined)));
+    (isAuthenticated && (profile === undefined || (hasConvexUser && conversations === undefined)));
+  const searchPending = trimmedQuery.length > 0 && searchHits === undefined;
 
   if (isLoading) {
     return (
@@ -200,6 +198,7 @@ export function HistoryScreen() {
             <input
               id="history-search"
               value={query}
+              maxLength={200}
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="Try a companion name or a thread title"
               className="h-12 rounded-2xl border border-border bg-card px-4 text-base text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -213,7 +212,9 @@ export function HistoryScreen() {
             <div className="border-b border-border px-6 py-4">
               <h2 className="font-heading text-xl font-semibold text-foreground">Threads</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {filteredConversations.length} of {liveConversations.length} shown
+                {searchPending
+                  ? "Searching your threads"
+                  : `${filteredConversations.length} of ${liveConversations.length} shown`}
               </p>
             </div>
             {filteredConversations.length > 0 ? (

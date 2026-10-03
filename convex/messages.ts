@@ -49,7 +49,7 @@ const searchHitValidator = v.object({
   createdAt: v.number(),
 });
 
-/** Case-insensitive search across the caller's live chats. Capped at 200 hits. */
+/** Case-insensitive search across the caller's live chats. One match per conversation, 200 conversations, 80 messages each. */
 export const searchMine = query({
   args: { query: v.string() },
   returns: v.array(searchHitValidator),
@@ -59,16 +59,14 @@ export const searchMine = query({
     if (needle.length === 0) {
       return [];
     }
-    if (needle.length > 200) {
-      throw new Error("Search query is too long");
-    }
+    const bounded = needle.slice(0, 200);
 
     const conversations = await ctx.db
       .query("conversations")
       .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
       .collect();
 
-    const lower = needle.toLowerCase();
+    const lower = bounded.toLowerCase();
     const hits: Array<{
       conversationId: Id<"conversations">;
       messageId: Id<"messages">;
@@ -78,12 +76,15 @@ export const searchMine = query({
     }> = [];
 
     for (const conversation of conversations) {
+      if (hits.length >= 200) {
+        break;
+      }
       const messages = await ctx.db
         .query("messages")
         .withIndex("by_conversationId_deletedAt", (q) =>
           q.eq("conversationId", conversation._id).eq("deletedAt", undefined)
         )
-        .collect();
+        .take(80);
 
       for (const message of messages) {
         if (!message.content.toLowerCase().includes(lower)) {
@@ -96,9 +97,7 @@ export const searchMine = query({
           content: message.content,
           createdAt: message.createdAt,
         });
-        if (hits.length >= 200) {
-          return hits;
-        }
+        break;
       }
     }
 
