@@ -69,3 +69,4 @@ playwright-report/
 .tempo-commit-msg
 .tempo-branch-name
 .tempo-issue.md
+.tempo-request.md

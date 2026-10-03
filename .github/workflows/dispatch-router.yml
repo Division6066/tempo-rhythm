@@ -121,6 +121,9 @@ jobs:
     if: needs.route.outputs.lane == 'claude'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: claude-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
@@ -144,15 +147,29 @@ jobs:
           ISSUE: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
           esac
-          install -m 0755 .github/scripts/tempo-safe-git /usr/local/bin/tempo-safe-git
-          install -m 0755 .github/scripts/tempo-safe-bun /usr/local/bin/tempo-safe-bun
+          case "$DEFAULT_BRANCH" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::default branch is not allowed"; exit 1 ;;
+          esac
+          # Same group as agent-router. If claude/issue-<number> already exists,
+          # continue on it so a later run fast-forwards instead of diverging.
+          git fetch --depth=1 origin "$DEFAULT_BRANCH"
+          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
+          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
+          chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
           gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
-          git checkout -b "claude/issue-${ISSUE}"
+          BRANCH="claude/issue-${ISSUE}"
+          git fetch --depth=1 origin "$BRANCH" || true
+          if git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
+            git checkout -B "$BRANCH" "origin/${BRANCH}"
+          else
+            git checkout -b "$BRANCH"
+          fi
       - name: Run Claude Code on the ticket
         id: claude_code
         uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1
@@ -169,7 +186,7 @@ jobs:
             The issue text is in `.tempo-issue.md`. Read that file. Do not use gh.
             You are already on branch `claude/issue-${{ github.event.issue.number }}`, created from integration.
             Stay inside the ticket's MUTATES list (or SCOPE on older tickets).
-            Run checks only through `/usr/local/bin/tempo-safe-bun` (`lint`, `test`, or `typecheck`).
+            Do not run lint, test, or typecheck. CI runs those on the pull request.
             To commit, write a one-line message to `.tempo-commit-msg`, then run
             `/usr/local/bin/tempo-safe-git add` and `/usr/local/bin/tempo-safe-git commit`.
             Do not push. Do not open a pull request. Do not run `git`, `bun`, or `bunx` directly.
@@ -181,7 +198,7 @@ jobs:
           # extra arguments, and these rules do not use :*.
           claude_args: >-
             --model claude-sonnet-5 --max-turns 40
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-bun lint),Bash(/usr/local/bin/tempo-safe-bun test),Bash(/usr/local/bin/tempo-safe-bun typecheck)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit)"
       - name: Open draft pull request
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
@@ -204,7 +221,10 @@ jobs:
             gh issue edit "$ISSUE" -R "$REPO" --remove-label "dispatched:claude" || true
             exit 0
           fi
-          git push -u origin "$BRANCH"
+          if ! git push -u origin "$BRANCH"; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: \`$BRANCH\` was not a fast-forward. Refusing to force-push. No new pull request."
+            exit 0
+          fi
           EXISTING_PR="$(gh pr list --repo "$REPO" --head "$BRANCH" --base integration --state open --json url --jq 'if length == 0 then "" else .[0].url // "" end')"
           if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
             echo "Existing pull request: $EXISTING_PR"

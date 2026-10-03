@@ -64,11 +64,34 @@ jobs:
           bun-version: 1.3.9
       - if: steps.gate.outputs.allowed == 'true'
         run: bun install --frozen-lockfile
-      - name: Install command wrappers
+      - name: Install command wrappers from the default branch
         if: steps.gate.outputs.allowed == 'true'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          install -m 0755 .github/scripts/tempo-safe-git /usr/local/bin/tempo-safe-git
-          install -m 0755 .github/scripts/tempo-safe-bun /usr/local/bin/tempo-safe-bun
+          set -euo pipefail
+          # pull_request_review_comment checks out the PR merge commit. A fork
+          # can replace .github/scripts. Install the blobs from the default
+          # branch, which is the tree that loaded this workflow.
+          case "$DEFAULT_BRANCH" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::default branch is not allowed"; exit 1 ;;
+          esac
+          git fetch --depth=1 origin "$DEFAULT_BRANCH"
+          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
+          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
+          chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
+      - name: Save the request for Claude
+        if: steps.gate.outputs.allowed == 'true'
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          if [ -n "${COMMENT_BODY:-}" ]; then
+            printf '%s\n' "$COMMENT_BODY" > .tempo-request.md
+          else
+            printf '%s\n' "${ISSUE_BODY:-}" > .tempo-request.md
+          fi
       # ----------------------------------------------------------------------
 
       - uses: anthropics/claude-code-action@v1
@@ -84,8 +107,10 @@ jobs:
           # Do not open a pull request from the model; the action's own GitHub token
           # still comments. A write collaborator is required before this step runs.
           prompt: |
-            Use only `/usr/local/bin/tempo-safe-git` and `/usr/local/bin/tempo-safe-bun`.
+            The request is in `.tempo-request.md`. Read that file and do what it asks.
+            Use only `/usr/local/bin/tempo-safe-git`.
             Do not run `git`, `bun`, or `bunx` directly.
+            Do not run lint, test, or typecheck. CI runs those on the pull request.
             To name a branch, write one line starting with `claude/` to `.tempo-branch-name`,
             then run `/usr/local/bin/tempo-safe-git branch-new`.
             To commit, write `.tempo-commit-msg`, then run `add` and `commit` on that wrapper.
@@ -94,4 +119,4 @@ jobs:
           claude_args: |
             --max-turns 25
             --model claude-sonnet-5
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new),Bash(/usr/local/bin/tempo-safe-git push),Bash(/usr/local/bin/tempo-safe-bun lint),Bash(/usr/local/bin/tempo-safe-bun test),Bash(/usr/local/bin/tempo-safe-bun typecheck)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new),Bash(/usr/local/bin/tempo-safe-git push)"

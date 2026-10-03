@@ -91,12 +91,19 @@ describe("tempo-safe-git refuses escalating arguments", () => {
   });
 });
 
-describe("tempo-safe-bun refuses extra arguments", () => {
-  test("test rejects --preload and any other argument", () => {
+describe("tempo-safe-bun never runs package scripts", () => {
+  test("lint, test, and typecheck are refused, including extra arguments", () => {
     const dir = initRepo();
-    const result = run(bunBin, ["test", "--preload", "./evil.js"], dir);
-    expect(result.status).toBe(2);
-    expect(result.stderr).toContain("takes no arguments");
+    for (const args of [
+      ["test"],
+      ["test", "--preload", "./evil.js"],
+      ["lint"],
+      ["typecheck"],
+    ]) {
+      const result = run(bunBin, args, dir);
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain("refusing");
+    }
   });
 });
 
@@ -120,8 +127,11 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
         expect(line).not.toContain("Bash(bunx");
         expect(line).not.toContain(":*");
         expect(line).toContain("/usr/local/bin/tempo-safe-git");
-        expect(line).toContain("/usr/local/bin/tempo-safe-bun");
+        expect(line).not.toContain("tempo-safe-bun");
       }
+      expect(text).not.toContain("track_progress: true");
+      expect(text).toContain('git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git"');
+      expect(text).not.toContain("install -m 0755 .github/scripts/tempo-safe");
     }
   });
 
@@ -145,18 +155,28 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
   });
 
   test("empty and null pull request lookups are not treated as found", () => {
-    const expr = 'if length == 0 then "" else .[0].url // "" end';
-    const empty = execFileSync("jq", ["-r", expr], { input: "[]", encoding: "utf8" });
-    const nulled = execFileSync("jq", ["-r", expr], {
-      input: '[{"url":null}]',
-      encoding: "utf8",
-    });
-    const found = execFileSync("jq", ["-r", expr], {
-      input: '[{"url":"https://example.test/pull/1"}]',
-      encoding: "utf8",
-    });
-    expect(empty.trim()).toBe("");
-    expect(nulled.trim()).toBe("");
-    expect(found.trim()).toBe("https://example.test/pull/1");
+    function lookupPrUrl(rows: Array<{ url?: string | null }>): string {
+      if (rows.length === 0) return "";
+      return rows[0]?.url ?? "";
+    }
+    expect(lookupPrUrl([])).toBe("");
+    expect(lookupPrUrl([{ url: null }])).toBe("");
+    expect(lookupPrUrl([{ url: "https://example.test/pull/1" }])).toBe("https://example.test/pull/1");
+  });
+
+  test("interactive claude reads the comment from a file, and repeats fast-forward", () => {
+    const claude = readFileSync(join(root, ".github/workflows/claude.yml"), "utf8");
+    expect(claude).toContain(".tempo-request.md");
+    expect(claude).toContain("COMMENT_BODY:");
+    const routers = [
+      readFileSync(join(root, ".github/workflows/dispatch-router.yml"), "utf8"),
+      readFileSync(join(root, ".github/workflows/agent-router.yml"), "utf8"),
+    ];
+    for (const text of routers) {
+      expect(text).toContain("concurrency:");
+      expect(text).toContain("claude-issue-");
+      expect(text).toContain('git checkout -B "$BRANCH" "origin/${BRANCH}"');
+      expect(text).not.toMatch(/git push[^\n]*--force/);
+    }
   });
 });

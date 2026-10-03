@@ -119,6 +119,9 @@ jobs:
     if: needs.route.outputs.agent == 'claude'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    concurrency:
+      group: claude-issue-${{ needs.route.outputs.issue }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
         with:
@@ -134,21 +137,37 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           ISSUE: ${{ needs.route.outputs.issue }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
           esac
-          install -m 0755 .github/scripts/tempo-safe-git /usr/local/bin/tempo-safe-git
-          install -m 0755 .github/scripts/tempo-safe-bun /usr/local/bin/tempo-safe-bun
+          case "$DEFAULT_BRANCH" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::default branch is not allowed"; exit 1 ;;
+          esac
+          # Wrappers come from the default branch, not the checkout ref. A
+          # workflow_dispatch base can point at a branch that rewrites the scripts.
+          git fetch --depth=1 origin "$DEFAULT_BRANCH"
+          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
+          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
+          chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
           gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
-          git checkout -b "claude/issue-${ISSUE}"
+          BRANCH="claude/issue-${ISSUE}"
+          git fetch --depth=1 origin "$BRANCH" || true
+          if git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
+            git checkout -B "$BRANCH" "origin/${BRANCH}"
+          else
+            git checkout -b "$BRANCH"
+          fi
       - id: claude_code
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           base_branch: ${{ needs.route.outputs.base }}
-          track_progress: true
+          # No track_progress: tag mode prepends Bash(git add:*), Bash(git commit:*),
+          # Bash(git rm:*), and a git-push helper. Those prefixes are unioned with
+          # claude_args, so the wrapper list would not replace them.
           additional_permissions: |
             actions: read
           prompt: |
@@ -156,14 +175,15 @@ jobs:
             You are already on branch `claude/issue-${{ needs.route.outputs.issue }}`, created from `${{ needs.route.outputs.base }}`.
             Do not push and do not open a pull request. A later step pushes this branch and opens the draft.
             Stay inside the file scope the issue declares. If the work needs a file outside that scope,
-            stop and explain it in the tracking comment instead of widening scope. Never touch master.
-            Run checks only through `/usr/local/bin/tempo-safe-bun`. To commit, write `.tempo-commit-msg`,
-            then run `/usr/local/bin/tempo-safe-git add` and `/usr/local/bin/tempo-safe-git commit`.
+            stop and explain it in the pull request instead of widening scope. Never touch master.
+            Do not run lint, test, or typecheck. CI runs those on the pull request.
+            To commit, write `.tempo-commit-msg`, then run
+            `/usr/local/bin/tempo-safe-git add` and `/usr/local/bin/tempo-safe-git commit`.
             Do not run `git`, `bun`, or `bunx` directly.
           claude_args: |
             --max-turns 40
             --model claude-sonnet-5
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-bun lint),Bash(/usr/local/bin/tempo-safe-bun test),Bash(/usr/local/bin/tempo-safe-bun typecheck)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit)"
 
       - name: Open draft pull request
         env:
@@ -193,7 +213,10 @@ jobs:
             echo "No commits on $BRANCH; not opening a pull request."
             exit 0
           fi
-          git push -u origin "$BRANCH"
+          if ! git push -u origin "$BRANCH"; then
+            echo "Push of $BRANCH was not a fast-forward. Refusing to force-push."
+            exit 0
+          fi
           EXISTING_PR="$(gh pr list --repo "$REPO" --head "$BRANCH" --base "$BASE" --state open --json url --jq 'if length == 0 then "" else .[0].url // "" end')"
           if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
             echo "Existing pull request: $EXISTING_PR"

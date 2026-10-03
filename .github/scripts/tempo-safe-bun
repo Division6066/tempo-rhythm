@@ -1,21 +1,9 @@
 #!/usr/bin/env bash
 # Fixed bun commands for unattended agents.
-# `bun test <extra>` can load arbitrary code (`--preload`). These commands
-# accept no arguments and only run the package scripts.
+# `bun run <script>` executes whatever package.json currently says, and Write
+# can change that script before this binary is called. This wrapper therefore
+# never runs lint, test, or typecheck. CI runs those on the pull request.
 set -euo pipefail
 
-refuse() {
-  printf 'tempo-safe-bun: %s\n' "$*" >&2
-  exit 2
-}
-
-cmd=${1:-}
-shift || true
-[ "$#" -eq 0 ] || refuse "takes no arguments"
-
-case "$cmd" in
-  lint) exec bun run lint ;;
-  test) exec bun run test ;;
-  typecheck) exec bun run typecheck ;;
-  *) refuse "unknown command" ;;
-esac
+printf 'tempo-safe-bun: %s\n' "refusing '${1:-}'. CI runs lint, test, and typecheck." >&2
+exit 2
