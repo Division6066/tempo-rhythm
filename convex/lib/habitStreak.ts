@@ -8,7 +8,11 @@ export function isHabitCompletedOnUtcDay(
 	if (lastCompletedAt === undefined) {
 		return false;
 	}
-	return Math.floor((now - lastCompletedAt) / DAY_MS) === 0;
+	return utcDayIndex(lastCompletedAt) === utcDayIndex(now);
+}
+
+function utcDayIndex(ms: number): number {
+	return Math.floor(ms / DAY_MS);
 }
 
 export type HabitStreakUpdate =
@@ -17,7 +21,7 @@ export type HabitStreakUpdate =
 
 /**
  * Pure streak math for `habits.completeToday`. Exported for unit tests.
- * Uses UTC day boundaries (floor of elapsed ms / DAY_MS).
+ * Uses the UTC calendar day (floor of the timestamp / DAY_MS), not elapsed hours.
  */
 export function computeHabitStreakUpdate(
 	now: number,
@@ -27,7 +31,7 @@ export function computeHabitStreakUpdate(
 ): HabitStreakUpdate {
 	let current = currentStreak;
 	if (lastCompletedAt !== undefined) {
-		const daysSince = Math.floor((now - lastCompletedAt) / DAY_MS);
+		const daysSince = utcDayIndex(now) - utcDayIndex(lastCompletedAt);
 		if (daysSince === 0) {
 			return { currentStreak: currentStreak, alreadyDone: true };
 		}
