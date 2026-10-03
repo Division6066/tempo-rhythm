@@ -1,19 +1,17 @@
 name: Auto-arm merge
-# Arms auto-merge (squash) on any PR opened against integration.
-# GUARD: the job-level "if" means this can never act on a PR targeting
-# master (or any branch other than integration).
+# Auto-merge stays off (AGENTS.md). This workflow used to run
+# `gh pr merge --auto --squash` for every non-draft PR into integration,
+# with contents: write and no collaborator check. It no longer arms merge.
+# The job remains so the check name stays, and the token cannot merge.
 on:
   pull_request:
     types: [opened, ready_for_review]
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 jobs:
   arm:
     if: github.event.pull_request.base.ref == 'integration' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - name: Arm auto-merge (squash)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --auto --squash
+      - name: Leave auto-merge off
+        run: echo "Auto-merge stays off (AGENTS.md). This workflow does not arm merge."

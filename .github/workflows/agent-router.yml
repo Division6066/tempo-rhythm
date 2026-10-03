@@ -55,18 +55,41 @@ jobs:
       issue: ${{ steps.pick.outputs.issue }}
     steps:
       - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SENDER: ${{ github.event.sender.login }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_AGENT: ${{ inputs.agent }}
+          INPUT_ISSUE: ${{ inputs.issue }}
+          INPUT_BASE: ${{ inputs.base }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            AGENT="${{ inputs.agent }}"; ISSUE="${{ inputs.issue }}"
+          set -euo pipefail
+          # Label and workflow_dispatch both spend a write token. Triage and
+          # read collaborators must not be able to start an agent.
+          perm=$(gh api "repos/$REPO/collaborators/$SENDER/permission" --jq .permission 2>/dev/null || echo none)
+          case "$perm" in
+            admin|maintain|write) ;;
+            *)
+              echo "agent=" >> "$GITHUB_OUTPUT"
+              echo "issue=" >> "$GITHUB_OUTPUT"
+              echo "Sender ${SENDER:-unknown} has permission $perm; agent router requires write."
+              exit 0
+              ;;
+          esac
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            AGENT="$INPUT_AGENT"
+            ISSUE="$INPUT_ISSUE"
           else
-            LABEL="${{ github.event.label.name }}"
-            case "$LABEL" in
-              agent:claude|agent:cursor|agent:codex) AGENT="${LABEL#agent:}" ;;
+            case "$LABEL_NAME" in
+              agent:claude|agent:cursor|agent:codex) AGENT="${LABEL_NAME#agent:}" ;;
               *) echo "not an agent label, stopping"; exit 0 ;;
             esac
-            ISSUE="${{ github.event.issue.number }}"
+            ISSUE="$ISSUE_NUMBER"
           fi
-          BASE="${{ inputs.base || 'integration' }}"
+          BASE="${INPUT_BASE:-integration}"
           case "$BASE" in
             master|main) echo "::error::Agents branch from integration. master is yours."; exit 1 ;;
           esac
@@ -106,7 +129,7 @@ jobs:
           claude_args: |
             --max-turns 40
             --model claude-sonnet-5
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git:*),Bash(bun run lint:*),Bash(bun run test:*),Bash(bun run typecheck:*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git checkout -b:*),Bash(git switch:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(git push -u origin:*),Bash(bun run lint:*),Bash(bun run test:*),Bash(bun run typecheck:*)"
 
       - name: Open draft pull request
         if: steps.claude_code.outputs.branch_name != ''
