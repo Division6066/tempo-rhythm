@@ -175,11 +175,15 @@ function NoteEditor({ noteId }: { noteId: string }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const loadedNoteId = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleRef = useRef("");
+  const bodyRef = useRef("");
 
   useEffect(() => {
     if (note && loadedNoteId.current !== note._id) {
       setTitle(note.title);
       setBody(note.body);
+      titleRef.current = note.title;
+      bodyRef.current = note.body;
       loadedNoteId.current = note._id;
       setSaveState("idle");
     }
@@ -187,27 +191,33 @@ function NoteEditor({ noteId }: { noteId: string }) {
 
   useEffect(() => {
     return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (!saveTimer.current) return;
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      void updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
     };
-  }, []);
+  }, [noteId, updateNote]);
 
-  const scheduleSave = (next: { title?: string; body?: string }) => {
+  const scheduleSave = () => {
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      await updateNote({ noteId: noteId as Id<"notes">, ...next });
+      saveTimer.current = null;
+      await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
       setSaveState("saved");
     }, 500);
   };
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
-    scheduleSave({ title: value });
+    titleRef.current = value;
+    scheduleSave();
   };
 
   const handleBodyChange = (value: string) => {
     setBody(value);
-    scheduleSave({ body: value });
+    bodyRef.current = value;
+    scheduleSave();
   };
 
   const handleTogglePin = async () => {
