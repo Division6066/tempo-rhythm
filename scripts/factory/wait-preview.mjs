@@ -1,6 +1,7 @@
 // Waits for the Vercel preview of THIS PR's head SHA (GitHub Deployments API, written by the
 // Vercel app) and writes url=<preview url> to $GITHUB_OUTPUT.
-// If Vercel's commit status says the build was skipped ("Ignored Build Step": no app changes),
+// If Vercel's commit status says the build was skipped ("Canceled by Ignored Build Step",
+// "Skipped - Not affected": no app changes),
 // writes skipped=true instead: there is no new preview to test.
 // Env: HEAD_SHA, PREVIEW_ENVIRONMENT (exact deployment environment; default: any "Preview*"),
 //      PREVIEW_STATUS_CONTEXT (Vercel commit status name; default "Vercel"), WAIT_MINUTES (default 25).
@@ -27,7 +28,7 @@ async function once() {
   if (!deps.length) {
     const statuses = await gh(`/repos/${owner}/${repo}/commits/${sha}/statuses?per_page=100`);
     const st = statuses.find((s) => s.context === ctx);
-    if (st && st.state === "success" && /ignored build step|canceled/i.test(st.description || "")) return { skipped: st.description };
+    if (st && st.state === "success" && /ignored build step|canceled|skipped/i.test(st.description || "")) return { skipped: st.description };
     if (st && ["failure", "error"].includes(st.state)) return { fail: `${ctx}: ${st.state} ${st.description || ""}` };
   }
   return null;
