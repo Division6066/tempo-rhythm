@@ -41,3 +41,4 @@ export const pingMistral = internalAction({
     return results;
   },
 });
+// scope-guard proof (scratch, will be closed)
