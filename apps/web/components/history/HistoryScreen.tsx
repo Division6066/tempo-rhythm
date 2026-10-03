@@ -59,9 +59,24 @@ export function HistoryScreen() {
     api.messages.searchMine,
     isAuthenticated && hasConvexUser && trimmedQuery.length > 0 ? { query: trimmedQuery } : "skip"
   );
+  const [settledHits, setSettledHits] = useState<NonNullable<typeof searchHits> | null>(null);
+  const [settledQuery, setSettledQuery] = useState("");
+  if (trimmedQuery.length === 0) {
+    if (settledHits !== null || settledQuery !== "") {
+      setSettledHits(null);
+      setSettledQuery("");
+    }
+  } else if (searchHits !== undefined && settledQuery !== trimmedQuery) {
+    setSettledHits(searchHits);
+    setSettledQuery(trimmedQuery);
+  }
+  const searchPending = trimmedQuery.length > 0 && searchHits === undefined;
+  // An in-flight query is undefined, not an empty hit list. Keep the last
+  // settled hits so a keystroke does not wipe the thread list.
+  const hitsForList = searchPending ? settledHits : (searchHits ?? null);
   const searchByConversation = useMemo(() => {
     const grouped = new Map<string, HistoryMessage[]>();
-    for (const hit of searchHits ?? []) {
+    for (const hit of hitsForList ?? []) {
       const existing = grouped.get(hit.conversationId) ?? [];
       existing.push({
         id: hit.messageId,
@@ -73,7 +88,7 @@ export function HistoryScreen() {
       grouped.set(hit.conversationId, existing);
     }
     return grouped;
-  }, [searchHits]);
+  }, [hitsForList]);
 
   const historyConversations = useMemo((): HistoryConversation[] => {
     return liveConversations.map((conversation) => {
@@ -99,15 +114,16 @@ export function HistoryScreen() {
     });
   }, [liveConversations, searchByConversation, selectedConversationId, selectedMessages]);
 
-  const filteredConversations = useMemo(
-    () => filterHistoryConversations(historyConversations, query),
-    [historyConversations, query]
-  );
+  const filteredConversations = useMemo(() => {
+    if (searchPending && hitsForList === null) {
+      return filterHistoryConversations(historyConversations, "");
+    }
+    return filterHistoryConversations(historyConversations, query);
+  }, [historyConversations, hitsForList, query, searchPending]);
 
   const isLoading =
     isAuthLoading ||
     (isAuthenticated && (profile === undefined || (hasConvexUser && conversations === undefined)));
-  const searchPending = trimmedQuery.length > 0 && searchHits === undefined;
 
   if (isLoading) {
     return (
