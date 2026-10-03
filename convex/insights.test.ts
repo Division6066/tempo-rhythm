@@ -108,12 +108,13 @@ describe("computeInsightsSummary", () => {
     expect(s.tasksOpen).toBe(1);
   });
 
-  test("completed-this-week uses updatedAt >= weekStartMs on done tasks only", () => {
+  test("completed-this-week counts completedAt, not a later edit", () => {
     const s = summarize({
       tasks: [
-        task({ status: "done", updatedAt: weekStartMs }), // counts (inclusive)
-        task({ status: "done", updatedAt: weekStartMs - 1 }), // too old
-        task({ status: "todo", updatedAt: weekStartMs + 1 }), // not done
+        task({ status: "done", completedAt: weekStartMs, updatedAt: weekStartMs + 5_000 }),
+        task({ status: "done", completedAt: weekStartMs - 1, updatedAt: weekStartMs + 5_000 }),
+        task({ status: "done", updatedAt: weekStartMs + 1 }),
+        task({ status: "todo", completedAt: weekStartMs, updatedAt: weekStartMs }),
       ],
     });
     expect(s.tasksCompletedThisWeek).toBe(1);

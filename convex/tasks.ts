@@ -3,7 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { filterTasksDueInRange } from "./lib/task_filters";
 import { normalizeChecklist } from "./lib/taskChecklists";
-import { assertRepeatEvery } from "./lib/taskRepeat";
+import { assertRepeatEvery, planNextRepeatInstance } from "./lib/taskRepeat";
 import { fetchCurrentUser } from "./users";
 
 const checklistItemValidator = v.object({
@@ -38,6 +38,7 @@ const taskReturnValidator = v.object({
   projectId: v.optional(v.string()),
   projectName: v.optional(v.string()),
   dueAt: v.optional(v.number()),
+  completedAt: v.optional(v.number()),
   checklist: v.optional(v.array(checklistItemValidator)),
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -291,8 +292,50 @@ export const toggleCompletion = mutation({
     if (!task || task.userId !== user._id) {
       throw new Error("Task not found");
     }
+    const now = Date.now();
     const next: "todo" | "done" = task.status === "done" ? "todo" : "done";
-    await ctx.db.patch(args.taskId, { status: next, updatedAt: Date.now() });
+    await ctx.db.patch(args.taskId, {
+      status: next,
+      updatedAt: now,
+      completedAt: next === "done" ? now : undefined,
+    });
+    if (next === "done" && task.repeatCfgId) {
+      const cfg = await ctx.db.get(task.repeatCfgId);
+      if (cfg && cfg.userId === user._id) {
+        const spawned = planNextRepeatInstance({
+          dueAt: task.dueAt,
+          completedAt: now,
+          nowMs: now,
+          cfg,
+        });
+        if (spawned) {
+          await ctx.db.insert("tasks", {
+            userId: user._id,
+            title: task.title,
+            ...(task.description !== undefined ? { description: task.description } : {}),
+            status: "todo",
+            priority: task.priority,
+            ...(task.energy !== undefined ? { energy: task.energy } : {}),
+            ...(task.timeEstimate !== undefined ? { timeEstimate: task.timeEstimate } : {}),
+            repeatCfgId: cfg._id,
+            ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),
+            ...(task.projectName !== undefined ? { projectName: task.projectName } : {}),
+            dueAt: spawned.dueAt,
+            ...(task.checklist
+              ? {
+                  checklist: task.checklist.map((item) => ({ ...item, completed: false })),
+                }
+              : {}),
+            createdAt: now,
+            updatedAt: now,
+          });
+          await ctx.db.patch(cfg._id, {
+            lastTaskCreationDay: spawned.dayKey,
+            updatedAt: now,
+          });
+        }
+      }
+    }
     return { taskId: args.taskId, status: next };
   },
 });

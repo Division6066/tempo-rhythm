@@ -6,7 +6,8 @@
  * Conventions:
  * - "open" task = status todo/in_progress and not soft-deleted.
  * - overdue = open with a dueAt strictly before todayStartMs.
- * - completed this week = done with updatedAt >= weekStartMs.
+ * - completed this week = done with completedAt >= weekStartMs. A later edit
+ *   does not count. Rows with no completedAt do not count.
  * - a task without an energy level counts as "medium" (matches tasks.list).
  */
 
@@ -16,6 +17,7 @@ export type InsightsTaskRow = {
   energy?: "low" | "medium" | "high";
   dueAt?: number;
   updatedAt: number;
+  completedAt?: number;
   deletedAt?: number;
 };
 
@@ -74,7 +76,8 @@ export function computeInsightsSummary(input: {
   }
 
   const tasksCompletedThisWeek = liveTasks.filter(
-    (t) => t.status === "done" && t.updatedAt >= input.weekStartMs,
+    (t) =>
+      t.status === "done" && t.completedAt !== undefined && t.completedAt >= input.weekStartMs,
   ).length;
 
   const liveHabits = input.habits.filter((h) => h.deletedAt === undefined);

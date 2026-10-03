@@ -142,6 +142,41 @@ export function computeNextRepeatDueAt(
   return next;
 }
 
+/** UTC calendar date `YYYY-MM-DD` for idempotent repeat spawns. */
+export function utcDayKey(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+/**
+ * Next open instance after a completion. Null when the series is paused,
+ * deleted, or this UTC day was already spawned (`lastTaskCreationDay`).
+ */
+export function planNextRepeatInstance(input: {
+  dueAt?: number;
+  completedAt: number;
+  nowMs: number;
+  cfg: RepeatCfgInput & {
+    isPaused: boolean;
+    deletedAt?: number;
+    repeatFromCompletionDate: boolean;
+    lastTaskCreationDay?: string;
+  };
+}): { dueAt: number; dayKey: string } | null {
+  if (input.cfg.isPaused || input.cfg.deletedAt !== undefined) {
+    return null;
+  }
+  const fromMs =
+    input.cfg.repeatFromCompletionDate || input.dueAt === undefined
+      ? input.completedAt
+      : input.dueAt;
+  const dueAt = computeNextRepeatDueAt(fromMs, input.cfg, input.nowMs);
+  const dayKey = utcDayKey(dueAt);
+  if (input.cfg.lastTaskCreationDay === dayKey) {
+    return null;
+  }
+  return { dueAt, dayKey };
+}
+
 export function repeatDraftToCfg(
   draft: "daily" | "weekly",
   weekdayFromMs: number,

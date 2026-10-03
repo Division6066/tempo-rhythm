@@ -147,6 +147,8 @@ export default defineSchema({
     projectId: v.optional(v.string()),
     projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
+    /** Set only on the transition to done. Cleared when the task leaves done. */
+    completedAt: v.optional(v.number()),
     // Leftover from #206 — optional steps on a task, not a new table.
     checklist: v.optional(
       v.array(
