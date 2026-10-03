@@ -21,7 +21,7 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
         weekdays: [],
         skipOverdue: false,
       },
-      jul14NineUtc,
+      jul14NineUtc
     );
     expect(next).toBe(Date.UTC(2026, 6, 21, 9));
   });
@@ -36,7 +36,7 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
         weekdays: [],
         skipOverdue: true,
       },
-      now,
+      now
     );
     expect(next).toBeGreaterThanOrEqual(now);
     expect(next).toBe(Date.UTC(2026, 7, 4, 9));
@@ -52,8 +52,8 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
           weekdays: [],
           skipOverdue: false,
         },
-        jan31NoonUtc,
-      ),
+        jan31NoonUtc
+      )
     ).toBe(Date.UTC(2026, 1, 28, 12));
   });
 
@@ -68,8 +68,8 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
           weekdays: [],
           skipOverdue: false,
         },
-        jul14NineUtc,
-      ),
+        jul14NineUtc
+      )
     ).toThrow(/interval/i);
   });
 
@@ -98,7 +98,7 @@ describe("taskRepeat leftover wiring", () => {
   test("task create form offers a Repeat control without a new Convex module", () => {
     const source = readFileSync(
       join(import.meta.dir, "../../apps/web/components/tasks/TaskViewsScreen.tsx"),
-      "utf8",
+      "utf8"
     );
     expect(source).toContain("api.tasks.createRepeatCfg");
     expect(source).toContain("api.tasks.setTaskRepeatCfg");
@@ -137,7 +137,15 @@ describe("planNextRepeatInstance", () => {
         completedAt,
         nowMs: completedAt,
         cfg: { ...cfg, lastTaskCreationDay: "2026-07-15" },
-      }),
+      })
+    ).toBeNull();
+    expect(
+      planNextRepeatInstance({
+        dueAt: completedAt,
+        completedAt,
+        nowMs: completedAt,
+        cfg: { ...cfg, lastTaskCreationDay: "2026-07-16" },
+      })
     ).toBeNull();
   });
 
@@ -148,7 +156,7 @@ describe("planNextRepeatInstance", () => {
         completedAt,
         nowMs: completedAt,
         cfg: { ...cfg, isPaused: true },
-      }),
+      })
     ).toBeNull();
     expect(
       planNextRepeatInstance({
@@ -156,7 +164,7 @@ describe("planNextRepeatInstance", () => {
         completedAt,
         nowMs: completedAt,
         cfg: { ...cfg, deletedAt: completedAt },
-      }),
+      })
     ).toBeNull();
   });
 });

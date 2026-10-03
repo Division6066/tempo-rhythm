@@ -51,7 +51,7 @@ function utcFromParts(
   hour: number,
   minute: number,
   second: number,
-  ms: number,
+  ms: number
 ): number {
   return Date.UTC(year, month, day, hour, minute, second, ms);
 }
@@ -124,11 +124,7 @@ function stepOnce(fromMs: number, cfg: RepeatCfgInput): number {
  * Next due after `fromMs`. When `skipOverdue` is set, keep stepping until
  * the result is >= `nowMs` so missed days do not pile up.
  */
-export function computeNextRepeatDueAt(
-  fromMs: number,
-  cfg: RepeatCfgInput,
-  nowMs: number,
-): number {
+export function computeNextRepeatDueAt(fromMs: number, cfg: RepeatCfgInput, nowMs: number): number {
   assertRepeatEvery(cfg.repeatEvery);
   let next = stepOnce(fromMs, cfg);
   if (!cfg.skipOverdue) {
@@ -149,7 +145,9 @@ export function utcDayKey(ms: number): string {
 
 /**
  * Next open instance after a completion. Null when the series is paused,
- * deleted, or this UTC day was already spawned (`lastTaskCreationDay`).
+ * deleted, or the next UTC day is on or before `lastTaskCreationDay`.
+ * That day is a frontier, not only an exact-match key, so an earlier
+ * instance cannot spawn a second task for a day the series already covered.
  */
 export function planNextRepeatInstance(input: {
   dueAt?: number;
@@ -171,16 +169,13 @@ export function planNextRepeatInstance(input: {
       : input.dueAt;
   const dueAt = computeNextRepeatDueAt(fromMs, input.cfg, input.nowMs);
   const dayKey = utcDayKey(dueAt);
-  if (input.cfg.lastTaskCreationDay === dayKey) {
+  if (input.cfg.lastTaskCreationDay !== undefined && dayKey <= input.cfg.lastTaskCreationDay) {
     return null;
   }
   return { dueAt, dayKey };
 }
 
-export function repeatDraftToCfg(
-  draft: "daily" | "weekly",
-  weekdayFromMs: number,
-): RepeatCfgInput {
+export function repeatDraftToCfg(draft: "daily" | "weekly", weekdayFromMs: number): RepeatCfgInput {
   if (draft === "daily") {
     return {
       repeatCycle: "DAILY",
