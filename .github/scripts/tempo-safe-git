@@ -62,7 +62,14 @@ case "$cmd" in
     ;;
   add)
     no_args add "$@"
-    exec git add -- .
+    # Scratch files hold the issue text and the commit message. An older
+    # agent branch may not gitignore them, so a plain `git add -- .` would
+    # commit them. Exclude them here, not only in .gitignore.
+    exec git add -- . \
+      ':!.tempo-commit-msg' \
+      ':!.tempo-branch-name' \
+      ':!.tempo-issue.md' \
+      ':!.tempo-request.md'
     ;;
   commit)
     no_args commit "$@"

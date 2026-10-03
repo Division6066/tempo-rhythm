@@ -162,7 +162,6 @@ jobs:
           git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
           git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
           chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
-          gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
           BRANCH="claude/issue-${ISSUE}"
           git fetch --depth=1 origin "$BRANCH" || true
           if git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
@@ -170,6 +169,9 @@ jobs:
           else
             git checkout -b "$BRANCH"
           fi
+          # Write after checkout. An older branch can replace the tree, and
+          # its .gitignore may not list this file.
+          gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
       - name: Run Claude Code on the ticket
         id: claude_code
         uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1
@@ -222,8 +224,9 @@ jobs:
             exit 0
           fi
           if ! git push -u origin "$BRANCH"; then
-            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: \`$BRANCH\` was not a fast-forward. Refusing to force-push. No new pull request."
-            exit 0
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: push of \`$BRANCH\` failed. Refusing to force-push. No pull request opened."
+            gh issue edit "$ISSUE" -R "$REPO" --remove-label "dispatched:claude" || true
+            exit 1
           fi
           EXISTING_PR="$(gh pr list --repo "$REPO" --head "$BRANCH" --base integration --state open --json url --jq 'if length == 0 then "" else .[0].url // "" end')"
           if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then

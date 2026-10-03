@@ -152,7 +152,6 @@ jobs:
           git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
           git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
           chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
-          gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
           BRANCH="claude/issue-${ISSUE}"
           git fetch --depth=1 origin "$BRANCH" || true
           if git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
@@ -160,6 +159,9 @@ jobs:
           else
             git checkout -b "$BRANCH"
           fi
+          # Write after checkout. An older branch can replace the tree, and
+          # its .gitignore may not list this file.
+          gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
       - id: claude_code
         uses: anthropics/claude-code-action@v1
         with:
@@ -214,8 +216,8 @@ jobs:
             exit 0
           fi
           if ! git push -u origin "$BRANCH"; then
-            echo "Push of $BRANCH was not a fast-forward. Refusing to force-push."
-            exit 0
+            echo "::error::Push of $BRANCH failed. Refusing to force-push."
+            exit 1
           fi
           EXISTING_PR="$(gh pr list --repo "$REPO" --head "$BRANCH" --base "$BASE" --state open --json url --jq 'if length == 0 then "" else .[0].url // "" end')"
           if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then

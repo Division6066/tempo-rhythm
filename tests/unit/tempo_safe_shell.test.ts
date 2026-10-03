@@ -78,6 +78,22 @@ describe("tempo-safe-git refuses escalating arguments", () => {
     expect(result.stderr).toContain("must not be a symlink");
   });
 
+  test("add does not stage scratch files", () => {
+    const dir = initRepo();
+    writeFileSync(join(dir, "note.txt"), "changed\n");
+    writeFileSync(join(dir, ".tempo-issue.md"), "issue dump\n");
+    writeFileSync(join(dir, ".tempo-commit-msg"), "note the change\n");
+    const added = run(gitBin, ["add"], dir);
+    expect(added.status).toBe(0);
+    const staged = execFileSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: dir,
+      encoding: "utf8",
+    });
+    expect(staged).toContain("note.txt");
+    expect(staged).not.toContain(".tempo-issue.md");
+    expect(staged).not.toContain(".tempo-commit-msg");
+  });
+
   test("commit with a normal message file does not read an extra path", () => {
     const dir = initRepo();
     writeFileSync(join(dir, "note.txt"), "changed\n");
@@ -176,7 +192,16 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
       expect(text).toContain("concurrency:");
       expect(text).toContain("claude-issue-");
       expect(text).toContain('git checkout -B "$BRANCH" "origin/${BRANCH}"');
+      expect(text.indexOf("> .tempo-issue.md")).toBeGreaterThan(
+        text.indexOf('git checkout -B "$BRANCH" "origin/${BRANCH}"'),
+      );
       expect(text).not.toMatch(/git push[^\n]*--force/);
+      expect(text).not.toContain("was not a fast-forward");
+      expect(text).toContain("Refusing to force-push");
+      expect(text).toContain("exit 1");
     }
+    const dispatch = routers[0];
+    expect(dispatch).toContain('--remove-label "dispatched:claude"');
+    expect(dispatch).toContain("push of");
   });
 });
