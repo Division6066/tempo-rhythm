@@ -1,0 +1,137 @@
+name: factory-write-tickets
+
+# Phase 06 Step 5. The ticket writer: claude-code-action (CLAUDE_CODE_OAUTH_TOKEN, vars.FACTORY_MODEL_CLAUDE) reads
+# docs/PRD.md, docs/TRD.md, the Graphify graph and docs/tickets/_templates/, writes ONE batch
+# (docs/tickets/<batch>/*.md + docs/contracts/<batch>.md) on branch tickets/<batch> and opens ONE PR "Tickets <batch>"
+# labelled config. Amit reviews and merges it; nothing is dispatched before he does (and before the batch is in
+# FACTORY_ACTIVE_BATCHES).
+# R15: the PR is opened with the Claude GitHub App token the action mints (OIDC), NOT GITHUB_TOKEN, so CI runs on it.
+# Moves to the Factory App token once the App exists (UNKNOWN until then whether claude-code-action accepts it as github_token
+# for this flow; the plan is github_token: <Factory App token>).
+# Pause check: same as the lanes (writing tickets costs model time). force=true only from a person.
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch_id:
+        description: Batch id (letters, digits, dash), e.g. B11
+        required: true
+        type: string
+      size:
+        description: Tickets in the batch (3 = 3 components, no data; 9 = 1 data + 8; 15 = 1 data + 14)
+        required: true
+        type: choice
+        options: ["3", "9", "15"]
+        default: "9"
+      hold:
+        description: Set hold true on every component ticket (stress-test batch)
+        type: boolean
+        default: false
+      source:
+        description: Which PRD sections to use (empty = the whole current docs/PRD.md)
+        required: false
+        type: string
+        default: ""
+      force:
+        description: Run even while the factory is paused (Amit / Grok Bot one-off tests only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  id-token: write
+  actions: read
+
+concurrency:
+  group: factory-write-tickets-${{ inputs.batch_id }}
+  cancel-in-progress: false
+
+jobs:
+  write:
+    if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: force=true only from a person
+        if: inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
+          exit 1
+      - name: Claude token present?
+        env:
+          T: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then echo "::error::PARKED: secret CLAUDE_CODE_OAUTH_TOKEN is not visible to this repo (org secret; repo must be in Levidavidspublic)."; exit 1; fi
+      - name: Inputs
+        id: in
+        env:
+          BATCH: ${{ inputs.batch_id }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          if ! [[ "$BATCH" =~ ^[A-Za-z0-9-]{1,20}$ ]]; then echo "::error::batch_id must match ^[A-Za-z0-9-]{1,20}$"; exit 1; fi
+          case "$REPO" in tempo-rhythm) P=TEMPO;; omniagent) P=OMNI;; agentwright) P=AW;; monorepo-template) P=TPL;; *) P=$(echo "${REPO%%-*}" | tr a-z A-Z);; esac
+          echo "prefix=$P" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: integration
+          fetch-depth: 0
+      - name: Batch must be new
+        env:
+          BATCH: ${{ inputs.batch_id }}
+        run: |
+          if git ls-remote --exit-code --heads origin "tickets/$BATCH" >/dev/null; then echo "::error::branch tickets/$BATCH already exists"; exit 1; fi
+          if [ -e "docs/tickets/$BATCH" ]; then echo "::error::docs/tickets/$BATCH already exists on integration"; exit 1; fi
+          test -f docs/PRD.md || { echo "::error::docs/PRD.md is missing"; exit 1; }
+          if grep -qi "PRD pending from Amit" docs/PRD.md; then echo "::error::docs/PRD.md is a stub (PRD pending from Amit). No tickets without a real PRD."; exit 1; fi
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0 (same pin as graphify.yml)
+      - name: Graphify graph (graphifyy==0.9.74)
+        run: |
+          set -euo pipefail
+          uv tool install "graphifyy==0.9.74"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/graphify" --version | grep -qx 'graphify 0.9.74'
+          "$HOME/.local/bin/graphify" update . --no-cluster
+          test -s graphify-out/graph.json
+      - name: Prompt
+        id: prompt
+        env:
+          BATCH: ${{ inputs.batch_id }}
+          SIZE: ${{ inputs.size }}
+          HOLD: ${{ inputs.hold }}
+          SOURCE: ${{ inputs.source }}
+          PREFIX: ${{ steps.in.outputs.prefix }}
+        run: |
+          node --input-type=module -e '
+            import { readFile, appendFile } from "node:fs/promises";
+            const e = process.env; let t = await readFile(".github/factory/ticket-writer-prompt.md", "utf8");
+            for (const k of ["BATCH", "SIZE", "HOLD", "SOURCE", "PREFIX"]) t = t.replaceAll("{{" + k + "}}", e[k] || "");
+            const d = "EOF_" + Math.random().toString(36).slice(2);
+            await appendFile(e.GITHUB_OUTPUT, `prompt<<${d}\n${t}\n${d}\n`);'
+      - uses: anthropics/claude-code-action@ed670b4cf9de2a5a570d130d2f6197b9e543cd64 # v1
+        id: claude
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          base_branch: integration
+          prompt: ${{ steps.prompt.outputs.prompt }}
+          claude_args: >-
+            --model ${{ vars.FACTORY_MODEL_CLAUDE }}
+            --max-turns 80
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(graphify:*),Bash(ls:*),Bash(git status:*),Bash(git diff:*),Bash(git checkout:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git log:*),Bash(gh pr create:*),Bash(gh pr view:*)"
+      - name: Check the batch (shape, front-matter, separate folders, contract, only allowed files)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BATCH: ${{ inputs.batch_id }}
+          SIZE: ${{ inputs.size }}
+          HOLD: ${{ inputs.hold }}
+        run: |
+          git fetch origin "tickets/$BATCH" integration || { echo "::error::branch tickets/$BATCH was not pushed"; exit 1; }
+          git checkout -q "origin/tickets/$BATCH"
+          git diff --name-only origin/integration...HEAD > changed.txt
+          node scripts/factory/validate-tickets.mjs --batch "$BATCH" --size "$SIZE" $([ "$HOLD" = true ] && echo --hold) --changed changed.txt
+          gh pr list --head "tickets/$BATCH" --base integration --state open --json number,title,url,labels,author >> "$GITHUB_STEP_SUMMARY"
