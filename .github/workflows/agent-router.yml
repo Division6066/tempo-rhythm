@@ -154,7 +154,7 @@ jobs:
           # not be able to replace these, and the model must not be able to
           # write over them either. rm removes a symlink; it does not follow it.
           sudo -n mkdir -p /usr/local/bin /usr/local/lib
-          for tool in tempo-safe-git tempo-safe-bun; do
+          for tool in tempo-safe-git tempo-safe-bun tempo-write-scratch; do
             sudo -n rm -f "/usr/local/bin/${tool}"
             git show "origin/${TRUSTED_REF}:.github/scripts/${tool}" | sudo -n tee "/usr/local/bin/${tool}" >/dev/null
             sudo -n chown root:root "/usr/local/bin/${tool}"
@@ -192,11 +192,11 @@ jobs:
           else
             git checkout -b "$BRANCH"
           fi
-          # Write after checkout. An older branch can replace the tree, and
-          # its .gitignore may not list this file. rm -f drops a symlink so
-          # the redirect cannot follow it into /usr/local/bin.
+          # Write after checkout, outside the work tree. rm -f only drops a
+          # leftover in-repo symlink; the body goes through tempo-write-scratch
+          # (O_NOFOLLOW|O_EXCL) so a recreated symlink is not followed.
           rm -f .tempo-issue.md
-          gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
+          gh issue view "$ISSUE" --repo "$REPO" --comments | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-issue.md"
           # Checkout's includeIf file is still runner-readable. Lock it, then
           # drop includeIf from .git/config before the model starts.
           while read -r _key path; do
@@ -219,7 +219,7 @@ jobs:
           done < <(git config --local --get-regexp '^includeIf\.' || true)
           /usr/local/bin/tempo-safe-git status >/dev/null
       - id: claude_code
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           base_branch: ${{ needs.route.outputs.base }}
@@ -229,7 +229,7 @@ jobs:
           additional_permissions: |
             actions: read
           prompt: |
-            The issue text is in `.tempo-issue.md`. Read that file and implement the work it asks for.
+            The issue text is in `${{ runner.temp }}/tempo-issue.md`. Read that file and implement the work it asks for.
             You are already on branch `claude/issue-${{ needs.route.outputs.issue }}`, created from `${{ needs.route.outputs.base }}`.
             Do not push and do not open a pull request. A later step pushes this branch and opens the draft.
             Stay inside the file scope the issue declares. If the work needs a file outside that scope,

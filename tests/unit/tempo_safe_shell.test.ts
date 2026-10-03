@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -309,11 +309,53 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
     expect(lookupPrUrl([{ url: "https://example.test/pull/1" }])).toBe("https://example.test/pull/1");
   });
 
+  test("scratch files are written outside the checkout without following a symlink", () => {
+    const writer = join(root, ".github/scripts/tempo-write-scratch");
+    const source = readFileSync(writer, "utf8");
+    expect(source).toContain("O_NOFOLLOW");
+    expect(source).toContain("O_EXCL");
+    expect(source).toContain("0o600");
+    chmodSync(writer, 0o755);
+
+    const dir = mkdtempSync(join(tmpdir(), "tempo-scratch-"));
+    const sentinel = join(dir, "sentinel");
+    writeFileSync(sentinel, "keep-me");
+    const dest = join(dir, "tempo-issue.md");
+    symlinkSync(sentinel, dest);
+    execFileSync(writer, [dest], { input: "new-body\n" });
+    expect(readFileSync(sentinel, "utf8")).toBe("keep-me");
+    const written = lstatSync(dest);
+    expect(written.isSymbolicLink()).toBe(false);
+    expect(written.isFile()).toBe(true);
+    expect(written.mode & 0o777).toBe(0o600);
+    expect(readFileSync(dest, "utf8")).toBe("new-body\n");
+
+    const realParent = join(dir, "real");
+    mkdirSync(realParent);
+    const linkedParent = join(dir, "linked-parent");
+    symlinkSync(realParent, linkedParent);
+    const viaLink = join(linkedParent, "file.md");
+    const refused = run(writer, [viaLink], dir);
+    expect(refused.status).not.toBe(0);
+    expect(existsSync(join(realParent, "file.md"))).toBe(false);
+
+    const relative = run(writer, ["tempo-issue.md"], dir);
+    expect(relative.status).not.toBe(0);
+  });
+
   test("interactive claude reads the comment from a file, and repeats fast-forward", () => {
+    const pinned = "anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1";
     const claude = readFileSync(join(root, ".github/workflows/claude.yml"), "utf8");
-    expect(claude).toContain(".tempo-request.md");
     expect(claude).toContain("COMMENT_BODY:");
-    expect(claude.indexOf("rm -f .tempo-request.md")).toBeLessThan(claude.indexOf("> .tempo-request.md"));
+    expect(claude).toContain("rm -f .tempo-request.md");
+    expect(claude).not.toContain("> .tempo-request.md");
+    expect(claude).toContain(
+      'printf \'%s\\n\' "$COMMENT_BODY" | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-request.md"',
+    );
+    expect(claude).toContain("${{ runner.temp }}/tempo-request.md");
+    expect(claude).toContain("for tool in tempo-safe-git tempo-safe-bun tempo-write-scratch; do");
+    expect(claude).toContain(pinned);
+    expect(claude).not.toContain("claude-code-action@v1");
     const routers = [
       readFileSync(join(root, ".github/workflows/dispatch-router.yml"), "utf8"),
       readFileSync(join(root, ".github/workflows/agent-router.yml"), "utf8"),
@@ -325,7 +367,14 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
       expect(text.indexOf("rm -f .tempo-issue.md")).toBeGreaterThan(
         text.indexOf('git checkout -B "$BRANCH" "origin/${BRANCH}"'),
       );
-      expect(text.indexOf("> .tempo-issue.md")).toBeGreaterThan(text.indexOf("rm -f .tempo-issue.md"));
+      expect(text).not.toContain("> .tempo-issue.md");
+      expect(text).toContain(
+        'gh issue view "$ISSUE" --repo "$REPO" --comments | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-issue.md"',
+      );
+      expect(text).toContain("${{ runner.temp }}/tempo-issue.md");
+      expect(text).toContain("for tool in tempo-safe-git tempo-safe-bun tempo-write-scratch; do");
+      expect(text).toContain(pinned);
+      expect(text).not.toContain("claude-code-action@v1");
       expect(text).toContain('if ! auth_push "$BRANCH"; then');
       expect(text).not.toMatch(/git push[^\n]*--force/);
       expect(text).not.toContain("was not a fast-forward");
