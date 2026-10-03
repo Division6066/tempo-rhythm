@@ -75,9 +75,12 @@ test.describe("demo: notes stay per user", () => {
 
     await pageB.goto(url("/notes"));
     await expect(pageB.getByRole("main").getByRole("heading", { name: "Notes" })).toBeVisible();
+    // Wait for the list to actually load before trusting a negative check.
+    await expect(pageB.getByText("Loading your notes.")).toHaveCount(0);
     await expect(pageB.getByText(noteTitle)).toHaveCount(0);
 
     await pageB.goto(url(`/notes/${noteId}`));
+    await expect(pageB.getByText("Loading note.")).toHaveCount(0);
     await expect(pageB.getByText(noteTitle)).toHaveCount(0);
     await expect(pageB.getByText("edited")).toHaveCount(0);
 
@@ -104,27 +107,58 @@ test.describe("demo: chat stays per user", () => {
     await pageA.goto(url("/coach"));
     await expect(pageA.getByRole("main").getByRole("heading", { name: "Coach" })).toBeVisible();
 
-    await pageA.getByLabel("Message").fill(prompt);
+    const messageInput = pageA.getByLabel("Message");
+    const assistantBubbles = pageA.locator('[data-role="assistant"]');
+
+    // Wait for the conversation to finish loading before reading the bubble
+    // count — otherwise auth/conversationId/messages may still be unresolved,
+    // giving a false "0" that races the real count once loading finishes.
+    await expect(messageInput).toBeEnabled();
+    await expect(pageA.getByText("Loading your conversation.")).toHaveCount(0);
+
+    const bubblesBefore = await assistantBubbles.count();
+
+    // The reply can resolve in well under a second, so a post-click
+    // `toBeDisabled()` check races isSending flipping back to false. Record
+    // the disabled transition with an observer attached before the click
+    // instead of polling for it afterwards.
+    await pageA.evaluate(() => {
+      (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending = false;
+      const input = document.querySelector('input[aria-label="Message"]');
+      if (input) {
+        new MutationObserver(() => {
+          if ((input as HTMLInputElement).disabled) {
+            (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending = true;
+          }
+        }).observe(input, { attributes: true, attributeFilter: ["disabled"] });
+      }
+    });
+
+    await messageInput.fill(prompt);
     const sendStart = Date.now();
     await pageA.getByRole("button", { name: "Send" }).click();
 
     await expect(pageA.getByText(prompt)).toBeVisible();
-    await expect(pageA.getByRole("status", { name: "Coach is typing" })).toBeVisible({
-      timeout: 1_500,
-    });
-    await expect(pageA.getByRole("status", { name: "Coach is typing" })).toHaveCount(0, {
-      timeout: 10_000,
-    });
-    expect(Date.now() - sendStart).toBeLessThan(10_000);
 
+    // Exactly one new assistant bubble, not "some bubble somewhere matches",
+    // so this survives a conversation thread with earlier replies in it.
+    await expect(assistantBubbles).toHaveCount(bubblesBefore + 1, { timeout: 10_000 });
+    expect(Date.now() - sendStart).toBeLessThan(10_000);
+    expect(
+      await pageA.evaluate(() => (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending),
+    ).toBe(true);
+    await expect(pageA.getByRole("status", { name: "Coach is typing" })).toHaveCount(0);
+    await expect(messageInput).toBeEnabled();
+
+    const newReply = assistantBubbles.nth(bubblesBefore);
     const templateReplies = Object.values(COACH_REPLIES);
     if (expectRuntimeModel) {
       for (const reply of templateReplies) {
-        await expect(pageA.getByText(reply, { exact: true })).toHaveCount(0);
+        await expect(newReply).not.toHaveText(reply);
       }
     } else {
       const replyPattern = new RegExp(templateReplies.map(escapeRegExp).join("|"));
-      await expect(pageA.getByText(replyPattern)).toBeVisible();
+      await expect(newReply).toHaveText(replyPattern);
     }
 
     await pageA.reload();
@@ -146,9 +180,17 @@ test.describe("demo: chat stays per user", () => {
     });
 
     await pageB.goto(url("/history"));
+    // Wait for the loaded state (either empty or populated) before trusting a
+    // negative check — the skeleton has no text of its own to assert against.
+    await expect(
+      pageB.getByRole("heading", {
+        name: /No past conversations yet|Pick up a conversation where you left it/,
+      }),
+    ).toBeVisible();
     await expect(pageB.getByText(prompt)).toHaveCount(0);
 
     await pageB.goto(url("/coach"));
+    await expect(pageB.getByText("Loading your conversation.")).toHaveCount(0);
     await expect(pageB.getByText(prompt)).toHaveCount(0);
 
     expect(consoleErrorsB).toEqual([]);
