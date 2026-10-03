@@ -49,7 +49,7 @@ const searchHitValidator = v.object({
   createdAt: v.number(),
 });
 
-/** Case-insensitive search across the caller's live chats. One match per conversation, 200 conversations, 80 messages each. */
+/** Case-insensitive search across the caller's live chats. One match per conversation, 200 conversations, the 80 newest live messages each. */
 export const searchMine = query({
   args: { query: v.string() },
   returns: v.array(searchHitValidator),
@@ -84,6 +84,7 @@ export const searchMine = query({
         .withIndex("by_conversationId_deletedAt", (q) =>
           q.eq("conversationId", conversation._id).eq("deletedAt", undefined)
         )
+        .order("desc")
         .take(80);
 
       for (const message of messages) {
