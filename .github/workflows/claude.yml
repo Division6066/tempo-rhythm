@@ -64,6 +64,11 @@ jobs:
           bun-version: 1.3.9
       - if: steps.gate.outputs.allowed == 'true'
         run: bun install --frozen-lockfile
+      - name: Install command wrappers
+        if: steps.gate.outputs.allowed == 'true'
+        run: |
+          install -m 0755 .github/scripts/tempo-safe-git /usr/local/bin/tempo-safe-git
+          install -m 0755 .github/scripts/tempo-safe-bun /usr/local/bin/tempo-safe-bun
       # ----------------------------------------------------------------------
 
       - uses: anthropics/claude-code-action@v1
@@ -74,10 +79,19 @@ jobs:
           # ever comments "@claude" as an app, uncomment and name that bot login,
           # otherwise the run is refused with no useful error.
           # allowed_bots: "linear[bot],zo-agent[bot]"
-          # Tools stay prefix-scoped. `Bash(git:*)` matches `git -c` and `--exec-path`.
+          # Exact wrapper commands only. A trailing :* still matches --force, --delete,
+          # HEAD:integration, and commit -F. The wrappers refuse extra arguments.
           # Do not open a pull request from the model; the action's own GitHub token
           # still comments. A write collaborator is required before this step runs.
+          prompt: |
+            Use only `/usr/local/bin/tempo-safe-git` and `/usr/local/bin/tempo-safe-bun`.
+            Do not run `git`, `bun`, or `bunx` directly.
+            To name a branch, write one line starting with `claude/` to `.tempo-branch-name`,
+            then run `/usr/local/bin/tempo-safe-git branch-new`.
+            To commit, write `.tempo-commit-msg`, then run `add` and `commit` on that wrapper.
+            To publish, run `/usr/local/bin/tempo-safe-git push` with no extra arguments.
+            Never push `master`, `main`, or `integration`.
           claude_args: |
             --max-turns 25
             --model claude-sonnet-5
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git checkout -b:*),Bash(git switch:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(git push -u origin:*),Bash(bun run lint:*),Bash(bun run test:*),Bash(bun run typecheck:*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new),Bash(/usr/local/bin/tempo-safe-git push),Bash(/usr/local/bin/tempo-safe-bun lint),Bash(/usr/local/bin/tempo-safe-bun test),Bash(/usr/local/bin/tempo-safe-bun typecheck)"

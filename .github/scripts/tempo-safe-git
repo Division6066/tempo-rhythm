@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Fixed git commands for unattended agents.
+# Every subcommand refuses extra arguments. Flags, refspecs, and commit-message
+# files are chosen here, never forwarded from the model command line.
+set -euo pipefail
+
+refuse() {
+  printf 'tempo-safe-git: %s\n' "$*" >&2
+  exit 2
+}
+
+no_args() {
+  [ "$#" -eq 1 ] || refuse "$1 takes no arguments"
+}
+
+repo_file() {
+  root=$(git rev-parse --show-toplevel)
+  path="$root/$1"
+  [ -e "$path" ] || refuse "missing $1"
+  [ ! -L "$path" ] || refuse "$1 must not be a symlink"
+  real=$(realpath "$path")
+  case "$real" in
+    "$root"/*) ;;
+    *) refuse "$1 resolves outside the repository" ;;
+  esac
+  printf '%s\n' "$real"
+}
+
+safe_branch_name() {
+  name=$1
+  case "$name" in
+    '' | HEAD | master | main | integration) refuse "refusing branch '$name'" ;;
+    -* | *:*) refuse "refusing branch '$name'" ;;
+    *..* | *//* | *' '*) refuse "refusing branch '$name'" ;;
+    *[!A-Za-z0-9._/-]*) refuse "refusing branch '$name'" ;;
+  esac
+  case "$name" in
+    claude/*) ;;
+    *) refuse "branch must start with claude/" ;;
+  esac
+}
+
+cmd=${1:-}
+shift || true
+
+case "$cmd" in
+  status)
+    no_args status "$@"
+    exec git status --porcelain
+    ;;
+  diff)
+    no_args diff "$@"
+    exec git diff
+    ;;
+  diff-cached)
+    no_args diff-cached "$@"
+    exec git diff --cached
+    ;;
+  log)
+    no_args log "$@"
+    exec git log -n 20 --oneline
+    ;;
+  add)
+    no_args add "$@"
+    exec git add -- .
+    ;;
+  commit)
+    no_args commit "$@"
+    msg=$(repo_file .tempo-commit-msg)
+    exec git commit -F "$msg"
+    ;;
+  branch-new)
+    no_args branch-new "$@"
+    file=$(repo_file .tempo-branch-name)
+    lines=$(grep -c '' "$file" || true)
+    [ "$lines" -eq 1 ] || refuse "branch file must be one line"
+    name=$(head -n 1 "$file" | tr -d '\r')
+    safe_branch_name "$name"
+    exec git checkout -b "$name"
+    ;;
+  push)
+    no_args push "$@"
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    safe_branch_name "$branch"
+    exec git push -u origin "$branch"
+    ;;
+  *)
+    refuse "unknown command"
+    ;;
+esac

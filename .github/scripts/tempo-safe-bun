@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Fixed bun commands for unattended agents.
+# `bun test <extra>` can load arbitrary code (`--preload`). These commands
+# accept no arguments and only run the package scripts.
+set -euo pipefail
+
+refuse() {
+  printf 'tempo-safe-bun: %s\n' "$*" >&2
+  exit 2
+}
+
+cmd=${1:-}
+shift || true
+[ "$#" -eq 0 ] || refuse "takes no arguments"
+
+case "$cmd" in
+  lint) exec bun run lint ;;
+  test) exec bun run test ;;
+  typecheck) exec bun run typecheck ;;
+  *) refuse "unknown command" ;;
+esac
