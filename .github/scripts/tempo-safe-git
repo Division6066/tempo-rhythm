@@ -29,7 +29,8 @@ refuse() {
 
 # .git/config is local and is not covered by GIT_CONFIG_NOSYSTEM. Rewrite it
 # before any git process starts. Keep a fixed identity and, when the workflow
-# snapshotted them, a https GitHub origin plus the Actions extraheader.
+# snapshotted it, a https GitHub origin. Never copy http.extraheader: the
+# checkout token must not land in a file the model can Read.
 # Drop filter, diff, fsmonitor, include, alias, and remote entries so a
 # Write to .git/config cannot execute on the next allowed command.
 find_git_dir() {
@@ -80,13 +81,6 @@ sanitize_repo_config() {
     esac
   fi
 
-  header=$(read_snapshot_line /usr/local/lib/tempo-git-extraheader)
-  if [ -n "$header" ]; then
-    case "$header" in
-      *'['*|*']'*) refuse "extraheader is not allowed" ;;
-    esac
-  fi
-
   tmp=$(mktemp "$gitdir/config.XXXXXX")
   {
     printf '%s\n' '[user]'
@@ -98,10 +92,6 @@ sanitize_repo_config() {
       printf '%s\n' '[remote "origin"]'
       printf 'url = %s\n' "$origin_url"
       printf '%s\n' 'fetch = +refs/heads/*:refs/remotes/origin/*'
-    fi
-    if [ -n "$header" ]; then
-      printf '%s\n' '[http]'
-      printf 'extraheader = %s\n' "$header"
     fi
   } > "$tmp"
   mv -f "$tmp" "$cfg"
@@ -196,6 +186,9 @@ case "$cmd" in
     g checkout -b "$name"
     ;;
   push)
+    # This process has no checkout token. Extra arguments and protected
+    # branches are still refused. A real publish is the workflow step after
+    # the model exits, which passes the token only to that one git process.
     no_args push "$@"
     branch=$(g rev-parse --abbrev-ref HEAD)
     safe_branch_name "$branch"

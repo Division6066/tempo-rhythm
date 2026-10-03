@@ -179,8 +179,12 @@ jobs:
           fi
           printf '%s' "$header" | sudo -n tee /usr/local/lib/tempo-git-extraheader >/dev/null
           sudo -n chown root:root /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
-          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin
+          # 0400 root: the model can Read a 0444 file. The workflow push step
+          # reads this with sudo after the model has exited. Do not print it.
+          sudo -n chmod 0400 /usr/local/lib/tempo-git-extraheader
           sudo -n chattr +i /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader || true
+          unset header
           BRANCH="claude/issue-${ISSUE}"
           git fetch --depth=1 origin "$BRANCH" || true
           if git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
@@ -193,6 +197,21 @@ jobs:
           # the redirect cannot follow it into /usr/local/bin.
           rm -f .tempo-issue.md
           gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
+          # Checkout's includeIf file is still runner-readable. Lock it, then
+          # drop includeIf from .git/config before the model starts.
+          while read -r _key path; do
+            [ -n "${path:-}" ] || continue
+            case "$path" in
+              "${RUNNER_TEMP:-/tmp}"/*|/home/runner/*|/tmp/*) ;;
+              *) echo "::error::refusing to lock unexpected credential path"; exit 1 ;;
+            esac
+            if [ -f "$path" ] && [ ! -L "$path" ]; then
+              sudo -n chown root:root "$path"
+              sudo -n chmod 0400 "$path"
+              sudo -n chattr +i "$path" || true
+            fi
+          done < <(git config --local --get-regexp '^includeIf\.' || true)
+          /usr/local/bin/tempo-safe-git status >/dev/null
       - id: claude_code
         uses: anthropics/claude-code-action@v1
         with:
@@ -250,7 +269,34 @@ jobs:
             echo "No commits on $BRANCH; not opening a pull request."
             exit 0
           fi
-          if ! /usr/local/bin/tempo-safe-git push; then
+          # Token stays in the environment of this one git process. It is not
+          # written to .git/config and it is not printed.
+          auth_push() {
+            local branch="$1"
+            local header
+            header=$(sudo -n cat /usr/local/lib/tempo-git-extraheader)
+            case "$header" in
+              ''|*'['*|*']'*|*$'\n'*)
+                unset header
+                echo "::error::checkout credential is not usable"
+                return 1
+                ;;
+            esac
+            if GIT_CONFIG_COUNT=1 \
+                GIT_CONFIG_KEY_0=http.extraheader \
+                GIT_CONFIG_VALUE_0="$header" \
+                /usr/bin/git \
+                  -c core.hooksPath=/dev/null \
+                  -c core.fsmonitor= \
+                  -c core.sshCommand= \
+                  push --no-verify -u origin "$branch"; then
+              unset header
+              return 0
+            fi
+            unset header
+            return 1
+          }
+          if ! auth_push "$BRANCH"; then
             echo "::error::Push of $BRANCH failed. Refusing to force-push."
             exit 1
           fi

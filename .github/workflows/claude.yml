@@ -108,8 +108,27 @@ jobs:
           fi
           printf '%s' "$header" | sudo -n tee /usr/local/lib/tempo-git-extraheader >/dev/null
           sudo -n chown root:root /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
-          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
+          sudo -n chmod 0444 /usr/local/lib/tempo-git-origin
+          # 0400 root: the model can Read a 0444 file. The workflow push step
+          # reads this with sudo after the model has exited. Do not print it.
+          sudo -n chmod 0400 /usr/local/lib/tempo-git-extraheader
           sudo -n chattr +i /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader || true
+          unset header
+          # Checkout's includeIf file is still runner-readable. Lock it, then
+          # drop includeIf from .git/config before the model starts.
+          while read -r _key path; do
+            [ -n "${path:-}" ] || continue
+            case "$path" in
+              "${RUNNER_TEMP:-/tmp}"/*|/home/runner/*|/tmp/*) ;;
+              *) echo "::error::refusing to lock unexpected credential path"; exit 1 ;;
+            esac
+            if [ -f "$path" ] && [ ! -L "$path" ]; then
+              sudo -n chown root:root "$path"
+              sudo -n chmod 0400 "$path"
+              sudo -n chattr +i "$path" || true
+            fi
+          done < <(git config --local --get-regexp '^includeIf\.' || true)
+          /usr/local/bin/tempo-safe-git status >/dev/null
       - name: Save the request for Claude
         if: steps.gate.outputs.allowed == 'true'
         env:
@@ -147,10 +166,61 @@ jobs:
             To name a branch, write one line starting with `claude/` to `.tempo-branch-name`,
             then run `/usr/local/bin/tempo-safe-git branch-new`.
             To commit, write `.tempo-commit-msg`, then run `add` and `commit` on that wrapper.
-            To publish, run `/usr/local/bin/tempo-safe-git push` with no extra arguments.
+            Do not push. A later workflow step publishes the current `claude/` branch.
             Never push `master`, `main`, or `integration`.
           claude_args: |
             --max-turns 25
             --model claude-sonnet-5
             --setting-sources user
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new),Bash(/usr/local/bin/tempo-safe-git push)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new)"
+      - name: Push the claude branch
+        if: steps.gate.outputs.allowed == 'true'
+        run: |
+          set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
+          /usr/local/bin/tempo-safe-git status >/dev/null
+          head=$(git rev-parse --abbrev-ref HEAD)
+          case "$head" in
+            claude/*) ;;
+            *)
+              echo "Nothing to push from ${head}."
+              exit 0
+              ;;
+          esac
+          case "$head" in
+            master|main|integration|''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*|HEAD)
+              echo "::error::refusing branch"
+              exit 1
+              ;;
+          esac
+          # Token stays in the environment of this one git process. It is not
+          # written to .git/config and it is not printed.
+          auth_push() {
+            local branch="$1"
+            local header
+            header=$(sudo -n cat /usr/local/lib/tempo-git-extraheader)
+            case "$header" in
+              ''|*'['*|*']'*|*$'\n'*)
+                unset header
+                echo "::error::checkout credential is not usable"
+                return 1
+                ;;
+            esac
+            if GIT_CONFIG_COUNT=1 \
+                GIT_CONFIG_KEY_0=http.extraheader \
+                GIT_CONFIG_VALUE_0="$header" \
+                /usr/bin/git \
+                  -c core.hooksPath=/dev/null \
+                  -c core.fsmonitor= \
+                  -c core.sshCommand= \
+                  push --no-verify -u origin "$branch"; then
+              unset header
+              return 0
+            fi
+            unset header
+            return 1
+          }
+          if ! auth_push "$head"; then
+            echo "::error::Push of $head failed. Refusing to force-push."
+            exit 1
+          fi

@@ -209,6 +209,8 @@ describe("tempo-safe-git does not use PATH git", () => {
     expect(text).toContain("#!/usr/bin/env -S -i PATH=/usr/bin:/bin bash --noprofile --norc");
     expect(text).toContain("name = Tempo Agent");
     expect(text).toContain("/usr/local/lib/tempo-git-origin");
+    expect(text).not.toContain("tempo-git-extraheader");
+    expect(text).not.toContain("extraheader =");
   });
 });
 
@@ -255,9 +257,17 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
       expect(text).toContain('git show "origin/${TRUSTED_REF}:.github/scripts/${tool}"');
       expect(text).toContain("sudo -n chattr +i");
       expect(text).toContain("tempo-git-origin");
+      expect(text).toContain("sudo -n chmod 0400 /usr/local/lib/tempo-git-extraheader");
+      expect(text).not.toContain("chmod 0444 /usr/local/lib/tempo-git-extraheader");
+      expect(text).toContain("sudo -n cat /usr/local/lib/tempo-git-extraheader");
+      expect(text).toContain("GIT_CONFIG_KEY_0=http.extraheader");
+      expect(text).toContain("GIT_CONFIG_VALUE_0=\"$header\"");
+      expect(text).not.toContain("echo \"$header\"");
+      expect(text).not.toContain("tempo-safe-git push");
       expect(text).toContain('git config --get-urlmatch http.extraheader "https://github.com/${REPO}.git"');
       expect(text).not.toContain("git config --local --get http.extraheader");
       expect(text).toContain("checkout credential was not found");
+      expect(text).toContain('sudo -n chmod 0400 "$path"');
       expect(text).toContain("--ignore-scripts");
       expect(text).toContain("--setting-sources user");
       expect(text).not.toContain("DEFAULT_BRANCH");
@@ -311,7 +321,7 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
         text.indexOf('git checkout -B "$BRANCH" "origin/${BRANCH}"'),
       );
       expect(text.indexOf("> .tempo-issue.md")).toBeGreaterThan(text.indexOf("rm -f .tempo-issue.md"));
-      expect(text).toContain("if ! /usr/local/bin/tempo-safe-git push; then");
+      expect(text).toContain('if ! auth_push "$BRANCH"; then');
       expect(text).not.toMatch(/git push[^\n]*--force/);
       expect(text).not.toContain("was not a fast-forward");
       expect(text).toContain("Refusing to force-push");
