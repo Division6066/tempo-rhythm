@@ -1,0 +1,65 @@
+# Deploys integration's Convex functions to the TEST deployment ceaseless-dog-617 (what preview.tempoflow.dev uses).
+# Ticket #445. Never runs on master. Never uses a prod key: the key must name ceaseless-dog-617 and must not be a prod: key.
+# Needs the Actions secret CONVEX_DEPLOY_KEY_TEST (set by Amit from 1Password `dev`). Without it the job skips with a notice.
+name: convex-test-deploy
+
+on:
+  push:
+    branches: [integration]
+    paths:
+      - "convex/**"
+      - "package.json"
+      - "bun.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convex-test-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check the key (names only, never printed)
+        id: key
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: |
+          if [ -z "$CONVEX_DEPLOY_KEY" ]; then
+            echo "::notice::CONVEX_DEPLOY_KEY_TEST = UNSET; skipping the Convex test deploy."
+            echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          case "$CONVEX_DEPLOY_KEY" in
+            prod:*) echo "::error::CONVEX_DEPLOY_KEY_TEST is a prod key; refusing."; exit 1;;
+          esac
+          case "$CONVEX_DEPLOY_KEY" in
+            *ceaseless-dog-617\|*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY_TEST does not name ceaseless-dog-617; refusing."; exit 1;;
+          esac
+          case "$CONVEX_DEPLOY_KEY" in
+            dev:*) echo "mode=dev" >> "$GITHUB_OUTPUT";;
+            *) echo "mode=deploy" >> "$GITHUB_OUTPUT";;
+          esac
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.ok == 'true'
+      - uses: oven-sh/setup-bun@v2
+        if: steps.key.outputs.ok == 'true'
+      - name: Install
+        if: steps.key.outputs.ok == 'true'
+        run: bun install --frozen-lockfile
+      - name: Deploy functions to ceaseless-dog-617
+        if: steps.key.outputs.ok == 'true'
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: |
+          if [ "${{ steps.key.outputs.mode }}" = dev ]; then
+            bunx convex dev --once --typecheck=disable
+          else
+            bunx convex deploy --yes --typecheck=disable
+          fi
