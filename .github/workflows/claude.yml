@@ -51,5 +51,5 @@ jobs:
           # otherwise the run is refused with no useful error.
           # allowed_bots: "linear[bot],zo-agent[bot]"
           claude_args: |
-            --max-turns 25
+            --max-turns 40
             --model claude-sonnet-5
