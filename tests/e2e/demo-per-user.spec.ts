@@ -109,6 +109,13 @@ test.describe("demo: chat stays per user", () => {
 
     const messageInput = pageA.getByLabel("Message");
     const assistantBubbles = pageA.locator('[data-role="assistant"]');
+
+    // Wait for the conversation to finish loading before reading the bubble
+    // count — otherwise auth/conversationId/messages may still be unresolved,
+    // giving a false "0" that races the real count once loading finishes.
+    await expect(messageInput).toBeEnabled();
+    await expect(pageA.getByText("Loading your conversation.")).toHaveCount(0);
+
     const bubblesBefore = await assistantBubbles.count();
 
     // The reply can resolve in well under a second, so a post-click
