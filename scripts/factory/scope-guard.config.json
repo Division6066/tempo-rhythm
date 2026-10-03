@@ -1,0 +1,9 @@
+{
+  "dataFolders": [
+    "convex/"
+  ],
+  "note": "Data folders for scope-guard rules d-f. tempo-rhythm: Convex lives in convex/ (incl. convex/_generated).",
+  "extraHotFiles": [
+    "(^|/)convex\\.json$"
+  ]
+}
