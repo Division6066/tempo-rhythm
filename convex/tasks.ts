@@ -63,10 +63,10 @@ export const list = query({
     const user = await requireUser(ctx);
     let rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
-
-    rows = rows.filter((t) => t.deletedAt === undefined);
 
     if (args.status) {
       rows = rows.filter((t) => t.status === args.status);
@@ -109,13 +109,11 @@ export const listDueInRange = query({
     const user = await requireUser(ctx);
     const rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
-    return filterTasksDueInRange(
-      rows.filter((t) => t.deletedAt === undefined),
-      args.startMs,
-      args.endMs,
-    );
+    return filterTasksDueInRange(rows, args.startMs, args.endMs);
   },
 });
 
@@ -269,13 +267,13 @@ export const listToday = query({
     }
     const rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .collect();
-    return filterTasksDueInRange(
-      rows.filter((t) => t.deletedAt === undefined),
-      args.dueFrom,
-      args.dueTo,
-    ).sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
+    return filterTasksDueInRange(rows, args.dueFrom, args.dueTo).sort(
+      (a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0),
+    );
   },
 });
 

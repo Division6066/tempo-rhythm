@@ -1,11 +1,11 @@
 "use client";
 
-import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
   getChecklistProgress,
   parseChecklistText,
@@ -16,11 +16,12 @@ import {
   groupTasksByEnergy,
   groupTasksByPriority,
   slugifyProjectName,
-  titleFromProjectSlug,
   type TaskEnergy,
   type TaskPriority,
+  type TaskStatus,
   type TaskView,
   type TaskViewRecord,
+  titleFromProjectSlug,
 } from "@/lib/task-view-filters";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,28 @@ const energyLabels: Record<TaskEnergy, string> = {
   high: "High energy",
 };
 
+function isTaskStatus(value: unknown): value is TaskStatus {
+  return value === "todo" || value === "in_progress" || value === "done" || value === "cancelled";
+}
+
+function isTaskLevel(value: unknown): value is TaskPriority {
+  return value === "low" || value === "medium" || value === "high";
+}
+
+function isLocalTaskRecord(value: unknown): value is LocalTaskRecord {
+  if (typeof value !== "object" || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.id === "string" &&
+    typeof row.title === "string" &&
+    isTaskStatus(row.status) &&
+    isTaskLevel(row.priority) &&
+    isTaskLevel(row.energy) &&
+    typeof row.updatedAt === "number" &&
+    typeof row.createdAt === "number"
+  );
+}
+
 function loadLocalTasks(): LocalTaskRecord[] {
   if (typeof window === "undefined") {
     return [];
@@ -98,8 +121,9 @@ function loadLocalTasks(): LocalTaskRecord[] {
     if (!raw) {
       return [];
     }
-    const parsed = JSON.parse(raw) as LocalTaskRecord[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isLocalTaskRecord);
   } catch {
     return [];
   }
@@ -220,9 +244,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     // Project view must reuse the filter's projectId — do not re-slugify the
     // display title alone, or URL slug and stored id can diverge.
     const normalizedProjectId =
-      view === "project" && projectId
-        ? projectId
-        : slugifyProjectName(normalizedProjectName);
+      view === "project" && projectId ? projectId : slugifyProjectName(normalizedProjectName);
     const dueAt = draft.dueToday ? bounds.endMs - 1 : undefined;
     const checklist = parseChecklistText(draft.checklistText);
 
@@ -288,8 +310,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
               status: item.status === "done" ? "todo" : "done",
               updatedAt: Date.now(),
             }
-          : item,
-      ),
+          : item
+      )
     );
   };
 
@@ -306,7 +328,9 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
       await updateTask({ taskId: task.id as Id<"tasks">, title });
     } else if (usesLocalStore) {
       persistLocal((tasks) =>
-        tasks.map((item) => (item.id === task.id ? { ...item, title, updatedAt: Date.now() } : item)),
+        tasks.map((item) =>
+          item.id === task.id ? { ...item, title, updatedAt: Date.now() } : item
+        )
       );
     } else {
       return;
@@ -333,8 +357,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 
     persistLocal((tasks) =>
       tasks.map((item) =>
-        item.id === task.id ? { ...item, checklist, updatedAt: Date.now() } : item,
-      ),
+        item.id === task.id ? { ...item, checklist, updatedAt: Date.now() } : item
+      )
     );
   };
 
@@ -368,7 +392,10 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           </nav>
         </header>
 
-        <section className="rounded-3xl border border-border bg-card p-5 shadow-card" aria-label="Create task">
+        <section
+          className="rounded-3xl border border-border bg-card p-5 shadow-card"
+          aria-label="Create task"
+        >
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_150px_150px_150px_auto] lg:items-end">
             <label className="space-y-2">
               <span className="text-sm font-medium text-foreground">Task title</span>
@@ -376,7 +403,9 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                 aria-label="Task title"
                 value={draft.title}
                 disabled={!taskStoreReady}
-                onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, title: event.target.value }))
+                }
                 className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
                 placeholder="One small next step"
               />
@@ -464,13 +493,17 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
               type="checkbox"
               checked={draft.dueToday}
               disabled={!taskStoreReady}
-              onChange={(event) => setDraft((current) => ({ ...current, dueToday: event.target.checked }))}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, dueToday: event.target.checked }))
+              }
               className="h-4 w-4 rounded border-border text-primary"
             />
             Show on Today
           </label>
           <label className="mt-4 block space-y-2">
-            <span className="text-sm font-medium text-foreground">Checklist (one step per line)</span>
+            <span className="text-sm font-medium text-foreground">
+              Checklist (one step per line)
+            </span>
             <textarea
               aria-label="Checklist steps"
               value={draft.checklistText}
@@ -602,7 +635,10 @@ function GroupedTaskList<TGroup extends string>({
     <div className="space-y-6">
       {(Object.keys(labels) as TGroup[]).map((group) => (
         <section key={group} className="space-y-3" aria-labelledby={`${group}-group-heading`}>
-          <h2 id={`${group}-group-heading`} className="font-heading text-2xl font-semibold text-foreground">
+          <h2
+            id={`${group}-group-heading`}
+            className="font-heading text-2xl font-semibold text-foreground"
+          >
             {labels[group]}
           </h2>
           <TaskList
@@ -652,7 +688,7 @@ function TaskRow({
     <li
       className={cn(
         "rounded-2xl border border-border bg-card p-4 shadow-card",
-        isDone ? "opacity-80" : "opacity-100",
+        isDone ? "opacity-80" : "opacity-100"
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -662,7 +698,9 @@ function TaskRow({
           onClick={() => onToggle(task)}
           className={cn(
             "flex min-h-11 min-w-11 items-center justify-center rounded-full border text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-            isDone ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background",
+            isDone
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background"
           )}
           aria-label={isDone ? `Mark ${task.title} not done` : `Mark ${task.title} complete`}
         >
@@ -700,8 +738,12 @@ function TaskRow({
             </div>
           )}
           <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.projectName ?? "Inbox"}</span>
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.priority} priority</span>
+            <span className="rounded-pill bg-surface-sunken px-3 py-1">
+              {task.projectName ?? "Inbox"}
+            </span>
+            <span className="rounded-pill bg-surface-sunken px-3 py-1">
+              {task.priority} priority
+            </span>
             <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.energy} energy</span>
             {checklistProgress.total > 0 ? (
               <span className="rounded-pill bg-surface-sunken px-3 py-1">
