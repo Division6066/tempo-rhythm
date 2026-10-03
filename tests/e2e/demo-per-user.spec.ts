@@ -75,9 +75,12 @@ test.describe("demo: notes stay per user", () => {
 
     await pageB.goto(url("/notes"));
     await expect(pageB.getByRole("main").getByRole("heading", { name: "Notes" })).toBeVisible();
+    await expect(pageB.getByText("Loading your notes.")).toBeVisible();
+    await expect(pageB.getByText(/No notes yet\.|\d+ notes?, pinned first\./)).toBeVisible();
     await expect(pageB.getByText(noteTitle)).toHaveCount(0);
 
     await pageB.goto(url(`/notes/${noteId}`));
+    await expect(pageB.getByText("This note could not be found.")).toBeVisible();
     await expect(pageB.getByText(noteTitle)).toHaveCount(0);
     await expect(pageB.getByText("edited")).toHaveCount(0);
 
@@ -146,9 +149,17 @@ test.describe("demo: chat stays per user", () => {
     });
 
     await pageB.goto(url("/history"));
+    await expect(
+      pageB
+        .getByRole("heading", { name: "No past conversations yet" })
+        .or(pageB.getByText("This thread is ready. Messages will show here when they arrive."))
+        .or(pageB.getByText(/[1-9]\d* messages loaded/))
+    ).toBeVisible();
     await expect(pageB.getByText(prompt)).toHaveCount(0);
 
     await pageB.goto(url("/coach"));
+    await expect(pageB.getByText("Loading your conversation.")).toBeVisible();
+    await expect(pageB.getByText("Loading your conversation.")).toHaveCount(0);
     await expect(pageB.getByText(prompt)).toHaveCount(0);
 
     expect(consoleErrorsB).toEqual([]);
