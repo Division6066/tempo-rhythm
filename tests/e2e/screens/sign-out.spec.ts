@@ -8,6 +8,8 @@ function url(path: string): string {
 }
 
 test.describe("sign out", () => {
+  test.use({ storageState: storageStatePath });
+
   test("sign-out button is visible", async ({ page }) => {
     test.skip(
       Boolean(process.env.PLAYWRIGHT_BASE_URL) && !storageStatePath,
@@ -20,8 +22,6 @@ test.describe("sign out", () => {
 
   test.describe("signed in", () => {
     test.skip(!storageStatePath, "needs TEMPO_E2E_STORAGE_STATE");
-
-    test.use({ storageState: storageStatePath });
 
     test("sign out lands on sign-in", async ({ page }) => {
       const consoleErrors: string[] = [];
