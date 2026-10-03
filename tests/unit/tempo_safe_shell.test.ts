@@ -255,6 +255,9 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
       expect(text).toContain('git show "origin/${TRUSTED_REF}:.github/scripts/${tool}"');
       expect(text).toContain("sudo -n chattr +i");
       expect(text).toContain("tempo-git-origin");
+      expect(text).toContain('git config --get-urlmatch http.extraheader "https://github.com/${REPO}.git"');
+      expect(text).not.toContain("git config --local --get http.extraheader");
+      expect(text).toContain("checkout credential was not found");
       expect(text).toContain("--ignore-scripts");
       expect(text).toContain("--setting-sources user");
       expect(text).not.toContain("DEFAULT_BRANCH");

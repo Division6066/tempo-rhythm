@@ -166,10 +166,17 @@ jobs:
             *) echo "::error::repository name is not allowed"; exit 1 ;;
           esac
           printf '%s\n' "https://github.com/${REPO}.git" | sudo -n tee /usr/local/lib/tempo-git-origin >/dev/null
-          header=$(git config --local --get http.extraheader || true)
+          # checkout@v6 keeps the token in an included file as a URL-scoped
+          # extraheader. A local get of the unscoped key misses it.
+          # --get-urlmatch follows that include. Do not print the value.
+          header=$(git config --get-urlmatch http.extraheader "https://github.com/${REPO}.git" || true)
           case "$header" in
-            *'['*|*']'*) echo "::error::http.extraheader is not a single safe line"; exit 1 ;;
+            *'['*|*']'*|*$'\n'*) echo "::error::http.extraheader is not a single safe line"; exit 1 ;;
           esac
+          if [ -z "$header" ]; then
+            echo "::error::checkout credential was not found"
+            exit 1
+          fi
           printf '%s' "$header" | sudo -n tee /usr/local/lib/tempo-git-extraheader >/dev/null
           sudo -n chown root:root /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
           sudo -n chmod 0444 /usr/local/lib/tempo-git-origin /usr/local/lib/tempo-git-extraheader
