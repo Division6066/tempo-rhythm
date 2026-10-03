@@ -118,8 +118,14 @@ jobs:
           # drop includeIf from .git/config before the model starts.
           while read -r _key path; do
             [ -n "${path:-}" ] || continue
+            # checkout@v6 also records /github/runner_temp/... for container
+            # jobs. That path is absent on the host runner. Skip it. An
+            # existing file outside the temp dirs still fails the step.
+            if [ ! -e "$path" ]; then
+              continue
+            fi
             case "$path" in
-              "${RUNNER_TEMP:-/tmp}"/*|/home/runner/*|/tmp/*) ;;
+              "${RUNNER_TEMP:-/tmp}"/*|/home/runner/*|/tmp/*|/github/runner_temp/*) ;;
               *) echo "::error::refusing to lock unexpected credential path"; exit 1 ;;
             esac
             if [ -f "$path" ] && [ ! -L "$path" ]; then

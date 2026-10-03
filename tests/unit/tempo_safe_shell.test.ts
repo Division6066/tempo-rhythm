@@ -268,6 +268,11 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
       expect(text).not.toContain("git config --local --get http.extraheader");
       expect(text).toContain("checkout credential was not found");
       expect(text).toContain('sudo -n chmod 0400 "$path"');
+      expect(text).toContain('if [ ! -e "$path" ]; then');
+      expect(text).toContain("/github/runner_temp/*");
+      expect(text.indexOf('if [ ! -e "$path" ]; then')).toBeLessThan(
+        text.indexOf("refusing to lock unexpected credential path"),
+      );
       expect(text).toContain("--ignore-scripts");
       expect(text).toContain("--setting-sources user");
       expect(text).not.toContain("DEFAULT_BRANCH");
