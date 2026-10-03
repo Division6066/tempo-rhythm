@@ -15,6 +15,8 @@ export const list = query({
       .order("desc")
       .collect();
 
+    rows = rows.filter((n) => n.deletedAt === undefined);
+
     if (args.pinnedOnly) {
       rows = rows.filter((n) => n.pinned);
     }
@@ -34,7 +36,7 @@ export const get = query({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       return null;
     }
     return note;
@@ -88,7 +90,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       throw new Error("Note not found");
     }
     const now = Date.now();
@@ -107,7 +109,7 @@ export const togglePin = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       throw new Error("Note not found");
     }
     const now = Date.now();
@@ -124,10 +126,11 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id) {
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       throw new Error("Note not found");
     }
-    await ctx.db.delete(args.noteId);
+    const now = Date.now();
+    await ctx.db.patch(args.noteId, { deletedAt: now, updatedAt: now });
     return { success: true };
   },
 });
