@@ -1,0 +1,77 @@
+name: factory-lane-codex
+
+# Phase 04 Step 5b. Codex lane: posts "@codex <lane prompt>" as Amit (secret CODEX_MENTION_PAT,
+# fine-grained: Issues + Pull requests write only, so it can never merge). Codex's model comes from
+# Codex settings (vars.FACTORY_MODEL_CODEX is a record). Never an OpenAI API key (R4).
+# Mode = vars.FACTORY_CODEX_MODE: issue (A, default) | pr (B: Factory App opens a draft scaffold PR,
+# comment goes there) | manual (C). Script: scripts/factory/codex-lane.mjs.
+# UNKNOWN: whether @codex on an ISSUE starts a task that opens a PR (Phase 07 rung 1 tests it).
+# PARKED until CODEX_MENTION_PAT exists (and, for mode pr, the Factory App).
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Ticket issue number
+        required: true
+        type: string
+      fix_note:
+        description: Failure-rule retry only - last 150 lines of the failing log
+        required: false
+        type: string
+        default: ""
+      force:
+        description: Run even while the factory is paused (Amit / Grok Bot one-off tests only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: factory-lane-${{ inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  mention:
+    if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: force=true only from a person
+        if: inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
+          exit 1
+      - name: Factory App configured? (mode pr only)
+        id: app
+        env:
+          APP_ID: ${{ secrets.FACTORY_APP_ID }}
+        run: if [ -n "$APP_ID" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: token
+        if: steps.app.outputs.ok == 'true'
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: integration
+          sparse-checkout: |
+            scripts/factory
+            .github/factory
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Post the @codex comment
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token || github.token }}
+          APP_OK: ${{ steps.app.outputs.ok }}
+          MENTION_TOKEN: ${{ secrets.CODEX_MENTION_PAT }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          FIX_NOTE: ${{ inputs.fix_note }}
+          CODEX_MODE: ${{ vars.FACTORY_CODEX_MODE || 'issue' }}
+        run: node scripts/factory/codex-lane.mjs

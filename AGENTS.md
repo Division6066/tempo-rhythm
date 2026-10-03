@@ -144,6 +144,101 @@ The README's quick-start says `pnpm`. **The README is wrong.** Use Bun.
 
 ---
 
+## 8. Factory rules (Phase 04)
+
+These apply to every **factory ticket**: an issue whose body starts with the front-matter
+block below. For factory tickets this section decides scope and merging; where it is
+stricter than sections 1-7, it wins.
+
+### 8.1 Ticket front-matter (the machine part)
+
+The 11 human fields (FOR, WHEN, WHY, GOAL, SCOPE, MUTATES, STEPS, DONE, EVIDENCE, DO NOT,
+REPORT) stay exactly as they are, **below** this block:
+
+```
+---
+ticket: TEMPO-B02-04
+batch: B02
+type: component          # data | component
+lane: auto               # auto | claude | codex | cursor   (data tickets are always claude)
+scope:                   # folders this ticket owns; files outside = scope-guard fails
+  - apps/web/components/task-card/
+depends_on: []           # tickets that must be MERGED before this one is DISPATCHED
+contract:                # component: the API names it calls. data: every name it must create
+  - api.tasks.list(args: {day: string}) -> Task[]
+  - api.tasks.toggleDone(args: {id: Id<"tasks">}) -> void
+overlap_test: false      # true only on Amit's hand-picked overlap tickets (rung 3)
+expected_merge: clean    # overlap tickets only: clean | rebase | conflict
+hold: false              # true = its PR gets hold:stress-test and is not merged until the stress run
+---
+```
+
+### 8.2 Folder ownership
+
+- A ticket owns the folders in its `scope:`. Change nothing outside them (`scope-guard`, a
+  required check, fails the PR otherwise).
+- **Only the data ticket touches `convex/`** (the database folder; `scripts/factory/scope-guard.config.json`
+  `dataFolders`). Component tickets call the names in `contract:` and never write backend code;
+  anything missing goes in REPORT.
+- Component tickets never change shared hot files (package.json, lockfiles, tsconfig, route
+  files, shared config). Those belong to the data ticket or the merge agent.
+- Never change `.github/`, `scripts/factory/`, `.cursor/`, `AGENTS.md`, `docs/tickets/` in a
+  ticket PR (`config-guard` fails it). Those change only in `config` PRs.
+- The dispatcher never runs two open tickets whose scope folders are equal, nested or containing,
+  unless both have `overlap_test: true`.
+
+### 8.3 Lanes and branches
+
+Claude, Codex and Cursor build tickets from `.github/factory/lane-prompt.md`: branch
+`factory/<ticket>`, ONE PR into `integration`, title `[<ticket>] <goal>`, body starts with
+`Closes #<issue>`, then REPORT and EVIDENCE. Agents never merge.
+`factory-label-pr` labels the PR (`factory`, `batch:<id>`, `ticket:data|component`,
+`test:overlap`, `hold:stress-test`). Factory PRs are found by the `factory` label, never by
+branch name.
+
+### 8.4 Merge order (merge agent, `factory-merge`)
+
+- Per batch that has a data ticket: the **data PR merges first**, then component PRs in ticket
+  order. A component never merges before its batch's data PR. A batch without a data ticket
+  skips this rule.
+- Each PR: update it if it is behind `integration`, wait for the required checks, squash-merge
+  when green, label the ticket `status:done`, delete the branch. Red checks: the merge agent does
+  nothing; the failure rule reacts.
+- `hold:stress-test` PRs are kept up to date but merged only in the stress run.
+  `blocked:amit` PRs are skipped.
+- No work is dropped: a conflict that can't be resolved without deleting one side's change gets
+  `blocked:amit` with a comment showing both sides.
+
+### 8.5 Failure rule (`factory-failures`)
+
+- A component whose batch's data PR is not merged yet: `waiting:data`, nothing else (not a failure).
+- Misalignment (type errors, wrong import names, prop/shape mismatches, mismatches with the merged
+  data contract): up to 2 merge-fixes in place (`mergefix:1`, `mergefix:2`; commits carry the
+  trailer `Factory-Merge-Fix: true`). Not counted as an attempt.
+- Anything else (or a 3rd misalignment): back to the same lane with the failing log, `attempt:1`
+  -> `attempt:2` -> `attempt:3`.
+- A failure while `attempt:3` is on: `blocked:amit`, a 5-line summary, and every ticket that
+  depends on it gets `paused:dependency`. If the blocked ticket is `type: data` or 3+ tickets
+  depend on it, the repo is paused (`FACTORY_PAUSED=true`) and an issue
+  "Factory paused: <ticket>" is assigned to Amit.
+
+### 8.6 Pause switch
+
+Org variable `FACTORY_PAUSED_ALL` and repo variable `FACTORY_PAUSED`: when either is `true`,
+every factory workflow's first job is skipped. Only a manual run with the boolean input
+`force=true`, started by Amit (or by Grok Bot for a one-off test the plan asks for), runs while
+paused. Automatic triggers never bypass the pause. `FACTORY_ACTIVE_BATCHES` (`none`, `all` or a
+comma list of batch ids) limits which batches the dispatcher may start.
+
+### 8.7 Models come from variables
+
+Models are read only from the variables `FACTORY_MODEL_CLAUDE`, `FACTORY_MODEL_CURSOR`
+(+ `FACTORY_MODEL_CURSOR_PARAMS`), `FACTORY_MODEL_CODEX` (a record: Codex reads its model from
+Codex settings) and `FACTORY_MODEL_DISPATCH`. Amit changes a model in one place each week. Never
+Fable, Astra, Opus, Soul or Sol models.
+
+---
+
 ## ⚠️ Appendix — known-broken instructions (verified 2026-07-14)
 
 These are real, and they will waste your time if you don't know about them.

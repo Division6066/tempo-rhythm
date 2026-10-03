@@ -1,0 +1,72 @@
+name: factory-label-pr
+
+# Phase 04 Step 3. When a PR into integration links a factory ticket ("Closes #N"), label it from
+# the ticket's front-matter with the Factory App token: factory, batch:<id>, ticket:data|component,
+# test:overlap (overlap_test: true), hold:stress-test (hold: true; data tickets are never held).
+# The ticket issue moves to status:in-pr. Script: scripts/factory/label-pr.mjs.
+# pull_request_target: runs the script from the base branch, reads the API only, never PR code.
+# PARKED until secrets FACTORY_APP_ID + FACTORY_APP_PRIVATE_KEY exist (Factory App, Step 6).
+
+on:
+  pull_request_target:
+    branches: [integration]
+    types: [opened, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to label
+        required: true
+        type: string
+      force:
+        description: Run even while the factory is paused (Amit / Grok Bot one-off tests only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-label-pr-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  label:
+    if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: force=true only from a person
+        if: github.event_name == 'workflow_dispatch' && inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
+          exit 1
+      - name: Factory App configured?
+        id: app
+        env:
+          APP_ID: ${{ secrets.FACTORY_APP_ID }}
+        run: |
+          if [ -n "$APP_ID" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"
+          else echo "::warning::PARKED: secrets FACTORY_APP_ID / FACTORY_APP_PRIVATE_KEY are not set (Factory App not created yet). Nothing labelled."; echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: token
+        if: steps.app.outputs.ok == 'true'
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        if: steps.app.outputs.ok == 'true'
+        with:
+          sparse-checkout: |
+            scripts/factory
+            .github/factory
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: steps.app.outputs.ok == 'true'
+        with:
+          node-version: 22
+      - name: Label the PR from the ticket front-matter
+        if: steps.app.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: node scripts/factory/label-pr.mjs
