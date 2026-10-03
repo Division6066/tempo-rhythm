@@ -1,0 +1,41 @@
+# factory/models.yml: lanes and code models for the factory dispatcher
+# (.github/workflows/factory-dispatcher.md and the factory-lane-*.yml workers).
+#
+# Amit updates this file weekly. Rules:
+#   - Mid-tier by price only. Never Fable, Astra, Opus or any Sol model (the dispatcher script
+#     refuses to start if one is listed here; see banned_model_patterns).
+#   - Model IDs are the IDs each tool expects: Cursor = GET https://api.cursor.com/v1/models,
+#     Claude = claude-code-action --model, Codex = the model named in the @codex comment.
+#   - Claude runs only through anthropics/claude-code-action with CLAUDE_CODE_OAUTH_TOKEN
+#     (subscription), never at API rates. Codex runs only on the ChatGPT plan (no API key).
+#   - The first model in a lane is the default. The dispatcher may pick another listed one.
+version: 1
+updated: "2026-10-03"
+
+# The dispatcher itself (gh-aw, Copilot engine, billed to COPILOT_GITHUB_TOKEN's owner).
+# Mirrored in factory-dispatcher.md (engine.model). Change both, then run `gh aw compile`.
+dispatcher:
+  engine: copilot
+  model: gpt-5.6-terra
+
+limits:
+  max_per_run: 3          # tickets handed to lanes per dispatcher run, per repo
+  max_running_per_lane: 2 # open tickets labeled dispatched:<lane> with no merged PR
+  max_attempts: 3         # failed lane runs before the ticket gets blocked:amit
+
+# Lanes in priority order (1 = first choice).
+lanes:
+  cursor:
+    priority: 1
+    use_for: front end and most build work
+    models: [grok-4.6]
+  claude:
+    priority: 2
+    use_for: backend, sign-in, tests
+    models: [claude-sonnet-5]
+  codex:
+    priority: 3
+    use_for: CI, docs, refactors
+    models: [gpt-5.6-terra]
+
+banned_model_patterns: [fable, astra, opus, sol]
