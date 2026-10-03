@@ -2,7 +2,7 @@ import Resend from "@auth/core/providers/resend";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel, Id } from "./_generated/dataModel";
-import { isInactiveAccount } from "./lib/accountDeletion";
+import { isInactiveAccount, pickSignInUser, signInRestorePatch } from "./lib/accountDeletion";
 import {
   buildReturningUserPatch,
   GRANTED_SUBSCRIPTION,
@@ -21,15 +21,19 @@ function normalizeEmail(email: string | undefined | null): string {
  * sign-in method (magic link) links to the existing account instead of
  * creating a duplicate user.
  */
-async function findLiveUserIdByEmail(db: AppDb, email: string): Promise<Id<"users"> | null> {
+async function findUserIdByEmail(
+  db: AppDb,
+  email: string,
+  now: number,
+): Promise<Id<"users"> | null> {
   if (!email) {
     return null;
   }
-  const user = await db
+  const matches = await db
     .query("users")
     .withIndex("by_email", (q) => q.eq("email", email))
-    .first();
-  return user && user.deletedAt === undefined ? user._id : null;
+    .take(10);
+  return pickSignInUser(matches, now)?._id ?? null;
 }
 
 /**
@@ -87,7 +91,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // Same email already has a user (e.g. an older password account): link
       // this sign-in to that user instead of creating a second one.
       const existingUserId =
-        args.existingUserId ?? (await findLiveUserIdByEmail(db, profile.email));
+        args.existingUserId ?? (await findUserIdByEmail(db, profile.email, now));
 
       if (existingUserId) {
         const existing = await db.get(existingUserId);
@@ -97,16 +101,19 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // isGodTier and userType on a returning user's SECOND sign-in --
         // Convex reads undefined in a patch as "delete this field".
         //
-        // Soft-delete recovery is the one intentional undefined: clearing
-        // `deletedAt` brings the row back to live so beforeSessionCreation
-        // can issue a session.
+        // The only intentional undefined is signInRestorePatch, and only when
+        // deletedAt is inside the 30-day grace window. Admin deactivation and
+        // an expired window stay inactive, and this path does not grant a
+        // subscription back onto an account that is staying inactive.
+        const restore = existing ? signInRestorePatch(existing, now) : null;
+        const staysInactive = existing ? isInactiveAccount(existing) && restore === null : false;
         await db.patch(existingUserId, {
           ...buildReturningUserPatch(existing ?? {}, profile, now),
-          ...(existing && isInactiveAccount(existing)
-            ? { deletedAt: undefined, isActive: true }
-            : {}),
+          ...(restore ?? {}),
         });
-        await ensureGrantedSubscription(db, existingUserId, now);
+        if (!staysInactive) {
+          await ensureGrantedSubscription(db, existingUserId, now);
+        }
 
         return existingUserId;
       }

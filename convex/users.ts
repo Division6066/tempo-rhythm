@@ -99,15 +99,17 @@ export const createOrUpdateUser = mutation({
       .unique();
 
     if (existing) {
+      // A leftover session must not clear deletedAt or isActive. Restore
+      // happens only in the Convex Auth callback, and only inside 30 days.
+      if (isInactiveAccount(existing)) {
+        throw new Error(
+          "This account is not active. Sign in again within 30 days of deletion to restore it, or contact support.",
+        );
+      }
       // Identity fields plus self-heal only. This path must never write
       // `role`, and must never write `userType` unconditionally - that was
       // the downgrade.
-      await ctx.db.patch(existing._id, {
-        ...buildReturningUserPatch(existing, profile, now),
-        ...(isInactiveAccount(existing)
-          ? { deletedAt: undefined, isActive: true }
-          : {}),
-      });
+      await ctx.db.patch(existing._id, buildReturningUserPatch(existing, profile, now));
       return existing._id;
     }
 
