@@ -1,0 +1,53 @@
+name: factory-weekly-report
+
+# Phase 04 Step 9. Once a week (Sunday 06:00 UTC = 09:00 Israel summer time / 08:00 winter) one
+# issue: merged tickets, blocked tickets, attempts used, Actions minutes, Copilot premium requests
+# if the API allows it (else UNKNOWN); Cursor and Bugbot cost UNKNOWN. Creates an issue with
+# github.token (an issue, not a PR or merge). Script: scripts/factory/weekly-report.mjs.
+# No scheduled config changes, ever (R14).
+
+on:
+  schedule:
+    - cron: "0 6 * * 0"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Run even while the factory is paused (Amit / Grok Bot one-off tests only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: factory-weekly-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: force=true only from a person
+        if: github.event_name == 'workflow_dispatch' && inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
+          exit 1
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: |
+            scripts/factory
+            .github/factory
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Weekly report issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AMIT: Division6066
+        run: node scripts/factory/weekly-report.mjs
