@@ -111,6 +111,29 @@ function isLocalTaskRecord(value: unknown): value is LocalTaskRecord {
   );
 }
 
+function isChecklistItem(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.text === "string" &&
+    typeof item.completed === "boolean"
+  );
+}
+
+function readLocalTask(value: unknown): LocalTaskRecord | null {
+  if (!isLocalTaskRecord(value)) return null;
+  const row = value as LocalTaskRecord & { checklist?: unknown; projectName?: unknown };
+  const projectName = typeof row.projectName === "string" ? row.projectName : undefined;
+  const checklist =
+    row.checklist === undefined
+      ? undefined
+      : Array.isArray(row.checklist) && row.checklist.every(isChecklistItem)
+        ? row.checklist
+        : undefined;
+  return { ...row, projectName, checklist };
+}
+
 function loadLocalTasks(): LocalTaskRecord[] {
   if (typeof window === "undefined") {
     return [];
@@ -123,7 +146,10 @@ function loadLocalTasks(): LocalTaskRecord[] {
     }
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isLocalTaskRecord);
+    return parsed.flatMap((row) => {
+      const task = readLocalTask(row);
+      return task ? [task] : [];
+    });
   } catch {
     return [];
   }
