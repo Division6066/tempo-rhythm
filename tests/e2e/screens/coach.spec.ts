@@ -23,7 +23,7 @@ test.describe("coach screen", () => {
     const prompt = `Help me pick one thing for this afternoon ${Date.now()}`;
 
     await page.goto(url("/coach"));
-    await expect(page.getByRole("heading", { name: "Coach" })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("heading", { name: "Coach" })).toBeVisible();
 
     await page.getByLabel("Message").fill(prompt);
     await page.getByRole("button", { name: "Send" }).click();

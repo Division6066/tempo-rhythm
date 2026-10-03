@@ -25,7 +25,7 @@ test.describe("notes screen", () => {
     const updatedTitle = `${noteTitle} (updated)`;
 
     await page.goto(url("/notes"));
-    await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("heading", { name: "Notes" })).toBeVisible();
 
     await page.getByRole("button", { name: "New note" }).click();
     await expect(page).toHaveURL(/\/notes\/[^/]+$/);
@@ -46,7 +46,7 @@ test.describe("notes screen", () => {
     await expect(page.getByRole("button", { name: "Unpin" })).toBeVisible();
 
     await page.getByRole("link", { name: "← Back to notes" }).click();
-    await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("heading", { name: "Notes" })).toBeVisible();
     const noteRow = page.getByRole("listitem").filter({ hasText: updatedTitle });
     await expect(noteRow.getByText("Pinned")).toBeVisible();
 
