@@ -81,6 +81,7 @@ export function CoachChat() {
           messages?.map((message) => (
             <div
               key={message._id}
+              data-role={message.role}
               className={cn(
                 "max-w-[80%] rounded-2xl px-4 py-2 text-sm",
                 message.role === "user"
