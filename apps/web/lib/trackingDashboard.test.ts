@@ -1,11 +1,13 @@
+import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, test } from "bun:test";
 import {
   buildTrackingDashboard,
   completeTrackingSession,
   formatSessionMinutes,
+  parseTrackingLogs,
   type TrackingSessionLog,
+  trackingLogsStorageKey,
 } from "./trackingDashboard";
 
 describe("tracking dashboard data contract", () => {
@@ -57,9 +59,7 @@ describe("tracking dashboard data contract", () => {
 
     const dashboard = buildTrackingDashboard(second.logs);
     expect(second.streakCount).toBe(1);
-    expect(dashboard.chart.points).toEqual([
-      { day: "2026-07-14", sessions: 2, minutes: 35 },
-    ]);
+    expect(dashboard.chart.points).toEqual([{ day: "2026-07-14", sessions: 2, minutes: 35 }]);
   });
 
   test("formats session minutes without shame", () => {
@@ -68,15 +68,34 @@ describe("tracking dashboard data contract", () => {
   });
 });
 
+describe("parseTrackingLogs", () => {
+  test("keeps valid rows and drops corrupt storage", () => {
+    expect(trackingLogsStorageKey("user-1")).toBe("tempo.tracking.logs:v1:user-1");
+    expect(parseTrackingLogs(null)).toEqual([]);
+    expect(parseTrackingLogs("{")).toEqual([]);
+    expect(parseTrackingLogs('{"id":"x"}')).toEqual([]);
+    expect(
+      parseTrackingLogs(
+        JSON.stringify([
+          { id: "a", completedAt: 10, durationMinutes: 25, intention: "read" },
+          { id: 1, completedAt: 10, durationMinutes: 25, intention: "nope" },
+        ])
+      )
+    ).toEqual([{ id: "a", completedAt: 10, durationMinutes: 25, intention: "read" }]);
+  });
+});
+
 describe("TrackingDashboard leftover wiring", () => {
   test("uses landed streaks.getCurrent and the session-log helper", () => {
     const source = readFileSync(
       join(import.meta.dir, "../components/tracking/TrackingDashboard.tsx"),
-      "utf8",
+      "utf8"
     );
     expect(source).toContain("api.streaks.getCurrent");
     expect(source).toContain("completeTrackingSession");
     expect(source).toContain("buildTrackingDashboard");
+    expect(source).toContain("parseTrackingLogs");
+    expect(source).toContain("localStorage");
     expect(source).not.toContain("convex.query");
     expect(source).not.toContain("NEXT_PUBLIC_TRACKING");
   });

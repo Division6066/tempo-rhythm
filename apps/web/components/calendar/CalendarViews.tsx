@@ -1,21 +1,21 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import {
+  type CalendarViewMode,
   fromDateInputValue,
   getCalendarRangeMs,
   getEventsInRange,
   parseDateInputValue,
   toDateInputValue,
-  type CalendarViewMode,
 } from "@/lib/calendar/date-math";
 import {
   createLocalCalendarEvent,
   loadCalendarEvents,
-  saveCalendarEvents,
   type StoredCalendarEvent,
+  saveCalendarEvents,
 } from "@/lib/calendar/event-source";
 
 const viewOptions: Array<{ mode: CalendarViewMode; label: string }> = [
@@ -53,13 +53,50 @@ type DisplayCalendarEvent = {
   startsAtMs: number;
 };
 
-function EventList({
-  events,
-  mode,
+function DueTaskList({
+  tasks,
 }: {
-  events: DisplayCalendarEvent[];
-  mode: CalendarViewMode;
+  tasks: Array<{ _id: string; title: string; dueAt?: number; status: string }>;
 }) {
+  return (
+    <section
+      aria-label="Due tasks"
+      className="rounded-3xl border border-border bg-card/80 p-5 shadow-soft"
+      data-testid="calendar-due-tasks"
+    >
+      <h2 className="font-eyebrow">Due tasks</h2>
+      {tasks.length > 0 ? (
+        <ul className="mt-4 space-y-3">
+          {tasks.map((task) => (
+            <li
+              className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3"
+              key={task._id}
+            >
+              <p className="font-medium text-foreground">{task.title}</p>
+              <p className="mt-1 text-caption text-muted-foreground">
+                {task.dueAt !== undefined
+                  ? new Date(task.dueAt).toLocaleDateString(undefined, {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "No due date"}
+                {task.status === "done" ? " · Done" : ""}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 text-small text-muted-foreground">
+          No tasks are due in this window. Today still holds anything without a date.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function EventList({ events, mode }: { events: DisplayCalendarEvent[]; mode: CalendarViewMode }) {
   return (
     <section
       aria-label={`${mode} events`}
@@ -106,7 +143,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(
     api.users.getProfile,
-    eventSourceMode === "convex" && isAuthenticated ? {} : "skip",
+    eventSourceMode === "convex" && isAuthenticated ? {} : "skip"
   );
 
   useEffect(() => {
@@ -118,12 +155,16 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const selectedDate = useMemo(() => parseDateInputValue(selectedDateValue), [selectedDateValue]);
   const range = useMemo(
     () => getCalendarRangeMs(view, selectedDate ?? new Date()),
-    [selectedDate, view],
+    [selectedDate, view]
   );
   const hasConvexUser = eventSourceMode === "convex" && profile != null;
   const convexEvents = useQuery(
     api.calendar_events.listInRange,
-    hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip",
+    hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
+  );
+  const dueTasks = useQuery(
+    api.tasks.listDueInRange,
+    hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
   );
   const events = useMemo<DisplayCalendarEvent[]>(() => {
     if (eventSourceMode === "local") {
@@ -139,7 +180,10 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const visibleEvents = useMemo(() => getEventsInRange(events, range), [events, range]);
   const isLoading =
     eventSourceMode === "convex" &&
-    (isAuthLoading || (isAuthenticated && (profile === undefined || convexEvents === undefined)));
+    (isAuthLoading ||
+      (isAuthenticated &&
+        (profile === undefined ||
+          (hasConvexUser && (convexEvents === undefined || dueTasks === undefined)))));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -157,7 +201,9 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
           title: cleanTitle,
           startsAtMs,
         });
-        const nextEvents = [...localEvents, created].toSorted((a, b) => a.startsAtMs - b.startsAtMs);
+        const nextEvents = [...localEvents, created].toSorted(
+          (a, b) => a.startsAtMs - b.startsAtMs
+        );
         saveCalendarEvents(nextEvents);
         setLocalEvents(nextEvents);
       } else {
@@ -182,8 +228,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
         <p className="font-eyebrow text-muted-foreground">Calendar</p>
         <h1 className="text-h1 font-serif">One source for every calendar view</h1>
         <p className="max-w-2xl text-body leading-relaxed text-muted-foreground">
-          Add an event once, then switch between Day, Week, and Month without losing the
-          thread.
+          Add an event once, then switch between Day, Week, and Month without losing the thread.
         </p>
       </header>
 
@@ -258,7 +303,10 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
           <div className="mt-4 h-20 animate-pulse rounded-2xl bg-muted" />
         </section>
       ) : (
-        <EventList events={visibleEvents} mode={view} />
+        <>
+          <EventList events={visibleEvents} mode={view} />
+          {hasConvexUser ? <DueTaskList tasks={dueTasks ?? []} /> : null}
+        </>
       )}
     </main>
   );

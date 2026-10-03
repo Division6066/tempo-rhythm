@@ -15,12 +15,23 @@ describe("computeHabitStreakUpdate", () => {
 	});
 
 	test("same UTC day returns alreadyDone without incrementing", () => {
-		const last = 1_700_000_000_000;
+		const last = Date.UTC(2023, 10, 14, 8, 0, 0);
 		const now = last + 6 * 60 * 60 * 1000;
 		const result = computeHabitStreakUpdate(now, last, 3, 5);
 		expect(result.alreadyDone).toBe(true);
 		if (result.alreadyDone) {
 			expect(result.currentStreak).toBe(3);
+		}
+	});
+
+	test("crossing UTC midnight is the next day even inside 24 hours", () => {
+		const last = Date.UTC(2023, 10, 14, 22, 0, 0);
+		const now = last + 3 * 60 * 60 * 1000;
+		const result = computeHabitStreakUpdate(now, last, 3, 5);
+		expect(result.alreadyDone).toBe(false);
+		if (!result.alreadyDone) {
+			expect(result.currentStreak).toBe(4);
+			expect(result.longestStreak).toBe(5);
 		}
 	});
 
@@ -64,8 +75,13 @@ describe("isHabitCompletedOnUtcDay", () => {
 	});
 
 	test("same UTC day counts as done", () => {
-		const last = 1_700_000_000_000;
+		const last = Date.UTC(2023, 10, 14, 8, 0, 0);
 		expect(isHabitCompletedOnUtcDay(last, last + 6 * 60 * 60 * 1000)).toBe(true);
+	});
+
+	test("a later clock time on the next UTC date is not the same day", () => {
+		const last = Date.UTC(2023, 10, 14, 22, 0, 0);
+		expect(isHabitCompletedOnUtcDay(last, last + 3 * 60 * 60 * 1000)).toBe(false);
 	});
 
 	test("next UTC day is not done", () => {

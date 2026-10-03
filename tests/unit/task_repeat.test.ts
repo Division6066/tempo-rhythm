@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   assertRepeatEvery,
   computeNextRepeatDueAt,
+  planNextRepeatInstance,
   repeatDraftToCfg,
 } from "../../convex/lib/taskRepeat";
 
@@ -20,7 +21,7 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
         weekdays: [],
         skipOverdue: false,
       },
-      jul14NineUtc,
+      jul14NineUtc
     );
     expect(next).toBe(Date.UTC(2026, 6, 21, 9));
   });
@@ -35,7 +36,7 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
         weekdays: [],
         skipOverdue: true,
       },
-      now,
+      now
     );
     expect(next).toBeGreaterThanOrEqual(now);
     expect(next).toBe(Date.UTC(2026, 7, 4, 9));
@@ -51,8 +52,8 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
           weekdays: [],
           skipOverdue: false,
         },
-        jan31NoonUtc,
-      ),
+        jan31NoonUtc
+      )
     ).toBe(Date.UTC(2026, 1, 28, 12));
   });
 
@@ -67,8 +68,8 @@ describe("taskRepeat leftover from #170 (landed taskRepeatCfgs shape)", () => {
           weekdays: [],
           skipOverdue: false,
         },
-        jul14NineUtc,
-      ),
+        jul14NineUtc
+      )
     ).toThrow(/interval/i);
   });
 
@@ -97,10 +98,73 @@ describe("taskRepeat leftover wiring", () => {
   test("task create form offers a Repeat control without a new Convex module", () => {
     const source = readFileSync(
       join(import.meta.dir, "../../apps/web/components/tasks/TaskViewsScreen.tsx"),
-      "utf8",
+      "utf8"
     );
     expect(source).toContain("api.tasks.createRepeatCfg");
     expect(source).toContain("api.tasks.setTaskRepeatCfg");
     expect(source).toContain('aria-label="Repeat"');
+  });
+
+  test("completing a task plans the next instance from the existing repeat math", () => {
+    const source = readFileSync(join(import.meta.dir, "../../convex/tasks.ts"), "utf8");
+    expect(source).toContain("planNextRepeatInstance");
+    expect(source).toContain("completedAt");
+  });
+});
+
+describe("planNextRepeatInstance", () => {
+  const completedAt = Date.UTC(2026, 6, 14, 9);
+  const cfg = {
+    repeatCycle: "DAILY" as const,
+    repeatEvery: 1,
+    weekdays: [],
+    skipOverdue: false,
+    isPaused: false,
+    repeatFromCompletionDate: false,
+  };
+
+  test("spawns the next due and skips a day already recorded", () => {
+    const spawned = planNextRepeatInstance({
+      dueAt: completedAt,
+      completedAt,
+      nowMs: completedAt,
+      cfg,
+    });
+    expect(spawned).toEqual({ dueAt: Date.UTC(2026, 6, 15, 9), dayKey: "2026-07-15" });
+    expect(
+      planNextRepeatInstance({
+        dueAt: completedAt,
+        completedAt,
+        nowMs: completedAt,
+        cfg: { ...cfg, lastTaskCreationDay: "2026-07-15" },
+      })
+    ).toBeNull();
+    expect(
+      planNextRepeatInstance({
+        dueAt: completedAt,
+        completedAt,
+        nowMs: completedAt,
+        cfg: { ...cfg, lastTaskCreationDay: "2026-07-16" },
+      })
+    ).toBeNull();
+  });
+
+  test("paused or deleted series does not spawn", () => {
+    expect(
+      planNextRepeatInstance({
+        dueAt: completedAt,
+        completedAt,
+        nowMs: completedAt,
+        cfg: { ...cfg, isPaused: true },
+      })
+    ).toBeNull();
+    expect(
+      planNextRepeatInstance({
+        dueAt: completedAt,
+        completedAt,
+        nowMs: completedAt,
+        cfg: { ...cfg, deletedAt: completedAt },
+      })
+    ).toBeNull();
   });
 });

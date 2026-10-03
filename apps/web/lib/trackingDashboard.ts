@@ -65,10 +65,50 @@ function calculateCurrentStreak(logs: TrackingSessionLog[]): number {
   return streak;
 }
 
-export function completeTrackingSession(
-  logs: TrackingSessionLog[],
-  input: CompleteSessionInput,
-) {
+export function trackingLogsStorageKey(userId: string): string {
+  return `tempo.tracking.logs:v1:${userId}`;
+}
+
+export function parseTrackingLogs(raw: string | null): TrackingSessionLog[] {
+  if (!raw) {
+    return [];
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  const logs: TrackingSessionLog[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+    const row = item as Record<string, unknown>;
+    if (
+      typeof row.id !== "string" ||
+      typeof row.completedAt !== "number" ||
+      typeof row.durationMinutes !== "number" ||
+      typeof row.intention !== "string" ||
+      !Number.isFinite(row.completedAt) ||
+      !Number.isFinite(row.durationMinutes)
+    ) {
+      continue;
+    }
+    logs.push({
+      id: row.id,
+      completedAt: row.completedAt,
+      durationMinutes: row.durationMinutes,
+      intention: row.intention,
+    });
+  }
+  return logs;
+}
+
+export function completeTrackingSession(logs: TrackingSessionLog[], input: CompleteSessionInput) {
   const createdLog = {
     id: logIdFor(input, logs.length + 1),
     completedAt: input.completedAt,
