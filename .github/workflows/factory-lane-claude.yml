@@ -5,8 +5,8 @@ name: factory-lane-claude
 # integration. The PR is opened with the Claude GitHub App token the action mints (OIDC), not
 # GITHUB_TOKEN, so CI runs (R15). Model: vars.FACTORY_MODEL_CLAUDE.
 # Dispatched only by factory-dispatch (or factory-failures for a retry, with fix_note).
-# PARKED until the org secret CLAUDE_CODE_OAUTH_TOKEN reaches this repo (tempo-rhythm must move to
-# Levidavidspublic first). Labelling the issue needs the Factory App (FACTORY_APP_ID/PRIVATE_KEY);
+# Secret CLAUDE_CODE_OAUTH_TOKEN: tempo-rhythm has a repo-level one today; the other repos need the
+# org secret (not created yet). Labelling the issue needs the Factory App (FACTORY_APP_ID/PRIVATE_KEY);
 # without it factory-label-pr does it when the PR opens (also parked until the App exists).
 
 on:
