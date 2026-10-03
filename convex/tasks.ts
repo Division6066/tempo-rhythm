@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { filterTasksDueInRange } from "./lib/task_filters";
 import { normalizeChecklist } from "./lib/taskChecklists";
@@ -16,7 +17,7 @@ const taskStatusValidator = v.union(
   v.literal("todo"),
   v.literal("in_progress"),
   v.literal("done"),
-  v.literal("cancelled"),
+  v.literal("cancelled")
 );
 
 const taskPriorityValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
@@ -47,9 +48,7 @@ const taskReturnValidator = v.object({
 
 export const list = query({
   args: {
-    status: v.optional(
-      taskStatusValidator,
-    ),
+    status: v.optional(taskStatusValidator),
     search: v.optional(v.string()),
     /** When both set, only tasks with `dueAt` in [dueFrom, dueTo) (e.g. client “today” window). */
     dueFrom: v.optional(v.number()),
@@ -63,9 +62,7 @@ export const list = query({
     const user = await requireUser(ctx);
     let rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId_deletedAt", (q) =>
-        q.eq("userId", user._id).eq("deletedAt", undefined),
-      )
+      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
       .collect();
 
     if (args.status) {
@@ -84,8 +81,7 @@ export const list = query({
       const q = args.search.trim().toLowerCase();
       rows = rows.filter(
         (t) =>
-          t.title.toLowerCase().includes(q) ||
-          (t.description?.toLowerCase().includes(q) ?? false),
+          t.title.toLowerCase().includes(q) || (t.description?.toLowerCase().includes(q) ?? false)
       );
     }
     if (args.dueFrom !== undefined && args.dueTo !== undefined) {
@@ -109,9 +105,7 @@ export const listDueInRange = query({
     const user = await requireUser(ctx);
     const rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId_deletedAt", (q) =>
-        q.eq("userId", user._id).eq("deletedAt", undefined),
-      )
+      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
       .collect();
     return filterTasksDueInRange(rows, args.startMs, args.endMs);
   },
@@ -121,9 +115,7 @@ export const create = mutation({
   args: {
     title: v.string(),
     description: v.optional(v.string()),
-    status: v.optional(
-      taskStatusValidator,
-    ),
+    status: v.optional(taskStatusValidator),
     priority: v.optional(taskPriorityValidator),
     energy: v.optional(taskEnergyValidator),
     projectId: v.optional(v.string()),
@@ -157,9 +149,7 @@ export const update = mutation({
     taskId: v.id("tasks"),
     title: v.optional(v.string()),
     description: v.optional(v.union(v.string(), v.null())),
-    status: v.optional(
-      taskStatusValidator,
-    ),
+    status: v.optional(taskStatusValidator),
     priority: v.optional(taskPriorityValidator),
     energy: v.optional(taskEnergyValidator),
     projectId: v.optional(v.union(v.string(), v.null())),
@@ -180,7 +170,14 @@ export const update = mutation({
     if (args.description !== undefined) {
       patch.description = args.description === null ? undefined : args.description;
     }
-    if (args.status !== undefined) patch.status = args.status;
+    if (args.status !== undefined) {
+      patch.status = args.status;
+      if (args.status === "done" && task.status !== "done") {
+        patch.completedAt = now;
+      } else if (args.status !== "done" && task.status === "done") {
+        patch.completedAt = undefined;
+      }
+    }
     if (args.priority !== undefined) patch.priority = args.priority;
     if (args.energy !== undefined) patch.energy = args.energy;
     if (args.projectId !== undefined) {
@@ -196,6 +193,9 @@ export const update = mutation({
       patch.checklist = args.checklist === null ? undefined : normalizeChecklist(args.checklist);
     }
     await ctx.db.patch(args.taskId, patch as typeof task);
+    if (args.status === "done" && task.status !== "done") {
+      await spawnRepeatAfterCompletion(ctx, user._id, task, now);
+    }
     return args.taskId;
   },
 });
@@ -267,12 +267,10 @@ export const listToday = query({
     }
     const rows = await ctx.db
       .query("tasks")
-      .withIndex("by_userId_deletedAt", (q) =>
-        q.eq("userId", user._id).eq("deletedAt", undefined),
-      )
+      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
       .collect();
     return filterTasksDueInRange(rows, args.dueFrom, args.dueTo).sort(
-      (a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0),
+      (a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0)
     );
   },
 });
@@ -297,52 +295,66 @@ export const toggleCompletion = mutation({
       updatedAt: now,
       completedAt: next === "done" ? now : undefined,
     });
-    if (next === "done" && task.repeatCfgId) {
-      const cfg = await ctx.db.get(task.repeatCfgId);
-      if (cfg && cfg.userId === user._id) {
-        const spawned = planNextRepeatInstance({
-          dueAt: task.dueAt,
-          completedAt: now,
-          nowMs: now,
-          cfg,
-        });
-        if (spawned) {
-          await ctx.db.insert("tasks", {
-            userId: user._id,
-            title: task.title,
-            ...(task.description !== undefined ? { description: task.description } : {}),
-            status: "todo",
-            priority: task.priority,
-            ...(task.energy !== undefined ? { energy: task.energy } : {}),
-            ...(task.timeEstimate !== undefined ? { timeEstimate: task.timeEstimate } : {}),
-            repeatCfgId: cfg._id,
-            ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),
-            ...(task.projectName !== undefined ? { projectName: task.projectName } : {}),
-            dueAt: spawned.dueAt,
-            ...(task.checklist
-              ? {
-                  checklist: task.checklist.map((item) => ({ ...item, completed: false })),
-                }
-              : {}),
-            createdAt: now,
-            updatedAt: now,
-          });
-          await ctx.db.patch(cfg._id, {
-            lastTaskCreationDay: spawned.dayKey,
-            updatedAt: now,
-          });
-        }
-      }
+    if (next === "done") {
+      await spawnRepeatAfterCompletion(ctx, user._id, task, now);
     }
     return { taskId: args.taskId, status: next };
   },
 });
 
+async function spawnRepeatAfterCompletion(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  task: Doc<"tasks">,
+  now: number
+): Promise<void> {
+  if (!task.repeatCfgId) {
+    return;
+  }
+  const cfg = await ctx.db.get(task.repeatCfgId);
+  if (!cfg || cfg.userId !== userId) {
+    return;
+  }
+  const spawned = planNextRepeatInstance({
+    dueAt: task.dueAt,
+    completedAt: now,
+    nowMs: now,
+    cfg,
+  });
+  if (!spawned) {
+    return;
+  }
+  await ctx.db.insert("tasks", {
+    userId,
+    title: task.title,
+    ...(task.description !== undefined ? { description: task.description } : {}),
+    status: "todo",
+    priority: task.priority,
+    ...(task.energy !== undefined ? { energy: task.energy } : {}),
+    ...(task.timeEstimate !== undefined ? { timeEstimate: task.timeEstimate } : {}),
+    repeatCfgId: cfg._id,
+    ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),
+    ...(task.projectName !== undefined ? { projectName: task.projectName } : {}),
+    dueAt: spawned.dueAt,
+    ...(task.checklist
+      ? {
+          checklist: task.checklist.map((item) => ({ ...item, completed: false })),
+        }
+      : {}),
+    createdAt: now,
+    updatedAt: now,
+  });
+  await ctx.db.patch(cfg._id, {
+    lastTaskCreationDay: spawned.dayKey,
+    updatedAt: now,
+  });
+}
+
 const repeatCycleValidator = v.union(
   v.literal("DAILY"),
   v.literal("WEEKLY"),
   v.literal("MONTHLY"),
-  v.literal("YEARLY"),
+  v.literal("YEARLY")
 );
 
 const repeatCfgReturnValidator = v.object({
