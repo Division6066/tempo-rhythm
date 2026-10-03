@@ -1,0 +1,56 @@
+name: Graphify
+
+# Rebuild the code knowledge graph on every push to integration.
+# graphifyy 0.9.74: `graphify update . --no-cluster` is local tree-sitter AST.
+# No API key and no secrets. This workflow is not a required check.
+# Do not add it to a ruleset.
+#
+# Persistence is an Actions artifact, not a commit. Rulesets
+# integration-protection and protect-integration require a pull request onto
+# integration, so a bot push would be rejected. Phase 06 Step 3 allows a Factory App PR
+# into docs/graph/ instead; the Factory App doesn't exist yet, so: artifact (decided 2026-10-03).
+# No pause check on purpose: read-only output, it builds nothing and changes nothing.
+
+on:
+  push:
+    branches: [integration]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: graphify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rebuild-graph:
+    name: Rebuild graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install Graphify 0.9.74
+        run: |
+          set -euo pipefail
+          uv tool install "graphifyy==0.9.74"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/graphify" --version | grep -qx 'graphify 0.9.74'
+
+      - name: Rebuild code graph (local AST, no API key)
+        run: |
+          set -euo pipefail
+          graphify update . --no-cluster
+          test -s graphify-out/graph.json
+
+      - name: Upload graph artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: graphify-graph
+          path: graphify-out/graph.json
+          if-no-files-found: error
+          retention-days: 14

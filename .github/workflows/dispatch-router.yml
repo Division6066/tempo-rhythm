@@ -12,8 +12,7 @@
 #   3. No match -> no dispatch; the router comments asking for an area: label.
 #
 # Guards: the person who applied `ready` must have write/maintain/admin on the repo (triage is not
-# enough), and nothing dispatches on Friday or Saturday (Asia/Jerusalem), per the cloud-agent policy,
-# except the weekend of 2026-10-02/03, which Amit allowed.
+# enough), and nothing dispatches on Friday or Saturday (Asia/Jerusalem), per the cloud-agent policy.
 # Capacity: max 2 running tickets per lane per repo (claude, cursor). "Running" = open issue labeled
 # dispatched:<lane> with no linked merged PR. Over capacity -> label queued:<lane>, no run.
 # If a lane job fails, it removes dispatched:<lane> so a failed start never holds a slot.
@@ -67,9 +66,6 @@ jobs:
             gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: \`ready\` was applied by someone without write access ($perm). Not dispatched."
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0;; esac
           dow=$(TZ=Asia/Jerusalem date +%u)
-          # One-off weekend exception: Amit allowed agent runs on Fri 2026-10-02 and Sat 2026-10-03.
-          # Every other Friday/Saturday stays blocked.
-          case "$(TZ=Asia/Jerusalem date +%F)" in 2026-10-02|2026-10-03) dow=0 ;; esac
           if [ "$dow" = 5 ] || [ "$dow" = 6 ]; then
             gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: no agent runs on Friday or Saturday (Asia/Jerusalem). Re-apply \`ready\` on Sunday."
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
