@@ -117,7 +117,7 @@ describe("computeInsightsSummary", () => {
         task({ status: "todo", completedAt: weekStartMs, updatedAt: weekStartMs }),
       ],
     });
-    expect(s.tasksCompletedThisWeek).toBe(1);
+    expect(s.tasksCompletedThisWeek).toBe(2);
   });
 
   test("missing energy counts as medium; priority buckets are exact", () => {
