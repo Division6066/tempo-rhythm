@@ -252,6 +252,21 @@ Fable, Astra, Opus, Soul or Sol models.
   (a merged data PR must reach test) and refuses any key that is not `dev:ceaseless-dog-617`.
 - Nobody but Amit deploys to the live deployment `precious-wildcat-890`.
 
+### 8.9 Where the docs live (Phase 06)
+
+Agents read docs from this repo, never from the GitHub Wiki (a separate git repo agents don't see).
+
+| Path | What |
+|---|---|
+| `docs/PRD.md` | product requirements (what to build) |
+| `docs/TRD.md` | technical requirements (stack and architecture) |
+| `docs/contracts/<batch>.md` | the API contract of one batch (every function its components call) |
+| `docs/tickets/<batch>/<ticket>.md` | one file per ticket (front-matter + 11 fields); promoted to issues |
+| `docs/tickets/_templates/` | component.md, data-convex.md, data-postgres.md |
+| `docs/graph/` | Graphify output (CI artifact for now, see docs/graph/README.md) |
+
+`docs/tickets/**` and `docs/contracts/**` change only in `config` PRs that change nothing else.
+
 ## ⚠️ Appendix — known-broken instructions (verified 2026-07-14)
 
 These are real, and they will waste your time if you don't know about them.
