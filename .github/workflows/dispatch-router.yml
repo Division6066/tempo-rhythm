@@ -166,7 +166,7 @@ jobs:
           # not be able to replace these, and the model must not be able to
           # write over them either. rm removes a symlink; it does not follow it.
           sudo -n mkdir -p /usr/local/bin /usr/local/lib
-          for tool in tempo-safe-git tempo-safe-bun; do
+          for tool in tempo-safe-git tempo-safe-bun tempo-write-scratch; do
             sudo -n rm -f "/usr/local/bin/${tool}"
             git show "origin/${TRUSTED_REF}:.github/scripts/${tool}" | sudo -n tee "/usr/local/bin/${tool}" >/dev/null
             sudo -n chown root:root "/usr/local/bin/${tool}"
@@ -204,11 +204,11 @@ jobs:
           else
             git checkout -b "$BRANCH"
           fi
-          # Write after checkout. An older branch can replace the tree, and
-          # its .gitignore may not list this file. rm -f drops a symlink so
-          # the redirect cannot follow it into /usr/local/bin.
+          # Write after checkout, outside the work tree. rm -f only drops a
+          # leftover in-repo symlink; the body goes through tempo-write-scratch
+          # (O_NOFOLLOW|O_EXCL) so a recreated symlink is not followed.
           rm -f .tempo-issue.md
-          gh issue view "$ISSUE" --repo "$REPO" --comments > .tempo-issue.md
+          gh issue view "$ISSUE" --repo "$REPO" --comments | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-issue.md"
           # Checkout's includeIf file is still runner-readable. Lock it, then
           # drop includeIf from .git/config before the model starts.
           while read -r _key path; do
@@ -243,7 +243,7 @@ jobs:
           # claude/issue-<number> itself instead of reading the action output.
           prompt: |
             Implement GitHub issue #${{ github.event.issue.number }} in ${{ github.repository }}. Follow AGENTS.md.
-            The issue text is in `.tempo-issue.md`. Read that file. Do not use gh.
+            The issue text is in `${{ runner.temp }}/tempo-issue.md`. Read that file. Do not use gh.
             You are already on branch `claude/issue-${{ github.event.issue.number }}`, created from integration.
             Stay inside the ticket's MUTATES list (or SCOPE on older tickets).
             Do not run lint, test, or typecheck. CI runs those on the pull request.

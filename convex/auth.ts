@@ -38,7 +38,8 @@ async function findUserIdByEmail(
 
 /**
  * Give the account the subscription row that backs its entitlement tier.
- * Idempotent: a live paid subscription is left exactly as it is.
+ * Idempotent. Grants a missing row or the exact pre-open-signup beta
+ * placeholder. A cancelled, inactive, or otherwise billed row is left alone.
  */
 async function ensureGrantedSubscription(db: AppDb, userId: Id<"users">, now: number) {
   const existing = await db

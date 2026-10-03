@@ -120,12 +120,47 @@ export function buildReturningUserPatch(
 }
 
 /**
- * True when the account should be given the granted subscription row: it has
- * none at all, or it still carries the pre-open-signup placeholder.
+ * Fields `shouldGrantSubscription` reads. Callers may pass the full
+ * `subscriptionStates` document; extra keys are ignored.
+ */
+export type SubscriptionGrantSnapshot = {
+  plan: string;
+  status: string;
+  billingCycle?: string;
+  source?: string;
+};
+
+/**
+ * The pre-open-signup non-founder row. Founders already had plan `max`.
+ * Account deletion later sets `status` to `inactive` on a real plan and does
+ * not change `source`, so status alone is not this placeholder.
+ */
+const BETA_PLACEHOLDER = {
+  plan: "none",
+  billingCycle: "none",
+  status: "inactive",
+  source: "beta_signup",
+} as const;
+
+/**
+ * True only for a legitimate grant:
+ * - no subscription row yet (open signup inserts `GRANTED_SUBSCRIPTION`)
+ * - the exact pre-open-signup placeholder above
+ *
+ * A cancelled, grace, or unpaid row, and a paid row marked inactive by
+ * account deletion, must not be rewritten to lifetime Max on the next login.
+ * `buildReturningUserPatch` still heals a missing or `"none"` entitlement
+ * tier; that field does not unlock billing. `PremiumGate` reads `userType`,
+ * and an explicit `"free"` is left alone.
  */
 export function shouldGrantSubscription(
-  existing?: { plan: string; status: string } | null,
+  existing?: SubscriptionGrantSnapshot | null,
 ): boolean {
   if (!existing) return true;
-  return existing.plan === "none" || existing.status === "inactive";
+  return (
+    existing.plan === BETA_PLACEHOLDER.plan &&
+    existing.status === BETA_PLACEHOLDER.status &&
+    existing.billingCycle === BETA_PLACEHOLDER.billingCycle &&
+    existing.source === BETA_PLACEHOLDER.source
+  );
 }

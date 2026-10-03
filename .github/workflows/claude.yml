@@ -83,7 +83,7 @@ jobs:
           # not be able to replace these, and the model must not be able to
           # write over them either. rm removes a symlink; it does not follow it.
           sudo -n mkdir -p /usr/local/bin /usr/local/lib
-          for tool in tempo-safe-git tempo-safe-bun; do
+          for tool in tempo-safe-git tempo-safe-bun tempo-write-scratch; do
             sudo -n rm -f "/usr/local/bin/${tool}"
             git show "origin/${TRUSTED_REF}:.github/scripts/${tool}" | sudo -n tee "/usr/local/bin/${tool}" >/dev/null
             sudo -n chown root:root "/usr/local/bin/${tool}"
@@ -142,17 +142,17 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           set -euo pipefail
-          # rm -f drops a symlink so the redirect cannot follow it into
-          # /usr/local/bin/tempo-safe-git.
+          # rm -f only drops a leftover in-repo symlink. The body is written
+          # outside the checkout with O_NOFOLLOW|O_EXCL.
           rm -f .tempo-request.md
           if [ -n "${COMMENT_BODY:-}" ]; then
-            printf '%s\n' "$COMMENT_BODY" > .tempo-request.md
+            printf '%s\n' "$COMMENT_BODY" | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-request.md"
           else
-            printf '%s\n' "${ISSUE_BODY:-}" > .tempo-request.md
+            printf '%s\n' "${ISSUE_BODY:-}" | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-request.md"
           fi
       # ----------------------------------------------------------------------
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1
         if: steps.gate.outputs.allowed == 'true'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -165,7 +165,7 @@ jobs:
           # Do not open a pull request from the model; the action's own GitHub token
           # still comments. A write collaborator is required before this step runs.
           prompt: |
-            The request is in `.tempo-request.md`. Read that file and do what it asks.
+            The request is in `${{ runner.temp }}/tempo-request.md`. Read that file and do what it asks.
             Use only `/usr/local/bin/tempo-safe-git`.
             Do not run `git`, `bun`, or `bunx` directly.
             Do not run lint, test, or typecheck. CI runs those on the pull request.
