@@ -71,7 +71,7 @@ jobs:
           # Configuration and patching wait until Sunday.
           if [ "$dow" = 5 ] || [ "$dow" = 6 ]; then
             weekend_hold=0
-            if printf '%s' "$LABELS_JSON" | jq -e 'map(ascii_downcase) | any(. == "area:ci" or . == "config-lane" or . == "dependencies")' >/dev/null; then
+            if printf '%s' "$LABELS_JSON" | jq -e 'map(ascii_downcase) | any(. == "area:ci" or . == "config-lane" or . == "dependencies" or . == "patch")' >/dev/null; then
               weekend_hold=1
             fi
             if [ "$weekend_hold" = 0 ]; then

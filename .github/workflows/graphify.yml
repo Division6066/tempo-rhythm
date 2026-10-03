@@ -15,7 +15,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 concurrency:
   group: graphify-${{ github.ref }}
@@ -27,14 +26,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Install Graphify 0.9.74
         run: |
           set -euo pipefail
-          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv tool install "graphifyy==0.9.74"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/uv" tool install "graphifyy==0.9.74"
           "$HOME/.local/bin/graphify" --version | grep -qx 'graphify 0.9.74'
 
       - name: Rebuild code graph (local AST, no API key)
@@ -44,7 +45,7 @@ jobs:
           test -s graphify-out/graph.json
 
       - name: Upload graph artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: graphify-graph
           path: graphify-out/graph.json
