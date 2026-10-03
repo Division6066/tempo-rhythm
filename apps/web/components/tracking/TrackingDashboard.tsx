@@ -3,7 +3,7 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import { Flame } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,9 @@ import {
   buildTrackingDashboard,
   completeTrackingSession,
   formatSessionMinutes,
+  parseTrackingLogs,
   type TrackingSessionLog,
+  trackingLogsStorageKey,
 } from "@/lib/trackingDashboard";
 
 export function TrackingDashboard() {
@@ -22,18 +24,44 @@ export function TrackingDashboard() {
   const hasConvexUser = profile != null;
   const habitStreak = useQuery(
     api.streaks.getCurrent,
-    isAuthenticated && hasConvexUser ? {} : "skip",
+    isAuthenticated && hasConvexUser ? {} : "skip"
   );
   const [logs, setLogs] = useState<TrackingSessionLog[]>([]);
+  const [logsHydrated, setLogsHydrated] = useState(false);
   const [intention, setIntention] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("25");
+  const userId = profile?._id;
+
+  useEffect(() => {
+    if (!userId) {
+      setLogs([]);
+      setLogsHydrated(false);
+      return;
+    }
+    try {
+      setLogs(parseTrackingLogs(localStorage.getItem(trackingLogsStorageKey(userId))));
+    } catch {
+      setLogs([]);
+    }
+    setLogsHydrated(true);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !logsHydrated) {
+      return;
+    }
+    try {
+      localStorage.setItem(trackingLogsStorageKey(userId), JSON.stringify(logs));
+    } catch {
+      // Private mode and a full disk both throw. The session still shows.
+    }
+  }, [logs, logsHydrated, userId]);
 
   const dashboard = useMemo(() => buildTrackingDashboard(logs), [logs]);
 
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated &&
-      (profile === undefined || (hasConvexUser && habitStreak === undefined)));
+    (isAuthenticated && (profile === undefined || (hasConvexUser && habitStreak === undefined)));
 
   if (isLoading) {
     return (
@@ -51,9 +79,7 @@ export function TrackingDashboard() {
     return (
       <main className="mx-auto w-full max-w-4xl p-8 text-center">
         <SoftCard className="mx-auto max-w-xl">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Session tracking
-          </h1>
+          <h1 className="font-heading text-2xl font-semibold text-foreground">Session tracking</h1>
           <p className="mt-3 text-muted-foreground">
             Sign in again to see habit streaks and log a focus block.
           </p>
@@ -98,8 +124,8 @@ export function TrackingDashboard() {
           </div>
         </div>
         <p className="max-w-2xl text-muted-foreground">
-          A quiet place to notice what you already did. Coming back later still
-          counts — there is no falling behind here.
+          A quiet place to notice what you already did. Coming back later still counts — there is no
+          falling behind here.
         </p>
       </header>
 
@@ -113,8 +139,7 @@ export function TrackingDashboard() {
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Longest among {habitStreak.habitCount}{" "}
-            {habitStreak.habitCount === 1 ? "habit" : "habits"}:{" "}
-            {habitStreak.longestAmongHabits}.{" "}
+            {habitStreak.habitCount === 1 ? "habit" : "habits"}: {habitStreak.longestAmongHabits}.{" "}
             <Link href="/habits" className="underline underline-offset-4">
               Open habits
             </Link>
@@ -128,8 +153,7 @@ export function TrackingDashboard() {
             {dashboard.enso.label}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Charted from the blocks you log on this page, not from placeholder
-            data.
+            Charted from the blocks you log on this page, not from placeholder data.
           </p>
         </SoftCard>
       </section>
@@ -171,9 +195,7 @@ export function TrackingDashboard() {
 
       {dashboard.chart.points.length === 0 ? (
         <div className="rounded-3xl border border-border/80 bg-card/90 px-6 py-10 text-center">
-          <p className="text-base font-medium text-foreground">
-            No focus blocks logged yet.
-          </p>
+          <p className="text-base font-medium text-foreground">No focus blocks logged yet.</p>
           <p className="mt-2 text-sm text-muted-foreground">
             When you finish a short stretch, log it here. One block is enough.
           </p>
@@ -185,10 +207,7 @@ export function TrackingDashboard() {
               .slice()
               .reverse()
               .map((log) => (
-                <li
-                  key={log.id}
-                  className="rounded-3xl border border-border/80 bg-card/90 p-5"
-                >
+                <li key={log.id} className="rounded-3xl border border-border/80 bg-card/90 p-5">
                   <p className="font-medium text-foreground">{log.intention}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {formatSessionMinutes(log.durationMinutes)}
