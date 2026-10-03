@@ -16,6 +16,7 @@ export function CoachChat() {
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,6 +48,10 @@ export function CoachChat() {
     setIsSending(true);
     try {
       await sendMessage({ conversationId, content: text });
+      setSendError(null);
+    } catch {
+      setInput(text);
+      setSendError("That didn't send. Your message is still here, so try again.");
     } finally {
       setIsSending(false);
     }
@@ -110,7 +115,10 @@ export function CoachChat() {
           <input
             aria-label="Message"
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={(event) => {
+              setInput(event.target.value);
+              if (sendError) setSendError(null);
+            }}
             placeholder="Help me pick one thing for this afternoon"
             disabled={!conversationId || isSending}
             className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -120,6 +128,11 @@ export function CoachChat() {
           Send
         </Button>
       </form>
+      {sendError ? (
+        <p role="alert" className="mt-2 text-sm text-destructive">
+          {sendError}
+        </p>
+      ) : null}
     </main>
   );
 }
