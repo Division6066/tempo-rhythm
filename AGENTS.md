@@ -10,25 +10,56 @@ Cursor also reads `.cursor/rules/`. Claude Code also reads `CLAUDE.md`.
 
 ## 0. Understand the codebase BEFORE you touch it
 
-This repo ships a **code knowledge graph**. Build it first. It takes ~5 seconds
-and costs nothing — no LLM calls, no API keys, pure tree-sitter AST parsing.
+This repo ships a **code knowledge graph**. Build it first. Code is parsed
+locally with tree-sitter. No API key. Nothing leaves the machine.
+
+The package is **`graphifyy`** (two y's) from
+[Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify). Pin
+**0.9.74**. The CLI command is `graphify`. Other `graphify*` names on PyPI are
+not this tool.
+
+README (v0.9.74): https://github.com/Graphify-Labs/graphify/blob/v0.9.74/README.md
 
 ```bash
-pip install graphifyy            # note the double-y. `graphify` is NOT the right package.
-graphify update . --no-cluster   # ~5s, 9,000+ nodes, deterministic, $0
+uv tool install graphifyy==0.9.74
+# fallback when uv is not available:
+python3 -m pip install 'graphifyy==0.9.74'
 ```
 
-Then query it instead of guessing:
+Rebuild the code graph. `graphify update` re-extracts code and does not call
+an LLM (`graphify --help` in 0.9.74). `--no-cluster` writes the raw AST graph.
+On a mixed repo, `graphify extract . --code-only` is the README's other no-key
+form: it skips docs, PDFs, and images.
 
 ```bash
-graphify query "how does auth work"          # BFS traversal, token-budgeted
-graphify explain "<symbol>"                  # plain-language node + neighbours
-graphify affected "<symbol>" --depth 2       # reverse traversal: what breaks if I change this
-graphify path "<A>" "<B>"                    # shortest path between two nodes
+graphify update . --no-cluster
 ```
 
-The graph output lands in `graphify-out/` (gitignored — rebuilt, never committed,
-so it can never go stale).
+Query it. These match the v0.9.74 README and `graphify --help`:
+
+```bash
+graphify query "how does auth work"       # BFS; --budget N (default 2000)
+graphify explain "SymbolName"             # node and its neighbors
+graphify path "SymbolA" "SymbolB"         # shortest path
+graphify affected "SymbolName" --depth 2  # who depends on this (CLI 0.9.74)
+```
+
+MCP is stdio. Install the `mcp` extra (the base package does not import it).
+After `uv tool install`, system `python3` often cannot see the package; use
+the `graphify-mcp` script from that install, or that install's interpreter:
+
+```bash
+uv tool install 'graphifyy[mcp]==0.9.74'
+python -m graphify.serve graphify-out/graph.json
+# same: python -m graphify.serve --graph graphify-out/graph.json
+```
+
+`graphify-out/graph.json` is gitignored. CI rebuilds it on every push to
+`integration` (`.github/workflows/graphify.yml`) with
+`graphify update . --no-cluster` and uploads that file as the Actions
+artifact `graphify-graph` (kept 14 days). It is not committed. Rulesets
+`integration-protection` and `protect-integration` require a pull request, so
+a bot push to `integration` would be rejected.
 
 ### Why this matters
 
@@ -41,6 +72,17 @@ so it can never go stale).
 **The graph is ground truth. Docs and tickets are intent.**
 When a ticket, a doc, or a comment disagrees with the graph — **the graph wins.**
 Say so out loud in your PR rather than quietly building the wrong thing.
+
+### Ticket STEPS
+
+Every ticket's STEPS must begin with this, before any edit: query the Graphify
+graph and Understand Anything for the MUTATES files and their dependents, then
+adjust the plan to the current code.
+
+- Graphify: `graphify query`, `graphify explain`, `graphify path`, and
+  `graphify affected` on `graphify-out/graph.json`.
+- Understand Anything: `.ua/knowledge-graph.json` via `/understand`
+  (`.agents/skills/understand-anything/SKILL.md`). Do not invent that file.
 
 ---
 
@@ -141,6 +183,31 @@ The README's quick-start says `pnpm`. **The README is wrong.** Use Bun.
 - Full list of files changed
 - Anything you **refused** to do, and why
 - Anything the graph told you that contradicted your task
+
+---
+
+## 8. Building runs every day
+
+Autonomous building runs every day: ticket → agent → PR → checks + Bugbot →
+merge to `integration` → preview.
+
+On Friday and Saturday (Asia/Jerusalem) there is no configuration and no
+patching. Product builds still run. The dispatch router enforces that day
+gate.
+
+Agents still never merge. Only Amit promotes `integration` to live (`master`)
+and deploys.
+
+## 9. Failure stop
+
+A ticket that fails more than 3 times stops. It gets the `blocked:amit` label
+and a comment with the reason and links to the failed runs.
+
+Independent tickets carry on. Tickets that depend on the stuck one, and
+everything downstream of those, pause.
+
+The dispatch router does not count attempts. Wiring this stop into the router
+is a follow-up.
 
 ---
 

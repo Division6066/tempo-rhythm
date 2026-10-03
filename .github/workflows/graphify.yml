@@ -1,0 +1,52 @@
+name: Graphify
+
+# Rebuild the code knowledge graph on every push to integration.
+# graphifyy 0.9.74: `graphify update . --no-cluster` is local tree-sitter AST.
+# No API key and no secrets. This workflow is not a required check.
+# Do not add it to a ruleset.
+#
+# Persistence is an Actions artifact, not a commit. Rulesets
+# integration-protection and protect-integration require a pull request onto
+# integration, so a bot push would be rejected.
+
+on:
+  push:
+    branches: [integration]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: graphify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rebuild-graph:
+    name: Rebuild graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Graphify 0.9.74
+        run: |
+          set -euo pipefail
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/uv" tool install "graphifyy==0.9.74"
+          "$HOME/.local/bin/graphify" --version | grep -qx 'graphify 0.9.74'
+
+      - name: Rebuild code graph (local AST, no API key)
+        run: |
+          set -euo pipefail
+          graphify update . --no-cluster
+          test -s graphify-out/graph.json
+
+      - name: Upload graph artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphify-graph
+          path: graphify-out/graph.json
+          if-no-files-found: error
+          retention-days: 14
