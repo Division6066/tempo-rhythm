@@ -1,0 +1,89 @@
+name: e2e-preview
+
+# Required check (Phase 03). Playwright against THIS PR's Vercel preview.
+# - Repo variable FACTORY_HAS_PREVIEW decides it: when it isn't 'true' the job passes with
+#   "no preview configured", so it never blocks a repo without previews.
+# - Waits for the Vercel deployment of the PR head SHA (GitHub Deployments API, written by the
+#   Vercel app): scripts/factory/wait-preview.mjs. When Vercel skips the build (Ignored Build
+#   Step: nothing app-related changed) there is no new preview, and the job passes with a note.
+# - Sends x-vercel-protection-bypass = secrets.VERCEL_AUTOMATION_BYPASS_SECRET (playwright.config.ts).
+# - Uploads screenshots, traces and the HTML report as the artifact "e2e-preview-evidence"
+#   (this is the EVIDENCE for tickets).
+# Optional repo variables: FACTORY_PREVIEW_ENVIRONMENT (exact deployment environment; default any
+# "Preview*"), FACTORY_PREVIEW_STATUS_CONTEXT (Vercel commit status; default "Vercel").
+
+on:
+  pull_request:
+    branches: [integration, master, main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: read
+
+concurrency:
+  group: e2e-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-preview:
+    name: e2e-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: No preview configured
+        if: vars.FACTORY_HAS_PREVIEW != 'true'
+        run: echo "no preview configured (repo variable FACTORY_HAS_PREVIEW is not 'true'); passing." | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        if: vars.FACTORY_HAS_PREVIEW == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: vars.FACTORY_HAS_PREVIEW == 'true'
+        with:
+          node-version: 22
+      - name: Wait for the Vercel preview of this PR's head commit
+        id: preview
+        if: vars.FACTORY_HAS_PREVIEW == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PREVIEW_ENVIRONMENT: ${{ vars.FACTORY_PREVIEW_ENVIRONMENT }}
+          PREVIEW_STATUS_CONTEXT: ${{ vars.FACTORY_PREVIEW_STATUS_CONTEXT }}
+        run: node scripts/factory/wait-preview.mjs
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+        if: steps.preview.outputs.url != ''
+        with:
+          bun-version: '1.3.9'
+      - name: Install dependencies and Chromium
+        if: steps.preview.outputs.url != ''
+        run: |
+          bun install --frozen-lockfile
+          bunx playwright install --with-deps chromium
+      - name: Check the bypass secret is set
+        if: steps.preview.outputs.url != ''
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          if [ -z "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            echo "::error::Secret VERCEL_AUTOMATION_BYPASS_SECRET is missing: the protected preview can't be tested."
+            exit 1
+          fi
+      - name: Playwright against the preview
+        if: steps.preview.outputs.url != ''
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          CI: 'true'
+        run: bunx playwright test tests/e2e/preview-smoke.spec.ts --reporter=list,html
+      - name: Upload screenshots, traces and report
+        if: always() && steps.preview.outputs.url != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-preview-evidence
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 14

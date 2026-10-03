@@ -51,7 +51,7 @@ const WEEK_INCLUDES = [
 ] as const;
 
 const PRO_INCLUDES = [
-  "Everything in the trial",
+  "Everything in the open beta",
   "Unlimited journal + templates",
   "Cloud sync across devices",
   "Email the founder any time",
@@ -347,26 +347,25 @@ export default function LandingPage() {
         <section id="pricing" className="py-16 md:py-20">
           <div className={wrap}>
             <p className={eyebrow}>Pricing</p>
-            <h2 className={sectionTitle}>One dollar for a week. Then a fair price, forever.</h2>
+            <h2 className={sectionTitle}>Free during beta. Open sign-up.</h2>
             <p className={sectionLede}>
-              No free tier — free planners become abandoned planners. A dollar is enough of a
-              commitment to matter, and small enough that it can&apos;t be the reason you quit.
+              Every new account gets the full app while beta is open. No card, and no trial clock.
             </p>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               <article className="rounded-xl border border-border bg-card p-8">
                 <p className="mb-4 font-mono text-caption uppercase tracking-[0.12em] opacity-70">
-                  The seven-day week
+                  Open beta
                 </p>
                 <p className="font-serif text-[64px] font-medium leading-none">
-                  $1
+                  Free
                   <span className="font-sans text-h3 font-normal text-muted-foreground">
                     {" "}
-                    · once
+                    · sign up
                   </span>
                 </p>
                 <p className="my-6 text-small leading-relaxed">
-                  Seven full days of every feature. If it doesn&apos;t fit, you&apos;ve lost a
-                  dollar and a Tuesday, not a month&apos;s subscription.
+                  The whole app, for as long as beta stays open. Sign up when you want a place to
+                  put today.
                 </p>
                 <ul className="mb-6 space-y-2 text-small leading-8">
                   {WEEK_INCLUDES.map((item) => (
@@ -379,26 +378,26 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link href="/sign-up" className={ctaPrimary}>
-                  Start my week →
+                  Join the free beta →
                 </Link>
               </article>
               <article className="relative rounded-xl bg-gradient-to-br from-mkt-dark-bg to-mkt-dark-bg-2 p-8 text-mkt-dark-fg">
                 <p className="absolute right-5 top-5 rounded-full bg-tempo-orange px-2.5 py-1 text-[11px] font-semibold text-cream">
-                  After your week
+                  Included now
                 </p>
                 <p className="mb-4 font-mono text-caption uppercase tracking-[0.12em] text-mkt-dark-fg-subtle">
-                  Tempo Pro
+                  What you get
                 </p>
                 <p className="font-serif text-[64px] font-medium leading-none">
-                  $9
+                  Free
                   <span className="font-sans text-h3 font-normal text-mkt-dark-fg-muted">
                     {" "}
-                    / month · or $72/year
+                    · during beta
                   </span>
                 </p>
                 <p className="my-6 text-small leading-relaxed">
-                  The full thing, forever. Cancel from inside the app in two taps. Student and
-                  unemployed tiers available — just ask.
+                  Journal, templates, and sync are part of the open beta. A paid price is not on
+                  this page, because signup does not charge one.
                 </p>
                 <ul className="mb-6 space-y-2 text-small leading-8">
                   {PRO_INCLUDES.map((item) => (
@@ -411,7 +410,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link href="/sign-up" className={ctaGradient}>
-                  See billing →
+                  Join the free beta →
                 </Link>
               </article>
             </div>
@@ -502,8 +501,8 @@ export default function LandingPage() {
                   are you doing today?&quot; without judgment.
                 </p>
                 <p>
-                  If it works for you, the dollar keeps the lights on. If it doesn&apos;t —
-                  you&apos;ve lost a dollar and a week, not a year. That seems fair.
+                  If it works for you, that is enough. Beta is free while it is open. If it does not
+                  fit, you can leave it there.
                 </p>
                 <p className="pt-2 font-serif text-[28px] italic">— Amit</p>
               </div>
@@ -514,11 +513,10 @@ export default function LandingPage() {
         <section className="tempo-gradient py-16 text-center text-cream md:py-20">
           <div className={wrap}>
             <h2 className="mx-auto max-w-[20ch] font-serif text-[clamp(2rem,4.4vw,3.625rem)] font-normal leading-[1.08] tracking-tight text-cream">
-              One dollar. Seven days. One gentle week.
+              Free during beta. One gentle week at a time.
             </h2>
             <p className="mx-auto mt-4 max-w-[62ch] font-serif text-h3 leading-relaxed text-cream/90">
-              No credit card surprises. No newsletter enrollment. No growth loops. Just the app, for
-              a week.
+              No credit card. No newsletter enrollment. No growth loops. Just the app.
             </p>
             <Link href="/sign-up" className={`${ctaOnDark} mt-8`}>
               Join the free beta

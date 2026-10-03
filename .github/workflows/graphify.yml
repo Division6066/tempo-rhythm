@@ -7,11 +7,14 @@ name: Graphify
 #
 # Persistence is an Actions artifact, not a commit. Rulesets
 # integration-protection and protect-integration require a pull request onto
-# integration, so a bot push would be rejected.
+# integration, so a bot push would be rejected. Phase 06 Step 3 allows a Factory App PR
+# into docs/graph/ instead; the Factory App doesn't exist yet, so: artifact (decided 2026-10-03).
+# No pause check on purpose: read-only output, it builds nothing and changes nothing.
 
 on:
   push:
     branches: [integration]
+  workflow_dispatch:
 
 permissions:
   contents: read

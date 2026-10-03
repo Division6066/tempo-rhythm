@@ -13,9 +13,9 @@ import {
   filterHistoryConversations,
   formatHistoryDate,
   getConversationPreview,
-  isLiveConversation,
   type HistoryConversation,
   type HistoryMessage,
+  isLiveConversation,
 } from "@/lib/conversationHistory";
 
 export function HistoryScreen() {
@@ -24,16 +24,16 @@ export function HistoryScreen() {
   const hasConvexUser = profile != null;
   const conversations = useQuery(
     api.conversations.list,
-    isAuthenticated && hasConvexUser ? {} : "skip",
+    isAuthenticated && hasConvexUser ? {} : "skip"
   );
   const [query, setQuery] = useState("");
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    Id<"conversations"> | null
-  >(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<Id<"conversations"> | null>(
+    null
+  );
 
   const liveConversations = useMemo(
     () => (conversations ?? []).filter(isLiveConversation),
-    [conversations],
+    [conversations]
   );
 
   useEffect(() => {
@@ -48,12 +48,47 @@ export function HistoryScreen() {
 
   const selectedConversation = useQuery(
     api.conversations.get,
-    selectedConversationId ? { conversationId: selectedConversationId } : "skip",
+    selectedConversationId ? { conversationId: selectedConversationId } : "skip"
   );
   const selectedMessages = useQuery(
     api.messages.list,
-    selectedConversationId ? { conversationId: selectedConversationId } : "skip",
+    selectedConversationId ? { conversationId: selectedConversationId } : "skip"
   );
+  const trimmedQuery = query.trim().slice(0, 200);
+  const searchHits = useQuery(
+    api.messages.searchMine,
+    isAuthenticated && hasConvexUser && trimmedQuery.length > 0 ? { query: trimmedQuery } : "skip"
+  );
+  const [settledHits, setSettledHits] = useState<NonNullable<typeof searchHits> | null>(null);
+  const [settledQuery, setSettledQuery] = useState("");
+  if (trimmedQuery.length === 0) {
+    if (settledHits !== null || settledQuery !== "") {
+      setSettledHits(null);
+      setSettledQuery("");
+    }
+  } else if (searchHits !== undefined && settledQuery !== trimmedQuery) {
+    setSettledHits(searchHits);
+    setSettledQuery(trimmedQuery);
+  }
+  const searchPending = trimmedQuery.length > 0 && searchHits === undefined;
+  // An in-flight query is undefined, not an empty hit list. Keep the last
+  // settled hits so a keystroke does not wipe the thread list.
+  const hitsForList = searchPending ? settledHits : (searchHits ?? null);
+  const searchByConversation = useMemo(() => {
+    const grouped = new Map<string, HistoryMessage[]>();
+    for (const hit of hitsForList ?? []) {
+      const existing = grouped.get(hit.conversationId) ?? [];
+      existing.push({
+        id: hit.messageId,
+        conversationId: hit.conversationId,
+        role: hit.role,
+        content: hit.content,
+        createdAt: hit.createdAt,
+      });
+      grouped.set(hit.conversationId, existing);
+    }
+    return grouped;
+  }, [hitsForList]);
 
   const historyConversations = useMemo((): HistoryConversation[] => {
     return liveConversations.map((conversation) => {
@@ -66,7 +101,7 @@ export function HistoryScreen() {
             content: message.content,
             createdAt: message.createdAt,
           }))
-        : [];
+        : (searchByConversation.get(conversation._id) ?? []);
 
       return {
         id: conversation._id,
@@ -77,17 +112,18 @@ export function HistoryScreen() {
         messages,
       };
     });
-  }, [liveConversations, selectedConversationId, selectedMessages]);
+  }, [liveConversations, searchByConversation, selectedConversationId, selectedMessages]);
 
-  const filteredConversations = useMemo(
-    () => filterHistoryConversations(historyConversations, query),
-    [historyConversations, query],
-  );
+  const filteredConversations = useMemo(() => {
+    if (searchPending && hitsForList === null) {
+      return filterHistoryConversations(historyConversations, "");
+    }
+    return filterHistoryConversations(historyConversations, query);
+  }, [historyConversations, hitsForList, query, searchPending]);
 
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated &&
-      (profile === undefined || (hasConvexUser && conversations === undefined)));
+    (isAuthenticated && (profile === undefined || (hasConvexUser && conversations === undefined)));
 
   if (isLoading) {
     return (
@@ -129,8 +165,8 @@ export function HistoryScreen() {
             No past conversations yet
           </h1>
           <p className="mt-3 text-muted-foreground">
-            When you chat with a companion, this page becomes a calm shelf for
-            returning to what you already explored.
+            When you chat with a companion, this page becomes a calm shelf for returning to what you
+            already explored.
           </p>
           <Button asChild className="mt-6">
             <Link href="/coach">Start a companion chat</Link>
@@ -150,8 +186,7 @@ export function HistoryScreen() {
     locallySelected ??
     liveConversations[0];
   const activeId = activeConversation._id;
-  const activeMessages =
-    selectedConversationId === activeId ? (selectedMessages ?? []) : [];
+  const activeMessages = selectedConversationId === activeId ? (selectedMessages ?? []) : [];
   const activeCompanion = companionNameFromTechnique(activeConversation.technique);
   const activeHistory = filteredConversations.find((row) => row.id === activeId);
 
@@ -168,15 +203,18 @@ export function HistoryScreen() {
               Pick up a conversation where you left it
             </h1>
             <p className="mt-2 max-w-2xl text-muted-foreground">
-              Browse past companion chats and reopen a thread. Nothing here
-              changes your account.
+              Browse past companion chats and reopen a thread. Nothing here changes your account.
             </p>
           </div>
-          <label className="flex min-w-full flex-col gap-2 lg:min-w-[20rem]" htmlFor="history-search">
+          <label
+            className="flex min-w-full flex-col gap-2 lg:min-w-[20rem]"
+            htmlFor="history-search"
+          >
             <span className="text-sm font-medium text-foreground">Search conversations</span>
             <input
               id="history-search"
               value={query}
+              maxLength={200}
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="Try a companion name or a thread title"
               className="h-12 rounded-2xl border border-border bg-card px-4 text-base text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -190,11 +228,16 @@ export function HistoryScreen() {
             <div className="border-b border-border px-6 py-4">
               <h2 className="font-heading text-xl font-semibold text-foreground">Threads</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {filteredConversations.length} of {liveConversations.length} shown
+                {searchPending
+                  ? "Searching your threads"
+                  : `${filteredConversations.length} of ${liveConversations.length} shown`}
               </p>
             </div>
             {filteredConversations.length > 0 ? (
-              <section className="max-h-[36rem] space-y-2 overflow-y-auto p-3" aria-label="Conversation results">
+              <section
+                className="max-h-[36rem] space-y-2 overflow-y-auto p-3"
+                aria-label="Conversation results"
+              >
                 {filteredConversations.map((conversation) => {
                   const isSelected = activeId === conversation.id;
                   return (
@@ -213,11 +256,15 @@ export function HistoryScreen() {
                         setSelectedConversationId(conversation.id as Id<"conversations">);
                       }}
                     >
-                      <span className="block font-medium text-foreground">{conversation.title}</span>
+                      <span className="block font-medium text-foreground">
+                        {conversation.title}
+                      </span>
                       <span className="mt-2 flex flex-wrap items-center gap-2">
                         <Pill tone="neutral">{conversation.companionName}</Pill>
                         {conversation.matchingMessageCount > 0 ? (
-                          <Pill tone="moss">{conversation.matchingMessageCount} message matches</Pill>
+                          <Pill tone="moss">
+                            {conversation.matchingMessageCount} message matches
+                          </Pill>
                         ) : null}
                       </span>
                       <span className="mt-3 line-clamp-2 block text-sm text-muted-foreground">

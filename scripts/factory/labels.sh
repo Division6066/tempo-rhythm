@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Factory labels (Phase 04 Step 2). Idempotent: `gh label create --force` creates or updates.
+# Usage: scripts/factory/labels.sh [owner/repo]   (default: the current gh repo)
+# Batch labels batch:<id> are created by the promoter (Phase 06), not here.
+set -euo pipefail
+REPO="${1:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
+mk() { gh label create "$1" --repo "$REPO" --color "$2" --description "$3" --force >/dev/null && echo "ok  $1"; }
+mk "status:ready"       "0e8a16" "Factory: ticket can be dispatched"
+mk "status:dispatched"  "fbca04" "Factory: a lane is building it"
+mk "status:in-pr"       "1d76db" "Factory: PR open"
+mk "status:done"        "5319e7" "Factory: PR merged"
+mk "waiting:data"       "c5def5" "Factory: component waits for its batch's data PR"
+mk "lane:claude"        "d4c5f9" "Factory lane: Claude Code"
+mk "lane:codex"         "d4c5f9" "Factory lane: Codex"
+mk "lane:cursor"        "d4c5f9" "Factory lane: Cursor"
+mk "run:cursor"         "bfdadc" "Factory: triggers the Cursor Automation"
+mk "ticket:data"        "f9d0c4" "Factory: data ticket PR"
+mk "ticket:component"   "f9d0c4" "Factory: component ticket PR"
+mk "attempt:1"          "fef2c0" "Factory: lane retry 1"
+mk "attempt:2"          "fef2c0" "Factory: lane retry 2"
+mk "attempt:3"          "fef2c0" "Factory: lane retry 3 (next failure = blocked:amit)"
+mk "mergefix:1"         "fef2c0" "Factory: merge-fix 1"
+mk "mergefix:2"         "fef2c0" "Factory: merge-fix 2"
+mk "merge-fixing"       "e99695" "Factory: merge-fix running"
+mk "blocked:amit"       "b60205" "Factory: needs Amit"
+mk "paused:dependency"  "b60205" "Factory: a dependency is blocked"
+mk "hold:stress-test"   "5319e7" "Factory: not merged until the stress run"
+mk "test:overlap"       "bfd4f2" "Factory: hand-picked overlap ticket"
+mk "config"             "000000" "Config change (R12)"
+mk "factory"            "0052cc" "Factory PR (added by factory-label-pr)"
