@@ -1,13 +1,10 @@
-name: config-guard
+name: scope-guard
 
-# Required check (Phase 03). Rules: scripts/factory/config-guard.mjs (read its header).
-# Short version: .github/**, scripts/factory/**, .cursor/**, AGENTS.md (+ files that decide what a
-# check checks) may only change in a PR labelled `config`, opened by Division6066, that does not
-# link a ticket. Division6066 is Amit's account AND the account Grok Bot works through.
-# The Factory GitHub App is NOT allowed on these files (plan Phase 04 Step 6); to allow it later,
-# add its bot login to GUARDED_AUTHORS in scripts/factory/config-guard.mjs via a config PR.
-# docs/tickets/** and docs/contracts/** only in a `config` PR that changes nothing else and links
-# no ticket (ticket writer / refresher PRs, any author).
+# Required check (Phase 03). Rules a-g: scripts/factory/scope-guard.mjs (read its header).
+# A PR must link one ticket ("Closes #N") unless it is a `config` PR; files must stay inside the
+# ticket's front-matter `scope:`; component tickets never touch the data folders or shared hot
+# files; commits with the trailer "Factory-Merge-Fix: true" may touch hot files and component
+# folders but never the data folders. Data folders: scripts/factory/scope-guard.config.json.
 #
 # pull_request_target: the workflow AND the script come from the base branch, so a PR can never
 # rewrite the guard that judges it. It never checks out or runs PR code; it only reads the API.
@@ -23,15 +20,14 @@ permissions:
   contents: read
   pull-requests: read
   issues: read
-  actions: read
 
 concurrency:
-  group: config-guard-${{ github.event.pull_request.number }}
+  group: scope-guard-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  config-guard:
-    name: config-guard
+  scope-guard:
+    name: scope-guard
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -43,8 +39,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-      - name: Run config-guard
+      - name: Run scope-guard
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: node scripts/factory/config-guard.mjs
+        run: node scripts/factory/scope-guard.mjs
