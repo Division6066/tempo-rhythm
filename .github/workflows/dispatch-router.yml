@@ -141,26 +141,29 @@ jobs:
         with:
           bun-version: "1.3.9"
       - name: Install dependencies (so the agent can run the ticket's tests)
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
       - name: Install command wrappers and create the agent branch
         env:
           ISSUE: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
           esac
-          case "$DEFAULT_BRANCH" in
-            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::default branch is not allowed"; exit 1 ;;
-          esac
           # Same group as agent-router. If claude/issue-<number> already exists,
           # continue on it so a later run fast-forwards instead of diverging.
-          git fetch --depth=1 origin "$DEFAULT_BRANCH"
-          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
-          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
+          # Wrappers live on integration. master does not have them until Amit
+          # merges, and the checkout ref must not be the source of these blobs.
+          TRUSTED_REF=integration
+          case "$TRUSTED_REF" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::trusted ref is not allowed"; exit 1 ;;
+          esac
+          git fetch --depth=1 origin "$TRUSTED_REF"
+          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
+          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
           chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
           BRANCH="claude/issue-${ISSUE}"
           git fetch --depth=1 origin "$BRANCH" || true
@@ -200,6 +203,7 @@ jobs:
           # extra arguments, and these rules do not use :*.
           claude_args: >-
             --model claude-sonnet-5 --max-turns 40
+            --setting-sources user
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit)"
       - name: Open draft pull request
         env:
@@ -208,6 +212,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
           esac

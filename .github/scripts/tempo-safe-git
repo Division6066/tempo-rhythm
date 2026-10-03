@@ -2,11 +2,21 @@
 # Fixed git commands for unattended agents.
 # Every subcommand refuses extra arguments. Flags, refspecs, and commit-message
 # files are chosen here, never forwarded from the model command line.
+# Git is the system binary, with hooks disabled, so a PATH plant or a
+# .git/hooks file written during the session cannot run.
 set -euo pipefail
+
+export PATH=/usr/bin:/bin
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM
+export GIT_CONFIG_NOSYSTEM=1
 
 refuse() {
   printf 'tempo-safe-git: %s\n' "$*" >&2
   exit 2
+}
+
+g() {
+  /usr/bin/git -c core.hooksPath=/dev/null "$@"
 }
 
 no_args() {
@@ -14,7 +24,7 @@ no_args() {
 }
 
 repo_file() {
-  root=$(git rev-parse --show-toplevel)
+  root=$(g rev-parse --show-toplevel)
   path="$root/$1"
   [ -e "$path" ] || refuse "missing $1"
   [ ! -L "$path" ] || refuse "$1 must not be a symlink"
@@ -46,26 +56,26 @@ shift || true
 case "$cmd" in
   status)
     no_args status "$@"
-    exec git status --porcelain
+    g status --porcelain
     ;;
   diff)
     no_args diff "$@"
-    exec git diff
+    g diff
     ;;
   diff-cached)
     no_args diff-cached "$@"
-    exec git diff --cached
+    g diff --cached
     ;;
   log)
     no_args log "$@"
-    exec git log -n 20 --oneline
+    g log -n 20 --oneline
     ;;
   add)
     no_args add "$@"
     # Scratch files hold the issue text and the commit message. An older
     # agent branch may not gitignore them, so a plain `git add -- .` would
     # commit them. Exclude them here, not only in .gitignore.
-    exec git add -- . \
+    g add -- . \
       ':!.tempo-commit-msg' \
       ':!.tempo-branch-name' \
       ':!.tempo-issue.md' \
@@ -74,7 +84,7 @@ case "$cmd" in
   commit)
     no_args commit "$@"
     msg=$(repo_file .tempo-commit-msg)
-    exec git commit -F "$msg"
+    g commit --no-verify -F "$msg"
     ;;
   branch-new)
     no_args branch-new "$@"
@@ -83,13 +93,13 @@ case "$cmd" in
     [ "$lines" -eq 1 ] || refuse "branch file must be one line"
     name=$(head -n 1 "$file" | tr -d '\r')
     safe_branch_name "$name"
-    exec git checkout -b "$name"
+    g checkout -b "$name"
     ;;
   push)
     no_args push "$@"
-    branch=$(git rev-parse --abbrev-ref HEAD)
+    branch=$(g rev-parse --abbrev-ref HEAD)
     safe_branch_name "$branch"
-    exec git push -u origin "$branch"
+    g push --no-verify -u origin "$branch"
     ;;
   *)
     refuse "unknown command"

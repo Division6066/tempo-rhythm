@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { chmodSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -94,6 +94,21 @@ describe("tempo-safe-git refuses escalating arguments", () => {
     expect(staged).not.toContain(".tempo-commit-msg");
   });
 
+  test("commit ignores a pre-commit hook that exits 1", () => {
+    const dir = initRepo();
+    const hooks = join(dir, ".git", "hooks");
+    mkdirSync(hooks, { recursive: true });
+    const hook = join(hooks, "pre-commit");
+    writeFileSync(hook, "#!/bin/sh\necho hooked\nexit 1\n");
+    chmodSync(hook, 0o755);
+    writeFileSync(join(dir, "note.txt"), "changed\n");
+    writeFileSync(join(dir, ".tempo-commit-msg"), "note the change\n");
+    expect(run(gitBin, ["add"], dir).status).toBe(0);
+    const committed = run(gitBin, ["commit"], dir);
+    expect(committed.status).toBe(0);
+    expect(committed.stderr).not.toContain("hooked");
+  });
+
   test("commit with a normal message file does not read an extra path", () => {
     const dir = initRepo();
     writeFileSync(join(dir, "note.txt"), "changed\n");
@@ -104,6 +119,16 @@ describe("tempo-safe-git refuses escalating arguments", () => {
     expect(committed.status).toBe(0);
     const subject = execFileSync("git", ["log", "-1", "--format=%s"], { cwd: dir, encoding: "utf8" });
     expect(subject.trim()).toBe("note the change");
+  });
+});
+
+describe("tempo-safe-git does not use PATH git", () => {
+  test("the wrapper pins system git and disables hooks", () => {
+    const text = readFileSync(gitBin, "utf8");
+    expect(text).toContain("/usr/bin/git -c core.hooksPath=/dev/null");
+    expect(text).toContain("commit --no-verify");
+    expect(text).toContain("push --no-verify");
+    expect(text).toContain("export PATH=/usr/bin:/bin");
   });
 });
 
@@ -146,7 +171,11 @@ describe("dispatch and agent routers do not auto-approve escalating shell", () =
         expect(line).not.toContain("tempo-safe-bun");
       }
       expect(text).not.toContain("track_progress: true");
-      expect(text).toContain('git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git"');
+      expect(text).toContain("TRUSTED_REF=integration");
+      expect(text).toContain('git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-git"');
+      expect(text).toContain("--ignore-scripts");
+      expect(text).toContain("--setting-sources user");
+      expect(text).not.toContain("DEFAULT_BRANCH");
       expect(text).not.toContain("install -m 0755 .github/scripts/tempo-safe");
     }
   });

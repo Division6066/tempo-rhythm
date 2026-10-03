@@ -63,22 +63,22 @@ jobs:
         with:
           bun-version: 1.3.9
       - if: steps.gate.outputs.allowed == 'true'
-        run: bun install --frozen-lockfile
-      - name: Install command wrappers from the default branch
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Install command wrappers from integration
         if: steps.gate.outputs.allowed == 'true'
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
           # pull_request_review_comment checks out the PR merge commit. A fork
-          # can replace .github/scripts. Install the blobs from the default
-          # branch, which is the tree that loaded this workflow.
-          case "$DEFAULT_BRANCH" in
-            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::default branch is not allowed"; exit 1 ;;
+          # can replace .github/scripts. Install the blobs from integration,
+          # where this lane's workflows land. master does not have them yet.
+          TRUSTED_REF=integration
+          case "$TRUSTED_REF" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::trusted ref is not allowed"; exit 1 ;;
           esac
-          git fetch --depth=1 origin "$DEFAULT_BRANCH"
-          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
-          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
+          git fetch --depth=1 origin "$TRUSTED_REF"
+          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
+          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
           chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
       - name: Save the request for Claude
         if: steps.gate.outputs.allowed == 'true'
@@ -119,4 +119,5 @@ jobs:
           claude_args: |
             --max-turns 25
             --model claude-sonnet-5
+            --setting-sources user
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new),Bash(/usr/local/bin/tempo-safe-git push)"

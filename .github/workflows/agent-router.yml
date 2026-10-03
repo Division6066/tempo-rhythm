@@ -131,26 +131,27 @@ jobs:
         with: { node-version: 24 }
       - uses: oven-sh/setup-bun@v2
         with: { bun-version: 1.3.9 }
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
       - name: Install command wrappers and create the agent branch
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           ISSUE: ${{ needs.route.outputs.issue }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
           esac
-          case "$DEFAULT_BRANCH" in
-            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::default branch is not allowed"; exit 1 ;;
+          # Wrappers live on integration. master does not have them until Amit
+          # merges, and a workflow_dispatch base can rewrite the checkout scripts.
+          TRUSTED_REF=integration
+          case "$TRUSTED_REF" in
+            ''|-*|*..*|*:*|*[!A-Za-z0-9._/-]*) echo "::error::trusted ref is not allowed"; exit 1 ;;
           esac
-          # Wrappers come from the default branch, not the checkout ref. A
-          # workflow_dispatch base can point at a branch that rewrites the scripts.
-          git fetch --depth=1 origin "$DEFAULT_BRANCH"
-          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
-          git show "origin/${DEFAULT_BRANCH}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
+          git fetch --depth=1 origin "$TRUSTED_REF"
+          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-git" > /usr/local/bin/tempo-safe-git
+          git show "origin/${TRUSTED_REF}:.github/scripts/tempo-safe-bun" > /usr/local/bin/tempo-safe-bun
           chmod 0755 /usr/local/bin/tempo-safe-git /usr/local/bin/tempo-safe-bun
           BRANCH="claude/issue-${ISSUE}"
           git fetch --depth=1 origin "$BRANCH" || true
@@ -185,6 +186,7 @@ jobs:
           claude_args: |
             --max-turns 40
             --model claude-sonnet-5
+            --setting-sources user
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit)"
 
       - name: Open draft pull request
@@ -195,6 +197,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue number is not digits"; exit 1 ;;
           esac
