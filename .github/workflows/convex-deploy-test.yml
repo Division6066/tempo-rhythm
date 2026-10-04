@@ -1,0 +1,62 @@
+# Phase 05 Step 1: deploy integration's Convex functions to the TEST deployment ceaseless-dog-617.
+# No pause check on purpose: a merged data PR must always reach test (OVERNIGHT-PLAN Phase 05 Step 1.4).
+# Never targets a live deployment: the deploy key must be a `dev:` key for ceaseless-dog-617, checked
+# in memory (never printed) before anything is installed. Live (precious-wildcat-890) deploys are Amit's (R5).
+# Supersedes the unmerged PR #506 (convex-test-deploy.yml, which skipped silently without the key).
+name: convex-deploy-test
+
+on:
+  push:
+    branches: [integration]
+    paths:
+      - "convex/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convex-deploy-test
+  cancel-in-progress: false
+
+env:
+  BUN_VERSION: "1.3.9"
+  EXPECTED_DEPLOYMENT: ceaseless-dog-617
+
+jobs:
+  deploy:
+    name: Convex deploy (test ceaseless-dog-617)
+    if: github.ref == 'refs/heads/integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Refuse anything but the test deployment key (value never printed)
+        env:
+          KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Secret CONVEX_DEPLOY_KEY_TEST is not set; cannot deploy to $EXPECTED_DEPLOYMENT."
+            exit 1
+          fi
+          case "$KEY" in
+            *"|"*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY_TEST is not a deployment deploy key (no '<kind>:<name>|' prefix); refusing."; exit 1;;
+          esac
+          target="${KEY%%|*}"
+          if [ "$target" != "dev:$EXPECTED_DEPLOYMENT" ]; then
+            echo "::error::CONVEX_DEPLOY_KEY_TEST does not target the test deployment dev:$EXPECTED_DEPLOYMENT; refusing to deploy."
+            exit 1
+          fi
+          echo "Key targets the test deployment $EXPECTED_DEPLOYMENT."
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Deploy Convex functions to ceaseless-dog-617
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: npx convex deploy

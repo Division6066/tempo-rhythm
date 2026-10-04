@@ -1,0 +1,200 @@
+#!/usr/bin/env -S -i PATH=/usr/bin:/bin bash --noprofile --norc
+# Fixed git commands for unattended agents.
+# Every subcommand refuses extra arguments. Flags, refspecs, and commit-message
+# files are chosen here, never forwarded from the model command line.
+# The shebang drops the caller's environment, so a leading assignment such as
+# GIT_EXTERNAL_DIFF=... or BASH_ENV=... cannot reach git.
+# Git is the system binary, with hooks disabled, so a PATH plant or a
+# .git/hooks file written during the session cannot run.
+set -euo pipefail
+
+export PATH=/usr/bin:/bin
+export GIT_CONFIG_NOSYSTEM=1
+export GIT_PAGER=cat
+export GIT_TERMINAL_PROMPT=0
+# Shebang -i already drops these. Unset again in case the script is invoked
+# by a shell that skipped the shebang.
+unset GIT_EXTERNAL_DIFF GIT_SSH_COMMAND GIT_SSH GIT_ASKPASS SSH_ASKPASS GIT_EDITOR GIT_SEQUENCE_EDITOR GIT_TRACE GIT_TRACE_PACKET GIT_CURL_VERBOSE
+# Fresh files, not a path the model can create ahead of this process.
+empty_cfg=$(mktemp)
+empty_home=$(mktemp -d)
+export GIT_CONFIG_GLOBAL="$empty_cfg"
+export GIT_CONFIG_SYSTEM="$empty_cfg"
+export HOME="$empty_home"
+
+refuse() {
+  printf 'tempo-safe-git: %s\n' "$*" >&2
+  exit 2
+}
+
+# .git/config is local and is not covered by GIT_CONFIG_NOSYSTEM. Rewrite it
+# before any git process starts. Keep a fixed identity and, when the workflow
+# snapshotted it, a https GitHub origin. Never copy http.extraheader: the
+# checkout token must not land in a file the model can Read.
+# Drop filter, diff, fsmonitor, include, alias, and remote entries so a
+# Write to .git/config cannot execute on the next allowed command.
+find_git_dir() {
+  dir=$(pwd -P)
+  while true; do
+    if [ -L "$dir/.git" ]; then
+      refuse ".git must not be a symlink"
+    fi
+    if [ -d "$dir/.git" ]; then
+      printf '%s\n' "$dir/.git"
+      return 0
+    fi
+    if [ -e "$dir/.git" ]; then
+      refuse ".git must be a directory"
+    fi
+    if [ "$dir" = "/" ]; then
+      refuse "not a git repository"
+    fi
+    dir=$(dirname "$dir")
+  done
+}
+
+read_snapshot_line() {
+  file=$1
+  [ -f "$file" ] || return 0
+  [ ! -L "$file" ] || refuse "$file must not be a symlink"
+  head -n 1 "$file" | tr -d '\r'
+}
+
+sanitize_repo_config() {
+  gitdir=$(find_git_dir)
+  cfg="$gitdir/config"
+  if [ -L "$cfg" ]; then
+    refuse ".git/config must not be a symlink"
+  fi
+  if [ -e "$cfg" ] && [ ! -f "$cfg" ]; then
+    refuse ".git/config must be a regular file"
+  fi
+
+  origin_url=$(read_snapshot_line /usr/local/lib/tempo-git-origin)
+  if [ -n "$origin_url" ]; then
+    case "$origin_url" in
+      https://github.com/*/*.git) ;;
+      *) refuse "origin url is not allowed" ;;
+    esac
+    case "$origin_url" in
+      *[!A-Za-z0-9._:/+-]*|*'..'*|*' '*|*'@'*) refuse "origin url is not allowed" ;;
+    esac
+  fi
+
+  tmp=$(mktemp "$gitdir/config.XXXXXX")
+  {
+    printf '%s\n' '[user]'
+    printf '%s\n' 'name = Tempo Agent'
+    printf '%s\n' 'email = tempo-agent@users.noreply.github.com'
+    printf '%s\n' '[core]'
+    printf '%s\n' 'hooksPath = /dev/null'
+    if [ -n "$origin_url" ]; then
+      printf '%s\n' '[remote "origin"]'
+      printf 'url = %s\n' "$origin_url"
+      printf '%s\n' 'fetch = +refs/heads/*:refs/remotes/origin/*'
+    fi
+  } > "$tmp"
+  mv -f "$tmp" "$cfg"
+}
+
+g() {
+  sanitize_repo_config
+  # -c clears hooks, fsmonitor, and ssh even if a later include is
+  # introduced. An empty diff.external is executed by git, so that key is
+  # removed by the rewrite instead. Arbitrary filter names are too.
+  /usr/bin/git \
+    -c core.hooksPath=/dev/null \
+    -c core.fsmonitor= \
+    -c core.sshCommand= \
+    "$@"
+}
+
+no_args() {
+  [ "$#" -eq 1 ] || refuse "$1 takes no arguments"
+}
+
+repo_file() {
+  root=$(g rev-parse --show-toplevel)
+  path="$root/$1"
+  [ -e "$path" ] || refuse "missing $1"
+  [ ! -L "$path" ] || refuse "$1 must not be a symlink"
+  real=$(realpath "$path")
+  case "$real" in
+    "$root"/*) ;;
+    *) refuse "$1 resolves outside the repository" ;;
+  esac
+  printf '%s\n' "$real"
+}
+
+safe_branch_name() {
+  name=$1
+  case "$name" in
+    '' | HEAD | master | main | integration) refuse "refusing branch '$name'" ;;
+    -* | *:*) refuse "refusing branch '$name'" ;;
+    *..* | *//* | *' '*) refuse "refusing branch '$name'" ;;
+    *[!A-Za-z0-9._/-]*) refuse "refusing branch '$name'" ;;
+  esac
+  case "$name" in
+    claude/*) ;;
+    *) refuse "branch must start with claude/" ;;
+  esac
+}
+
+cmd=${1:-}
+shift || true
+
+case "$cmd" in
+  status)
+    no_args status "$@"
+    g status --porcelain
+    ;;
+  diff)
+    no_args diff "$@"
+    g diff
+    ;;
+  diff-cached)
+    no_args diff-cached "$@"
+    g diff --cached
+    ;;
+  log)
+    no_args log "$@"
+    g log -n 20 --oneline
+    ;;
+  add)
+    no_args add "$@"
+    # Scratch files hold the issue text and the commit message. An older
+    # agent branch may not gitignore them, so a plain `git add -- .` would
+    # commit them. Exclude them here, not only in .gitignore.
+    g add -- . \
+      ':!.tempo-commit-msg' \
+      ':!.tempo-branch-name' \
+      ':!.tempo-issue.md' \
+      ':!.tempo-request.md'
+    ;;
+  commit)
+    no_args commit "$@"
+    msg=$(repo_file .tempo-commit-msg)
+    g commit --no-verify -F "$msg"
+    ;;
+  branch-new)
+    no_args branch-new "$@"
+    file=$(repo_file .tempo-branch-name)
+    lines=$(grep -c '' "$file" || true)
+    [ "$lines" -eq 1 ] || refuse "branch file must be one line"
+    name=$(head -n 1 "$file" | tr -d '\r')
+    safe_branch_name "$name"
+    g checkout -b "$name"
+    ;;
+  push)
+    # This process has no checkout token. Extra arguments and protected
+    # branches are still refused. A real publish is the workflow step after
+    # the model exits, which passes the token only to that one git process.
+    no_args push "$@"
+    branch=$(g rev-parse --abbrev-ref HEAD)
+    safe_branch_name "$branch"
+    g push --no-verify -u origin "$branch"
+    ;;
+  *)
+    refuse "unknown command"
+    ;;
+esac

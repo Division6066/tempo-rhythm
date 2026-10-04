@@ -18,14 +18,21 @@ feature branches  ──PR──▶  integration  ──(Amit, batched)──▶
   `chore/<scope>-<kebab>` · `docs/<scope>-<kebab>` (Cursor cloud agents use
   their assigned `cursor/<slug>` prefix).
 
-## The three gates (agents merging into `integration`)
+## The merge gates (rule 1.4, Amit, 2 Oct 2026)
 
-An agent may merge its own PR into `integration` only when **all three** hold:
+Auto-merge is OFF until the merge-gate proof (D4) passes. Until then a PR
+merges into `integration` only when **all** of these hold:
 
-1. **CI is green** — and green means something: the `Test`, `Scans`, `Notices`,
-   and `Security` jobs are enforcing (no `continue-on-error`, no no-op steps).
-2. **No conflicts** with `integration` at merge time.
-3. **Every changed file is inside the ticket's declared file scope.**
+1. **All required checks are green** — and green means something: the `Test`,
+   `Scans`, `Notices`, and `Security` jobs are enforcing (no
+   `continue-on-error`, no no-op steps).
+2. **Greptile passes.**
+3. **No conflicts** with `integration` at merge time.
+4. **Every changed file is inside the ticket's MUTATES list** (declared file
+   scope).
+
+The orchestrator or the tester worker clicks merge, then checks the preview.
+Max 3 agents per repo at once. Only Amit merges `integration` into `master`.
 
 If any gate fails: stop, leave the PR open, report branch name + PR number +
 which gate failed. Never force-push or rebase away someone else's work.
@@ -64,6 +71,18 @@ same PR that removes a violation.
 1. Rotate the credential immediately — assume it is compromised.
 2. Purge it from history only after rotation (history rewrite is Amit's call).
 3. Add a gitleaks rule or fixture if the pattern was missed.
+
+## Dependabot + `bun.lock`
+
+Dependabot is configured with `package-ecosystem: bun` (not `npm`) in
+`.github/dependabot.yml`. The npm updater used to bump workspace
+`package.json` files and leave `bun.lock` unchanged, which made
+`bun install --frozen-lockfile` fail before lint/typecheck/test ran.
+
+If a Dependabot PR still arrives without a lockfile update, do not merge it.
+Regenerate with bun@1.3.9 (`bun install`), commit `bun.lock`, and only then
+re-run CI. Do not paste an older `bun.lock` from a stacked branch — that
+desyncs the lockfile from the manifests on `integration`.
 
 ## Convex deployments
 

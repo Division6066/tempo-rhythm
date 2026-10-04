@@ -64,3 +64,9 @@ playwright-report/
 
 # CodeSpring local config
 .codespring/
+
+# Agent scratch files. Wrappers read these; they must not be committed.
+.tempo-commit-msg
+.tempo-branch-name
+.tempo-issue.md
+.tempo-request.md

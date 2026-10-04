@@ -26,6 +26,9 @@
       "@/convex/*": [
         "../../convex/*"
       ],
+      "@tempo/utils": [
+        "../../packages/utils/src/index.ts"
+      ],
       "@/*": [
         "./*"
       ]

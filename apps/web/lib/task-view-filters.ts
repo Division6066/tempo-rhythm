@@ -1,7 +1,13 @@
 export type TaskStatus = "todo" | "in_progress" | "done" | "cancelled";
 export type TaskPriority = "low" | "medium" | "high";
 export type TaskEnergy = "low" | "medium" | "high";
-export type TaskView = "today" | "inbox" | "project" | "priority" | "energy";
+export type TaskView = "today" | "inbox" | "project" | "priority" | "energy" | "checklists";
+
+export type TaskChecklistItem = {
+  id: string;
+  text: string;
+  completed: boolean;
+};
 
 export type TaskViewRecord = {
   id: string;
@@ -13,13 +19,14 @@ export type TaskViewRecord = {
   projectId?: string;
   projectName?: string;
   dueAt?: number;
+  checklist?: TaskChecklistItem[];
   updatedAt: number;
 };
 
 export type TaskViewFilter =
   | { view: "today"; todayStart: number; todayEnd: number }
   | { view: "project"; projectId: string }
-  | { view: "inbox" | "priority" | "energy" };
+  | { view: "inbox" | "priority" | "energy" | "checklists" };
 
 export type TaskGroups = Record<TaskPriority, TaskViewRecord[]>;
 export type EnergyGroups = Record<TaskEnergy, TaskViewRecord[]>;
@@ -59,6 +66,10 @@ export function filterTasksForView(tasks: TaskViewRecord[], filter: TaskViewFilt
 
     if (filter.view === "project") {
       return task.projectId === filter.projectId;
+    }
+
+    if (filter.view === "checklists") {
+      return (task.checklist?.length ?? 0) > 0;
     }
 
     return true;

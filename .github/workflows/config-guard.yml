@@ -1,0 +1,50 @@
+name: config-guard
+
+# Required check (Phase 03). Rules: scripts/factory/config-guard.mjs (read its header).
+# Short version: .github/**, scripts/factory/**, .cursor/**, AGENTS.md (+ files that decide what a
+# check checks) may only change in a PR labelled `config`, opened by Division6066, that does not
+# link a ticket. Division6066 is Amit's account AND the account Grok Bot works through.
+# The Factory GitHub App is NOT allowed on these files (plan Phase 04 Step 6); to allow it later,
+# add its bot login to GUARDED_AUTHORS in scripts/factory/config-guard.mjs via a config PR.
+# docs/tickets/** and docs/contracts/** only in a `config` PR that changes nothing else and links
+# no ticket (ticket writer / refresher PRs, any author).
+#
+# pull_request_target: the workflow AND the script come from the base branch, so a PR can never
+# rewrite the guard that judges it. It never checks out or runs PR code; it only reads the API.
+# Note: for PRs into master/main the guard runs from master/main, so it reports there only after
+# the first promotion that contains this file.
+
+on:
+  pull_request_target:
+    branches: [integration, master, main]
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: config-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  config-guard:
+    name: config-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the guard from the base branch (never PR code)
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Run config-guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/factory/config-guard.mjs

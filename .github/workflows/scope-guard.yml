@@ -1,0 +1,46 @@
+name: scope-guard
+
+# Required check (Phase 03). Rules a-g: scripts/factory/scope-guard.mjs (read its header).
+# A PR must link one ticket ("Closes #N") unless it is a `config` PR; files must stay inside the
+# ticket's front-matter `scope:`; component tickets never touch the data folders or shared hot
+# files; commits with the trailer "Factory-Merge-Fix: true" may touch hot files and component
+# folders but never the data folders. Data folders: scripts/factory/scope-guard.config.json.
+#
+# pull_request_target: the workflow AND the script come from the base branch, so a PR can never
+# rewrite the guard that judges it. It never checks out or runs PR code; it only reads the API.
+# Note: for PRs into master/main the guard runs from master/main, so it reports there only after
+# the first promotion that contains this file.
+
+on:
+  pull_request_target:
+    branches: [integration, master, main]
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: scope-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  scope-guard:
+    name: scope-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the guard from the base branch (never PR code)
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Run scope-guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/factory/scope-guard.mjs

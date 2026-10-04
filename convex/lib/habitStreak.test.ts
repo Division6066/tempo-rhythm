@@ -1,0 +1,91 @@
+import { describe, expect, test } from "bun:test";
+import { computeHabitStreakUpdate, isHabitCompletedOnUtcDay } from "./habitStreak";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+describe("computeHabitStreakUpdate", () => {
+	test("first completion starts streak at 1", () => {
+		const now = 1_700_000_000_000;
+		const result = computeHabitStreakUpdate(now, undefined, 0, 0);
+		expect(result.alreadyDone).toBe(false);
+		if (!result.alreadyDone) {
+			expect(result.currentStreak).toBe(1);
+			expect(result.longestStreak).toBe(1);
+		}
+	});
+
+	test("same UTC day returns alreadyDone without incrementing", () => {
+		const last = Date.UTC(2023, 10, 14, 8, 0, 0);
+		const now = last + 6 * 60 * 60 * 1000;
+		const result = computeHabitStreakUpdate(now, last, 3, 5);
+		expect(result.alreadyDone).toBe(true);
+		if (result.alreadyDone) {
+			expect(result.currentStreak).toBe(3);
+		}
+	});
+
+	test("crossing UTC midnight is the next day even inside 24 hours", () => {
+		const last = Date.UTC(2023, 10, 14, 22, 0, 0);
+		const now = last + 3 * 60 * 60 * 1000;
+		const result = computeHabitStreakUpdate(now, last, 3, 5);
+		expect(result.alreadyDone).toBe(false);
+		if (!result.alreadyDone) {
+			expect(result.currentStreak).toBe(4);
+			expect(result.longestStreak).toBe(5);
+		}
+	});
+
+	test("exactly one day later increments streak", () => {
+		const last = 1_700_000_000_000;
+		const now = last + DAY_MS;
+		const result = computeHabitStreakUpdate(now, last, 4, 4);
+		expect(result.alreadyDone).toBe(false);
+		if (!result.alreadyDone) {
+			expect(result.currentStreak).toBe(5);
+			expect(result.longestStreak).toBe(5);
+		}
+	});
+
+	test("two or more days gap resets streak to 1", () => {
+		const last = 1_700_000_000_000;
+		const now = last + 2 * DAY_MS;
+		const result = computeHabitStreakUpdate(now, last, 10, 10);
+		expect(result.alreadyDone).toBe(false);
+		if (!result.alreadyDone) {
+			expect(result.currentStreak).toBe(1);
+			expect(result.longestStreak).toBe(10);
+		}
+	});
+
+	test("longest streak only increases when current exceeds prior best", () => {
+		const last = 1_700_000_000_000;
+		const now = last + DAY_MS;
+		const result = computeHabitStreakUpdate(now, last, 2, 7);
+		expect(result.alreadyDone).toBe(false);
+		if (!result.alreadyDone) {
+			expect(result.currentStreak).toBe(3);
+			expect(result.longestStreak).toBe(7);
+		}
+	});
+});
+
+describe("isHabitCompletedOnUtcDay", () => {
+	test("never-completed habit is not done today", () => {
+		expect(isHabitCompletedOnUtcDay(undefined, 1_700_000_000_000)).toBe(false);
+	});
+
+	test("same UTC day counts as done", () => {
+		const last = Date.UTC(2023, 10, 14, 8, 0, 0);
+		expect(isHabitCompletedOnUtcDay(last, last + 6 * 60 * 60 * 1000)).toBe(true);
+	});
+
+	test("a later clock time on the next UTC date is not the same day", () => {
+		const last = Date.UTC(2023, 10, 14, 22, 0, 0);
+		expect(isHabitCompletedOnUtcDay(last, last + 3 * 60 * 60 * 1000)).toBe(false);
+	});
+
+	test("next UTC day is not done", () => {
+		const last = 1_700_000_000_000;
+		expect(isHabitCompletedOnUtcDay(last, last + DAY_MS)).toBe(false);
+	});
+});
