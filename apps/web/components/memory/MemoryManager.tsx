@@ -62,7 +62,7 @@ export function MemoryManager() {
   const rows =
     raw === undefined
       ? undefined
-      : sortForDisplay(raw).filter((m) => !searching || !filter || m.sector === filter);
+      : sortForDisplay(raw).filter((m) => !filter || m.sector === filter);
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -164,9 +164,11 @@ export function MemoryManager() {
       ) : null}
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {searching ? "No memories match that search." : "Nothing remembered yet."}
-        </p>
+        refreshing ? null : (
+          <p className="text-sm text-muted-foreground">
+            {searching ? "No memories match that search." : "Nothing remembered yet."}
+          </p>
+        )
       ) : (
         <ul className="space-y-2">
           {rows.map((m) => {
