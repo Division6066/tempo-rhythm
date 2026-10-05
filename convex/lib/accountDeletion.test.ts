@@ -48,12 +48,15 @@ describe("USER_OWNED_TABLES", () => {
   test("covers current user-owned schema tables with by_userId", () => {
     const expected = [
       "calendarEvents",
+      "dayPlans",
       "goals",
+      "habitCheckIns",
       "habits",
       "memories",
       "notes",
       "taskRepeatCfgs",
       "tasks",
+      "timeBlocks",
     ] as const;
     expect([...USER_OWNED_TABLES].sort()).toEqual([...expected].sort());
   });

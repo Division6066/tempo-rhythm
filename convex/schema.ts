@@ -274,4 +274,76 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  dayPlans: defineTable({
+    userId: v.id("users"),
+    /** "YYYY-MM-DD" in the user's local time (computed by the client). */
+    localDate: v.string(),
+    timezone: v.optional(v.string()),
+    intention: v.optional(v.string()),
+    /** Max 3, enforced in dayPlans.upsert. */
+    topTaskIds: v.optional(v.array(v.id("tasks"))),
+    energy: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+    status: v.union(v.literal("draft"), v.literal("committed")),
+    committedAt: v.optional(v.number()),
+    reflection: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_deletedAt_localDate", ["userId", "deletedAt", "localDate"]),
+
+  timeBlocks: defineTable({
+    userId: v.id("users"),
+    localDate: v.string(),
+    dayPlanId: v.optional(v.id("dayPlans")),
+    title: v.string(),
+    /** Minutes since local midnight, 0-1439. */
+    startMinute: v.number(),
+    /** 5-720. */
+    durationMinutes: v.number(),
+    startsAtMs: v.number(),
+    endsAtMs: v.number(),
+    kind: v.union(
+      v.literal("focus"),
+      v.literal("task"),
+      v.literal("habit"),
+      v.literal("break"),
+      v.literal("other"),
+    ),
+    taskId: v.optional(v.id("tasks")),
+    habitId: v.optional(v.id("habits")),
+    status: v.union(v.literal("planned"), v.literal("done"), v.literal("skipped")),
+    source: v.union(v.literal("user"), v.literal("coach")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_deletedAt_localDate", ["userId", "deletedAt", "localDate"])
+    .index("by_userId_deletedAt_startsAtMs", ["userId", "deletedAt", "startsAtMs"])
+    .index("by_taskId", ["taskId"]),
+
+  habitCheckIns: defineTable({
+    userId: v.id("users"),
+    habitId: v.id("habits"),
+    localDate: v.string(),
+    checkedAt: v.number(),
+    source: v.union(
+      v.literal("habits"),
+      v.literal("today"),
+      v.literal("suggestion"),
+      v.literal("legacy"),
+    ),
+    note: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt_localDate", ["userId", "deletedAt", "localDate"])
+    .index("by_habitId_deletedAt_localDate", ["habitId", "deletedAt", "localDate"]),
 });
