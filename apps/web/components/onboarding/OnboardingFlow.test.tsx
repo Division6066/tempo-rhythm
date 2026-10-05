@@ -426,4 +426,17 @@ describe("OnboardingFlow", () => {
     expect(view.textContent).toContain("Could not save that. You can try again.");
     expect(push).not.toHaveBeenCalled();
   });
+
+  test("shows the save error when Skip fails on the name step", async () => {
+    completeOnboarding.mockImplementation(async () => {
+      throw new Error("network");
+    });
+    const view = await renderFlow();
+    await act(async () => {
+      findByTag(view, "BUTTON", "Skip").click();
+    });
+    expect(view.textContent).toContain("What should we call you?");
+    expect(view.textContent).toContain("Could not save that. You can try again.");
+    expect(push).not.toHaveBeenCalled();
+  });
 });

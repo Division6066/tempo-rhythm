@@ -53,12 +53,18 @@ export function OnboardingFlow() {
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12">
+      {error ? (
+        <p className="text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
       {step === "name" ? (
         <NameStep
           name={name}
           onNameChange={setTyped}
           onNext={() => setStep("templates")}
           onSkip={() => void finish(false)}
+          pending={pending}
         />
       ) : (
         <section className="flex flex-col gap-6" aria-label="Starter templates">
@@ -80,11 +86,6 @@ export function OnboardingFlow() {
               ))}
             </ul>
           )}
-          {error ? (
-            <p className="text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
           <div className="flex items-center gap-4">
             <Button type="button" onClick={() => void finish(true)} disabled={pending}>
               {pending ? "Saving…" : "Finish"}

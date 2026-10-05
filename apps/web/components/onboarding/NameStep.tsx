@@ -9,11 +9,13 @@ export function NameStep({
   onNameChange,
   onNext,
   onSkip,
+  pending = false,
 }: {
   name: string;
   onNameChange: (value: string) => void;
   onNext: () => void;
   onSkip: () => void;
+  pending?: boolean;
 }) {
   return (
     <section className="flex flex-col gap-6" aria-label="Your name">
@@ -35,7 +37,12 @@ export function NameStep({
         <Button type="button" onClick={onNext}>
           Next
         </Button>
-        <button type="button" className="text-primary underline" onClick={onSkip}>
+        <button
+          type="button"
+          className="text-primary underline"
+          disabled={pending}
+          onClick={onSkip}
+        >
           Skip
         </button>
       </div>
