@@ -24,6 +24,17 @@ export function agentBody({ prompt, model, params, repoUrl, ref, prUrl, name }) 
   return body;
 }
 
+
+async function setCursorLaneLabels(owner, repo, n) {
+  const issue = await gh(`/repos/${owner}/${repo}/issues/${n}`);
+  const existing = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name));
+  for (const lab of existing) {
+    if (/^lane:/.test(lab) && lab !== "lane:cursor") await removeLabel(owner, repo, n, lab);
+  }
+  await addLabels(owner, repo, n, ["status:dispatched", "lane:cursor"]);
+  await removeLabel(owner, repo, n, "status:ready");
+}
+
 async function main() {
   const { owner, repo } = repoParts();
   const n = Number(process.env.ISSUE_NUMBER);
@@ -41,8 +52,8 @@ async function main() {
     if (fix && pr && !dry) await comment(owner, repo, pr.number, `Failure-rule retry for the Cursor lane: fix the failing check; stay in scope; push to this PR's branch.\n\n<details><summary>failing log (last 150 lines)</summary>\n\n\`\`\`\n${fix}\n\`\`\`\n</details>`);
     if (!dry) {
       await removeLabel(owner, repo, n, "run:cursor");
-      await addLabels(owner, repo, n, ["run:cursor", "status:dispatched", "lane:cursor"]);
-      await removeLabel(owner, repo, n, "status:ready").catch(() => {});
+      await addLabels(owner, repo, n, ["run:cursor"]);
+      await setCursorLaneLabels(owner, repo, n);
     }
     await summary([`Cursor lane (automation) for #${n} ${fm.ticket}: label run:cursor ${dry ? "would be " : ""}re-added. The Cursor Automation picks it up.`]);
     return;
@@ -71,9 +82,8 @@ async function main() {
   const text = await res.text();
   if (!res.ok) throw new Error(`Cursor API ${res.status}: ${text.slice(0, 500)}`);
   const { agent } = JSON.parse(text);
-  // Bookkeeping so factory-dispatch won't double-start and retries keep lane:cursor (Bugbot E3).
-  await addLabels(owner, repo, n, ["status:dispatched", "lane:cursor"]);
-  await removeLabel(owner, repo, n, "status:ready").catch(() => {});
+  // Bookkeeping: exclusive lane:cursor + status:dispatched (Bugbot E3).
+  await setCursorLaneLabels(owner, repo, n);
   await comment(owner, repo, n, `Cursor lane (API) started for ${fm.ticket}: ${agent.url} (model ${process.env.MODEL || "default"}).`);
   await summary([`Cursor agent ${agent.id}: ${agent.url}`]);
 }
