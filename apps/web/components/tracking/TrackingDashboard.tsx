@@ -1,22 +1,28 @@
 "use client";
 
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Flame } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import {
-  buildTrackingDashboard,
-  completeTrackingSession,
   formatSessionMinutes,
   parseTrackingLogs,
-  type TrackingSessionLog,
   trackingLogsStorageKey,
 } from "@/lib/trackingDashboard";
+import {
+  lastLocalDaysRange,
+  lastSevenDaysSeries,
+  localDayKey,
+  minutesFromMs,
+} from "./focusBlockStats";
+
+type PendingUndo = { focusBlockId: Id<"focusBlocks">; undoUntilMs: number };
 
 export function TrackingDashboard() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
@@ -26,42 +32,78 @@ export function TrackingDashboard() {
     api.streaks.getCurrent,
     isAuthenticated && hasConvexUser ? {} : "skip"
   );
-  const [logs, setLogs] = useState<TrackingSessionLog[]>([]);
-  const [logsHydrated, setLogsHydrated] = useState(false);
+  const [nowMs] = useState(() => Date.now());
+  const range = useMemo(() => lastLocalDaysRange(nowMs), [nowMs]);
+  const blocks = useQuery(
+    api.focusBlocks.listInRange,
+    isAuthenticated && hasConvexUser ? range : "skip"
+  );
+  const createBlock = useMutation(api.focusBlocks.create);
+  const removeBlock = useMutation(api.focusBlocks.remove);
+  const restoreBlock = useMutation(api.focusBlocks.restore);
   const [intention, setIntention] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("25");
+  const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const migratedFor = useRef<string | null>(null);
   const userId = profile?._id;
 
+  // One-time import of logs the old localStorage version saved. Each log leaves the stored list
+  // once its create succeeds, so a failed run can be retried without duplicates.
   useEffect(() => {
-    if (!userId) {
-      setLogs([]);
-      setLogsHydrated(false);
+    if (!userId || migratedFor.current === userId) {
       return;
     }
+    migratedFor.current = userId;
+    const key = trackingLogsStorageKey(userId);
+    let remaining: ReturnType<typeof parseTrackingLogs>;
     try {
-      setLogs(parseTrackingLogs(localStorage.getItem(trackingLogsStorageKey(userId))));
+      remaining = parseTrackingLogs(localStorage.getItem(key));
     } catch {
-      setLogs([]);
-    }
-    setLogsHydrated(true);
-  }, [userId]);
-
-  useEffect(() => {
-    if (!userId || !logsHydrated) {
       return;
     }
-    try {
-      localStorage.setItem(trackingLogsStorageKey(userId), JSON.stringify(logs));
-    } catch {
-      // Private mode and a full disk both throw. The session still shows.
+    if (remaining.length === 0) {
+      return;
     }
-  }, [logs, logsHydrated, userId]);
+    void (async () => {
+      try {
+        for (const log of [...remaining]) {
+          const durationMs = Math.max(1, Math.round(log.durationMinutes * 60_000));
+          await createBlock({
+            startedAtMs: log.completedAt - durationMs,
+            durationMs,
+            label: log.intention,
+          });
+          remaining = remaining.filter((item) => item.id !== log.id);
+          localStorage.setItem(key, JSON.stringify(remaining));
+        }
+        localStorage.removeItem(key);
+      } catch {
+        // Keep what is left; the next visit tries again.
+        migratedFor.current = null;
+      }
+    })();
+  }, [userId, createBlock]);
 
-  const dashboard = useMemo(() => buildTrackingDashboard(logs), [logs]);
+  useEffect(() => {
+    if (!pendingUndo) {
+      return;
+    }
+    const timer = setTimeout(
+      () => setPendingUndo(null),
+      Math.max(0, pendingUndo.undoUntilMs - Date.now())
+    );
+    return () => clearTimeout(timer);
+  }, [pendingUndo]);
+
+  const series = useMemo(() => lastSevenDaysSeries(blocks ?? [], nowMs), [blocks, nowMs]);
+  const todayMinutes = series[series.length - 1]?.minutes ?? 0;
 
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated && (profile === undefined || (hasConvexUser && habitStreak === undefined)));
+    (isAuthenticated &&
+      (profile === undefined ||
+        (hasConvexUser && (habitStreak === undefined || blocks === undefined))));
 
   if (isLoading) {
     return (
@@ -75,7 +117,7 @@ export function TrackingDashboard() {
     );
   }
 
-  if (!isAuthenticated || !profile || !habitStreak) {
+  if (!isAuthenticated || !profile || !habitStreak || !blocks) {
     return (
       <main className="mx-auto w-full max-w-4xl p-8 text-center">
         <SoftCard className="mx-auto max-w-xl">
@@ -91,20 +133,46 @@ export function TrackingDashboard() {
     );
   }
 
-  const logSession = () => {
+  const logSession = async () => {
     const minutes = Number.parseInt(durationMinutes, 10);
     if (!Number.isFinite(minutes) || minutes <= 0 || intention.trim().length === 0) {
       return;
     }
+    const durationMs = minutes * 60_000;
+    try {
+      await createBlock({
+        startedAtMs: Date.now() - durationMs,
+        durationMs,
+        label: intention.trim(),
+      });
+      setIntention("");
+      setMessage(null);
+    } catch {
+      setMessage("That block did not save. Try once more.");
+    }
+  };
 
-    setLogs((current) => {
-      return completeTrackingSession(current, {
-        completedAt: Date.now(),
-        durationMinutes: minutes,
-        intention,
-      }).logs;
-    });
-    setIntention("");
+  const deleteBlock = async (focusBlockId: Id<"focusBlocks">) => {
+    try {
+      const result = await removeBlock({ focusBlockId });
+      setPendingUndo({ focusBlockId, undoUntilMs: result.undoUntilMs });
+      setMessage(null);
+    } catch {
+      setMessage("That block could not be removed.");
+    }
+  };
+
+  const undoDelete = async () => {
+    if (!pendingUndo) {
+      return;
+    }
+    try {
+      const result = await restoreBlock({ focusBlockId: pendingUndo.focusBlockId });
+      setMessage(result.success ? null : "The undo window has passed.");
+    } catch {
+      setMessage("Could not restore that block.");
+    }
+    setPendingUndo(null);
   };
 
   return (
@@ -139,7 +207,8 @@ export function TrackingDashboard() {
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Longest among {habitStreak.habitCount}{" "}
-            {habitStreak.habitCount === 1 ? "habit" : "habits"}: {habitStreak.longestAmongHabits}.{" "}
+            {habitStreak.habitCount === 1 ? "habit" : "habits"}: {habitStreak.longestAmongHabits}.
+            Streaks are information, not pressure.{" "}
             <Link href="/habits" className="underline underline-offset-4">
               Open habits
             </Link>
@@ -150,19 +219,31 @@ export function TrackingDashboard() {
             Focus blocks today
           </p>
           <p className="mt-3 font-heading text-3xl font-semibold text-foreground">
-            {dashboard.enso.label}
+            {formatSessionMinutes(todayMinutes)}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Charted from the blocks you log on this page, not from placeholder data.
+            Saved to your account, so they are here after a reload or on another device.
           </p>
         </SoftCard>
       </section>
+
+      <div aria-live="polite">
+        {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        {pendingUndo ? (
+          <p className="flex items-center gap-3 text-sm text-foreground">
+            Focus block removed.
+            <Button type="button" variant="outline" size="sm" onClick={() => void undoDelete()}>
+              Undo
+            </Button>
+          </p>
+        ) : null}
+      </div>
 
       <form
         className="rounded-3xl border border-dashed border-border bg-muted/30 p-5"
         onSubmit={(event) => {
           event.preventDefault();
-          logSession();
+          void logSession();
         }}
       >
         <div className="grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end">
@@ -193,7 +274,7 @@ export function TrackingDashboard() {
         </div>
       </form>
 
-      {dashboard.chart.points.length === 0 ? (
+      {blocks.length === 0 ? (
         <div className="rounded-3xl border border-border/80 bg-card/90 px-6 py-10 text-center">
           <p className="text-base font-medium text-foreground">No focus blocks logged yet.</p>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -203,27 +284,33 @@ export function TrackingDashboard() {
       ) : (
         <section aria-label="Logged focus blocks">
           <ul className="space-y-3">
-            {logs
-              .slice()
-              .reverse()
-              .map((log) => (
-                <li key={log.id} className="rounded-3xl border border-border/80 bg-card/90 p-5">
-                  <p className="font-medium text-foreground">{log.intention}</p>
+            {blocks.map((block) => (
+              <li
+                key={block._id}
+                className="flex items-center justify-between gap-3 rounded-3xl border border-border/80 bg-card/90 p-5"
+              >
+                <div>
+                  <p className="font-medium text-foreground">{block.label ?? "Focus block"}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {formatSessionMinutes(log.durationMinutes)}
+                    {formatSessionMinutes(minutesFromMs(block.durationMs))} ·{" "}
+                    {localDayKey(block.startedAtMs)}
                   </p>
-                </li>
-              ))}
+                </div>
+                <Button type="button" variant="ghost" onClick={() => void deleteBlock(block._id)}>
+                  Remove
+                </Button>
+              </li>
+            ))}
           </ul>
           <ol className="mt-6 grid gap-2 sm:grid-cols-2">
-            {dashboard.chart.points.map((point) => (
+            {series.map((point) => (
               <li
                 key={point.day}
                 className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground"
               >
                 <span className="font-medium text-foreground">{point.day}</span>
                 {" · "}
-                {point.sessions} {point.sessions === 1 ? "block" : "blocks"},{" "}
+                {point.blocks} {point.blocks === 1 ? "block" : "blocks"},{" "}
                 {formatSessionMinutes(point.minutes)}
               </li>
             ))}
