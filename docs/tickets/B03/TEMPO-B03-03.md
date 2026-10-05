@@ -11,10 +11,12 @@ contract:
   - api.coach.setDial(args: {dial: number}) -> {success: true}
   - api.coach.pressPanic(args: {}) -> {panicUntil: number, action: {text: string}}
   - api.coach.clearPanic(args: {}) -> {success: true}
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-04 (coachSettings dial/panic/load) -->
 
 FOR: Tempo Flow users who want to control how hard the coach pushes, and need a way out when overwhelmed
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
