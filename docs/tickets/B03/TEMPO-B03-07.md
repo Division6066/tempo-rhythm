@@ -11,10 +11,12 @@ contract:
   - api.nags.addPhrase(args: {nagId, text: string, source: "user"|"derived"}) -> {phraseId: string}
   - api.nags.decidePhrase(args: {nagId, phraseId: string, decision: "accept"|"reject"}) -> {success: true}
   - api.nags.proposePhrases(args: {nagId}) -> {proposals: string[]}
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-06 (nags API) -->
 
 FOR: Tempo Flow users who write the words their own nags will say
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
