@@ -13,6 +13,7 @@ export const USER_OWNED_TABLES = [
   "dayPlans",
   "timeBlocks",
   "habitCheckIns",
+  "focusBlocks",
   "templates",
   "userPreferences",
   "notifications",

@@ -141,6 +141,8 @@ export default defineSchema({
     energy: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
     /** Planned effort in ms. */
     timeEstimate: v.optional(v.number()),
+    /** Absent = elastic. Elastic items reflow around fixed ones. */
+    flexibility: v.optional(v.union(v.literal("fixed"), v.literal("elastic"))),
     /** Record<"YYYY-MM-DD", number> — tracked ms per local day. */
     timeSpentOnDay: v.optional(v.any()),
     repeatCfgId: v.optional(v.id("taskRepeatCfgs")),
@@ -226,6 +228,19 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt_startsAtMs", ["userId", "deletedAt", "startsAtMs"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  focusBlocks: defineTable({
+    userId: v.id("users"),
+    startedAtMs: v.number(),
+    durationMs: v.number(),
+    label: v.optional(v.string()),
+    taskId: v.optional(v.id("tasks")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt_startedAtMs", ["userId", "deletedAt", "startedAtMs"]),
 
   notes: defineTable({
     userId: v.id("users"),
