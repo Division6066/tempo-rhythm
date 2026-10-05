@@ -12,10 +12,12 @@ contract:
   - api.coach.currentProposal(args: {}) -> CoachProposal | null
   - api.coach.createProposal(args: {}) -> Id<"coachProposals">
   - api.coach.decideProposal(args: {proposalId, decision: "accept"|"reject"}) -> {status: "accepted"|"rejected", taskLoad: number}
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-03 (coachSettings dial/panic/load) -->
 
 FOR: Tempo Flow users who want the coach to propose a realistic day, which they can accept or turn down
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
