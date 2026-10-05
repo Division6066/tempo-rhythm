@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { action } from "./_generated/server";
+import { action, mutation } from "./_generated/server";
+import { requireUser } from "./lib/requireUser";
 import { AiAuthError, AiContextTooLargeError, AiRateLimitedError, AiUpstreamError } from "./lib/ai_errors";
 import { callLLM } from "./lib/ai_router";
 import { validateBrainDumpInput } from "./lib/brainDumpInput";
@@ -86,5 +87,52 @@ export const prioritize = action({
       }
       throw new Error("Something went wrong while planning. Try again?");
     }
+  },
+});
+
+const PRIORITY_BY_URGENCY = { now: "high", soon: "medium", later: "low" } as const;
+const ACCEPT_MAX_ITEMS = 6;
+const ACCEPT_TITLE_MAX = 200;
+
+/**
+ * Writes only the items the user accepted, as tasks. The dump itself is not stored.
+ */
+export const acceptPlan = mutation({
+  args: {
+    items: v.array(
+      v.object({
+        title: v.string(),
+        urgency: v.union(v.literal("now"), v.literal("soon"), v.literal("later")),
+      }),
+    ),
+  },
+  returns: v.object({ created: v.number(), taskIds: v.array(v.id("tasks")) }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    if (args.items.length < 1 || args.items.length > ACCEPT_MAX_ITEMS) {
+      throw new Error(`Pick 1 to ${ACCEPT_MAX_ITEMS} items to add.`);
+    }
+    const cleaned = args.items.map((item) => ({
+      title: item.title.trim().slice(0, ACCEPT_TITLE_MAX),
+      urgency: item.urgency,
+    }));
+    if (cleaned.some((item) => !item.title)) {
+      throw new Error("Every item needs a title.");
+    }
+    const now = Date.now();
+    const taskIds = [];
+    for (const item of cleaned) {
+      taskIds.push(
+        await ctx.db.insert("tasks", {
+          userId: user._id,
+          title: item.title,
+          status: "todo",
+          priority: PRIORITY_BY_URGENCY[item.urgency],
+          createdAt: now,
+          updatedAt: now,
+        }),
+      );
+    }
+    return { created: taskIds.length, taskIds };
   },
 });
