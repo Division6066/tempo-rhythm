@@ -9,10 +9,12 @@ depends_on: [TEMPO-B03-01]
 contract:
   - api.memory.exportAll(args: {}) -> {filename: string, exportedAt: number, count: number, markdown: string}
   - api.memories.getMemoryStats(args: {}) -> {total: number, sectors: {sector, count, avgSalience}[], avgSalience: number}   # EXISTING, convex/memories.ts
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-08 (memory settings) -->
 
 FOR: Tempo Flow users who want to take their memories with them
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
