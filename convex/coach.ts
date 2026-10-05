@@ -239,6 +239,11 @@ const proposalValidator = v.object({
   createdAt: v.number(),
 });
 
+/** Open work: todo or in progress, not soft-deleted. Closed tasks never enter or stay on a plan. */
+export function isOpenTask(t: Pick<Doc<"tasks">, "status" | "deletedAt">): boolean {
+  return t.deletedAt === undefined && (t.status === "todo" || t.status === "in_progress");
+}
+
 async function pendingProposal(ctx: Db, userId: UserId) {
   return ctx.db
     .query("coachProposals")
@@ -258,7 +263,7 @@ export const currentProposal = query({
     const tasks: { taskId: Doc<"tasks">["_id"]; title: string; minutes: number }[] = [];
     for (const taskId of p.taskIds) {
       const t = await ctx.db.get(taskId);
-      if (t && t.userId === user._id && t.deletedAt === undefined) {
+      if (t && t.userId === user._id && isOpenTask(t)) {
         tasks.push({ taskId, title: t.title, minutes: taskMinutes(t) });
       }
     }
@@ -288,12 +293,16 @@ export const createProposal = mutation({
     const bad = await computeBadDay(ctx, user._id, now);
     const load = effectiveLoad(settings.taskLoad, bad.isBadDay);
 
-    const todo = await ctx.db
-      .query("tasks")
-      .withIndex("by_userId_status", (q) => q.eq("userId", user._id).eq("status", "todo"))
-      .collect();
-    const open = todo
-      .filter((t) => t.deletedAt === undefined)
+    const candidates = [];
+    for (const status of ["todo", "in_progress"] as const) {
+      const rows = await ctx.db
+        .query("tasks")
+        .withIndex("by_userId_status", (q) => q.eq("userId", user._id).eq("status", status))
+        .collect();
+      candidates.push(...rows);
+    }
+    const open = candidates
+      .filter(isOpenTask)
       .sort(
         (a, b) =>
           (a.dueAt ?? Number.MAX_SAFE_INTEGER) - (b.dueAt ?? Number.MAX_SAFE_INTEGER) ||
@@ -340,7 +349,7 @@ export const decideProposal = mutation({
     if (args.decision === "accept") {
       for (const taskId of p.taskIds) {
         const t = await ctx.db.get(taskId);
-        if (t && t.userId === user._id && t.deletedAt === undefined) {
+        if (t && t.userId === user._id && isOpenTask(t)) {
           await ctx.db.patch(taskId, { dueAt: now, updatedAt: now });
         }
       }
