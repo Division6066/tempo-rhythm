@@ -33,3 +33,20 @@ Deployed to: **pending** — requires `bun x convex deploy` with the prod deploy
 key after this PR merges to `integration` (deploy key is not available to
 cloud agents; needs Amit or a `CONVEX_DEPLOY_KEY` secret). Update this line
 with the deployment name + date when pushed.
+
+## 2026-10-05 — TEMPO-B04-01 templates, preferences, notifications
+
+Branch `t/585-tempo-b04-01`, ticket #585. Additive only — new tables and one
+optional field. No backfill.
+
+- **`users.onboardedAt`** — optional number.
+- **New table `templates`** — person-saved page templates. Indexes `by_userId`,
+  `by_userId_deletedAt`. Starter templates stay in code, not rows.
+- **New table `userPreferences`** — one settings row per person. Indexes
+  `by_userId`, `by_userId_deletedAt`.
+- **New table `notifications`** — indexes `by_userId`, `by_userId_createdAt`,
+  `by_userId_deletedAt`.
+
+Deployed to: **not deployed by this ticket**. Merge to `integration` deploys
+the test deployment `ceaseless-dog-617` via `convex-deploy-test`. Live
+(`precious-wildcat-890`) is not touched here.
