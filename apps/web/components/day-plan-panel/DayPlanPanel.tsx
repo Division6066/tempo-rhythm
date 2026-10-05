@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
-import { MAX_TOP_TASKS, toggleTopTask, toLocalDateKey } from "./dayPlanDraft";
+import { MAX_TOP_TASKS, pruneTopTasks, toggleTopTask, toLocalDateKey } from "./dayPlanDraft";
 
 type Energy = "low" | "medium" | "high";
 const ENERGY_OPTIONS: { value: Energy; label: string }[] = [
@@ -65,7 +65,18 @@ export function DayPlanPanel() {
     });
   }, [todayTasks, carryOver]);
 
-  if (isAuthLoading || (isAuthenticated && (profile === undefined || (ready && plan === undefined)))) {
+  // Only listed tasks count toward the cap; picks that left the lists cannot be unchecked.
+  const selectedIds = useMemo(
+    () => pruneTopTasks(topTaskIds, new Set<string>(tasks.map((t) => t._id))),
+    [topTaskIds, tasks]
+  );
+
+  if (
+    isAuthLoading ||
+    (isAuthenticated &&
+      (profile === undefined ||
+        (ready && (plan === undefined || todayTasks === undefined || carryOver === undefined))))
+  ) {
     return <div aria-busy="true" className="h-48 animate-pulse rounded-2xl bg-muted" />;
   }
   if (!ready) return null;
@@ -87,8 +98,8 @@ export function DayPlanPanel() {
   };
 
   const onToggleTask = (id: Id<"tasks">) => {
-    const next = toggleTopTask(topTaskIds, id);
-    if (next.length === topTaskIds.length && next.every((x, i) => x === topTaskIds[i])) return;
+    const next = toggleTopTask(selectedIds, id);
+    if (next.length === selectedIds.length && next.every((x, i) => x === selectedIds[i])) return;
     setTopTaskIds(next);
     void save({ topTaskIds: next });
   };
@@ -106,7 +117,7 @@ export function DayPlanPanel() {
         localDate,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         intention,
-        topTaskIds,
+        topTaskIds: selectedIds,
         ...(energy ? { energy } : {}),
       });
       await commit({ localDate });
@@ -152,8 +163,8 @@ export function DayPlanPanel() {
           ) : (
             <ul className="space-y-1">
               {tasks.map((task) => {
-                const checked = topTaskIds.includes(task._id);
-                const atCap = !checked && topTaskIds.length >= MAX_TOP_TASKS;
+                const checked = selectedIds.includes(task._id);
+                const atCap = !checked && selectedIds.length >= MAX_TOP_TASKS;
                 return (
                   <li key={task._id}>
                     <label className="flex items-center gap-2 text-sm">
@@ -197,7 +208,7 @@ export function DayPlanPanel() {
               onClick={() =>
                 error === "commit"
                   ? void onCommit()
-                  : void save({ intention, topTaskIds, ...(energy ? { energy } : {}) })
+                  : void save({ intention, topTaskIds: selectedIds, ...(energy ? { energy } : {}) })
               }
               size="sm"
               variant="outline"

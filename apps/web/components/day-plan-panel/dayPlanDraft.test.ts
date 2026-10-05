@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { toggleTopTask, toLocalDateKey } from "./dayPlanDraft";
+import { pruneTopTasks, toggleTopTask, toLocalDateKey } from "./dayPlanDraft";
 
 describe("toLocalDateKey", () => {
   test("formats local YYYY-MM-DD with zero padding", () => {
@@ -29,5 +29,19 @@ describe("toggleTopTask", () => {
     const input = ["a"];
     toggleTopTask(input, "b");
     expect(input).toEqual(["a"]);
+  });
+});
+
+describe("pruneTopTasks", () => {
+  test("drops picks that are no longer listed so they free their slot", () => {
+    const kept = pruneTopTasks(["a", "b", "c"], new Set(["a", "c", "d"]));
+    expect(kept).toEqual(["a", "c"]);
+    expect(toggleTopTask(kept, "d")).toEqual(["a", "c", "d"]);
+  });
+
+  test("keeps order and does not mutate its input", () => {
+    const input = ["c", "a"];
+    expect(pruneTopTasks(input, new Set(["a", "c"]))).toEqual(["c", "a"]);
+    expect(input).toEqual(["c", "a"]);
   });
 });

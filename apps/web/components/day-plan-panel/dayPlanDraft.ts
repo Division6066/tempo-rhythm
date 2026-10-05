@@ -14,3 +14,11 @@ export function toggleTopTask<T extends string>(ids: readonly T[], id: T): T[] {
   if (ids.length >= MAX_TOP_TASKS) return [...ids];
   return [...ids, id];
 }
+
+/**
+ * Drops picked ids that are no longer listed (completed, cancelled, deleted), so a
+ * hidden task can never hold a slot the user has no way to free.
+ */
+export function pruneTopTasks<T extends string>(ids: readonly T[], listed: ReadonlySet<string>): T[] {
+  return ids.filter((id) => listed.has(id));
+}
