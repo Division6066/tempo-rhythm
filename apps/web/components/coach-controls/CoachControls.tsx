@@ -33,6 +33,7 @@ export function CoachControls() {
   const [now, setNow] = useState(() => Date.now());
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const serverDial = settings ? clampDial(settings.dial) : null;
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 15_000);
@@ -40,9 +41,9 @@ export function CoachControls() {
   }, []);
 
   useEffect(() => {
-    if (!settings || draft !== null) return;
-    setSavedDial(clampDial(settings.dial));
-  }, [settings, draft]);
+    if (serverDial === null || savedDial === null || serverDial !== savedDial) return;
+    setSavedDial(null);
+  }, [serverDial, savedDial]);
 
   if (authLoading || (isAuthenticated && settings === undefined)) {
     return (
@@ -62,7 +63,7 @@ export function CoachControls() {
     return null;
   }
 
-  const persisted = savedDial ?? clampDial(settings.dial);
+  const persisted = savedDial ?? serverDial ?? clampDial(settings.dial);
   const shown = draft ?? persisted;
   const label = dialLabel(shown);
   const panicUntil = panicOverride !== undefined ? panicOverride : settings.panicUntil;
