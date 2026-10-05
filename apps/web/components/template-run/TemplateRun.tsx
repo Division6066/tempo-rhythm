@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -131,6 +131,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
   const [title, setTitle] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const declined = useRef(false);
 
   if (template === undefined) {
     return (
@@ -154,8 +155,13 @@ export function TemplateRun({ templateId }: { templateId: string }) {
     );
   }
 
+  const onReject = () => {
+    declined.current = true;
+    router.push("/templates");
+  };
+
   const onAccept = async () => {
-    if (pending) return;
+    if (pending || declined.current) return;
     setPending(true);
     setError("");
     const trimmed = title.trim();
@@ -163,8 +169,10 @@ export function TemplateRun({ templateId }: { templateId: string }) {
       const id = await applyToNote(
         trimmed.length > 0 ? { templateId, title: trimmed } : { templateId }
       );
+      if (declined.current) return;
       router.push(`/notes/${id}`);
     } catch {
+      if (declined.current) return;
       setError("Could not create the page. You can try again.");
       setPending(false);
     }
@@ -205,7 +213,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         <Button type="button" onClick={onAccept} disabled={pending}>
           {pending ? "Creating the page…" : "Accept"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/templates")}>
+        <Button type="button" variant="outline" onClick={onReject} disabled={pending}>
           Reject
         </Button>
       </div>

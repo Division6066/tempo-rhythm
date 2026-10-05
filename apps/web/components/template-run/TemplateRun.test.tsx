@@ -302,6 +302,7 @@ type TemplateFixture = {
 
 let templateResult: TemplateFixture | null | undefined;
 let proposalResult: { templateId: string; name: string; reason: string } | null | undefined;
+let proposalPending = false;
 
 mock.module("next/navigation", () => ({
   useRouter: () => ({ push }),
@@ -311,12 +312,14 @@ mock.module("convex/react", () => ({
   useQuery: (_ref: unknown, args: unknown) => {
     if (args === "skip") return undefined;
     if (args && typeof args === "object" && "templateId" in args) return templateResult;
+    if (proposalPending) return undefined;
     return proposalResult;
   },
   useMutation: () => applyToNote,
 }));
 
 const { TemplateRun } = await import("./TemplateRun");
+const { ProposalBanner } = await import("./ProposalBanner");
 
 const dailyTemplate: TemplateFixture = {
   templateId: "starter:daily-page",
@@ -352,20 +355,25 @@ function findButton(root: TestNode, label: string): TestNode {
 let root: Root | null = null;
 let host: TestNode | null = null;
 
-async function renderRun(templateId = "starter:daily-page") {
+async function renderNode(node: ReactElement) {
   host = documentNode.createElement("div");
   documentNode.body?.appendChild(host);
   root = createRoot(host as unknown as HTMLElement);
   await act(async () => {
-    root?.render((<TemplateRun templateId={templateId} />) as ReactElement);
+    root?.render(node);
   });
   return host;
+}
+
+async function renderRun(templateId = "starter:daily-page") {
+  return renderNode((<TemplateRun templateId={templateId} />) as ReactElement);
 }
 
 describe("TemplateRun", () => {
   beforeEach(() => {
     templateResult = dailyTemplate;
     proposalResult = dailyProposal;
+    proposalPending = false;
     push.mockReset();
     applyToNote.mockReset();
     applyToNote.mockImplementation(async () => "note_1");
@@ -420,6 +428,63 @@ describe("TemplateRun", () => {
     });
     expect(applyToNote).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/templates");
+  });
+
+  test("keeps the proposal reason while a new title is still loading", async () => {
+    const view = await renderNode((<ProposalBanner periodType="daily" title="" />) as ReactElement);
+    expect(view.textContent).toContain(dailyProposal.reason);
+
+    proposalPending = true;
+    await act(async () => {
+      root?.render((<ProposalBanner periodType="daily" title="Monday" />) as ReactElement);
+    });
+    expect(view.textContent).toContain(dailyProposal.reason);
+    expect(view.textContent).not.toContain("Checking which outline fits");
+
+    proposalPending = false;
+    proposalResult = {
+      ...dailyProposal,
+      reason: `${dailyProposal.reason} It fits "Monday".`,
+    };
+    await act(async () => {
+      root?.render((<ProposalBanner periodType="daily" title="Monday" />) as ReactElement);
+    });
+    expect(view.textContent).toContain('It fits "Monday".');
+  });
+
+  test("disables Reject while Accept is creating the page", async () => {
+    let resolveCreate: (id: string) => void = () => {};
+    applyToNote.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveCreate = resolve;
+        })
+    );
+    const view = await renderRun();
+    await act(async () => {
+      findButton(view, "Accept").click();
+    });
+    expect(findButton(view, "Reject").disabled).toBe(true);
+    expect(findButton(view, "Creating the page").disabled).toBe(true);
+    expect(push).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveCreate("note_1");
+    });
+    expect(push).toHaveBeenCalledWith("/notes/note_1");
+  });
+
+  test("Reject during an in-flight Accept does not open the new page", async () => {
+    const view = await renderRun();
+    applyToNote.mockImplementation(async () => {
+      findButton(view, "Reject").click();
+      return "note_1";
+    });
+    await act(async () => {
+      findButton(view, "Accept").click();
+    });
+    expect(push).toHaveBeenCalledWith("/templates");
+    expect(push).not.toHaveBeenCalledWith("/notes/note_1");
   });
 
   test("shows an inline error and leaves Accept usable when create fails", async () => {
