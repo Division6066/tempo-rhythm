@@ -1,9 +1,9 @@
 // Lane context (Phase 04 Step 5). Reads the ticket issue and writes step outputs for the lane
-// workflows: ticket, type, branch (factory/<ticket>), issue_url, prompt (lane-prompt.md filled
+// workflows: ticket, type, branch (t/<issue-number>-<slug>), issue_url, prompt (lane-prompt.md filled
 // in), pr_number / pr_url / pr_branch (an open PR for this ticket already exists = retry).
 // Env: GH_TOKEN, GITHUB_REPOSITORY, ISSUE_NUMBER, FIX_NOTE (optional, failure-rule retry).
 import { gh, repoParts, summary } from "./gh-api.mjs";
-import { frontMatter, renderLanePrompt, findTicketPR, setOutput, assertDispatchable } from "./factory-lib.mjs";
+import { frontMatter, renderLanePrompt, findTicketPR, setOutput, assertDispatchable, ticketBranch } from "./factory-lib.mjs";
 
 const { owner, repo } = repoParts();
 const n = Number(process.env.ISSUE_NUMBER);
@@ -15,11 +15,14 @@ if (!fm || !fm.ticket || !/^[A-Za-z0-9._-]+$/.test(fm.ticket)) throw new Error(`
 let prompt = await renderLanePrompt({ issueUrl: issue.html_url, issueNumber: n, ticketId: fm.ticket });
 const pr = await findTicketPR(owner, repo, n);
 if (process.env.FIX_NOTE) {
-  prompt += `\n\nRETRY: a required check failed on ${pr ? pr.html_url : "your PR"}. Fix the failing check; stay in scope. Push to the same branch; do not open a new PR.\n<failing-log>\n${process.env.FIX_NOTE}\n</failing-log>\n`;
+  const review = /^BUGBOT REVIEW FINDINGS/.test(process.env.FIX_NOTE);
+  prompt += review
+    ? `\n\nRETRY: Cursor Bugbot left review findings on ${pr ? pr.html_url : "your PR"}. Fix each finding (or, if one is wrong, explain why in a PR comment); stay in scope. Push to the same branch; do not open a new PR.\n<bugbot-findings>\n${process.env.FIX_NOTE}\n</bugbot-findings>\n`
+    : `\n\nRETRY: a required check failed on ${pr ? pr.html_url : "your PR"}. Fix the failing check; stay in scope. Push to the same branch; do not open a new PR.\n<failing-log>\n${process.env.FIX_NOTE}\n</failing-log>\n`;
 }
 await setOutput("ticket", fm.ticket);
 await setOutput("type", fm.type || "");
-await setOutput("branch", pr ? pr.head.ref : `factory/${fm.ticket}`);
+await setOutput("branch", pr ? pr.head.ref : ticketBranch(n, fm.ticket));
 await setOutput("issue_url", issue.html_url);
 await setOutput("title", issue.title);
 await setOutput("body", issue.body || "");
