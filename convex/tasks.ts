@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { isRestorable, undoUntil } from "./lib/softDelete";
 import { filterTasksDueInRange } from "./lib/task_filters";
 import { normalizeChecklist } from "./lib/taskChecklists";
 import { assertRepeatEvery, planNextRepeatInstance } from "./lib/taskRepeat";
@@ -23,6 +24,8 @@ const taskStatusValidator = v.union(
 const taskPriorityValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
 const taskEnergyValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
 
+const taskFlexibilityValidator = v.union(v.literal("fixed"), v.literal("elastic"));
+
 const taskReturnValidator = v.object({
   _id: v.id("tasks"),
   _creationTime: v.number(),
@@ -33,6 +36,7 @@ const taskReturnValidator = v.object({
   priority: taskPriorityValidator,
   energy: v.optional(taskEnergyValidator),
   timeEstimate: v.optional(v.number()),
+  flexibility: v.optional(taskFlexibilityValidator),
   timeSpentOnDay: v.optional(v.any()),
   repeatCfgId: v.optional(v.id("taskRepeatCfgs")),
   parentTaskId: v.optional(v.id("tasks")),
@@ -118,6 +122,8 @@ export const create = mutation({
     status: v.optional(taskStatusValidator),
     priority: v.optional(taskPriorityValidator),
     energy: v.optional(taskEnergyValidator),
+    flexibility: v.optional(taskFlexibilityValidator),
+    timeEstimate: v.optional(v.number()),
     projectId: v.optional(v.string()),
     projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
@@ -134,6 +140,8 @@ export const create = mutation({
       status: args.status ?? "todo",
       priority: args.priority ?? "medium",
       energy: args.energy ?? "medium",
+      ...(args.flexibility !== undefined ? { flexibility: args.flexibility } : {}),
+      ...(args.timeEstimate !== undefined ? { timeEstimate: args.timeEstimate } : {}),
       projectId: args.projectId?.trim(),
       projectName: args.projectName?.trim(),
       dueAt: args.dueAt,
@@ -152,6 +160,8 @@ export const update = mutation({
     status: v.optional(taskStatusValidator),
     priority: v.optional(taskPriorityValidator),
     energy: v.optional(taskEnergyValidator),
+    flexibility: v.optional(taskFlexibilityValidator),
+    timeEstimate: v.optional(v.union(v.number(), v.null())),
     projectId: v.optional(v.union(v.string(), v.null())),
     projectName: v.optional(v.union(v.string(), v.null())),
     dueAt: v.optional(v.union(v.number(), v.null())),
@@ -180,6 +190,10 @@ export const update = mutation({
     }
     if (args.priority !== undefined) patch.priority = args.priority;
     if (args.energy !== undefined) patch.energy = args.energy;
+    if (args.flexibility !== undefined) patch.flexibility = args.flexibility;
+    if (args.timeEstimate !== undefined) {
+      patch.timeEstimate = args.timeEstimate === null ? undefined : args.timeEstimate;
+    }
     if (args.projectId !== undefined) {
       patch.projectId = args.projectId === null ? undefined : args.projectId.trim();
     }
@@ -202,6 +216,21 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { taskId: v.id("tasks") },
+  returns: v.object({ success: v.boolean(), undoUntilMs: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
+      throw new Error("Task not found");
+    }
+    const now = Date.now();
+    await ctx.db.patch(args.taskId, { deletedAt: now, updatedAt: now });
+    return { success: true, undoUntilMs: undoUntil(now) };
+  },
+});
+
+export const restore = mutation({
+  args: { taskId: v.id("tasks") },
   returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
@@ -209,7 +238,11 @@ export const remove = mutation({
     if (!task || task.userId !== user._id) {
       throw new Error("Task not found");
     }
-    await ctx.db.delete(args.taskId);
+    const now = Date.now();
+    if (!isRestorable(task.deletedAt, now)) {
+      return { success: false };
+    }
+    await ctx.db.patch(args.taskId, { deletedAt: undefined, updatedAt: now });
     return { success: true };
   },
 });

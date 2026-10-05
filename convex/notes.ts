@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { isRestorable, undoUntil } from "./lib/softDelete";
 
 export const list = query({
   args: {
@@ -36,6 +37,21 @@ export const get = query({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
+      return null;
+    }
+    return note;
+  },
+});
+
+/** URL-param-safe lookup: any string in, note or null out (never throws on a bad id). */
+export const getSafe = query({
+  args: { noteId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const id = ctx.db.normalizeId("notes", args.noteId);
+    if (!id) return null;
+    const note = await ctx.db.get(id);
     if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       return null;
     }
@@ -131,6 +147,23 @@ export const remove = mutation({
     }
     const now = Date.now();
     await ctx.db.patch(args.noteId, { deletedAt: now, updatedAt: now });
+    return { success: true, undoUntilMs: undoUntil(now) };
+  },
+});
+
+export const restore = mutation({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== user._id) {
+      throw new Error("Note not found");
+    }
+    const now = Date.now();
+    if (!isRestorable(note.deletedAt, now)) {
+      return { success: false };
+    }
+    await ctx.db.patch(args.noteId, { deletedAt: undefined, updatedAt: now });
     return { success: true };
   },
 });
