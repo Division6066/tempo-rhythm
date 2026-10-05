@@ -10,10 +10,12 @@ contract:
   - api.crisis.resourcesCard(args: {}) -> {title: string, body: string, resources: {label: string, detail: string}[]}
   - api.crisis.check(args: {text: string}) -> {isCrisis: boolean}
   - api.coach.sendMessage(args: {conversationId, content}) -> {success: true, crisis?: boolean}   # EXISTING, extended
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-02 (crisis API) -->
 
 FOR: Tempo Flow users in distress who type crisis words to the coach
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
