@@ -364,19 +364,40 @@ function BlockCard({
   const range = formatRange(block.startMinute, block.durationMinutes);
   const skipped = block.status === "skipped";
   const tint = skipped ? "border-border bg-muted text-muted-foreground" : kindClassName[block.kind];
+  // Cards sit in their real slot so they never cover later cards. A short slot
+  // cannot fit the actions, so the card grows over its neighbours while it is
+  // hovered, focused or tapped, keeping Done / Let it go / Undo reachable.
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [tapped, setTapped] = useState(false);
+  const expanded = hovered || focused || tapped;
+  const style = expanded
+    ? { ...box, height: "auto", minHeight: box.height, zIndex: 30 }
+    : { ...box, maxHeight: box.height, minHeight: 0 };
 
   return (
     <article
-      className={`absolute z-10 flex flex-col gap-1 overflow-hidden rounded-2xl border px-2 py-1 ${tint}`}
+      className={`absolute z-10 flex flex-col gap-1 overflow-hidden rounded-2xl border px-2 py-1 ${tint}${expanded ? " shadow-md" : ""}`}
+      data-expanded={expanded ? "true" : undefined}
       data-status={block.status}
       data-timeline-item
-      style={{ ...box, maxHeight: box.height, minHeight: 0 }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setFocused(false);
+          setTapped(false);
+        }
+      }}
+      onFocus={() => setFocused(true)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={style}
     >
       <button
         aria-label={skipped ? `${block.title}, ${range}, Let go` : `${block.title}, ${range}`}
         className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={(event) => {
           event.stopPropagation();
+          setTapped(true);
           onSelect?.(block);
         }}
         type="button"
