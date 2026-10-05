@@ -99,13 +99,12 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   const todayLocalDate = toDateInputValue(new Date(bounds.startMs));
   const requestedDate = localDate ?? todayLocalDate;
   const range = useMemo(() => {
-    if (localDate) {
-      const parsed = parseDateInputValue(localDate);
-      if (!parsed) return null;
-      return getCalendarRangeMs("day", parsed);
-    }
-    return { startMs: bounds.startMs, endMs: bounds.endMs };
-  }, [bounds.endMs, bounds.startMs, localDate]);
+    // Always use getCalendarRangeMs so a 23h/25h local day matches the hour grid
+    // and localMinuteOfDay (useLocalDayBounds is fixed 24h and drifts on DST).
+    const day = localDate ? parseDateInputValue(localDate) : new Date(bounds.startMs);
+    if (!day || Number.isNaN(day.getTime())) return null;
+    return getCalendarRangeMs("day", day);
+  }, [bounds.startMs, localDate]);
 
   const canQuery = isAuthenticated && hasConvexUser && range !== null;
   const blocks = useQuery(
