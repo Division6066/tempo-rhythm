@@ -171,7 +171,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
       throw new Error("Task not found");
     }
     const now = Date.now();
@@ -318,7 +318,7 @@ export const toggleCompletion = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
       throw new Error("Task not found");
     }
     const now = Date.now();
@@ -364,6 +364,7 @@ async function spawnRepeatAfterCompletion(
     status: "todo",
     priority: task.priority,
     ...(task.energy !== undefined ? { energy: task.energy } : {}),
+    ...(task.flexibility !== undefined ? { flexibility: task.flexibility } : {}),
     ...(task.timeEstimate !== undefined ? { timeEstimate: task.timeEstimate } : {}),
     repeatCfgId: cfg._id,
     ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),

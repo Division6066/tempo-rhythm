@@ -31,6 +31,20 @@ describe("focusBlocks", () => {
 		).rejects.toThrow();
 	});
 
+	test("create refuses a soft-deleted task", async () => {
+		const ctx = makeFakeCtx(A);
+		const taskId = await ctx.db.insert("tasks", {
+			userId: A,
+			title: "t",
+			createdAt: 1,
+			updatedAt: 1,
+			deletedAt: 2,
+		});
+		await expect(
+			run(focusBlocks.create, ctx, { startedAtMs: 1, durationMs: 1000, taskId }),
+		).rejects.toThrow();
+	});
+
 	test("listInRange is newest first, hides deleted rows and other users, caps at 93 days", async () => {
 		const ctx = makeFakeCtx(A);
 		const first = await run(focusBlocks.create, ctx, { startedAtMs: 100, durationMs: 1000 });

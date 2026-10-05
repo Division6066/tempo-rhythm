@@ -35,7 +35,7 @@ export const create = mutation({
     }
     if (args.taskId) {
       const task = await ctx.db.get(args.taskId);
-      if (!task || task.userId !== user._id) {
+      if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
         throw new Error("Task not found");
       }
     }

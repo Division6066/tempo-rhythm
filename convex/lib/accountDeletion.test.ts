@@ -49,6 +49,7 @@ describe("USER_OWNED_TABLES", () => {
     const expected = [
       "calendarEvents",
       "dayPlans",
+      "focusBlocks",
       "goals",
       "habitCheckIns",
       "habits",
