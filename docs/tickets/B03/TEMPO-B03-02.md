@@ -11,10 +11,12 @@ contract:
   - api.brain_dump.acceptPlan(args: {items: {title: string, urgency: "now"|"soon"|"later"}[]}) -> {created: number, taskIds: Id<"tasks">[]}
   - api.crisis.check(args: {text: string}) -> {isCrisis: boolean}
   - api.crisis.resourcesCard(args: {}) -> {title, body, resources: {label, detail}[]}
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-05 (crisis API) -->
 
 FOR: Tempo Flow users who need to empty a crowded head and get an order back
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
