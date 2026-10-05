@@ -14,10 +14,16 @@
 // dispatches factory-nightly (full E2E on integration's preview) when no PR is left.
 // Update conflicts -> blocked:amit + a comment listing the conflicting PR's files (both sides
 // stay; no work is dropped).
+// Review gate: FACTORY_REVIEW_GATE=bugbot -> green PRs also need Bugbot clean (review-gate.mjs); findings -> wait
+// (factory-review-fix dispatches the lane), Bugbot blocked -> wait (review-fix labels blocked:amit).
 // Usage: node merge-train.mjs [--dry-run] [--mode normal|stress] [--batch <id>]
 // Env: GH_TOKEN, GITHUB_REPOSITORY.
 import { gh, ghAll, repoParts, summary, linkedTickets } from "./gh-api.mjs";
 import { frontMatter, labelNames, allTickets, addLabels, removeLabel, comment, truthy, BASE } from "./factory-lib.mjs";
+import { fetchBugbot } from "./review-gate.mjs";
+
+// Review gate (B-5): vars.FACTORY_REVIEW_GATE = bugbot -> a factory PR merges only when Bugbot is clean on its head commit.
+const REVIEW_GATE = (process.env.FACTORY_REVIEW_GATE || "off").trim();
 
 const args = process.argv.slice(2);
 const DRY = args.includes("--dry-run");
@@ -116,6 +122,10 @@ async function main() {
     if (cs.state === "cancelled") { for (const r of cs.cancelledRuns) await act(`re-run cancelled run ${r} on ${id}`, () => gh(`/repos/${owner}/${repo}/actions/runs/${r}/rerun`, { method: "POST" })); continue; }
     if (cs.state === "pending") { say(`${id}: checks running (${cs.detail.join("; ")}) -> wait`); if (MODE === "stress") break; continue; }
     if (cs.state === "red") { say(`${id}: checks red (${cs.detail.join("; ")}) -> nothing (failure rule reacts)`); continue; }
+    if (REVIEW_GATE === "bugbot") {
+      const bb = await fetchBugbot(owner, repo, q.number);
+      if (bb.state !== "clean") { say(`${id}: checks green, review gate Bugbot ${bb.state} (${bb.detail}) -> wait`); if (MODE === "stress") break; continue; }
+    }
     if (held && MODE === "normal") { say(`${id}: green but hold:stress-test -> kept up to date, not merged (normal mode)`); continue; }
     if (merged) { say(`${id}: green; waits for the next round (one merge per run)`); continue; }
     if (held) await act(`remove hold:stress-test from ${id}`, () => removeLabel(owner, repo, q.number, "hold:stress-test"));

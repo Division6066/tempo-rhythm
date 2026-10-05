@@ -81,6 +81,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.token.outputs.token || github.token }}
           MODE: ${{ inputs.mode || 'normal' }}
+          FACTORY_REVIEW_GATE: ${{ vars.FACTORY_REVIEW_GATE || 'off' }}
           BATCH: ${{ inputs.batch }}
           DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: node scripts/factory/merge-train.mjs --mode "$MODE" ${BATCH:+--batch "$BATCH"} $DRY

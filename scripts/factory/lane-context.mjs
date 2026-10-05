@@ -15,7 +15,10 @@ if (!fm || !fm.ticket || !/^[A-Za-z0-9._-]+$/.test(fm.ticket)) throw new Error(`
 let prompt = await renderLanePrompt({ issueUrl: issue.html_url, issueNumber: n, ticketId: fm.ticket });
 const pr = await findTicketPR(owner, repo, n);
 if (process.env.FIX_NOTE) {
-  prompt += `\n\nRETRY: a required check failed on ${pr ? pr.html_url : "your PR"}. Fix the failing check; stay in scope. Push to the same branch; do not open a new PR.\n<failing-log>\n${process.env.FIX_NOTE}\n</failing-log>\n`;
+  const review = /^BUGBOT REVIEW FINDINGS/.test(process.env.FIX_NOTE);
+  prompt += review
+    ? `\n\nRETRY: Cursor Bugbot left review findings on ${pr ? pr.html_url : "your PR"}. Fix each finding (or, if one is wrong, explain why in a PR comment); stay in scope. Push to the same branch; do not open a new PR.\n<bugbot-findings>\n${process.env.FIX_NOTE}\n</bugbot-findings>\n`
+    : `\n\nRETRY: a required check failed on ${pr ? pr.html_url : "your PR"}. Fix the failing check; stay in scope. Push to the same branch; do not open a new PR.\n<failing-log>\n${process.env.FIX_NOTE}\n</failing-log>\n`;
 }
 await setOutput("ticket", fm.ticket);
 await setOutput("type", fm.type || "");
