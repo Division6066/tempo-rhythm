@@ -38,6 +38,14 @@ const GUTTER_PX = 68;
 const WORKDAY_START_HOUR = 6;
 /** Calendar events have a start and no end. Drawn as a short read-only card. */
 const EVENT_DURATION_MINUTES = 30;
+/**
+ * Status actions stay inside the slot. A CSS min-height taller than the slot
+ * paints over later hours; clipping the slot hides Done / Let it go / Undo.
+ * 36px fits one title line plus h-4 actions (a 30-minute block). 64px also
+ * fits the time line and h-6 actions (a 60-minute block at 72px per hour).
+ */
+const STACKED_CARD_MIN_PX = 36;
+const FULL_CARD_MIN_PX = 64;
 
 const kindClassName: Record<DayTimelineBlock["kind"], string> = {
   focus: "border-primary/40 bg-primary/15",
@@ -85,22 +93,6 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   const [mounted, setMounted] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  // At most one block stays expanded after a tap. A press outside that card
-  // collapses it. Text nodes have no closest(), so walk up to an element first.
-  const [tappedId, setTappedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (tappedId === null) return;
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      const element =
-        target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
-      const cardId = element?.closest("[data-block-id]")?.getAttribute("data-block-id");
-      if (cardId !== tappedId) setTappedId(null);
-    };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [tappedId]);
 
   const todayLocalDate = toDateInputValue(new Date(bounds.startMs));
   const requestedDate = localDate ?? todayLocalDate;
@@ -316,10 +308,7 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
                 busy={pendingId === block._id}
                 key={item.id}
                 onChangeStatus={changeStatus}
-                onDismiss={() => setTappedId(null)}
                 onSelect={onSelectBlock}
-                onTap={() => setTappedId((current) => (current === block._id ? null : block._id))}
-                tapped={tappedId === block._id}
               />
             );
           })}
@@ -357,12 +346,69 @@ function EventCard({
   if (!event) return null;
   return (
     <div
-      className="absolute z-10 overflow-hidden rounded-2xl border border-dashed border-border bg-background/80 px-2 py-1 text-muted-foreground"
+      className="absolute z-10 box-border flex flex-col justify-center overflow-hidden rounded-2xl border border-dashed border-border bg-background/80 px-2 text-muted-foreground"
       data-timeline-item
-      style={{ ...box, maxHeight: box.height, minHeight: 0 }}
+      style={box}
     >
-      <p className="truncate text-sm">{event.title}</p>
-      {timeLabel ? <p className="text-xs">{timeLabel}</p> : null}
+      <p className="truncate text-xs leading-tight">{event.title}</p>
+      {timeLabel ? <p className="truncate text-xs leading-tight">{timeLabel}</p> : null}
+    </div>
+  );
+}
+
+function StatusActions({
+  block,
+  busy,
+  buttonClassName,
+  onChangeStatus,
+  wrap,
+}: {
+  block: DayTimelineBlock;
+  busy: boolean;
+  buttonClassName: string;
+  onChangeStatus: (block: DayTimelineBlock, status: BlockStatus) => void;
+  wrap: boolean;
+}) {
+  return (
+    <div className={`flex shrink-0 items-center gap-1 ${wrap ? "flex-wrap" : "flex-nowrap"}`}>
+      <Button
+        className={buttonClassName}
+        disabled={busy || block.status === "done"}
+        onClick={(event) => {
+          event.stopPropagation();
+          onChangeStatus(block, "done");
+        }}
+        size="sm"
+        type="button"
+      >
+        Done
+      </Button>
+      <Button
+        className={buttonClassName}
+        disabled={busy || block.status === "skipped"}
+        onClick={(event) => {
+          event.stopPropagation();
+          onChangeStatus(block, "skipped");
+        }}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        Let it go
+      </Button>
+      <Button
+        className={buttonClassName}
+        disabled={busy || block.status === "planned"}
+        onClick={(event) => {
+          event.stopPropagation();
+          onChangeStatus(block, "planned");
+        }}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        Undo
+      </Button>
     </div>
   );
 }
@@ -371,144 +417,87 @@ function BlockCard({
   block,
   box,
   busy,
-  onDismiss,
   onSelect,
   onChangeStatus,
-  onTap,
-  tapped,
 }: {
   block: DayTimelineBlock;
   box: { top: number; height: number; left: string; width: string };
   busy: boolean;
-  onDismiss: () => void;
   onSelect?: (block: DayTimelineBlock) => void;
   onChangeStatus: (block: DayTimelineBlock, status: BlockStatus) => void;
-  onTap: () => void;
-  tapped: boolean;
 }) {
   const range = formatRange(block.startMinute, block.durationMinutes);
   const skipped = block.status === "skipped";
   const tint = skipped ? "border-border bg-muted text-muted-foreground" : kindClassName[block.kind];
-  const openPointerRef = useRef("mouse");
-  const pointerOpenedRef = useRef(false);
-  // Cards sit in their real slot so they never cover later cards. A short slot
-  // cannot fit the actions, so the card grows over its neighbours while a mouse
-  // hovers it, keyboard focus is inside, or it was tapped open. Touch browsers
-  // often never move focus, so blur cannot be the only way to close it.
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const expanded = hovered || focused || tapped;
-  const style = expanded
-    ? { ...box, height: "auto", minHeight: box.height, zIndex: 30 }
-    : { ...box, maxHeight: box.height, minHeight: 0 };
-
-  function collapseRaisedCard() {
-    pointerOpenedRef.current = false;
-    setFocused(false);
-    onDismiss();
-  }
+  const showTime = box.height >= FULL_CARD_MIN_PX;
+  const stacked = box.height >= STACKED_CARD_MIN_PX;
+  let statusNote = "";
+  if (skipped) statusNote = " · Let go";
+  else if (block.status === "done") statusNote = " · Done";
+  let density: "full" | "stacked" | "compact" = "compact";
+  if (showTime) density = "full";
+  else if (stacked) density = "stacked";
+  const actionClassName = showTime
+    ? "h-6 shrink-0 px-2 py-0 text-xs leading-none focus-visible:ring-inset focus-visible:ring-offset-0"
+    : "h-4 shrink-0 px-1 py-0 text-xs leading-none focus-visible:ring-inset focus-visible:ring-offset-0";
 
   return (
     <article
-      className={`absolute z-10 flex flex-col gap-1 overflow-hidden rounded-2xl border px-2 py-1 ${tint}${expanded ? " shadow-md" : ""}`}
-      data-block-id={block._id}
-      data-expanded={expanded ? "true" : undefined}
+      className={`absolute z-10 box-border overflow-hidden rounded-2xl border ${tint} ${
+        stacked
+          ? `flex flex-col gap-0.5 px-2 ${showTime ? "py-0.5" : "py-0"}`
+          : "flex items-center gap-1 px-1"
+      }`}
+      data-density={density}
       data-status={block.status}
       data-timeline-item
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setFocused(false);
-        }
-      }}
-      onFocus={() => {
-        if (pointerOpenedRef.current) {
-          pointerOpenedRef.current = false;
-          return;
-        }
-        setFocused(true);
-      }}
-      onPointerDown={(event) => {
-        pointerOpenedRef.current = true;
-        openPointerRef.current = event.pointerType;
-        if (event.pointerType === "mouse" || !tapped) return;
-        const target = event.target;
-        const element =
-          target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
-        if (element?.closest("button")) return;
-        collapseRaisedCard();
-      }}
-      onPointerEnter={(event) => {
-        if (event.pointerType === "mouse") setHovered(true);
-      }}
-      onPointerLeave={(event) => {
-        if (event.pointerType === "mouse") setHovered(false);
-      }}
-      style={style}
+      style={box}
     >
       <button
         aria-label={skipped ? `${block.title}, ${range}, Let go` : `${block.title}, ${range}`}
-        className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={
+          stacked
+            ? "min-h-0 shrink overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            : "min-w-0 flex-1 truncate text-left text-xs leading-none text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        }
         onClick={(event) => {
           event.stopPropagation();
-          pointerOpenedRef.current = false;
-          if (event.detail > 0 && openPointerRef.current !== "mouse") {
-            onTap();
-            setFocused(false);
-          }
           onSelect?.(block);
         }}
         type="button"
       >
-        <span className="block truncate text-sm font-medium text-foreground">{block.title}</span>
-        <span className="block text-xs text-muted-foreground">
-          {range}
-          {skipped ? " · Let go" : null}
-          {block.status === "done" ? " · Done" : null}
-        </span>
+        {stacked ? (
+          <>
+            <span
+              className={`block truncate font-medium text-foreground ${
+                showTime ? "text-sm leading-tight" : "text-xs leading-none"
+              }`}
+            >
+              {block.title}
+              {showTime ? null : ` · ${range}`}
+              {showTime ? null : statusNote}
+            </span>
+            {showTime ? (
+              <span className="block truncate text-xs leading-tight text-muted-foreground">
+                {range}
+                {statusNote}
+              </span>
+            ) : null}
+          </>
+        ) : (
+          <>
+            {block.title} · {range}
+            {statusNote}
+          </>
+        )}
       </button>
-      <div className="flex flex-wrap gap-1">
-        <Button
-          className="h-7 px-2 text-xs"
-          disabled={busy || block.status === "done"}
-          onClick={(event) => {
-            event.stopPropagation();
-            collapseRaisedCard();
-            onChangeStatus(block, "done");
-          }}
-          size="sm"
-          type="button"
-        >
-          Done
-        </Button>
-        <Button
-          className="h-7 px-2 text-xs"
-          disabled={busy || block.status === "skipped"}
-          onClick={(event) => {
-            event.stopPropagation();
-            collapseRaisedCard();
-            onChangeStatus(block, "skipped");
-          }}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          Let it go
-        </Button>
-        <Button
-          className="h-7 px-2 text-xs"
-          disabled={busy || block.status === "planned"}
-          onClick={(event) => {
-            event.stopPropagation();
-            collapseRaisedCard();
-            onChangeStatus(block, "planned");
-          }}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          Undo
-        </Button>
-      </div>
+      <StatusActions
+        block={block}
+        busy={busy}
+        buttonClassName={actionClassName}
+        onChangeStatus={onChangeStatus}
+        wrap={showTime}
+      />
     </article>
   );
 }
