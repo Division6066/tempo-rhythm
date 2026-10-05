@@ -2,13 +2,15 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { HABIT_NAME_MAX, parseHabitName } from "@/components/habits-library/habitForm";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { cn } from "@/lib/utils";
 import { buildSixWeekGrid, type SixWeekCell } from "./sixWeekGrid";
 
@@ -85,7 +87,8 @@ function checkedDateSet(
 
 export function HabitDetail({ habitId }: { habitId: string }) {
   const id = habitId as Id<"habits">;
-  const [today] = useState(() => new Date());
+  const bounds = useLocalDayBounds();
+  const today = useMemo(() => new Date(bounds.startMs), [bounds.startMs]);
   const range = useMemo(() => {
     const grid = buildSixWeekGrid(today, new Set());
     return {
@@ -170,6 +173,8 @@ function HabitDetailBody({
   const [draftName, setDraftName] = useState<string | undefined>(undefined);
   const [savingName, setSavingName] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const toggleGeneration = useRef(0);
+  const habitStreakVersion = useRef(0);
 
   useEffect(() => {
     setPending((prev) => {
@@ -192,17 +197,14 @@ function HabitDetailBody({
   }, [checkIns]);
 
   useEffect(() => {
+    // Any live habit snapshot wins over a toggle response. Drop the override
+    // even when the numbers differ, so a slower response cannot stick.
+    habitStreakVersion.current += 1;
     setStreak((prev) => {
-      if (!prev) {
+      if (prev === undefined) {
         return prev;
       }
-      if (
-        prev.currentStreak === habit.currentStreak &&
-        prev.longestStreak === habit.longestStreak
-      ) {
-        return undefined;
-      }
-      return prev;
+      return undefined;
     });
   }, [habit.currentStreak, habit.longestStreak]);
 
@@ -231,12 +233,22 @@ function HabitDetailBody({
       return next;
     });
 
+    const generation = toggleGeneration.current + 1;
+    toggleGeneration.current = generation;
+    const habitVersionAtStart = habitStreakVersion.current;
     const action = cell.checked
       ? undo({ habitId, localDate: cell.localDate })
       : check({ habitId, localDate: cell.localDate, source: "habits" });
 
     void action
       .then((result) => {
+        if (generation !== toggleGeneration.current) {
+          return;
+        }
+        if (habitStreakVersion.current !== habitVersionAtStart) {
+          setStreak(undefined);
+          return;
+        }
         setStreak({
           currentStreak: result.currentStreak,
           longestStreak: result.longestStreak,
@@ -248,7 +260,9 @@ function HabitDetailBody({
           next.delete(cell.localDate);
           return next;
         });
-        setNotice(SAVE_ERROR);
+        if (generation === toggleGeneration.current) {
+          setNotice(SAVE_ERROR);
+        }
       })
       .finally(() => {
         setBusy((prev) => {
@@ -260,17 +274,27 @@ function HabitDetailBody({
   };
 
   const saveName = () => {
-    const next = name.trim();
     if (savingName) {
       return;
     }
-    if (!next || next === habit.name) {
+    const parsed = parseHabitName(name);
+    if (!parsed.ok) {
+      if (name.trim().length === 0) {
+        setDraftName(undefined);
+        setNotice(null);
+        return;
+      }
+      setNotice(parsed.error);
+      return;
+    }
+    if (parsed.name === habit.name) {
       setDraftName(undefined);
+      setNotice(null);
       return;
     }
     setSavingName(true);
     setNotice(null);
-    void update({ habitId, name: next })
+    void update({ habitId, name: parsed.name })
       .then(() => setDraftName(undefined))
       .catch(() => setNotice(SAVE_ERROR))
       .finally(() => setSavingName(false));
@@ -299,6 +323,7 @@ function HabitDetailBody({
           <Input
             id="habit-detail-name"
             value={name}
+            maxLength={HABIT_NAME_MAX}
             onChange={(event) => setDraftName(event.target.value)}
             onBlur={saveName}
             disabled={savingName}
