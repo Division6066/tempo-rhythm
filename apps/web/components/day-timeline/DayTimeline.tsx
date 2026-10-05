@@ -38,13 +38,6 @@ const GUTTER_PX = 68;
 const WORKDAY_START_HOUR = 6;
 /** Calendar events have a start and no end. Drawn as a short read-only card. */
 const EVENT_DURATION_MINUTES = 30;
-/**
- * Shortest slot each card is laid out in, so its content fits without a CSS
- * min-height that would paint over later cards and hour rows. Labels still show
- * the real times.
- */
-const BLOCK_MIN_SLOT_MINUTES = 60;
-const EVENT_MIN_SLOT_MINUTES = 40;
 
 const kindClassName: Record<DayTimelineBlock["kind"], string> = {
   focus: "border-primary/40 bg-primary/15",
@@ -163,13 +156,13 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
       id: block._id,
       kind: block.kind,
       startMinute: block.startMinute,
-      durationMinutes: Math.max(block.durationMinutes, BLOCK_MIN_SLOT_MINUTES),
+      durationMinutes: block.durationMinutes,
     }));
     const eventItems = events.map((event) => ({
       id: event._id,
       kind: "event",
       startMinute: localMinuteOfDay(event.startsAtMs),
-      durationMinutes: Math.max(EVENT_DURATION_MINUTES, EVENT_MIN_SLOT_MINUTES),
+      durationMinutes: EVENT_DURATION_MINUTES,
     }));
     return layoutItems([...blockItems, ...eventItems]);
   }, [blocks, events, range]);
@@ -347,7 +340,7 @@ function EventCard({
     <div
       className="absolute z-10 overflow-hidden rounded-2xl border border-dashed border-border bg-background/80 px-2 py-1 text-muted-foreground"
       data-timeline-item
-      style={box}
+      style={{ ...box, maxHeight: box.height, minHeight: 0 }}
     >
       <p className="truncate text-sm">{event.title}</p>
       {timeLabel ? <p className="text-xs">{timeLabel}</p> : null}
@@ -377,11 +370,11 @@ function BlockCard({
       className={`absolute z-10 flex flex-col gap-1 overflow-hidden rounded-2xl border px-2 py-1 ${tint}`}
       data-status={block.status}
       data-timeline-item
-      style={box}
+      style={{ ...box, maxHeight: box.height, minHeight: 0 }}
     >
       <button
         aria-label={skipped ? `${block.title}, ${range}, Let go` : `${block.title}, ${range}`}
-        className="min-h-8 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={(event) => {
           event.stopPropagation();
           onSelect?.(block);
