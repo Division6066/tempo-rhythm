@@ -41,6 +41,8 @@ const EVENT_DURATION_MINUTES = 30;
 /**
  * Status actions stay inside the slot. A CSS min-height taller than the slot
  * paints over later hours; clipping the slot hides Done / Let it go / Undo.
+ * The action row never wraps (a wrapped second line would be clipped); in a
+ * narrow overlap column it scrolls sideways so every control stays reachable.
  * 36px fits one title line plus h-4 actions (a 30-minute block). 64px also
  * fits the time line and h-6 actions (a 60-minute block at 72px per hour).
  */
@@ -88,7 +90,7 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   const hasConvexUser = profile != null;
   const setStatus = useMutation(api.timeBlocks.setStatus);
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const alignedRef = useRef(false);
+  const alignedRef = useRef<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [mounted, setMounted] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -123,15 +125,22 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
 
   useEffect(() => {
     if (!viewingToday) return;
+    const tick = () => setNow(new Date());
+    tick();
     let intervalId: ReturnType<typeof setInterval> | undefined;
     const delay = 60_000 - (Date.now() % 60_000);
     const timeoutId = setTimeout(() => {
-      setNow(new Date());
-      intervalId = setInterval(() => setNow(new Date()), 60_000);
+      tick();
+      intervalId = setInterval(tick, 60_000);
     }, delay);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearTimeout(timeoutId);
       if (intervalId !== undefined) clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [viewingToday]);
 
@@ -142,16 +151,22 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
         (hasConvexUser && range !== null && (blocks === undefined || events === undefined))));
 
   useEffect(() => {
-    if (alignedRef.current || isLoading || !isAuthenticated || !profile) return;
+    // The skeleton replaces the scroller while loading, and a new date remounts
+    // the grid at midnight, so re-align to 06:00 per date and after each load.
+    if (isLoading) {
+      alignedRef.current = null;
+      return;
+    }
+    if (alignedRef.current === requestedDate || !isAuthenticated || !profile) return;
     const node = scrollerRef.current;
     if (!node) return;
     const align = () => {
       node.scrollTop = WORKDAY_START_HOUR * HOUR_HEIGHT_PX;
-      alignedRef.current = true;
+      alignedRef.current = requestedDate;
     };
     const frame = requestAnimationFrame(align);
     return () => cancelAnimationFrame(frame);
-  }, [isAuthenticated, isLoading, profile]);
+  }, [isAuthenticated, isLoading, profile, requestedDate]);
 
   const agendaById = useMemo(() => {
     const agenda = mapCalendarEventsToAgenda(events ?? []);
@@ -361,17 +376,18 @@ function StatusActions({
   busy,
   buttonClassName,
   onChangeStatus,
-  wrap,
+  rangeLabel,
 }: {
   block: DayTimelineBlock;
   busy: boolean;
   buttonClassName: string;
   onChangeStatus: (block: DayTimelineBlock, status: BlockStatus) => void;
-  wrap: boolean;
+  rangeLabel: string;
 }) {
   return (
-    <div className={`flex shrink-0 items-center gap-1 ${wrap ? "flex-wrap" : "flex-nowrap"}`}>
+    <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto">
       <Button
+        aria-label={`Done ${rangeLabel}`}
         className={buttonClassName}
         disabled={busy || block.status === "done"}
         onClick={(event) => {
@@ -384,6 +400,7 @@ function StatusActions({
         Done
       </Button>
       <Button
+        aria-label={`Let it go ${rangeLabel}`}
         className={buttonClassName}
         disabled={busy || block.status === "skipped"}
         onClick={(event) => {
@@ -397,6 +414,7 @@ function StatusActions({
         Let it go
       </Button>
       <Button
+        aria-label={`Undo ${rangeLabel}`}
         className={buttonClassName}
         disabled={busy || block.status === "planned"}
         onClick={(event) => {
@@ -496,7 +514,7 @@ function BlockCard({
         busy={busy}
         buttonClassName={actionClassName}
         onChangeStatus={onChangeStatus}
-        wrap={showTime}
+        rangeLabel={range}
       />
     </article>
   );
