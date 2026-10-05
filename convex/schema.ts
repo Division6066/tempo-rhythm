@@ -40,6 +40,8 @@ export default defineSchema({
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
+    /** Set when the person finishes onboarding. Absent until then. */
+    onboardedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
     .index("by_role", ["role"])
@@ -346,4 +348,56 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt_localDate", ["userId", "deletedAt", "localDate"])
     .index("by_habitId_deletedAt_localDate", ["habitId", "deletedAt", "localDate"]),
+
+  /**
+   * Page templates. Starter templates live in code (`convex/lib/templateCatalog.ts`)
+   * and are not rows. Rows here are templates the person saved.
+   */
+  templates: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    periodType: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("none"),
+    ),
+    body: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /** One row per person. Missing row means the defaults in convex/preferences.ts. */
+  userPreferences: defineTable({
+    userId: v.id("users"),
+    theme: v.union(v.literal("system"), v.literal("light"), v.literal("dark")),
+    locale: v.union(v.literal("en"), v.literal("he")),
+    weekStartsOn: v.union(v.literal(0), v.literal(1), v.literal(6)),
+    timeZone: v.string(),
+    emailReminders: v.boolean(),
+    inAppNotifications: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  notifications: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+    kind: v.union(v.literal("system"), v.literal("reminder"), v.literal("billing")),
+    readAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 });

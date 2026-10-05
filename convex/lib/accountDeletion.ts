@@ -13,6 +13,9 @@ export const USER_OWNED_TABLES = [
   "dayPlans",
   "timeBlocks",
   "habitCheckIns",
+  "templates",
+  "userPreferences",
+  "notifications",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];

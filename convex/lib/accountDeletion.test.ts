@@ -54,9 +54,12 @@ describe("USER_OWNED_TABLES", () => {
       "habits",
       "memories",
       "notes",
+      "notifications",
       "taskRepeatCfgs",
       "tasks",
+      "templates",
       "timeBlocks",
+      "userPreferences",
     ] as const;
     expect([...USER_OWNED_TABLES].sort()).toEqual([...expected].sort());
   });
