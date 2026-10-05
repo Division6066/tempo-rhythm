@@ -85,17 +85,21 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   const [mounted, setMounted] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  // At most one block stays expanded after a tap; any press outside it collapses it.
+  // At most one block stays expanded after a tap. A press outside that card
+  // collapses it. Text nodes have no closest(), so walk up to an element first.
   const [tappedId, setTappedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (tappedId === null) return;
     const onPointerDown = (event: PointerEvent) => {
-      const card = (event.target as Element | null)?.closest?.("[data-block-id]");
-      if (card?.getAttribute("data-block-id") !== tappedId) setTappedId(null);
+      const target = event.target;
+      const element =
+        target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+      const cardId = element?.closest("[data-block-id]")?.getAttribute("data-block-id");
+      if (cardId !== tappedId) setTappedId(null);
     };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, [tappedId]);
 
   const todayLocalDate = toDateInputValue(new Date(bounds.startMs));
@@ -312,8 +316,9 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
                 busy={pendingId === block._id}
                 key={item.id}
                 onChangeStatus={changeStatus}
+                onDismiss={() => setTappedId(null)}
                 onSelect={onSelectBlock}
-                onTap={() => setTappedId(block._id)}
+                onTap={() => setTappedId((current) => (current === block._id ? null : block._id))}
                 tapped={tappedId === block._id}
               />
             );
@@ -366,6 +371,7 @@ function BlockCard({
   block,
   box,
   busy,
+  onDismiss,
   onSelect,
   onChangeStatus,
   onTap,
@@ -374,6 +380,7 @@ function BlockCard({
   block: DayTimelineBlock;
   box: { top: number; height: number; left: string; width: string };
   busy: boolean;
+  onDismiss: () => void;
   onSelect?: (block: DayTimelineBlock) => void;
   onChangeStatus: (block: DayTimelineBlock, status: BlockStatus) => void;
   onTap: () => void;
@@ -382,16 +389,24 @@ function BlockCard({
   const range = formatRange(block.startMinute, block.durationMinutes);
   const skipped = block.status === "skipped";
   const tint = skipped ? "border-border bg-muted text-muted-foreground" : kindClassName[block.kind];
+  const openPointerRef = useRef("mouse");
+  const pointerOpenedRef = useRef(false);
   // Cards sit in their real slot so they never cover later cards. A short slot
-  // cannot fit the actions, so the card grows over its neighbours while it is
-  // hovered, focused or tapped, keeping Done / Let it go / Undo reachable.
-  // The tapped card is tracked by the parent so only one is ever expanded.
+  // cannot fit the actions, so the card grows over its neighbours while a mouse
+  // hovers it, keyboard focus is inside, or it was tapped open. Touch browsers
+  // often never move focus, so blur cannot be the only way to close it.
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const expanded = hovered || focused || tapped;
   const style = expanded
     ? { ...box, height: "auto", minHeight: box.height, zIndex: 30 }
     : { ...box, maxHeight: box.height, minHeight: 0 };
+
+  function collapseRaisedCard() {
+    pointerOpenedRef.current = false;
+    setFocused(false);
+    onDismiss();
+  }
 
   return (
     <article
@@ -405,12 +420,29 @@ function BlockCard({
           setFocused(false);
         }
       }}
-      onFocus={() => setFocused(true)}
+      onFocus={() => {
+        if (pointerOpenedRef.current) {
+          pointerOpenedRef.current = false;
+          return;
+        }
+        setFocused(true);
+      }}
+      onPointerDown={(event) => {
+        pointerOpenedRef.current = true;
+        openPointerRef.current = event.pointerType;
+        if (event.pointerType === "mouse" || !tapped) return;
+        const target = event.target;
+        const element =
+          target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+        if (element?.closest("button")) return;
+        collapseRaisedCard();
+      }}
       onPointerEnter={(event) => {
-        // Touch has no reliable leave event, so only a mouse hover expands.
         if (event.pointerType === "mouse") setHovered(true);
       }}
-      onPointerLeave={() => setHovered(false)}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") setHovered(false);
+      }}
       style={style}
     >
       <button
@@ -418,7 +450,11 @@ function BlockCard({
         className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={(event) => {
           event.stopPropagation();
-          onTap();
+          pointerOpenedRef.current = false;
+          if (event.detail > 0 && openPointerRef.current !== "mouse") {
+            onTap();
+            setFocused(false);
+          }
           onSelect?.(block);
         }}
         type="button"
@@ -436,6 +472,7 @@ function BlockCard({
           disabled={busy || block.status === "done"}
           onClick={(event) => {
             event.stopPropagation();
+            collapseRaisedCard();
             onChangeStatus(block, "done");
           }}
           size="sm"
@@ -448,6 +485,7 @@ function BlockCard({
           disabled={busy || block.status === "skipped"}
           onClick={(event) => {
             event.stopPropagation();
+            collapseRaisedCard();
             onChangeStatus(block, "skipped");
           }}
           size="sm"
@@ -461,6 +499,7 @@ function BlockCard({
           disabled={busy || block.status === "planned"}
           onClick={(event) => {
             event.stopPropagation();
+            collapseRaisedCard();
             onChangeStatus(block, "planned");
           }}
           size="sm"
