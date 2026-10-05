@@ -387,6 +387,52 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  /** A reminder the person defines. Phrases are their own words or derived from them. */
+  nags: defineTable({
+    userId: v.id("users"),
+    label: v.string(),
+    enabled: v.boolean(),
+    phrases: v.array(
+      v.object({
+        id: v.string(),
+        text: v.string(),
+        source: v.union(v.literal("user"), v.literal("derived")),
+        status: v.union(v.literal("proposed"), v.literal("accepted"), v.literal("rejected")),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  }).index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /** One row per person. Missing row means the defaults in convex/coach.ts. */
+  coachSettings: defineTable({
+    userId: v.id("users"),
+    /** Integer 0-10. */
+    dial: v.number(),
+    /** 2-4 tasks per proposal. */
+    taskLoad: v.number(),
+    panicUntil: v.optional(v.number()),
+    acceptedStreak: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  /** A proposal built by code. The person accepts or rejects it. */
+  coachProposals: defineTable({
+    userId: v.id("users"),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("rejected")),
+    taskIds: v.array(v.id("tasks")),
+    tenSecondAction: v.string(),
+    realism: v.object({
+      ok: v.boolean(),
+      totalMinutes: v.number(),
+      availableMinutes: v.number(),
+      note: v.string(),
+    }),
+    createdAt: v.number(),
+    decidedAt: v.optional(v.number()),
+  }).index("by_userId_status", ["userId", "status"]),
+
   notifications: defineTable({
     userId: v.id("users"),
     title: v.string(),
