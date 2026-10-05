@@ -1,9 +1,9 @@
 // Lane context (Phase 04 Step 5). Reads the ticket issue and writes step outputs for the lane
-// workflows: ticket, type, branch (factory/<ticket>), issue_url, prompt (lane-prompt.md filled
+// workflows: ticket, type, branch (t/<issue-number>-<slug>), issue_url, prompt (lane-prompt.md filled
 // in), pr_number / pr_url / pr_branch (an open PR for this ticket already exists = retry).
 // Env: GH_TOKEN, GITHUB_REPOSITORY, ISSUE_NUMBER, FIX_NOTE (optional, failure-rule retry).
 import { gh, repoParts, summary } from "./gh-api.mjs";
-import { frontMatter, renderLanePrompt, findTicketPR, setOutput, assertDispatchable } from "./factory-lib.mjs";
+import { frontMatter, renderLanePrompt, findTicketPR, setOutput, assertDispatchable, ticketBranch } from "./factory-lib.mjs";
 
 const { owner, repo } = repoParts();
 const n = Number(process.env.ISSUE_NUMBER);
@@ -19,7 +19,7 @@ if (process.env.FIX_NOTE) {
 }
 await setOutput("ticket", fm.ticket);
 await setOutput("type", fm.type || "");
-await setOutput("branch", pr ? pr.head.ref : `factory/${fm.ticket}`);
+await setOutput("branch", pr ? pr.head.ref : ticketBranch(n, fm.ticket));
 await setOutput("issue_url", issue.html_url);
 await setOutput("title", issue.title);
 await setOutput("body", issue.body || "");
