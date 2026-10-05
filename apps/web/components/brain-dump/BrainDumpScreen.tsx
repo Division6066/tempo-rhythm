@@ -25,7 +25,7 @@ type ResourcesCard = {
 };
 
 const urgencyTone: Record<Urgency, string> = {
-  now: "border-[#D97757]/30 bg-[#D97757]/10 text-[#9A4C2F]",
+  now: "border-[color:var(--color-tempo-orange)]/30 bg-[color:var(--color-tempo-orange)]/10 text-[color:var(--color-tempo-orange)]",
   soon: "border-primary/20 bg-primary/10 text-primary",
   later: "border-border bg-muted/60 text-muted-foreground",
 };
