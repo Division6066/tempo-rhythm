@@ -8,6 +8,9 @@ import { agentBody } from "./cursor-lane.mjs";
 import { plan } from "./promote.mjs";
 import { validate } from "./validate-tickets.mjs";
 import { isTicketPath, MARKER } from "./tickets-lib.mjs";
+import { linkedTickets } from "./gh-api.mjs";
+import { shouldDeploy, assertLiveKeyTarget, judgeSmoke } from "./deploy-live-plan.mjs";
+import { israelDate, isReleaseTitle, prNumbersFromMessage, renderReleaseBody } from "./release-pr.mjs";
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log(`ok ${n} - ${name}`); };
 const T = (number, ticket, batch, type, scope, labels = ["status:ready"], extra = {}) => ({ number, title: ticket, labels, fm: { ticket, batch, type, scope, ...extra } });
@@ -103,6 +106,54 @@ t("writer check: 9 = 1 data + 8 separate components, contract, only batch files"
   assert.ok(validate({ batch: "DRY", size: 9, hold: false, files: shared, contractExists: true }).problems.some((p) => p.includes("share scope")));
   assert.ok(validate({ batch: "DRY", size: 9, hold: true, files: BATCH9, contractExists: false }).problems.length >= 9);
   assert.ok(validate({ batch: "DRY", size: 9, hold: false, files: BATCH9, changed: ["package.json"], contractExists: true }).problems.some((p) => p.includes("outside the batch")));
+});
+
+t("release date uses Asia/Jerusalem", () => {
+  assert.equal(israelDate(new Date("2026-10-04T22:30:00.000Z")), "2026-10-05");
+  assert.equal(israelDate(new Date("2026-10-04T20:30:00.000Z")), "2026-10-04");
+  assert.equal(isReleaseTitle("Release 2026-10-05"), true);
+  assert.equal(isReleaseTitle("Release notes"), false);
+});
+t("release body lists PRs without a closing keyword", () => {
+  assert.deepEqual(prNumbersFromMessage("feat(tasks): add a card (#482)\n\nbody mentions #9"), [482]);
+  assert.deepEqual(prNumbersFromMessage("Merge pull request #12 from org/branch"), [12]);
+  assert.deepEqual(prNumbersFromMessage("see #12 in the body only"), []);
+  const body = renderReleaseBody({
+    date: "2026-10-05", masterSha: "abc123", ahead: 2, truncated: false,
+    rows: [{ number: 482, title: "feat(tasks): add a card", closes: [12] }],
+  });
+  assert.match(body, /#482 feat\(tasks\): add a card \(links #12\)/);
+  assert.deepEqual(linkedTickets(body), []);
+});
+t("dry_run never deploys, including a master push", () => {
+  for (const eventName of ["push", "workflow_dispatch"]) {
+    const d = shouldDeploy({ eventName, ref: "refs/heads/master", dryRun: "true", pausedAll: "false", force: "true", actor: "Division6066" });
+    assert.equal(d.action, "dry_run");
+    assert.equal(d.exitCode, 0);
+  }
+});
+t("real deploy only on master, and paused refuses unless a person forces a dispatch", () => {
+  assert.equal(shouldDeploy({ eventName: "push", ref: "refs/heads/master", dryRun: "false", pausedAll: "false", force: "false", actor: "" }).action, "deploy");
+  assert.equal(shouldDeploy({ eventName: "push", ref: "refs/heads/master", dryRun: "false", pausedAll: "true", force: "true", actor: "Division6066" }).action, "refuse");
+  assert.equal(shouldDeploy({ eventName: "workflow_dispatch", ref: "refs/heads/integration", dryRun: "false", pausedAll: "false", force: "false", actor: "Division6066" }).action, "refuse");
+  assert.equal(shouldDeploy({ eventName: "workflow_dispatch", ref: "refs/heads/master", dryRun: "false", pausedAll: "true", force: "true", actor: "some-app[bot]" }).action, "refuse");
+  assert.equal(shouldDeploy({ eventName: "workflow_dispatch", ref: "refs/heads/master", dryRun: "false", pausedAll: "true", force: "true", actor: "Division6066" }).action, "deploy");
+  assert.equal(shouldDeploy({ eventName: "", ref: "", dryRun: "", pausedAll: "", force: "", actor: "" }).action, "dry_run");
+});
+t("live key target is checked without echoing the key", () => {
+  const bad = assertLiveKeyTarget("dev:ceaseless-dog-617|example-not-a-key");
+  assert.equal(bad.ok, false);
+  assert.equal(bad.error.includes("example-not-a-key"), false);
+  assert.equal(bad.error.includes("dev:ceaseless-dog-617"), false);
+  assert.equal(assertLiveKeyTarget("").ok, false);
+  assert.equal(assertLiveKeyTarget("no-pipe").ok, false);
+  assert.equal(assertLiveKeyTarget("prod:precious-wildcat-890|example-not-a-key").ok, true);
+});
+t("smoke requires tempoflow.dev and /api/health", () => {
+  assert.equal(judgeSmoke(200, 200, JSON.stringify({ ok: true, service: "tempo-web" })).ok, true);
+  assert.equal(judgeSmoke(500, 200, JSON.stringify({ ok: true, service: "tempo-web" })).ok, false);
+  assert.equal(judgeSmoke(200, 200, JSON.stringify({ ok: true, service: "other" })).ok, false);
+  assert.equal(judgeSmoke(200, 404, "missing").ok, false);
 });
 
 console.log(`all ${n} passed`);
