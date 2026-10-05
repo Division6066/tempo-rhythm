@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
-import { clampDial, dialLabel, panicMinutesLeft } from "./dial";
+import {
+  clampDial,
+  dialLabel,
+  panicMinutesLeft,
+  releaseDial,
+  settleDialSave,
+  type DialFlight,
+} from "./dial";
 
 const SAVE_ERROR = "That didn't save. Try again?";
 const PANIC_FALLBACK = "Take a breath. Nothing is due right now.";
@@ -31,8 +38,12 @@ export function CoachControls() {
   const [actionText, setActionText] = useState<string | null>(null);
   const [panicOverride, setPanicOverride] = useState<number | null | undefined>(undefined);
   const [now, setNow] = useState(() => Date.now());
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
+  const [panicBusy, setPanicBusy] = useState(false);
+  const [clearBusy, setClearBusy] = useState(false);
+  const flightRef = useRef<DialFlight>({ inFlight: null, pending: null });
+  const draftRef = useRef<number | null>(null);
+  const panicLock = useRef(false);
+  const clearLock = useRef(false);
   const serverDial = settings ? clampDial(settings.dial) : null;
 
   useEffect(() => {
@@ -71,38 +82,62 @@ export function CoachControls() {
   const minutes = panicMinutesLeft(panicUntil, now);
   const cardText = actionText && actionText.trim().length > 0 ? actionText : PANIC_FALLBACK;
 
-  const commitDial = (raw: number) => {
-    const value = clampDial(raw);
-    if (value === persisted) {
-      setDraft(null);
-      return;
-    }
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
+  const runDialSave = (value: number) => {
+    const pending = flightRef.current.pending;
+    flightRef.current = {
+      inFlight: value,
+      pending: pending === value ? null : pending,
+    };
     setSavedFlash(false);
     void setDial({ dial: value })
       .then(() => {
+        const settled = settleDialSave(flightRef.current, value, true, draftRef.current);
+        flightRef.current = settled.flight;
         setSavedDial(value);
-        setDraft((current) => (current === value ? null : current));
-        setSavedFlash(true);
         setError(null);
+        if (settled.flashSaved) {
+          draftRef.current = null;
+          setDraft(null);
+          setSavedFlash(true);
+        } else {
+          setSavedFlash(false);
+        }
+        if (settled.save !== null) runDialSave(settled.save);
       })
       .catch(() => {
-        setDraft(null);
+        const settled = settleDialSave(flightRef.current, value, false, draftRef.current);
+        flightRef.current = settled.flight;
         setSavedFlash(false);
-        setError(SAVE_ERROR);
-      })
-      .finally(() => {
-        busyRef.current = false;
-        setBusy(false);
+        if (settled.revertDraft) {
+          draftRef.current = null;
+          setDraft(null);
+          setError(SAVE_ERROR);
+        }
+        if (settled.save !== null) runDialSave(settled.save);
       });
   };
 
+  const commitDial = (raw: number) => {
+    const result = releaseDial(flightRef.current, raw, persisted);
+    flightRef.current = result.flight;
+    if (result.release.action === "ignore") {
+      if (result.flight.inFlight === null) {
+        draftRef.current = null;
+        setDraft(null);
+      }
+      return;
+    }
+    draftRef.current = result.release.value;
+    setDraft(result.release.value);
+    setSavedFlash(false);
+    setError(null);
+    if (result.release.action === "save") runDialSave(result.release.value);
+  };
+
   const onPanic = () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
+    if (panicLock.current) return;
+    panicLock.current = true;
+    setPanicBusy(true);
     setError(null);
     void pressPanic({})
       .then((result) => {
@@ -116,15 +151,15 @@ export function CoachControls() {
         setError(SAVE_ERROR);
       })
       .finally(() => {
-        busyRef.current = false;
-        setBusy(false);
+        panicLock.current = false;
+        setPanicBusy(false);
       });
   };
 
   const onClear = () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
+    if (clearLock.current) return;
+    clearLock.current = true;
+    setClearBusy(true);
     setError(null);
     void clearPanic({})
       .then(() => {
@@ -137,8 +172,8 @@ export function CoachControls() {
         setError(SAVE_ERROR);
       })
       .finally(() => {
-        busyRef.current = false;
-        setBusy(false);
+        clearLock.current = false;
+        setClearBusy(false);
       });
   };
 
@@ -174,9 +209,11 @@ export function CoachControls() {
           aria-valuetext={`${label}, ${shown}`}
           aria-describedby="coach-push-dial-hint"
           onChange={(event) => {
+            const next = clampDial(Number(event.target.value));
+            draftRef.current = next;
             setSavedFlash(false);
             setError(null);
-            setDraft(clampDial(Number(event.target.value)));
+            setDraft(next);
           }}
           onPointerUp={(event) => {
             commitDial(Number(event.currentTarget.value));
@@ -206,14 +243,14 @@ export function CoachControls() {
             <p className="text-sm text-muted-foreground">{minutesCopy(minutes)}</p>
           </CardContent>
           <CardFooter>
-            <Button type="button" variant="outline" onClick={onClear} disabled={busy}>
+            <Button type="button" variant="outline" onClick={onClear} disabled={clearBusy}>
               I&rsquo;m okay now
             </Button>
           </CardFooter>
         </Card>
       ) : (
         <div className="space-y-2">
-          <Button type="button" variant="secondary" onClick={onPanic} disabled={busy}>
+          <Button type="button" variant="secondary" onClick={onPanic} disabled={panicBusy}>
             Panic
           </Button>
           <p className="text-sm text-muted-foreground">
