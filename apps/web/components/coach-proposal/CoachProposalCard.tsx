@@ -22,7 +22,8 @@ export function CoachProposalCard() {
   const settings = useQuery(api.coach.getSettings, args);
   const badDay = useQuery(api.coach.badDay, args);
   const proposal = useQuery(api.coach.currentProposal, args);
-  const createProposal = useMutation(api.coach.createProposal);
+  const tasks = useQuery(api.tasks.list, args);
+  const createProposal =useMutation(api.coach.createProposal);
   const decideProposal = useMutation(api.coach.decideProposal);
 
   const [busy, setBusy] = useState(false);
@@ -48,11 +49,16 @@ export function CoachProposalCard() {
     setError(false);
     setEmpty(false);
     setOutcome(null);
+    // Convex redacts plain Error text in production, so emptiness comes from the
+    // task list, never from the error message.
+    if (tasks !== undefined && !tasks.some((t) => t.status === "todo" || t.status === "in_progress")) {
+      setEmpty(true);
+      lock.current = false;
+      setBusy(false);
+      return;
+    }
     createProposal({})
-      .catch((e: unknown) => {
-        if (e instanceof Error && /no open tasks/i.test(e.message)) setEmpty(true);
-        else setError(true);
-      })
+      .catch(() => setError(true))
       .finally(() => {
         lock.current = false;
         setBusy(false);
