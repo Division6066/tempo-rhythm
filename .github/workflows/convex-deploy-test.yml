@@ -48,7 +48,7 @@ jobs:
           fi
           echo "Key targets the test deployment $EXPECTED_DEPLOYMENT."
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
