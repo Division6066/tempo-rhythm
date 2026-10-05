@@ -4,7 +4,7 @@
 //       builds it and opens the PR. The Automation is created by hand (BROWSER-TODO B8).
 //   api (fallback B) - start a Cloud Agent directly: POST https://api.cursor.com/v1/agents
 //       (Cloud Agents API v1, public beta; v0 is the legacy surface) with secret CURSOR_API_KEY,
-//       the lane prompt + ticket text, repo https://github.com/<repo>, startingRef factory/<ticket>
+//       the lane prompt + ticket text, repo https://github.com/<repo>, startingRef t/<issue>-<slug>
 //       (pre-created from integration) with workOnCurrentBranch, autoCreatePR true.
 //       Model = vars.FACTORY_MODEL_CURSOR (+ vars.FACTORY_MODEL_CURSOR_PARAMS "k=v,k=v").
 //       UNKNOWN (docs don't say): which base branch autoCreatePR targets; expected = repo default
@@ -14,7 +14,7 @@
 // Env: GH_TOKEN (Factory App), CURSOR_API_KEY, GITHUB_REPOSITORY, ISSUE_NUMBER, CURSOR_MODE,
 //      MODEL, MODEL_PARAMS, FIX_NOTE, DRY_RUN=1 (print the API body, send nothing).
 import { gh, repoParts, summary } from "./gh-api.mjs";
-import { frontMatter, renderLanePrompt, findTicketPR, addLabels, removeLabel, comment, BASE, assertDispatchable } from "./factory-lib.mjs";
+import { frontMatter, renderLanePrompt, findTicketPR, addLabels, removeLabel, comment, BASE, assertDispatchable, ticketBranch } from "./factory-lib.mjs";
 
 export function agentBody({ prompt, model, params, repoUrl, ref, prUrl, name }) {
   const body = { prompt: { text: prompt }, name: name.slice(0, 100), autoCreatePR: !prUrl, workOnCurrentBranch: true };
@@ -51,7 +51,7 @@ async function main() {
   let prompt = await renderLanePrompt({ issueUrl: issue.html_url, issueNumber: n, ticketId: fm.ticket });
   prompt += `\n\n<ticket number="${n}" title=${JSON.stringify(issue.title)}>\n${issue.body || ""}\n</ticket>\n`;
   if (fix) prompt += `\nRETRY: a required check failed on ${pr ? pr.html_url : "the PR"}. Fix the failing check; stay in scope. Push to the PR branch; do not open a new PR.\n<failing-log>\n${fix}\n</failing-log>\n`;
-  const branch = `factory/${fm.ticket}`;
+  const branch = ticketBranch(n, fm.ticket);
   if (!pr && !dry) {
     const existing = await gh(`/repos/${owner}/${repo}/git/ref/heads/${branch}`, { allow404: true });
     if (!existing) {
