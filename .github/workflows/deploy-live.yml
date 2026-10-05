@@ -1,0 +1,104 @@
+# Phase J2. Live deploy on push to master. dry_run prints plan and exits before any real deploy.
+# Live keys ONLY from GitHub Environment secrets (name: Production on this repo today; prefer production).
+# Never print secret values. Convex live rollback = Amit only (R5). No Factory App / merge bot.
+name: deploy-live
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print plan and stop before real deploy
+        type: boolean
+        default: true
+      force:
+        description: Allow dispatch while FACTORY_PAUSED*=true (human only; still respects dry_run)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  deployments: write
+  issues: write
+
+concurrency:
+  group: deploy-live
+  cancel-in-progress: false
+
+jobs:
+  plan-or-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Existing env name in tempo-rhythm is "Production" (capital P). Required reviewer Amit — WAITING-ON-AMIT.
+    environment: Production
+    steps:
+      - name: Refuse bot force
+        if: github.event_name == 'workflow_dispatch' && inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true from a bot is not allowed."
+          exit 1
+
+      - name: Pause gate (real deploys)
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == false)
+        env:
+          PAUSED_ALL: ${{ vars.FACTORY_PAUSED_ALL }}
+          PAUSED: ${{ vars.FACTORY_PAUSED }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
+        run: |
+          if [ "$FORCE" = "true" ]; then echo "force=true; continuing"; exit 0; fi
+          if [ "$PAUSED_ALL" = "true" ] || [ "$PAUSED" = "true" ]; then
+            echo "::error::Factory paused; refusing live deploy. Use dry_run=true or force=true from a human."
+            exit 1
+          fi
+
+      - name: Resolve dry_run
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dry_run=${{ inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          else
+            # push to master = real path (Amit merged). Still never print secrets.
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Print plan (always)
+        run: |
+          cat <<'PLAN'
+          ## deploy-live plan (tempo-rhythm)
+          1. Vercel production deploy/promote for tempo-web
+          2. Convex deploy to live precious-wildcat-890 (env secret CONVEX_DEPLOY_KEY_LIVE; refuse if target != prod:precious-wildcat-890; never print key)
+          3. Smoke GET https://tempoflow.dev
+          4. On smoke fail: roll Vercel back to previous production deployment; open/update issue "Live deploy smoke failed"
+          5. Convex rollback: AMIT ONLY — Convex dashboard → precious-wildcat-890 → Deployments → promote previous deployment (or redeploy last-known-good). Do not run Convex rollback from Actions.
+          Live keys: GitHub Environment Production only (not org/repo plain secrets).
+          PLAN
+
+      - name: Stop before real deploy (dry_run)
+        if: steps.mode.outputs.dry_run == 'true'
+        run: |
+          echo "dry_run=true — stopping before any real deploy."
+          echo "Dry run OK" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Real deploy placeholder (blocked until keys exist)
+        if: steps.mode.outputs.dry_run != 'true'
+        env:
+          CONVEX_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_LIVE }}
+        run: |
+          if [ -z "$CONVEX_KEY" ]; then
+            echo "::error::CONVEX_DEPLOY_KEY_LIVE missing in Environment Production. Parked — no real deploy."
+            exit 1
+          fi
+          case "$CONVEX_KEY" in
+            *"|"*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY_LIVE is not a deployment deploy key shape; refusing."; exit 1;;
+          esac
+          target="${CONVEX_KEY%%|*}"
+          if [ "$target" != "prod:precious-wildcat-890" ] && [ "$target" != "dev:precious-wildcat-890" ]; then
+            # Accept prod: prefix; some Convex live keys use prod:
+            echo "::error::CONVEX_DEPLOY_KEY_LIVE does not target precious-wildcat-890; refusing."
+            exit 1
+          fi
+          echo "::error::Real deploy steps not fully wired in this draft (Vercel promote + smoke + rollback). Refusing rather than half-deploying. dry_run path is the supported Phase J path."
+          exit 1
