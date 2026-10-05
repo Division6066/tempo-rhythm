@@ -10,6 +10,8 @@ import { plan } from "./promote.mjs";
 import { validate } from "./validate-tickets.mjs";
 import { isTicketPath, MARKER } from "./tickets-lib.mjs";
 import { linkedTickets } from "./gh-api.mjs";
+import { bugbotState, findingsNote } from "./review-gate.mjs";
+import { nextStep } from "./review-fix.mjs";
 import { shouldDeploy, assertLiveKeyTarget, judgeSmoke } from "./deploy-live-plan.mjs";
 import { israelDate, isReleaseTitle, prNumbersFromMessage, renderReleaseBody } from "./release-pr.mjs";
 
@@ -158,6 +160,28 @@ t("smoke requires tempoflow.dev and /api/health", () => {
   assert.equal(judgeSmoke(500, 200, JSON.stringify({ ok: true, service: "tempo-web" })).ok, false);
   assert.equal(judgeSmoke(200, 200, JSON.stringify({ ok: true, service: "other" })).ok, false);
   assert.equal(judgeSmoke(200, 404, "missing").ok, false);
+});
+
+
+t("review gate: Bugbot clean / findings / pending / blocked", () => {
+  const run = (o) => ({ name: "Cursor Bugbot", app: { slug: "cursor" }, status: "completed", conclusion: "success", ...o });
+  const th = (o) => ({ isResolved: false, isOutdated: false, path: "a.ts", line: 3, author: { login: "cursor[bot]" }, body: "Bug: x", ...o });
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [run()] }).state, "clean");
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [run({ conclusion: "neutral" })], threads: [th({ isResolved: true })] }).state, "clean");
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [run()], threads: [th()] }).state, "findings");
+  assert.equal(bugbotState({ headSha: "abc", threads: [th({ author: { login: "someone" } })] }).state, "pending");
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [run({ status: "in_progress", conclusion: null })] }).state, "pending");
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [run({ conclusion: "failure" })] }).state, "findings");
+  assert.equal(bugbotState({ headSha: "abc", comments: [{ user: { login: "cursor[bot]" }, body: "Bugbot couldn't run — GitHub account mismatch" }] }).state, "blocked");
+  assert.ok(findingsNote([th()]).startsWith("BUGBOT REVIEW FINDINGS"));
+});
+t("review fix loop: 3 attempts then blocked:amit", () => {
+  assert.deepEqual(nextStep({ state: "findings", labels: [] }), { action: "fix", attempt: 1 });
+  assert.deepEqual(nextStep({ state: "findings", labels: ["review-fix:1", "review-fix:2"] }), { action: "fix", attempt: 3 });
+  assert.equal(nextStep({ state: "findings", labels: ["review-fix:1", "review-fix:2", "review-fix:3"] }).action, "block");
+  assert.equal(nextStep({ state: "blocked", labels: [] }).action, "block");
+  assert.equal(nextStep({ state: "clean", labels: [] }).action, "none");
+  assert.equal(nextStep({ state: "findings", labels: ["blocked:amit"] }).action, "none");
 });
 
 console.log(`all ${n} passed`);
