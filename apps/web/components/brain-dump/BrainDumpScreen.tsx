@@ -80,7 +80,7 @@ export function BrainDumpScreen() {
 
   const handleAccept = useCallback((index: number) => {
     setRejected((prev) => prev.filter((i) => i !== index));
-    setAccepted((prev) => (prev.includes(index) ? prev : toggleItem(prev, index)));
+    setAccepted((prev) => toggleItem(prev, index));
   }, []);
 
   const handleReject = useCallback((index: number) => {
