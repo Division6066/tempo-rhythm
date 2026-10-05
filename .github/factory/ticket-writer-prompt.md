@@ -11,6 +11,7 @@ Read first
   docs/contracts/README.md, and the existing code.
 - The Graphify graph is at graphify-out/graph.json (built for you). Use `graphify query "<question>"`, `graphify explain <node>`
   and `graphify affected <file>` to find the real folders, existing API functions and shared hot files. Do not commit graphify-out/.
+- System and factory maps: docs/architecture/system-architecture.json and docs/architecture/factory-workflow.json (Archify JSON; the .html next to each is the rendered view). Graph wins over maps when they disagree.
 
 Batch rules
 - Size 3: exactly 3 component tickets, NO data ticket, lanes: one `claude`, one `codex`, one `cursor`. Use ONLY API functions that already
