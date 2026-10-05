@@ -11,10 +11,12 @@ contract:
   - api.nags.create(args: {label: string}) -> Id<"nags">
   - api.nags.setEnabled(args: {nagId, enabled: boolean}) -> {success: true}
   - api.nags.remove(args: {nagId}) -> {success: true}
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-07 (nags API) -->
 
 FOR: Tempo Flow users who want reminders ("nags") in their own words
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
