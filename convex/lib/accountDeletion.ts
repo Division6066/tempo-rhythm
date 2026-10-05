@@ -10,6 +10,9 @@ export const USER_OWNED_TABLES = [
   "memories",
   "calendarEvents",
   "taskRepeatCfgs",
+  "dayPlans",
+  "timeBlocks",
+  "habitCheckIns",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];

@@ -15,11 +15,14 @@ import type * as brain_dump from "../brain_dump.js";
 import type * as calendar_events from "../calendar_events.js";
 import type * as coach from "../coach.js";
 import type * as conversations from "../conversations.js";
+import type * as dayPlans from "../dayPlans.js";
 import type * as goals from "../goals.js";
+import type * as habitCheckIns from "../habitCheckIns.js";
 import type * as habits from "../habits.js";
 import type * as http from "../http.js";
 import type * as lib_ai_errors from "../lib/ai_errors.js";
 import type * as lib_ai_router from "../lib/ai_router.js";
+import type * as lib_habitCheckInStreak from "../lib/habitCheckInStreak.js";
 import type * as lib_requireUser from "../lib/requireUser.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
@@ -27,6 +30,7 @@ import type * as notes from "../notes.js";
 import type * as revenuecat from "../revenuecat.js";
 import type * as streaks from "../streaks.js";
 import type * as tasks from "../tasks.js";
+import type * as timeBlocks from "../timeBlocks.js";
 import type * as users from "../users.js";
 
 import type {
@@ -43,11 +47,14 @@ declare const fullApi: ApiFromModules<{
   calendar_events: typeof calendar_events;
   coach: typeof coach;
   conversations: typeof conversations;
+  dayPlans: typeof dayPlans;
   goals: typeof goals;
+  habitCheckIns: typeof habitCheckIns;
   habits: typeof habits;
   http: typeof http;
   "lib/ai_errors": typeof lib_ai_errors;
   "lib/ai_router": typeof lib_ai_router;
+  "lib/habitCheckInStreak": typeof lib_habitCheckInStreak;
   "lib/requireUser": typeof lib_requireUser;
   memories: typeof memories;
   messages: typeof messages;
@@ -55,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   revenuecat: typeof revenuecat;
   streaks: typeof streaks;
   tasks: typeof tasks;
+  timeBlocks: typeof timeBlocks;
   users: typeof users;
 }>;
 
