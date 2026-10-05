@@ -174,7 +174,10 @@ function HabitDetailBody({
   const [savingName, setSavingName] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const toggleGeneration = useRef(0);
-  const habitStreakVersion = useRef(0);
+  const liveStreak = useRef({
+    currentStreak: habit.currentStreak,
+    longestStreak: habit.longestStreak,
+  });
 
   useEffect(() => {
     setPending((prev) => {
@@ -197,9 +200,12 @@ function HabitDetailBody({
   }, [checkIns]);
 
   useEffect(() => {
-    // Any live habit snapshot wins over a toggle response. Drop the override
-    // even when the numbers differ, so a slower response cannot stick.
-    habitStreakVersion.current += 1;
+    // The live habit query wins as soon as it moves, even when its streaks
+    // differ from a toggle response that has not landed yet.
+    liveStreak.current = {
+      currentStreak: habit.currentStreak,
+      longestStreak: habit.longestStreak,
+    };
     setStreak((prev) => {
       if (prev === undefined) {
         return prev;
@@ -235,7 +241,10 @@ function HabitDetailBody({
 
     const generation = toggleGeneration.current + 1;
     toggleGeneration.current = generation;
-    const habitVersionAtStart = habitStreakVersion.current;
+    const streaksAtStart = {
+      currentStreak: habit.currentStreak,
+      longestStreak: habit.longestStreak,
+    };
     const action = cell.checked
       ? undo({ habitId, localDate: cell.localDate })
       : check({ habitId, localDate: cell.localDate, source: "habits" });
@@ -245,7 +254,11 @@ function HabitDetailBody({
         if (generation !== toggleGeneration.current) {
           return;
         }
-        if (habitStreakVersion.current !== habitVersionAtStart) {
+        const live = liveStreak.current;
+        if (
+          live.currentStreak !== streaksAtStart.currentStreak ||
+          live.longestStreak !== streaksAtStart.longestStreak
+        ) {
           setStreak(undefined);
           return;
         }
