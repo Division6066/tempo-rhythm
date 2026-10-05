@@ -1,8 +1,7 @@
 // factory-release-pr (Phase J2). Opens or updates ONE PR integration → master.
 // Title: Release YYYY-MM-DD in Asia/Jerusalem. Body lists PRs merged into
 // integration since the master tip. Does not merge. Does not push to master.
-// github.token is intentional here. R15 prefers the Factory App for factory
-// ticket PRs. R5: Amit merges this release PR by hand.
+// Merges on public tempo use the GitHub merge queue.
 import { pathToFileURL } from "node:url";
 import { gh, repoParts, summary, linkedTickets } from "./gh-api.mjs";
 
@@ -37,7 +36,7 @@ export function renderReleaseBody({ date, masterSha, ahead, truncated, rows }) {
   const lines = [
     `## Release ${date} (Asia/Jerusalem)`,
     "",
-    "Amit merges this pull request by hand (R5). This workflow does not auto-merge and does not push to `master`.",
+    "This workflow does not merge and does not push to `master`. Merges on public tempo use the GitHub merge queue.",
     "Required checks stay required. This workflow does not change branch protection.",
     "",
     `Since master tip \`${masterSha}\`. Commits on \`integration\` not in \`master\`: ${ahead}${truncated ? " (compare API truncated the commit list)" : ""}.`,
@@ -51,7 +50,7 @@ export function renderReleaseBody({ date, masterSha, ahead, truncated, rows }) {
   }
   lines.push(
     "",
-    "Opened or updated by factory-release-pr using github.token. R15 prefers the Factory App for factory ticket PRs. This release PR is not a factory ticket PR.",
+    "Opened or updated by factory-release-pr.",
   );
   return `${lines.join("\n")}\n`;
 }

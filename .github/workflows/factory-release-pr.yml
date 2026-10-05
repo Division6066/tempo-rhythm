@@ -5,16 +5,13 @@ name: factory-release-pr
 # into integration since the master tip. If a Release PR is already open,
 # its body is updated. A second PR is not opened.
 #
-# Does not auto-merge. Does not push to master. Does not change branch
-# protection. Required checks on the release PR stay required.
+# Does not merge. Does not push to master. Does not change branch protection.
+# Required checks on the release PR stay required.
+# Merges on public tempo use the GitHub merge queue.
 #
-# R15: factory ticket PRs should be opened by the Factory GitHub App.
-# This release PR is not a factory ticket PR. github.token is used on purpose.
-# R5: Amit merges integration → master by hand.
-#
-# A PR opened with github.token does not trigger pull_request workflows
-# (GitHub's token recursion guard). That does not weaken required checks.
-# If those checks do not start, Amit re-runs them.
+# A pull request opened with the workflow GITHUB_TOKEN does not trigger
+# pull_request workflows (GitHub's token recursion guard). That does not
+# weaken required checks. If those checks do not start, re-run them.
 #
 # factory-nightly.yml is not modified. workflow_run below starts after that
 # workflow succeeds, once this file is on the default branch (integration).

@@ -3,7 +3,7 @@ name: deploy-live
 # Phase J2. Live deploy of Vercel project tempo-web and Convex prod
 # precious-wildcat-890, then smoke https://tempoflow.dev.
 #
-# Convex live rollback is Amit-only (R5). This workflow never runs it.
+# Convex live rollback is manual. This workflow never runs it.
 # Amit-only Convex rollback:
 # 1. Convex dashboard → production deployment precious-wildcat-890
 #    → Deployments → Promote the previous deployment.

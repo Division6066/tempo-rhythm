@@ -16,7 +16,7 @@ export const SMOKE_HEALTH_URL = "https://tempoflow.dev/api/health";
 export const VERCEL_CLI = "vercel@62.2.0";
 
 export const CONVEX_ROLLBACK_STEPS = [
-  "Convex live rollback is Amit-only (R5). This workflow does not run it.",
+  "Convex live rollback is manual. This workflow does not run it.",
   "1. Convex dashboard → production deployment precious-wildcat-890 → Deployments → Promote the previous deployment.",
   "2. Or check out the last known-good commit and run `npx convex deploy` with a deploy key whose target prefix is prod:precious-wildcat-890.",
   "3. Do not paste the deploy key into logs, chat, or the issue.",
