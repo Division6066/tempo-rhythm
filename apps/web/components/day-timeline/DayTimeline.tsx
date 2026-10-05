@@ -85,6 +85,18 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   const [mounted, setMounted] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // At most one block stays expanded after a tap; any press outside it collapses it.
+  const [tappedId, setTappedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tappedId === null) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const card = (event.target as Element | null)?.closest?.("[data-block-id]");
+      if (card?.getAttribute("data-block-id") !== tappedId) setTappedId(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [tappedId]);
 
   const todayLocalDate = toDateInputValue(new Date(bounds.startMs));
   const requestedDate = localDate ?? todayLocalDate;
@@ -301,6 +313,8 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
                 key={item.id}
                 onChangeStatus={changeStatus}
                 onSelect={onSelectBlock}
+                onTap={() => setTappedId(block._id)}
+                tapped={tappedId === block._id}
               />
             );
           })}
@@ -354,12 +368,16 @@ function BlockCard({
   busy,
   onSelect,
   onChangeStatus,
+  onTap,
+  tapped,
 }: {
   block: DayTimelineBlock;
   box: { top: number; height: number; left: string; width: string };
   busy: boolean;
   onSelect?: (block: DayTimelineBlock) => void;
   onChangeStatus: (block: DayTimelineBlock, status: BlockStatus) => void;
+  onTap: () => void;
+  tapped: boolean;
 }) {
   const range = formatRange(block.startMinute, block.durationMinutes);
   const skipped = block.status === "skipped";
@@ -367,9 +385,9 @@ function BlockCard({
   // Cards sit in their real slot so they never cover later cards. A short slot
   // cannot fit the actions, so the card grows over its neighbours while it is
   // hovered, focused or tapped, keeping Done / Let it go / Undo reachable.
+  // The tapped card is tracked by the parent so only one is ever expanded.
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [tapped, setTapped] = useState(false);
   const expanded = hovered || focused || tapped;
   const style = expanded
     ? { ...box, height: "auto", minHeight: box.height, zIndex: 30 }
@@ -378,18 +396,21 @@ function BlockCard({
   return (
     <article
       className={`absolute z-10 flex flex-col gap-1 overflow-hidden rounded-2xl border px-2 py-1 ${tint}${expanded ? " shadow-md" : ""}`}
+      data-block-id={block._id}
       data-expanded={expanded ? "true" : undefined}
       data-status={block.status}
       data-timeline-item
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           setFocused(false);
-          setTapped(false);
         }
       }}
       onFocus={() => setFocused(true)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onPointerEnter={(event) => {
+        // Touch has no reliable leave event, so only a mouse hover expands.
+        if (event.pointerType === "mouse") setHovered(true);
+      }}
+      onPointerLeave={() => setHovered(false)}
       style={style}
     >
       <button
@@ -397,7 +418,7 @@ function BlockCard({
         className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={(event) => {
           event.stopPropagation();
-          setTapped(true);
+          onTap();
           onSelect?.(block);
         }}
         type="button"
