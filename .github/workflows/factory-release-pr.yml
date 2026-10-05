@@ -1,0 +1,58 @@
+# Phase J2. Opens/updates ONE PR integration → master titled "Release <YYYY-MM-DD>" (Asia/Jerusalem).
+# Lists tickets merged since master tip. Does NOT merge (Amit / merge queue). No Factory App.
+name: factory-release-pr
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["factory-nightly"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: factory-release-pr
+  cancel-in-progress: false
+
+jobs:
+  release-pr:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+          ref: integration
+      - name: Open or update Release PR (integration → master)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          DATE=$(TZ=Asia/Jerusalem date +%F)
+          TITLE="Release ${DATE}"
+          # Commits on integration not in master
+          LIST=$(git log --oneline origin/master..origin/integration 2>/dev/null | head -80 || git log --oneline master..integration 2>/dev/null | head -80 || true)
+          BODY=$(printf '%s\n' "## Release ${DATE}" "" "Tickets / commits on \`integration\` not yet on \`master\`:" "" '```' "${LIST:-'(none listed)'}" '```' "" "Amit merges when ready (R5). Public tempo uses merge queue. Do not auto-merge from this workflow." "")
+          EXISTING=$(gh pr list -R "$GITHUB_REPOSITORY" --base master --head integration --state open --json number,title -q '.[] | select(.title|test("^Release ")) | .number' | head -1)
+          if [ -n "$EXISTING" ]; then
+            gh pr edit "$EXISTING" -R "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+            echo "Updated PR #$EXISTING"
+          else
+            # Prefer updating an open Release PR from any head that targets master
+            ALT=$(gh pr list -R "$GITHUB_REPOSITORY" --base master --state open --json number,title,headRefName -q '.[] | select(.title|test("^Release ")) | [.number,.headRefName] | @tsv' | head -1)
+            if [ -n "$ALT" ]; then
+              NUM=$(echo "$ALT" | cut -f1)
+              gh pr edit "$NUM" -R "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+              echo "Updated existing Release PR #$NUM"
+            else
+              gh pr create -R "$GITHUB_REPOSITORY" --base master --head integration --title "$TITLE" --body "$BODY" || {
+                echo "::warning::Could not open integration→master PR (branch protection / diverged). Create manually from the Actions summary."
+                echo "$BODY" >> "$GITHUB_STEP_SUMMARY"
+              }
+            fi
+          fi
