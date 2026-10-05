@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,14 +14,10 @@ type Status = "idle" | "saving" | "saved" | "error";
 export function ProfileForm() {
   const profile = useQuery(api.users.getProfile, {});
   const updateProfile = useMutation(api.users.updateProfile);
-  const [fullName, setFullName] = useState("");
+  // null draft = show server value; avoids empty flash + overwrite of in-progress edits (Bugbot).
+  const [draftName, setDraftName] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
-
-  const storedName = profile?.fullName ?? "";
-  useEffect(() => {
-    setFullName(storedName);
-  }, [storedName]);
 
   if (profile === undefined) {
     return <p aria-live="polite">Loading your profile…</p>;
@@ -29,6 +25,8 @@ export function ProfileForm() {
   if (profile === null) {
     return <p>Sign in to see and edit your profile.</p>;
   }
+
+  const fullName = draftName ?? profile.fullName ?? "";
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -42,6 +40,7 @@ export function ProfileForm() {
     setMessage("Saving…");
     try {
       await updateProfile({ userId: profile._id, fullName: result.fullName });
+      setDraftName(result.fullName ?? "");
       setStatus("saved");
       setMessage("Saved.");
     } catch {
@@ -67,7 +66,7 @@ export function ProfileForm() {
           id="profile-name"
           value={fullName}
           onChange={(e) => {
-            setFullName(e.target.value);
+            setDraftName(e.target.value);
             setStatus("idle");
             setMessage("");
           }}
