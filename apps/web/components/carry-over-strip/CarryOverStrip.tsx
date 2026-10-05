@@ -10,6 +10,8 @@ import { dayLabel, groupByLocalDay, todayDueAt } from "./carryOver";
 
 const INITIAL_ROWS = 5;
 
+type PendingAction = "complete" | "move";
+
 export function CarryOverStrip() {
   const { isAuthenticated } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
@@ -23,14 +25,15 @@ export function CarryOverStrip() {
   const [showAll, setShowAll] = useState(false);
   // Rows with a completion or move in flight. Kept until the row leaves the
   // list so a second tap cannot toggle a just-completed task back to todo.
-  const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
+  // The action kind is kept so only a completion shows the box as checked.
+  const [pending, setPending] = useState<ReadonlyMap<string, PendingAction>>(() => new Map());
 
-  const runOnce = (taskId: string, action: () => Promise<unknown>) => {
+  const runOnce = (taskId: string, kind: PendingAction, action: () => Promise<unknown>) => {
     if (pending.has(taskId)) return;
-    setPending((prev) => new Set(prev).add(taskId));
+    setPending((prev) => new Map(prev).set(taskId, kind));
     action().catch(() => {
       setPending((prev) => {
-        const next = new Set(prev);
+        const next = new Map(prev);
         next.delete(taskId);
         return next;
       });
@@ -53,16 +56,17 @@ export function CarryOverStrip() {
       </h2>
       <ul className="mt-3 space-y-2">
         {visible.map(({ task, dayStartMs }) => {
-          const isPending = pending.has(task._id);
+          const pendingAction = pending.get(task._id);
+          const isPending = pendingAction !== undefined;
           return (
             <li key={task._id} className="flex items-center gap-3">
               <input
                 type="checkbox"
                 className="h-4 w-4 shrink-0 accent-primary"
-                checked={isPending}
+                checked={pendingAction === "complete"}
                 disabled={isPending}
                 onChange={() => {
-                  runOnce(task._id, () => toggleCompletion({ taskId: task._id }));
+                  runOnce(task._id, "complete", () => toggleCompletion({ taskId: task._id }));
                 }}
                 aria-label={`Mark ${task.title} complete`}
               />
@@ -74,7 +78,7 @@ export function CarryOverStrip() {
                 variant="outline"
                 disabled={isPending}
                 onClick={() => {
-                  runOnce(task._id, () =>
+                  runOnce(task._id, "move", () =>
                     moveTaskToDay({ taskId: task._id, dueAt: todayDueAt(Date.now()) }),
                   );
                 }}
