@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
+  buildTrackingDashboard,
+  completeTrackingSession,
   formatSessionMinutes,
   parseTrackingLogs,
   trackingLogsStorageKey,
@@ -62,7 +64,12 @@ export function TrackingDashboard() {
     } catch {
       return;
     }
-    if (remaining.length === 0) {
+    // Normalize the old logs (trimmed labels, oldest first) with the session-log helper.
+    remaining = remaining.reduce<typeof remaining>(
+      (logs, log) => completeTrackingSession(logs, log).logs,
+      []
+    );
+    if (buildTrackingDashboard(remaining).chart.points.length === 0) {
       return;
     }
     void (async () => {
