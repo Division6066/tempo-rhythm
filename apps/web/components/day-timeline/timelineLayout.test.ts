@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { layoutItems } from "./timelineLayout";
+import { layoutItems, localMinuteOfDay } from "./timelineLayout";
 
 describe("layoutItems", () => {
   test("single block sits in one column", () => {
@@ -56,5 +56,24 @@ describe("layoutItems", () => {
     expect(item?.height).toBe(15);
     expect(item?.durationMinutes).toBe(15);
     expect(item?.top).toBe(600);
+  });
+});
+
+describe("localMinuteOfDay", () => {
+  test("uses the local clock, not elapsed time since midnight", () => {
+    expect(localMinuteOfDay(new Date(2026, 9, 5, 9, 30).getTime())).toBe(570);
+    expect(localMinuteOfDay(new Date(2026, 9, 5, 0, 0).getTime())).toBe(0);
+    expect(localMinuteOfDay(new Date(2026, 9, 5, 23, 59).getTime())).toBe(1439);
+  });
+
+  test("stays on the clock across common DST transition dates", () => {
+    for (const [m, d] of [
+      [2, 8],
+      [2, 29],
+      [9, 25],
+      [10, 1],
+    ] as const) {
+      expect(localMinuteOfDay(new Date(2026, m, d, 14, 0).getTime())).toBe(840);
+    }
   });
 });

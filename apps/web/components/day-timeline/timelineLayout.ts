@@ -4,6 +4,16 @@ export const DAY_MINUTES = 1440;
 /** Shortest block or event the timeline will draw. */
 export const MIN_RENDERED_MINUTES = 15;
 
+/**
+ * Local clock minute (0-1439) of an instant. The hour grid, now marker and time
+ * blocks all use local clock minutes, so events must too: elapsed time since
+ * midnight drifts by an hour after a DST change.
+ */
+export function localMinuteOfDay(ms: number): number {
+  const d = new Date(ms);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
 export type TimelineLayoutInput = {
   id: string;
   kind: string;
