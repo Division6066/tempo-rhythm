@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { splitByStatus, validatePhraseText } from "./phraseInput";
+import {
+  isCurrentNagRequest,
+  localForNag,
+  splitByStatus,
+  suggestSectionMessage,
+  validatePhraseText,
+} from "./phraseInput";
 
 describe("validatePhraseText", () => {
   test("empty", () => {
@@ -40,6 +46,45 @@ describe("validatePhraseText", () => {
       ok: true,
       text: "a".repeat(140),
     });
+  });
+});
+
+describe("localForNag", () => {
+  test("keeps local state for the same nag", () => {
+    const local = {
+      draft: "On the counter",
+      error: null,
+      suggestions: [{ key: "s1", text: "Meds are out" }],
+    };
+    expect(localForNag("nag-a", "nag-a", local)).toBe(local);
+  });
+
+  test("clears draft and suggestions when the nag changes", () => {
+    expect(
+      localForNag("nag-a", "nag-b", {
+        draft: "On the counter",
+        error: "That didn't save. Try again?",
+        suggestions: [{ key: "s1", text: "Meds are out" }],
+      })
+    ).toEqual({ draft: "", error: null, suggestions: [] });
+  });
+});
+
+describe("isCurrentNagRequest", () => {
+  test("drops a result that belongs to a nag the editor has left", () => {
+    expect(isCurrentNagRequest("nag-a", "nag-a")).toBe(true);
+    expect(isCurrentNagRequest("nag-a", "nag-b")).toBe(false);
+  });
+});
+
+describe("suggestSectionMessage", () => {
+  const hint = "Add a phrase of your own first so suggestions can come from your words.";
+
+  test("asks for own words only when there is nothing to derive from", () => {
+    expect(suggestSectionMessage(false, 0)).toBe(hint);
+    expect(suggestSectionMessage(true, 0)).toBeNull();
+    expect(suggestSectionMessage(true, 2)).toBeNull();
+    expect(suggestSectionMessage(false, 1)).toBeNull();
   });
 });
 

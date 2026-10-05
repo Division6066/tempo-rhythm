@@ -1,18 +1,23 @@
 "use client";
 
 import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useId, useRef, useState, type FormEvent } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { splitByStatus, validatePhraseText } from "./phraseInput";
+import {
+  isCurrentNagRequest,
+  localForNag,
+  splitByStatus,
+  suggestSectionMessage,
+  validatePhraseText,
+} from "./phraseInput";
 
 const SAVE_ERROR = "That didn't save. Try again?";
 const SUGGEST_ERROR = "Suggestions didn't come through. Try again?";
-const EMPTY_SUGGEST = "Add a phrase of your own first so suggestions can come from your words.";
 
 type DraftSuggestion = { key: string; text: string };
 
@@ -62,21 +67,43 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
 
   const inputId = useId();
   const errorId = useId();
+  const [boundNagId, setBoundNagId] = useState(nagId);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<DraftSuggestion[]>([]);
-  const [didSuggest, setDidSuggest] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const keyRef = useRef(0);
   const lock = useRef(false);
+  const activeNagRef = useRef(nagId);
+  activeNagRef.current = nagId;
+
+  const local = { draft, error, suggestions };
+  const nextLocal = localForNag(boundNagId, nagId, local);
+  if (nextLocal !== local) {
+    setBoundNagId(nagId);
+    setDraft(nextLocal.draft);
+    setError(nextLocal.error);
+    setSuggestions(nextLocal.suggestions);
+    setBusyKey(null);
+    lock.current = false;
+  }
 
   const nag = nags?.find((row) => row._id === nagId);
   const grouped = splitByStatus(nag?.phrases ?? []);
   const hasOwnWords = grouped.accepted.some((phrase) => phrase.source === "user");
-  const showEmptySuggest = suggestions.length === 0 && (!hasOwnWords || didSuggest);
+  const suggestHint = suggestSectionMessage(hasOwnWords, nextLocal.suggestions.length);
   const busy = busyKey !== null;
 
-  async function runLocked(key: string, fallback: string, work: () => Promise<void>) {
+  function stillOnNag(requestNagId: string) {
+    return isCurrentNagRequest(requestNagId, activeNagRef.current);
+  }
+
+  async function runLocked(
+    key: string,
+    requestNagId: string,
+    fallback: string,
+    work: () => Promise<void>
+  ) {
     if (lock.current) return;
     lock.current = true;
     setBusyKey(key);
@@ -84,8 +111,11 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
     try {
       await work();
     } catch (err) {
-      setError(errorText(err, fallback));
-    } finally {
+      if (stillOnNag(requestNagId)) {
+        setError(errorText(err, fallback));
+      }
+    }
+    if (stillOnNag(requestNagId)) {
       lock.current = false;
       setBusyKey(null);
     }
@@ -99,30 +129,36 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
       return;
     }
     const text = check.text;
-    void runLocked("add-own", SAVE_ERROR, async () => {
-      await addPhrase({ nagId, text, source: "user" });
+    const id = nagId;
+    void runLocked("add-own", id, SAVE_ERROR, async () => {
+      await addPhrase({ nagId: id, text, source: "user" });
+      if (!stillOnNag(id)) return;
       setDraft("");
     });
   }
 
   function onSuggest() {
-    void runLocked("suggest", SUGGEST_ERROR, async () => {
-      const result = await proposePhrases({ nagId });
-      setDidSuggest(true);
+    const id = nagId;
+    void runLocked("suggest", id, SUGGEST_ERROR, async () => {
+      const result = await proposePhrases({ nagId: id });
+      if (!stillOnNag(id)) return;
       setSuggestions(
         result.proposals.map((text) => {
           keyRef.current += 1;
           return { key: `suggest-${keyRef.current}`, text };
-        }),
+        })
       );
     });
   }
 
   function onAcceptSuggestion(item: DraftSuggestion) {
-    void runLocked(item.key, SAVE_ERROR, async () => {
-      const { phraseId } = await addPhrase({ nagId, text: item.text, source: "derived" });
-      setSuggestions((prev) => prev.filter((row) => row.key !== item.key));
-      await decidePhrase({ nagId, phraseId, decision: "accept" });
+    const id = nagId;
+    void runLocked(item.key, id, SAVE_ERROR, async () => {
+      const { phraseId } = await addPhrase({ nagId: id, text: item.text, source: "derived" });
+      if (stillOnNag(id)) {
+        setSuggestions((prev) => prev.filter((row) => row.key !== item.key));
+      }
+      await decidePhrase({ nagId: id, phraseId, decision: "accept" });
     });
   }
 
@@ -132,8 +168,9 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
   }
 
   function onDecideSaved(phraseId: string, decision: "accept" | "reject") {
-    void runLocked(phraseId, SAVE_ERROR, async () => {
-      await decidePhrase({ nagId, phraseId, decision });
+    const id = nagId;
+    void runLocked(phraseId, id, SAVE_ERROR, async () => {
+      await decidePhrase({ nagId: id, phraseId, decision });
     });
   }
 
@@ -174,7 +211,10 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
     <Card className="max-w-xl">
       <CardHeader>
         <CardTitle>
-          <h2 id="nag-phrases-heading" className="font-semibold text-2xl leading-none tracking-tight">
+          <h2
+            id="nag-phrases-heading"
+            className="font-semibold text-2xl leading-none tracking-tight"
+          >
             {nag.label}
           </h2>
         </CardTitle>
@@ -188,14 +228,14 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
           <Input
             id={inputId}
             name="phrase"
-            value={draft}
+            value={nextLocal.draft}
             onChange={(event) => {
               setDraft(event.target.value);
               setError(null);
             }}
             placeholder="In your own words"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
+            aria-invalid={nextLocal.error ? true : undefined}
+            aria-describedby={nextLocal.error ? errorId : undefined}
             disabled={busy}
             autoComplete="off"
           />
@@ -207,9 +247,9 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
               Suggest from my words
             </Button>
           </div>
-          {error ? (
+          {nextLocal.error ? (
             <p id={errorId} role="alert" className="text-sm text-destructive">
-              {error}
+              {nextLocal.error}
             </p>
           ) : null}
         </form>
@@ -218,12 +258,10 @@ export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
           <h3 id="nag-suggested-heading" className="font-medium text-sm text-foreground">
             Suggested
           </h3>
-          {showEmptySuggest ? (
-            <p className="text-sm text-muted-foreground">{EMPTY_SUGGEST}</p>
-          ) : null}
-          {suggestions.length > 0 ? (
+          {suggestHint ? <p className="text-sm text-muted-foreground">{suggestHint}</p> : null}
+          {nextLocal.suggestions.length > 0 ? (
             <ul className="flex flex-col gap-2">
-              {suggestions.map((item) => (
+              {nextLocal.suggestions.map((item) => (
                 <ChoiceRow
                   key={item.key}
                   text={item.text}
