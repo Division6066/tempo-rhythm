@@ -169,19 +169,19 @@ class TestNode {
     return this.childNodes[this.childNodes.length - 1] ?? null;
   }
 
-  get nextSibling() {
+  get nextSibling(): TestNode | null {
     if (!this.parentNode) return null;
     const index = this.parentNode.childNodes.indexOf(this);
     return this.parentNode.childNodes[index + 1] ?? null;
   }
 
-  get previousSibling() {
+  get previousSibling(): TestNode | null {
     if (!this.parentNode) return null;
     const index = this.parentNode.childNodes.indexOf(this);
     return this.parentNode.childNodes[index - 1] ?? null;
   }
 
-  get parentElement() {
+  get parentElement(): TestNode | null {
     return this.parentNode?.nodeType === 1 ? this.parentNode : null;
   }
 
