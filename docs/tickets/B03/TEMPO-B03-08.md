@@ -12,10 +12,12 @@ contract:
   - api.memory.remember(args: {content: string, sector?: Sector}) -> Id<"memories">
   - api.memory.forget(args: {memoryId}) -> {success: true}
   - api.memory.context(args: {limit?: number}) -> {text: string, count: number}
-overlap_test: false
+overlap_test: true
 expected_merge: clean
 hold: false
 ---
+
+<!-- overlap: overlap pair with TEMPO-B03-09 (memory settings) -->
 
 FOR: Tempo Flow users who want to see and control what Tempo remembers about them
 WHEN: batch B03, after TEMPO-B03-01 (data ticket)
