@@ -1,0 +1,71 @@
+/**
+ * Vitest and Testing Library are not dependencies in this repo, and package.json
+ * is outside this ticket's scope. bun:test plus react-dom/server covers the
+ * render states: skipped query, grouped links, and "No matches".
+ */
+import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+
+let queryParam = "";
+let result: unknown;
+const useQueryCalls: unknown[][] = [];
+
+mock.module("convex/react", () => ({
+  useQuery: (...args: unknown[]) => {
+    useQueryCalls.push(args);
+    return args[1] === "skip" ? undefined : result;
+  },
+}));
+mock.module("next/navigation", () => ({
+  useRouter: () => ({ replace: () => {} }),
+  usePathname: () => "/search",
+  useSearchParams: () => new URLSearchParams(queryParam ? `q=${queryParam}` : ""),
+}));
+mock.module("next/link", () => ({
+  default: (props: { href: string; children?: unknown }) =>
+    createElement("a", { href: props.href }, props.children as never),
+}));
+mock.module("@/convex/_generated/api", () => ({
+  api: { search: { all: "search.all" } },
+}));
+
+const { SearchScreen } = await import("./SearchScreen");
+const render = () => renderToStaticMarkup(createElement(SearchScreen));
+
+beforeEach(() => {
+  queryParam = "";
+  result = undefined;
+  useQueryCalls.length = 0;
+});
+
+describe("SearchScreen", () => {
+  test("skips the query and shows a prompt when empty", () => {
+    const html = render();
+    expect(useQueryCalls.at(-1)?.[1]).toBe("skip");
+    expect(html).toContain("Type to search");
+  });
+
+  test("reads ?q= and renders grouped results with links", () => {
+    queryParam = "plan";
+    result = {
+      notes: [{ _id: "n1", title: "Plan note", snippet: "a plan" }],
+      tasks: [{ _id: "t1", title: "Plan task", status: "todo" }],
+      habits: [],
+      goals: [{ _id: "g1", title: "Plan goal" }],
+    };
+    const html = render();
+    expect(useQueryCalls.at(-1)?.[1]).toEqual({ query: "plan" });
+    expect(html).toContain("Notes (1)");
+    expect(html).toContain('href="/notes/n1"');
+    expect(html).toContain('href="/tasks"');
+    expect(html).toContain('href="/goals"');
+    expect(html).not.toContain("Habits");
+  });
+
+  test("shows No matches when every group is empty", () => {
+    queryParam = "zzz";
+    result = { notes: [], tasks: [], habits: [], goals: [] };
+    expect(render()).toContain("No matches");
+  });
+});
