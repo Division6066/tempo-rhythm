@@ -21,6 +21,21 @@ export function CarryOverStrip() {
   const moveTaskToDay = useMutation(api.dayPlans.moveTaskToDay);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
   const [showAll, setShowAll] = useState(false);
+  // Rows with a completion or move in flight. Kept until the row leaves the
+  // list so a second tap cannot toggle a just-completed task back to todo.
+  const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
+
+  const runOnce = (taskId: string, action: () => Promise<unknown>) => {
+    if (pending.has(taskId)) return;
+    setPending((prev) => new Set(prev).add(taskId));
+    action().catch(() => {
+      setPending((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+    });
+  };
 
   if (!tasks || tasks.length === 0) return null;
 
@@ -37,31 +52,38 @@ export function CarryOverStrip() {
         Still open from earlier days
       </h2>
       <ul className="mt-3 space-y-2">
-        {visible.map(({ task, dayStartMs }) => (
-          <li key={task._id} className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              className="h-4 w-4 shrink-0 accent-primary"
-              checked={false}
-              onChange={() => {
-                void toggleCompletion({ taskId: task._id });
-              }}
-              aria-label={`Mark ${task.title} complete`}
-            />
-            <span className="min-w-0 flex-1 truncate text-sm text-foreground">{task.title}</span>
-            <span className="text-xs text-muted-foreground">{dayLabel(dayStartMs)}</span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                void moveTaskToDay({ taskId: task._id, dueAt: todayDueAt(Date.now()) });
-              }}
-            >
-              Move to today
-            </Button>
-          </li>
-        ))}
+        {visible.map(({ task, dayStartMs }) => {
+          const isPending = pending.has(task._id);
+          return (
+            <li key={task._id} className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                className="h-4 w-4 shrink-0 accent-primary"
+                checked={isPending}
+                disabled={isPending}
+                onChange={() => {
+                  runOnce(task._id, () => toggleCompletion({ taskId: task._id }));
+                }}
+                aria-label={`Mark ${task.title} complete`}
+              />
+              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{task.title}</span>
+              <span className="text-xs text-muted-foreground">{dayLabel(dayStartMs)}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => {
+                  runOnce(task._id, () =>
+                    moveTaskToDay({ taskId: task._id, dueAt: todayDueAt(Date.now()) }),
+                  );
+                }}
+              >
+                Move to today
+              </Button>
+            </li>
+          );
+        })}
       </ul>
       {hiddenCount > 0 ? (
         <Button
