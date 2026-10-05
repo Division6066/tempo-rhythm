@@ -4,7 +4,7 @@
 // Modes (repo/org variable FACTORY_CODEX_MODE, default "issue"):
 //   issue  - A: comment "@codex <lane prompt>" on the ticket issue. UNKNOWN whether this starts a
 //            task that opens a PR (Phase 07 rung 1 tests it).
-//   pr     - B: the Factory App opens a draft PR "[<ticket>] scaffold" on factory/<ticket> (one empty
+//   pr     - B: the lane opens a draft PR "[<ticket>] scaffold" on t/<issue>-<slug> (one empty
 //            commit on integration), and the @codex comment goes on that PR.
 //   manual - C: nothing is posted; Amit starts Codex from the Codex web app. The dispatcher gives
 //            Codex's share to the other lanes (next-tickets.mjs reads the same variable).
@@ -12,7 +12,7 @@
 // Env: GH_TOKEN (Factory App token for mode pr; APP_OK=true when it is one), MENTION_TOKEN (CODEX_MENTION_PAT),
 //      GITHUB_REPOSITORY, ISSUE_NUMBER, CODEX_MODE, FIX_NOTE.
 import { gh, repoParts, summary } from "./gh-api.mjs";
-import { frontMatter, renderLanePrompt, findTicketPR, BASE, assertDispatchable } from "./factory-lib.mjs";
+import { frontMatter, renderLanePrompt, findTicketPR, BASE, assertDispatchable, ticketBranch } from "./factory-lib.mjs";
 
 const API = process.env.GITHUB_API_URL || "https://api.github.com";
 async function postAsAmit(owner, repo, n, body) {
@@ -49,7 +49,7 @@ if (process.env.FIX_NOTE) {
 let target = n;
 if (mode === "pr") {
   if (!pr) {
-    const branch = `factory/${fm.ticket}`;
+    const branch = ticketBranch(n, fm.ticket);
     const base = await gh(`/repos/${owner}/${repo}/git/ref/heads/${BASE}`);
     const head = await gh(`/repos/${owner}/${repo}/git/commits/${base.object.sha}`);
     const commit = await gh(`/repos/${owner}/${repo}/git/commits`, { method: "POST", body: { message: `[${fm.ticket}] scaffold (empty commit for the Codex lane)`, tree: head.tree.sha, parents: [base.object.sha] } });

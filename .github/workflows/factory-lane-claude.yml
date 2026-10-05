@@ -1,7 +1,7 @@
 name: factory-lane-claude
 
 # Phase 04 Step 5a. Claude lane: builds one ticket with anthropics/claude-code-action@v1 in
-# automation mode (a `prompt` is set), on branch factory/<ticket>, and opens ONE PR into
+# automation mode (a `prompt` is set), on branch t/<issue-number>-<slug>, and opens ONE PR into
 # integration. The PR is opened with the Claude GitHub App token the action mints (OIDC), not
 # GITHUB_TOKEN, so CI runs (R15). Model: vars.FACTORY_MODEL_CLAUDE.
 # Dispatched only by factory-dispatch (or factory-failures for a retry, with fix_note).
@@ -67,7 +67,7 @@ jobs:
           ISSUE_NUMBER: ${{ inputs.issue_number }}
           FIX_NOTE: ${{ inputs.fix_note }}
         run: node scripts/factory/lane-context.mjs
-      - name: Branch factory/<ticket> (or the existing PR branch on a retry)
+      - name: Branch t/<issue>-<slug> (or the existing PR branch on a retry)
         env:
           BRANCH: ${{ steps.ctx.outputs.branch }}
         run: |

@@ -5,6 +5,7 @@ import { order } from "./merge-train.mjs";
 import { classify } from "./failures.mjs";
 import { labelsFor } from "./label-pr.mjs";
 import { agentBody } from "./cursor-lane.mjs";
+import { ticketBranch } from "./factory-lib.mjs";
 import { plan } from "./promote.mjs";
 import { validate } from "./validate-tickets.mjs";
 import { isTicketPath, MARKER } from "./tickets-lib.mjs";
@@ -62,6 +63,9 @@ t("failure classification", () => {
 t("PR labels from front-matter; data never held", () => {
   assert.deepEqual(labelsFor({ type: "data", batch: "B02", hold: "true" }), ["factory", "ticket:data", "batch:B02"]);
   assert.deepEqual(labelsFor({ type: "component", batch: "B02", hold: "true", overlap_test: "true" }), ["factory", "ticket:component", "batch:B02", "test:overlap", "hold:stress-test"]);
+});
+t("ticket branch is t/<issue>-<slug>", () => {
+  assert.equal(ticketBranch(42, "TEMPO-B02-04"), "t/42-tempo-b02-04");
 });
 t("Cursor API body (v1)", () => {
   const b = agentBody({ prompt: "p", model: "grok-4.7", params: "fast=true", repoUrl: "https://github.com/o/r", ref: "factory/X-1", prUrl: "", name: "[X-1] t" });
