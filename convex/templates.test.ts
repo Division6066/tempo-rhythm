@@ -68,8 +68,18 @@ function makeFakeCtx({
     },
     patch: async (id: string, patch: Record<string, unknown>) => {
       const [tableName] = id.split(":");
-      const existing = table(tableName).get(id);
-      table(tableName).set(id, { ...existing, ...patch });
+      const existing = table(tableName).get(id) ?? {};
+      const next: Record<string, unknown> = { ...existing };
+      // Match Convex: an undefined patch value removes the field.
+      for (const key of Object.keys(patch)) {
+        const value = patch[key];
+        if (value === undefined) {
+          delete next[key];
+        } else {
+          next[key] = value;
+        }
+      }
+      table(tableName).set(id, next);
     },
     query: (tableName: string) => matchQuery(Array.from(table(tableName).values())),
   };
@@ -212,6 +222,11 @@ describe("templates", () => {
 
     await handler(templates.update)(ctx, { templateId, name: "Updated" });
     expect((await ctx.db.get(templateId)).name).toBe("Updated");
+
+    await handler(templates.update)(ctx, { templateId, description: "   " });
+    expect((await ctx.db.get(templateId)).description).toBeUndefined();
+    await handler(templates.update)(ctx, { templateId, description: "  Kept  " });
+    expect((await ctx.db.get(templateId)).description).toBe("Kept");
 
     const otherCtx = makeFakeCtx({ identity: { subject: userB._id }, users: [userA, userB] });
     otherCtx.db = ctx.db;

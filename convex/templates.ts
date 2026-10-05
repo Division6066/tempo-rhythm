@@ -237,9 +237,8 @@ export const update = mutation({
     }
     if (args.description !== undefined) {
       const description = args.description.trim();
-      if (description) {
-        patch.description = description;
-      }
+      // Convex db.patch removes a field when its patch value is undefined.
+      patch.description = description.length > 0 ? description : undefined;
     }
     if (args.periodType !== undefined) {
       patch.periodType = args.periodType;
