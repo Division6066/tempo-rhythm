@@ -1,7 +1,7 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,12 @@ export function MemoryManager() {
   );
   const preview = useQuery(api.memory.context, isAuthenticated && showContext ? {} : "skip");
 
-  const raw = searching ? recalled : listed;
+  const current = searching ? recalled : listed;
+  // Keep the last results on screen while args change, so the page chrome stays mounted.
+  const lastRaw = useRef(current);
+  if (current !== undefined) lastRaw.current = current;
+  const raw = current ?? lastRaw.current;
+  const refreshing = isAuthenticated && current === undefined && raw !== undefined;
   const rows =
     raw === undefined
       ? undefined
@@ -112,7 +117,11 @@ export function MemoryManager() {
   if (!isAuthenticated || rows === undefined) return null;
 
   return (
-    <section aria-labelledby="memory-heading" className="max-w-2xl space-y-6">
+    <section
+      aria-labelledby="memory-heading"
+      aria-busy={refreshing || undefined}
+      className="max-w-2xl space-y-6"
+    >
       <h2 id="memory-heading" className="font-heading text-xl font-semibold text-foreground">
         What Tempo remembers
       </h2>
@@ -149,6 +158,10 @@ export function MemoryManager() {
           </select>
         </div>
       </div>
+
+      {refreshing ? (
+        <output className="block text-xs text-muted-foreground">Updating.</output>
+      ) : null}
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
