@@ -44,9 +44,17 @@ async function liveCheckInsForHabit(ctx: MutationCtx, habitId: Id<"habits">) {
 		.collect();
 }
 
-/** Recompute and patch the habit's streak cache from its live check-ins. */
-async function refreshHabitCache(ctx: MutationCtx, habit: Doc<"habits">, asOfLocalDate: string) {
+/**
+ * Recompute and patch the habit's streak cache from its live check-ins.
+ * Always evaluates "current" relative to UTC today (not the toggled localDate),
+ * so historical grid edits cannot corrupt the live streak. Preserves
+ * longestStreak / lastCompletedAt written by habits.completeToday when
+ * check-in rows would otherwise wipe them (dual-writer safe).
+ */
+async function refreshHabitCache(ctx: MutationCtx, habit: Doc<"habits">, _toggledLocalDate: string) {
 	const rows = await liveCheckInsForHabit(ctx, habit._id);
+	// Choice (Bugbot E1 fix): as-of = UTC today, never the edited historical day.
+	const asOfLocalDate = new Date().toISOString().slice(0, 10);
 	const streaks = computeHabitCheckInStreaks(
 		rows.map((r) => r.localDate),
 		asOfLocalDate,
@@ -57,11 +65,15 @@ async function refreshHabitCache(ctx: MutationCtx, habit: Doc<"habits">, asOfLoc
 	);
 	await ctx.db.patch(habit._id, {
 		currentStreak: streaks.currentStreak,
-		longestStreak: streaks.longestStreak,
-		lastCompletedAt: latest,
+		longestStreak: Math.max(streaks.longestStreak, habit.longestStreak ?? 0),
+		lastCompletedAt: latest ?? habit.lastCompletedAt,
 		updatedAt: Date.now(),
 	});
-	return streaks;
+	return {
+		currentStreak: streaks.currentStreak,
+		longestStreak: Math.max(streaks.longestStreak, habit.longestStreak ?? 0),
+		lastLocalDate: streaks.lastLocalDate,
+	};
 }
 
 export const listForDate = query({
