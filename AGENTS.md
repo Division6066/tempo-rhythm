@@ -17,6 +17,26 @@ Every tool is a slot. `factory/SLOTS.md` says which tool fills each slot in this
 Use the exact commands under **Commands** in `factory/SLOTS.md` (install, dev, test, lint, typecheck, build, e2e).
 If a command you need is missing there, report `blocked: missing command <name>`. Don't invent one.
 
+## Testing (Codex)
+For Codex cloud tasks (for example `@codex` on a PR). The commands match **Commands** in `factory/SLOTS.md` and the `ci` jobs in `.github/workflows/ci.yml`.
+The environment setup script has already run `bun install` and installed Chromium. The agent phase may have no internet.
+
+Before you finish, run all of these from the repo root, in order. Run every step even if an earlier one fails:
+1. `bun --version` (expect `1.3.9`) and `bun install --frozen-lockfile`
+2. `bun run lint`
+3. `bun run typecheck`
+4. `bun run test`
+5. `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices`
+6. `CI=1 bunx playwright test --reporter=line`. `playwright.config.ts` starts the web dev server on `localhost:3000` with mock values (placeholder Convex URL, E2E auth bypass). Tests that need `TEMPO_E2E_STORAGE_STATE` or `PLAYWRIGHT_BASE_URL` skip; that is expected. Google Fonts download warnings are expected offline.
+7. `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build`. A clean build downloads Google Fonts. If it fails only on `fonts.googleapis.com`, report `UNKNOWN: build (Google Fonts blocked)`. That is not a code failure.
+
+Don't:
+- set `PLAYWRIGHT_BASE_URL`, or run tests against a preview or live URL;
+- use real keys, or run `convex dev`, `convex deploy` or any `convex:*` script;
+- edit test config, CI files or scan baselines, or skip tests, to get green.
+
+Report the results in the PR body (or your final message when you're not opening a PR) under `Test results (Codex sandbox)`: each command with pass, fail or skip counts, plus the last 20 lines of any failure. Anything you could not run goes in as `UNKNOWN: <command> (<reason>)`.
+
 ## Layout
 - `packages/backend` — schema and backend functions. Only a batch's backend ticket edits this.
 - In this repo the backend folder is the one named in SLOTS.md (tempo: convex/).
