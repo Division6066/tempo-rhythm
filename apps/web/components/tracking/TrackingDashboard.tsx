@@ -27,7 +27,9 @@ import {
 type PendingUndo = { focusBlockId: Id<"focusBlocks">; undoUntilMs: number };
 
 // Users whose legacy localStorage import is running in this tab (survives remounts of /tracking).
-const importsInFlight = new Set<string>();
+const importsInFlight = new Map<string, Promise<void>>();
+// focusBlocks.create accepts at most 8 hours; the old local form allowed longer sessions.
+const MAX_IMPORT_DURATION_MS = 8 * 60 * 60 * 1000;
 
 export function TrackingDashboard() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
@@ -68,10 +70,14 @@ export function TrackingDashboard() {
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const migratedFor = useRef<string | null>(null);
+  const [importRetry, setImportRetry] = useState(0);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const undoingRef = useRef(false);
   const userId = profile?._id;
 
   // One-time import of logs the old localStorage version saved. Each log leaves the stored list
   // once its create succeeds, so a failed run can be retried without duplicates.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: importRetry re-runs the import after another mount's run settles.
   useEffect(() => {
     if (!userId || migratedFor.current === userId) {
       return;
@@ -94,10 +100,13 @@ export function TrackingDashboard() {
     }
     // One import at a time per user: across remounts in this tab (module-level set) and across tabs
     // (Web Locks, when the browser has them). A run that can't get the lock retries on the next visit.
-    if (importsInFlight.has(userId)) {
+    const inFlight = importsInFlight.get(userId);
+    if (inFlight) {
+      // Another mount's import is running. Not done yet: look again when it settles (it may fail).
+      migratedFor.current = null;
+      void inFlight.then(() => setImportRetry((n) => n + 1));
       return;
     }
-    importsInFlight.add(userId);
     const runImport = async () => {
       // Re-read inside the lock: another tab may already have imported some or all logs.
       try {
@@ -105,24 +114,33 @@ export function TrackingDashboard() {
       } catch {
         return;
       }
-      try {
-        for (const log of [...remaining]) {
-          const durationMs = Math.max(1, Math.round(log.durationMinutes * 60_000));
+      // One failing log never blocks the rest: it stays in localStorage and the next visit retries it.
+      let failed = false;
+      for (const log of [...remaining]) {
+        const durationMs = Math.min(
+          MAX_IMPORT_DURATION_MS,
+          Math.max(1, Math.round(log.durationMinutes * 60_000))
+        );
+        try {
           await createBlock({
             startedAtMs: log.completedAt - durationMs,
             durationMs,
             label: log.intention,
           });
-          remaining = remaining.filter((item) => item.id !== log.id);
-          localStorage.setItem(key, JSON.stringify(remaining));
+        } catch {
+          failed = true;
+          continue;
         }
-        localStorage.removeItem(key);
-      } catch {
-        // Keep what is left; the next visit tries again.
+        remaining = remaining.filter((item) => item.id !== log.id);
+        localStorage.setItem(key, JSON.stringify(remaining));
+      }
+      if (failed) {
         migratedFor.current = null;
+      } else {
+        localStorage.removeItem(key);
       }
     };
-    void (async () => {
+    const run = (async () => {
       try {
         const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
         if (locks) {
@@ -140,7 +158,8 @@ export function TrackingDashboard() {
         importsInFlight.delete(userId);
       }
     })();
-  }, [userId, createBlock]);
+    importsInFlight.set(userId, run);
+  }, [userId, createBlock, importRetry]);
 
   useEffect(() => {
     if (!pendingUndo) {
@@ -220,16 +239,22 @@ export function TrackingDashboard() {
   };
 
   const undoDelete = async () => {
-    if (!pendingUndo) {
+    if (!pendingUndo || undoingRef.current) {
       return;
     }
+    undoingRef.current = true;
+    setIsUndoing(true);
     try {
       const result = await restoreBlock({ focusBlockId: pendingUndo.focusBlockId });
       setMessage(result.success ? null : "The undo window has passed.");
+      setPendingUndo(null);
     } catch {
-      setMessage("Could not restore that block.");
+      // Keep the Undo action (until its window ends) so a network failure can be retried.
+      setMessage("Could not restore that block. Try Undo again.");
+    } finally {
+      undoingRef.current = false;
+      setIsUndoing(false);
     }
-    setPendingUndo(null);
   };
 
   return (
@@ -289,7 +314,13 @@ export function TrackingDashboard() {
         {pendingUndo ? (
           <p className="flex items-center gap-3 text-sm text-foreground">
             Focus block removed.
-            <Button type="button" variant="outline" size="sm" onClick={() => void undoDelete()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUndoing}
+              onClick={() => void undoDelete()}
+            >
               Undo
             </Button>
           </p>
