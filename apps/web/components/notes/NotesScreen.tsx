@@ -209,9 +209,12 @@ type SaveState = "idle" | "saving" | "saved";
 function NoteEditor({ noteId }: { noteId: string }) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
+  // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
+  // During sign-in getProfile resolves safely while the user record is being created.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const note = useQuery(
     api.notes.getSafe,
-    isAuthenticated ? { noteId } : "skip",
+    isAuthenticated && profile != null ? { noteId } : "skip",
   );
   const updateNote = useMutation(api.notes.update);
   const togglePin = useMutation(api.notes.togglePin);
@@ -297,14 +300,16 @@ function NoteEditor({ noteId }: { noteId: string }) {
     const result = await restoreNote({ noteId: noteId as Id<"notes"> });
     if (!result.success) return;
     wasDeleted.current = false;
+    setConfirmingDelete(false);
     window.history.replaceState(window.history.state, "", `/notes/${noteId}`);
     setUndoUntilMs(null);
     router.refresh();
   };
 
   const handleUndoExpire = () => {
-    setUndoUntilMs(null);
-    router.replace("/notes");
+    // replaceState above changed the visible URL without changing Next's mounted route.
+    // A document navigation guarantees the deleted editor is unmounted on expiry.
+    window.location.replace("/notes");
   };
 
   if (undoUntilMs !== null) {

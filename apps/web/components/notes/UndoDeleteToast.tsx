@@ -18,6 +18,8 @@ export function UndoDeleteToast({
   const [isUndoing, setIsUndoing] = useState(false);
 
   useEffect(() => {
+    if (isUndoing) return;
+
     const remaining = undoUntilMs - Date.now();
     if (remaining <= 0) {
       onExpire();
@@ -26,7 +28,7 @@ export function UndoDeleteToast({
 
     const timer = window.setTimeout(onExpire, remaining);
     return () => window.clearTimeout(timer);
-  }, [onExpire, undoUntilMs]);
+  }, [isUndoing, onExpire, undoUntilMs]);
 
   return (
     <output
