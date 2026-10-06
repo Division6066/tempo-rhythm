@@ -64,13 +64,21 @@ jobs:
           set -euo pipefail
           pick=""
           for c in $(git rev-list --first-parent -n 30 HEAD); do
+            n=$(gh api "repos/$GITHUB_REPOSITORY/commits/$c/statuses?per_page=100" --jq "[.[] | select(.context == \"$CTX\")] | length")
+            if [ "$n" = "0" ]; then
+              echo "${c::7}: no $CTX status (not built)"; continue
+            fi
             d=$(gh api "repos/$GITHUB_REPOSITORY/commits/$c/statuses?per_page=100" --jq "[.[] | select(.context == \"$CTX\")][0].description // \"\"")
             if printf '%s' "$d" | grep -qiE 'ignored build step|skipped'; then
               echo "${c::7}: Vercel skipped it ($d)"; continue
             fi
-            pick=$c; break   # built, building, failed, or no status yet: wait-preview decides
+            pick=$c; break   # built, building or failed: wait-preview decides
           done
-          [ -n "$pick" ] || pick=$(git rev-parse HEAD)
+          if [ -z "$pick" ]; then
+            # Never pass without testing: no commit in the window has a real Vercel build.
+            echo "::error::No commit in the last 30 first-parent integration commits has a real $CTX build; nothing to test."
+            exit 1
+          fi
           echo "sha=$pick" >> "$GITHUB_OUTPUT"
           if [ "$pick" != "$(git rev-parse HEAD)" ]; then
             echo "Integration head $(git rev-parse --short HEAD) was skipped by Vercel (no app change); testing the preview of ${pick::7}." >> "$GITHUB_STEP_SUMMARY"

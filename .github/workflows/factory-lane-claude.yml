@@ -55,14 +55,6 @@ jobs:
         run: |
           echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
           exit 1
-      - name: A bot-started run must be a fix run (fix_note set)
-        # factory-review-fix / factory-failures dispatch this lane with github.token, so the actor is
-        # github-actions[bot]. claude-code-action allows that one bot (allowed_bots below), but only for
-        # fix/retry runs: a fresh ticket build still has to be started by a person.
-        if: github.actor == 'github-actions[bot]' && inputs.fix_note == ''
-        run: |
-          echo "::error::Started by github-actions[bot] without fix_note. Only fix/retry runs may be bot-dispatched; a person starts new ticket builds."
-          exit 1
       - name: Claude token present?
         env:
           T: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -103,7 +95,8 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # factory-review-fix (batch loop step 5) dispatches with github.token -> actor github-actions[bot].
           # Without this the action refuses ("non-human actor"), which failed every auto fix run (audit 2026-10-06).
-          # Only that bot; fresh builds from a bot are refused by the fix_note step above.
+          # Only that bot (GITHUB_TOKEN-dispatched runs: factory-dispatch, factory-review-fix, factory-failures).
+          # Fresh automated builds stay gated by FACTORY_ACTIVE_BATCHES (unset = factory-dispatch picks nothing).
           allowed_bots: "github-actions"
           # Batch fix runs work on (and push to) batch/<loop-id>; they get no `gh pr create` tool.
           base_branch: ${{ inputs.target_branch || 'integration' }}
