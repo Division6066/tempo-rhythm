@@ -110,6 +110,9 @@ jobs:
       - uses: anthropics/claude-code-action@ed670b4cf9de2a5a570d130d2f6197b9e543cd64 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The `gate` job self-dispatches this run with GITHUB_TOKEN, so the actor is github-actions[bot].
+          # Without this the action refused every refresh ("non-human actor"; 34/34 failed 5-6 Oct, audit 2026-10-06).
+          allowed_bots: "github-actions"
           base_branch: integration
           prompt: |
             Read .github/factory/archify-prompt.md and do exactly what it says.

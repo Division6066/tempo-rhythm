@@ -93,6 +93,11 @@ jobs:
           CLAUDE_BRANCH: ${{ steps.ctx.outputs.branch }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # factory-review-fix (batch loop step 5) dispatches with github.token -> actor github-actions[bot].
+          # Without this the action refuses ("non-human actor"), which failed every auto fix run (audit 2026-10-06).
+          # Only that bot (GITHUB_TOKEN-dispatched runs: factory-dispatch, factory-review-fix, factory-failures).
+          # Fresh automated builds stay gated by FACTORY_ACTIVE_BATCHES (unset = factory-dispatch picks nothing).
+          allowed_bots: "github-actions"
           # Batch fix runs work on (and push to) batch/<loop-id>; they get no `gh pr create` tool.
           base_branch: ${{ inputs.target_branch || 'integration' }}
           prompt: ${{ steps.ctx.outputs.prompt }}
