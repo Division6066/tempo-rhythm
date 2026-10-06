@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ import {
   type BlockKind,
   minuteToTimeString,
   parseBlockForm,
+  profileGatedArgs,
 } from "./blockForm";
 
 const QUICK_DURATIONS = [15, 30, 60, 90] as const;
@@ -60,11 +61,16 @@ function TimeBlockDialogBody({
   block,
 }: TimeBlockDialogProps) {
   const isEdit = block !== undefined;
+  const { isAuthenticated } = useConvexAuth();
   const createBlock = useMutation(api.timeBlocks.create);
   const updateBlock = useMutation(api.timeBlocks.update);
   const removeBlock = useMutation(api.timeBlocks.remove);
-  const tasks = useQuery(api.tasks.listToday, dayWindow(localDate));
-  const habits = useQuery(api.habits.list, {});
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const tasks = useQuery(
+    api.tasks.listToday,
+    profileGatedArgs(isAuthenticated, profile, dayWindow(localDate))
+  );
+  const habits = useQuery(api.habits.list, profileGatedArgs(isAuthenticated, profile, {}));
 
   const [title, setTitle] = useState(block?.title ?? "");
   const [start, setStart] = useState(
