@@ -65,9 +65,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          last=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=archify-architecture&per_page=1" --jq '.artifacts[0].created_at // empty')
-          if [ -n "$last" ]; then
-            age=$(( $(date +%s) - $(date -d "$last" +%s) ))
+          # Debounce on the newer of: the last maps artifact, and the last dispatched refresh run (any result).
+          # The artifact alone is written only at the END of a successful refresh, so pushes during a running
+          # refresh, or after a failed one, each started another Claude run (3 dispatches in 7 min, 6 Oct 14:15 IDT).
+          last_art=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=archify-architecture&per_page=1" --jq '.artifacts[0].created_at // empty')
+          last_run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/archify.yml/runs?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].created_at // empty')
+          newest=0
+          for t in "$last_art" "$last_run"; do
+            if [ -n "$t" ]; then
+              s=$(date -d "$t" +%s)
+              if [ "$s" -gt "$newest" ]; then newest=$s; fi
+            fi
+          done
+          if [ "$newest" -gt 0 ]; then
+            age=$(( $(date +%s) - newest ))
             if [ "$age" -lt 3600 ]; then
               echo "Debounced: last refresh ${age}s ago (< 3600s). The next push after the hour, or a manual run, catches up (the refresh diffs from the last mapped commit, so nothing is lost)." >> "$GITHUB_STEP_SUMMARY"
               exit 0
@@ -126,9 +137,11 @@ jobs:
           prompt: |
             Read .github/factory/archify-prompt.md and do exactly what it says.
             Archify CLI: node .archify-skill/archify/bin/archify.mjs  (skill guide: .archify-skill/archify/SKILL.md)
+          # 90 turns: refreshes took 35, 51 and 62 turns on 6 Oct; at 60 a finished refresh was reported as a failure
+          # (run 37455208551) and the debounce marker was skipped. The job timeout (45 min) still caps a run.
           claude_args: >-
             --model ${{ vars.FACTORY_MODEL_CLAUDE }}
-            --max-turns 60
+            --max-turns 90
             --allowedTools "Edit,Write,Read,Glob,Grep,Bash(node .archify-skill/archify/bin/archify.mjs:*),Bash(ls:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git fetch:*),Bash(git checkout:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr create:*),Bash(gh pr edit:*)"
 
       - name: Check the refresh branch touches only docs/architecture/
