@@ -167,12 +167,14 @@ export const insertUserMessage = internalMutation({
   args: { conversationId: v.id("conversations"), content: v.string() },
   handler: async (ctx, args) => {
     await requireOwnedConversation(ctx, args.conversationId);
+    const now = Date.now();
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "user",
       content: args.content,
-      createdAt: Date.now(),
+      createdAt: now,
     });
+    await ctx.db.patch(args.conversationId, { updatedAt: now });
   },
 });
 
