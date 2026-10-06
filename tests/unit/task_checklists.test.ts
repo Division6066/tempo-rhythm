@@ -97,8 +97,8 @@ describe("task checklist leftover from #206", () => {
   });
 });
 
-describe("TaskViews checklist leftover wiring", () => {
-  test("create form and checklists route sit on landed TaskViews, not a second TasksScreen", () => {
+describe("checklist route wiring", () => {
+  test("the dedicated board and task create form share the landed checklist contract", () => {
     const screen = readFileSync(
       join(import.meta.dir, "../../apps/web/components/tasks/TaskViewsScreen.tsx"),
       "utf8",
@@ -109,7 +109,7 @@ describe("TaskViews checklist leftover wiring", () => {
     );
     const tasks = readFileSync(join(import.meta.dir, "../../convex/tasks.ts"), "utf8");
 
-    expect(page).toContain('view="checklists"');
+    expect(page).toContain("ChecklistBoard");
     expect(screen).toContain("/tasks/checklists");
     expect(screen).toContain("parseChecklistText");
     expect(screen).toContain("Checklist steps");
