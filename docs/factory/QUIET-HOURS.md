@@ -25,7 +25,7 @@ Amit, 6 Oct 2026 13:21 IDT. Applies to tempo-rhythm (the only repo with factory 
 
 | Workflow | Trigger | Quiet-hours behaviour |
 |---|---|---|
-| factory-dispatch (gh-aw) | cron `7,37 6-18 * * *` (09:07-21:37 IDT), `status:ready` label, manual | cron moved out of the night; `next-tickets.mjs` returns `paused` ("quiet hours, skipped") for every trigger, so the dispatcher no-ops |
+| factory-dispatch (gh-aw) | cron `7,37 6-19 * * *` (covers 09:07-21:37 in IDT and IST), `status:ready` label, manual | custom job `quiet` gates the generated `agent` job (`jobs.agent.needs/if`), so no Copilot agent starts at night for any trigger (incl. force=true); detection/safe_outputs/conclusion skip, run is green. `next-tickets.mjs` also returns `paused` (second layer) |
 | factory-lane-claude / -codex / -cursor | dispatch, `run:cursor` label | fresh builds skipped; runs with `fix_note` exempt (in-flight) |
 | factory-promote | push `docs/tickets/**` | nothing promoted (promote by hand after 09:00); `dry_run=true` exempt |
 | factory-batch | dispatch | `build`/`run` never create a NEW `batch/<loop>` branch; in-flight loops and open/review/status/enqueue/finalize not gated (`batch-loop.mjs`, also from a person's shell) |

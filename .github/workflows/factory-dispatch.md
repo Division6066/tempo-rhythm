@@ -3,9 +3,9 @@ name: factory-dispatch
 description: Factory dispatcher (Phase 04 Step 4). Picks lanes for ready tickets and dispatches them. Paused by FACTORY_PAUSED_ALL / FACTORY_PAUSED.
 on:
   schedule:
-    # 06:07-18:37 UTC = 09:07-21:37 Israel summer time. Quiet hours (factory/LOOP.md): nothing new is dispatched
-    # 22:00-09:00 Asia/Jerusalem; next-tickets.mjs enforces it for every trigger (winter, label events, manual).
-    - cron: "7,37 6-18 * * *"
+    # 06:07-19:37 UTC covers 09:07-21:37 Asia/Jerusalem in summer (UTC+3) AND winter (UTC+2). The extra hour on
+    # each side (22:07/22:37 IDT in summer, 08:07/08:37 IST in winter) is dropped by the `quiet` job below.
+    - cron: "7,37 6-19 * * *"
   workflow_dispatch:
     inputs:
       force:
@@ -47,6 +47,31 @@ steps:
       FACTORY_QUIET_END: ${{ vars.FACTORY_QUIET_END }}
       FACTORY_QUIET_HOURS: ${{ vars.FACTORY_QUIET_HOURS }}
     run: node scripts/factory/next-tickets.mjs --out ready.json
+jobs:
+  # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem the Copilot agent job never starts, for every trigger
+  # (cron, status:ready label, manual dispatch, force=true). Override: variable FACTORY_QUIET_HOURS=off.
+  quiet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      quiet: ${{ steps.q.outputs.quiet }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
+      - name: Quiet hours?
+        id: q
+        env:
+          FACTORY_QUIET_START: ${{ vars.FACTORY_QUIET_START }}
+          FACTORY_QUIET_END: ${{ vars.FACTORY_QUIET_END }}
+          FACTORY_QUIET_HOURS: ${{ vars.FACTORY_QUIET_HOURS }}
+        run: node scripts/factory/quiet-hours.mjs --what "factory-dispatch (Copilot dispatcher)"
+  agent:
+    needs: [quiet]
+    if: needs.quiet.outputs.quiet != 'true'
 tools:
   github:
     toolsets: [issues]
