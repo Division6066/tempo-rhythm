@@ -11,7 +11,7 @@ import { startOfLocalWeekMondayMs } from "@/lib/localDay";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { deriveInsightsState } from "./insightsState";
 
-const LOADING_TIMEOUT_MS = 10_000;
+const LOADING_TIMEOUT_MS = 6_000;
 
 /**
  * Read-only insights surface (reads `analytics.insightsSummary`; mutates nothing).
@@ -107,7 +107,7 @@ function BucketBars({
 
 function InsightsSkeleton() {
   return (
-    <div className="container mx-auto max-w-5xl px-6 py-12">
+    <div className="container mx-auto max-w-5xl px-6 py-12" aria-busy="true">
       <div className="space-y-6">
         <div className="h-12 w-64 animate-pulse rounded-xl bg-muted" />
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
