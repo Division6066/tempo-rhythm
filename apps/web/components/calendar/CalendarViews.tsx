@@ -19,6 +19,11 @@ import {
   saveCalendarEvents,
 } from "@/lib/calendar/event-source";
 import {
+  getAddEventAuthState,
+  SIGNED_OUT_MESSAGE,
+  toAddEventErrorMessage,
+} from "./addEventGuard";
+import {
   EventRow,
   type EventRowActions,
   type EventRowEvent,
@@ -148,6 +153,8 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const removeConvexEvent = useMutation(api.calendar_events.remove);
   const restoreConvexEvent = useMutation(api.calendar_events.restore);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const authState = getAddEventAuthState({ isAuthenticated, isLoading: isAuthLoading });
+  const isAuthWaiting = eventSourceMode === "convex" && authState === "wait";
 
   useEffect(() => {
     if (eventSourceMode === "local") {
@@ -243,10 +250,17 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
         saveCalendarEvents(nextEvents);
         setLocalEvents(nextEvents);
       } else {
-        if (!isAuthenticated) {
-          throw new Error("Sign in again to add calendar events.");
+        if (authState !== "ready") {
+          setIsSubmitting(false);
+          if (authState === "signed-out") setError(SIGNED_OUT_MESSAGE);
+          return;
         }
-        await createConvexEvent({ title: cleanTitle, startsAtMs });
+        try {
+          await createConvexEvent({ title: cleanTitle, startsAtMs });
+        } catch (createErr) {
+          setError(toAddEventErrorMessage(createErr));
+          return;
+        }
       }
       setTitle("");
       setError(null);
@@ -296,16 +310,24 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
         <div className="flex flex-col justify-end">
           <button
             className="min-h-11 rounded-2xl bg-primary px-5 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAuthWaiting}
             type="submit"
           >
-            {isSubmitting ? "Adding..." : "Add event"}
+            {isAuthWaiting ? "One moment…" : isSubmitting ? "Adding..." : "Add event"}
           </button>
         </div>
 
         {error ? (
           <p className="text-small text-destructive md:col-span-3" role="alert">
             {error}
+            {error === SIGNED_OUT_MESSAGE ? (
+              <>
+                {" "}
+                <a className="underline" href="/sign-in?redirect=/calendar">
+                  Sign in
+                </a>
+              </>
+            ) : null}
           </p>
         ) : null}
       </form>
