@@ -2,21 +2,47 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
+import { CrisisResourcesCard } from "@/components/coach-crisis/CrisisResourcesCard";
+import { useCrisisGuard } from "@/components/coach-crisis/useCrisisGuard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+
+export type CoachDelivery = "resources" | "sent";
+
+/** Crisis matches show the resources card and never call the coaching send. */
+export async function deliverCoachMessage(
+  text: string,
+  guard: (text: string) => Promise<{ isCrisis: boolean }>,
+  send: (text: string) => Promise<void>,
+): Promise<CoachDelivery> {
+  const result = await guard(text);
+  if (result.isCrisis) return "resources";
+  await send(text);
+  return "sent";
+}
+
+export function CoachCrisisReply() {
+  return (
+    <div data-testid="coach-crisis-resources">
+      <CrisisResourcesCard />
+    </div>
+  );
+}
 
 export function CoachChat() {
   const { isAuthenticated } = useConvexAuth();
   const conversations = useQuery(api.conversations.list, isAuthenticated ? {} : "skip");
   const createConversation = useMutation(api.conversations.create);
   const sendMessage = useMutation(api.coach.sendMessage);
+  const { guard } = useCrisisGuard();
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [crisisHold, setCrisisHold] = useState(false);
   const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,7 +73,15 @@ export function CoachChat() {
     setInput("");
     setIsSending(true);
     try {
-      await sendMessage({ conversationId, content: text });
+      const outcome = await deliverCoachMessage(text, guard, async (content) => {
+        await sendMessage({ conversationId, content });
+      });
+      if (outcome === "resources") {
+        setCrisisHold(true);
+        setSendError(null);
+        return;
+      }
+      setCrisisHold(false);
       setSendError(null);
     } catch {
       setInput(text);
@@ -93,6 +127,7 @@ export function CoachChat() {
             </div>
           ))
         )}
+        {crisisHold ? <CoachCrisisReply /> : null}
         {isSending ? (
           <output
             aria-label="Coach is typing"
