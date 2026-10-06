@@ -5,6 +5,8 @@ name: factory-lane-claude
 # integration. The PR is opened with the Claude GitHub App token the action mints (OIDC), not
 # GITHUB_TOKEN, so CI runs (R15). Model: vars.FACTORY_MODEL_CLAUDE.
 # Dispatched only by factory-dispatch (or factory-failures for a retry, with fix_note).
+# Batch loop: factory-review-fix dispatches it with target_branch=batch/<loop-id> + fix_note to fix the
+# batch PR's Bugbot findings on the batch branch (no PR). lane-context.mjs refuses any other branch shape.
 # Secret CLAUDE_CODE_OAUTH_TOKEN: tempo-rhythm has a repo-level one today; the other repos need the
 # org secret (not created yet). Labelling the issue needs the Factory App (FACTORY_APP_ID/PRIVATE_KEY);
 # without it factory-label-pr does it when the PR opens (also parked until the App exists).
@@ -25,6 +27,11 @@ on:
         description: Run even while the factory is paused (Amit / Grok Bot one-off tests only)
         type: boolean
         default: false
+      target_branch:
+        description: Batch loop only - fix Bugbot findings of the batch PR directly on batch/<loop-id> (needs fix_note; no PR)
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -34,7 +41,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: factory-lane-${{ inputs.issue_number }}
+  group: factory-lane-${{ inputs.target_branch || inputs.issue_number }}
   cancel-in-progress: false
 
 jobs:
@@ -66,6 +73,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
           FIX_NOTE: ${{ inputs.fix_note }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
         run: node scripts/factory/lane-context.mjs
       - name: Branch t/<issue>-<slug> (or the existing PR branch on a retry)
         env:

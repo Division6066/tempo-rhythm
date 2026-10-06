@@ -11,7 +11,10 @@ import { validate } from "./validate-tickets.mjs";
 import { isTicketPath, MARKER } from "./tickets-lib.mjs";
 import { linkedTickets } from "./gh-api.mjs";
 import { bugbotState, findingsNote } from "./review-gate.mjs";
-import { nextStep } from "./review-fix.mjs";
+import { nextStep, ownerTicket } from "./review-fix.mjs";
+import { judge as scopeJudge, judgeBatch, isBatchPR } from "./scope-guard.mjs";
+import { ciGreen, readiness, mergeOrder, batchBody, reviewNeeded, batchBranch } from "./batch-loop.mjs";
+import { loopRouting } from "./validate-tickets.mjs";
 import { shouldDeploy, assertLiveKeyTarget, judgeSmoke } from "./deploy-live-plan.mjs";
 import { israelDate, isReleaseTitle, prNumbersFromMessage, renderReleaseBody } from "./release-pr.mjs";
 
@@ -82,7 +85,9 @@ t("Cursor API body (v1)", () => {
 
 // Phase 06: promoter + ticket-writer check
 const TF = (id, type, scope, extra = "") => ({ path: `docs/tickets/DRY/${id}.md`, text: `---\nticket: ${id}\nbatch: DRY\ntype: ${type}\nlane: ${type === "data" ? "claude" : "auto"}\nscope:\n  - ${scope}\nhold: false\n${extra}---\n\nFOR: x\nGOAL: Goal of ${id}\n` });
-const BATCH9 = [TF("T-DRY-01", "data", "convex/"), ...Array.from({ length: 8 }, (_, i) => TF(`T-DRY-0${i + 2}`, "component", `apps/web/components/f${i + 2}/`))];
+const LOOP_LANE = ["claude", "claude", "claude", "cursor", "cursor", "cursor", "codex", "codex"];
+const TFL = (id, scope, lane) => { const f = TF(id, "component", scope, `browser_test: ${lane !== "claude"}\n`); f.text = f.text.replace("lane: auto", `lane: ${lane}`); return f; };
+const BATCH9 = [TF("T-DRY-01", "data", "convex/"), ...Array.from({ length: 8 }, (_, i) => TFL(`T-DRY-0${i + 2}`, `apps/web/components/f${i + 2}/`, LOOP_LANE[i]))];
 t("ticket paths: batch files only, never _templates/README", () => {
   assert.ok(isTicketPath("docs/tickets/B1/T-1.md"));
   assert.ok(!isTicketPath("docs/tickets/_templates/component.md"));
@@ -94,7 +99,7 @@ t("promoter: 9 creates with labels; invalid skipped", () => {
   const r = plan({ files: [...BATCH9, bad], issues: [] });
   assert.equal(r.actions.length, 9); assert.equal(r.skipped.length, 1);
   assert.deepEqual(r.actions[0].labels, ["status:ready", "factory", "ticket:data", "batch:DRY", "lane:claude"]);
-  assert.deepEqual(r.actions[1].labels, ["status:ready", "factory", "ticket:component", "batch:DRY"]);
+  assert.deepEqual(r.actions[1].labels, ["status:ready", "factory", "ticket:component", "batch:DRY", "lane:claude"]);
   assert.equal(r.actions[1].title, "[T-DRY-02] Goal of T-DRY-02");
   assert.ok(r.actions[1].body.endsWith(MARKER("docs/tickets/DRY/T-DRY-02.md") + "\n"));
 });
@@ -108,7 +113,7 @@ t("promoter: existing marker -> no duplicate; status labels untouched; deleted -
 t("writer check: 9 = 1 data + 8 separate components, contract, only batch files", () => {
   const ok = validate({ batch: "DRY", size: 9, hold: false, files: BATCH9, changed: [...BATCH9.map((f) => f.path), "docs/contracts/DRY.md"], contractExists: true });
   assert.deepEqual(ok.problems, []);
-  const shared = [...BATCH9.slice(0, 8), TF("T-DRY-09", "component", "apps/web/components/f2/sub/")];
+  const shared = [...BATCH9.slice(0, 8), TFL("T-DRY-09", "apps/web/components/f2/sub/", "codex")];
   assert.ok(validate({ batch: "DRY", size: 9, hold: false, files: shared, contractExists: true }).problems.some((p) => p.includes("share scope")));
   assert.ok(validate({ batch: "DRY", size: 9, hold: true, files: BATCH9, contractExists: false }).problems.length >= 9);
   assert.ok(validate({ batch: "DRY", size: 9, hold: false, files: BATCH9, changed: ["package.json"], contractExists: true }).problems.some((p) => p.includes("outside the batch")));
@@ -182,6 +187,67 @@ t("review fix loop: 3 attempts then blocked:amit", () => {
   assert.equal(nextStep({ state: "blocked", labels: [] }).action, "block");
   assert.equal(nextStep({ state: "clean", labels: [] }).action, "none");
   assert.equal(nextStep({ state: "findings", labels: ["blocked:amit"] }).action, "none");
+});
+
+const SG_CFG = { dataFolders: ["convex/"], extraHotFiles: ["(^|/)convex\\.json$"] };
+const prOf = (head, base = "integration") => ({ head: { ref: head, repo: { full_name: "o/r" } }, base: { ref: base, repo: { full_name: "o/r" } } });
+const cf = (files, mergeFix = false) => [{ sha: "a", mergeFix, files }];
+t("scope-guard h: component touching convex/ fails unless convex-arch is approved", () => {
+  const fm = { ticket: "T-1", type: "component", scope: ["apps/web/components/x/"] };
+  const files = [{ filename: "convex/schema.ts" }, { filename: "apps/web/components/x/A.tsx" }];
+  const base = { pr: prOf("t/1-t-1"), ticket: 1, fm, files, commitFiles: cf(["convex/schema.ts", "apps/web/components/x/A.tsx"]), config: SG_CFG };
+  assert.ok(scopeJudge({ ...base, labels: [] }).problems.some((p) => p.includes("convex-arch")));
+  assert.ok(scopeJudge({ ...base, labels: ["convex-arch"], archApproved: false }).problems.some((p) => p.includes("convex-arch")));
+  assert.deepEqual(scopeJudge({ ...base, labels: ["convex-arch"], archApproved: true }).problems, []);
+  assert.ok(scopeJudge({ ...base, labels: ["convex-arch"], archApproved: true, files: [{ filename: "package.json" }], commitFiles: cf(["package.json"]) }).problems.some((p) => p.includes("hot")));
+});
+t("scope-guard i: batch PR = union of ticket scopes; convex/ and hot files fail", () => {
+  assert.ok(isBatchPR(prOf("batch/f3-1"))); assert.ok(!isBatchPR(prOf("batch/f3-1", "master"))); assert.ok(!isBatchPR(prOf("t/1-x")));
+  const tickets = [{ number: 1, fm: { scope: ["apps/web/components/a/"] } }, { number: 2, fm: { scope: ["apps/web/components/b/"] } }];
+  const ok = judgeBatch({ pr: prOf("batch/f3-1"), labels: [], tickets, files: [{ filename: "apps/web/components/a/A.tsx" }, { filename: "apps/web/components/b/B.tsx" }], commitFiles: [], config: SG_CFG });
+  assert.deepEqual(ok.problems, []);
+  const bad = judgeBatch({ pr: prOf("batch/f3-1"), labels: [], tickets, files: [{ filename: "convex/x.ts" }, { filename: "apps/web/other/C.tsx" }, { filename: "package.json" }], commitFiles: [], config: SG_CFG });
+  assert.equal(bad.problems.length, 3);
+  assert.ok(judgeBatch({ pr: prOf("batch/f3-1"), labels: [], tickets: [{ number: 3, fm: null }], files: [], commitFiles: [], config: SG_CFG }).problems[0].includes("front-matter"));
+  assert.deepEqual(judgeBatch({ pr: prOf("batch/f3-1"), labels: ["convex-arch"], archApproved: true, tickets, files: [{ filename: "convex/x.ts" }], commitFiles: [], config: SG_CFG }).problems, []);
+});
+t("review gate: usage-limit note after the last run = blocked, not clean", () => {
+  const run = { name: "Cursor Bugbot", status: "completed", conclusion: "neutral", completed_at: "2026-10-06T01:00:00Z" };
+  const note = (at) => ({ user: { login: "cursor[bot]" }, created_at: at, body: "<h3>Bugbot couldn't run - usage limit reached</h3>" });
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [run], comments: [note("2026-10-06T01:05:00Z")] }).state, "blocked");
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [run], comments: [note("2026-10-06T00:55:00Z")] }).state, "clean");
+});
+t("batch loop: CI gate, readiness (drafts allowed), order, body, one review request", () => {
+  const ck = (name, conclusion, id = 1) => ({ id, name, status: "completed", conclusion });
+  const green = ["ci", "e2e-preview", "secret-scan", "config-guard", "scope-guard"].map((n, i) => ck(n, "success", i + 1));
+  assert.ok(ciGreen(green).ok);
+  assert.deepEqual(ciGreen([...green, ck("ci", "failure", 99)]).bad, ["ci=failure"]);
+  assert.ok(readiness({ pr: { state: "open", draft: true }, labels: [], checkRuns: green }).ok);
+  assert.ok(!readiness({ pr: { state: "open" }, labels: ["blocked:amit"], checkRuns: green }).ok);
+  assert.ok(!readiness({ pr: { state: "open" }, labels: [], checkRuns: green.slice(1) }).ok);
+  assert.deepEqual(mergeOrder([{ number: 2, fm: { ticket: "X-03", type: "component" } }, { number: 1, fm: { ticket: "X-10", type: "data" } }, { number: 3, fm: { ticket: "X-02", type: "component" } }]).map((x) => x.number), [1, 3, 2]);
+  const body = batchBody({ loop: "f3-1", merged: [{ number: 10, ticket: 5, fm: { ticket: "X-01" } }, { number: 11, ticket: 6, fm: { ticket: "X-02" } }], skipped: [] });
+  assert.deepEqual(linkedTickets(body), [5, 6]);
+  assert.equal(batchBranch("f3-1"), "batch/f3-1"); assert.throws(() => batchBranch("a b"));
+  const head = { headSha: "abc", headDate: "2026-10-06T08:00:00Z" };
+  assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [] }).need, true);
+  assert.equal(reviewNeeded({ ...head, checkRuns: [{ name: "Cursor Bugbot", status: "in_progress" }], comments: [] }).need, false);
+  assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [{ user: { login: "Division6066" }, body: "@cursor review", created_at: "2026-10-06T08:01:00Z" }] }).need, false);
+  assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [{ user: { login: "Division6066" }, body: "@cursor review", created_at: "2026-10-06T07:00:00Z" }] }).need, true);
+});
+t("batch fix: finding goes to the ticket that owns the file", () => {
+  const tickets = [{ number: 1, fm: { scope: ["apps/web/components/a/"] } }, { number: 2, fm: { scope: ["apps/web/components/b/"] } }];
+  assert.equal(ownerTicket([{ path: "apps/web/components/b/B.tsx" }], tickets), 2);
+  assert.equal(ownerTicket([{ path: "elsewhere.ts" }], tickets), 1);
+});
+t("loop routing: browser tests -> cursor/codex, others -> claude; 2..5 per lane", () => {
+  const C = (ticket, lane, browser_test) => ({ fm: { ticket, lane, browser_test } });
+  const ok = [C("a", "claude", "false"), C("b", "claude", "false"), C("c", "cursor", "true"), C("d", "cursor", "true"), C("e", "codex", "true"), C("f", "codex", "true")];
+  assert.deepEqual(loopRouting(ok), []);
+  assert.ok(loopRouting([...ok.slice(1), C("x", "claude", "true")]).some((p) => p.includes("needs lane cursor or codex")));
+  assert.ok(loopRouting([...ok, C("y", "cursor", "false")]).some((p) => p.includes("goes to lane claude")));
+  assert.ok(loopRouting([...ok, C("z", "auto", "false")]).some((p) => p.includes("lane must be")));
+  assert.ok(loopRouting(ok.slice(0, 5)).some((p) => p.includes("lane codex has 1")));
 });
 
 console.log(`all ${n} passed`);

@@ -72,7 +72,7 @@ A model named in a ticket is labelled either `code model` (the model that writes
 1. One ticket = one folder, one branch, one PR. Branch name: `t/<issue-number>-<short-slug>`.
 2. Touch only files listed in SCOPE. If the work truly needs more, stop and report `blocked: scope overflow`. Don't split the ticket yourself.
 3. Change only the systems named in MUTATES. A change outside MUTATES fails the checks.
-4. Component tickets never edit the backend folder named in `factory/SLOTS.md`. Call the functions the batch's backend ticket defines. If one is missing, report `blocked: missing backend <function>`.
+4. Component tickets never edit the backend folder named in `factory/SLOTS.md` (tempo: `convex/`; scope-guard fails the PR unless the owner labels it `convex-arch`). Call the functions the loop's ticket 0 (backend architecture ticket) defines. If one is missing, report `blocked: missing backend <function>`.
 5. You are done when the DONE command prints its expected output and all checks are green. Paste both into the PR as EVIDENCE.
 6. A mock or demo key never proves DONE when DONE names a real check.
 7. Anything you could not verify goes in the PR as `UNKNOWN: <what>`. Never fill a gap with a plausible guess.
@@ -80,6 +80,7 @@ A model named in a ticket is labelled either `code model` (the model that writes
 9. Never edit, close or reassign another ticket.
 10. Use the code model the dispatcher assigned. Code is written only with mid-tier (billing-tier) models.
 11. Running headless (CI, cloud agent): don't ask questions. Report `blocked: question — <question>` and stop.
+12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). Bugbot reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
 
 ## Never — and what enforces it
 These are explained here and enforced elsewhere. Each item names its enforcement, which is listed in SLOTS.md → Enforcement.
@@ -112,7 +113,7 @@ notes for ticket sync: <follow-ups, doc errors, or none>
 ## Done means
 - The DONE command prints its expected output.
 - CI, browser test, speed limit and scope check are all green.
-- The review gate has passed: no unresolved findings when Phase F is on. The gate is named in SLOTS.md. It is not a merge-queue check.
+- For a component ticket: CI is green on your PR. The review gate runs once per loop on the batch PR (`factory/LOOP.md`), not on your PR. It is not a merge-queue check.
 - The report is posted on the ticket.
 
-What happens after that is automatic: the PR merges into integration and integration deploys to preview. Deploying to live is the owner's job.
+What happens after that is automatic: the PR merges into the loop's batch branch, the batch PR gets one review and goes through the merge queue into integration, and integration deploys to preview. Deploying to live is the owner's job.

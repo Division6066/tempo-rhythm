@@ -1,7 +1,9 @@
 // Lane context (Phase 04 Step 5). Reads the ticket issue and writes step outputs for the lane
 // workflows: ticket, type, branch (t/<issue-number>-<slug>), issue_url, prompt (lane-prompt.md filled
 // in), pr_number / pr_url / pr_branch (an open PR for this ticket already exists = retry).
-// Env: GH_TOKEN, GITHUB_REPOSITORY, ISSUE_NUMBER, FIX_NOTE (optional, failure-rule retry).
+// Env: GH_TOKEN, GITHUB_REPOSITORY, ISSUE_NUMBER, FIX_NOTE (optional, failure-rule retry),
+//      TARGET_BRANCH (optional, batch loop only: batch/<loop-id>; the lane fixes Bugbot findings of the
+//      loop's batch PR directly on that branch and opens no PR - factory/LOOP.md).
 import { gh, repoParts, summary } from "./gh-api.mjs";
 import { frontMatter, renderLanePrompt, findTicketPR, setOutput, assertDispatchable, ticketBranch } from "./factory-lib.mjs";
 
@@ -20,9 +22,15 @@ if (process.env.FIX_NOTE) {
     ? `\n\nRETRY: Cursor Bugbot left review findings on ${pr ? pr.html_url : "your PR"}. Fix each finding (or, if one is wrong, explain why in a PR comment); stay in scope. Push to the same branch; do not open a new PR.\n<bugbot-findings>\n${process.env.FIX_NOTE}\n</bugbot-findings>\n`
     : `\n\nRETRY: a required check failed on ${pr ? pr.html_url : "your PR"}. Fix the failing check; stay in scope. Push to the same branch; do not open a new PR.\n<failing-log>\n${process.env.FIX_NOTE}\n</failing-log>\n`;
 }
+const target = (process.env.TARGET_BRANCH || "").trim();
+if (target && !/^batch\/[A-Za-z0-9._-]+$/.test(target)) throw new Error(`target_branch must be batch/<loop-id> (got ${target})`);
+if (target) {
+  if (!process.env.FIX_NOTE) throw new Error("target_branch is only for batch fix runs (fix_note required)");
+  prompt += `\n\nBATCH FIX: these findings are on the loop's batch PR (branch ${target}), which combines several tickets. Work on ${target} itself: commit and push to ${target}. Do NOT open a pull request and do NOT create another branch. Stay inside the scopes of the batch's tickets. Never change convex/, .github/, scripts/factory/, .cursor/ or AGENTS.md.\n`;
+}
 await setOutput("ticket", fm.ticket);
 await setOutput("type", fm.type || "");
-await setOutput("branch", pr ? pr.head.ref : ticketBranch(n, fm.ticket));
+await setOutput("branch", target || (pr ? pr.head.ref : ticketBranch(n, fm.ticket)));
 await setOutput("issue_url", issue.html_url);
 await setOutput("title", issue.title);
 await setOutput("body", issue.body || "");

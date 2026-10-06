@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { frontMatter, scopeOf, listOf, labelNames, truthy, allTickets } from "./factory-lib.mjs";
 import { repoParts, summary } from "./gh-api.mjs";
 
-export const CODEX_MODE_DEFAULT = "issue"; // issue | pr | manual (override: FACTORY_CODEX_MODE)
+export const CODEX_MODE_DEFAULT = "pr"; // pr | issue | manual (override: FACTORY_CODEX_MODE)
 const OPEN = ["status:dispatched", "status:in-pr"];
 const norm = (f) => f.replace(/^\.\//, "").replace(/^\/+/, "").replace(/\/?$/, "/");
 export const overlaps = (a, b) => a.some((x) => b.some((y) => { const p = norm(x), q = norm(y); return p.startsWith(q) || q.startsWith(p); }));
