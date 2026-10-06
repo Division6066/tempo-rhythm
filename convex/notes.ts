@@ -1,5 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  type MutationCtx,
+  mutation,
+  type QueryCtx,
+  query,
+} from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { isRestorable, undoUntil } from "./lib/softDelete";
 
@@ -10,27 +16,36 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    let rows = await ctx.db
-      .query("notes")
-      .withIndex("by_userId_updatedAt", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .collect();
-
-    rows = rows.filter((n) => n.deletedAt === undefined);
-
-    if (args.pinnedOnly) {
-      rows = rows.filter((n) => n.pinned);
-    }
-    if (args.search?.trim()) {
-      const q = args.search.trim().toLowerCase();
-      rows = rows.filter(
-        (n) =>
-          n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q),
-      );
-    }
-    return rows;
+    return listNotesForUser(ctx, user._id, args);
   },
 });
+
+/** Shared by `list` and the MCP tools (`convex/mcpTools.ts`). */
+export async function listNotesForUser(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  args: { search?: string; pinnedOnly?: boolean },
+): Promise<Doc<"notes">[]> {
+  let rows = await ctx.db
+    .query("notes")
+    .withIndex("by_userId_updatedAt", (q) => q.eq("userId", userId))
+    .order("desc")
+    .collect();
+
+  rows = rows.filter((n) => n.deletedAt === undefined);
+
+  if (args.pinnedOnly) {
+    rows = rows.filter((n) => n.pinned);
+  }
+  if (args.search?.trim()) {
+    const q = args.search.trim().toLowerCase();
+    rows = rows.filter(
+      (n) =>
+        n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q),
+    );
+  }
+  return rows;
+}
 
 export const get = query({
   args: { noteId: v.id("notes") },
@@ -75,18 +90,34 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const now = Date.now();
-    return ctx.db.insert("notes", {
-      userId: user._id,
-      title: args.title.trim(),
-      body: args.body,
-      pinned: args.pinned ?? false,
-      periodType: args.periodType ?? "none",
-      createdAt: now,
-      updatedAt: now,
-    });
+    return createNoteForUser(ctx, user._id, args);
   },
 });
+
+type NotePeriod = "daily" | "weekly" | "monthly" | "none";
+
+/** Shared by `create` and the MCP tools. */
+export async function createNoteForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: {
+    title: string;
+    body: string;
+    pinned?: boolean;
+    periodType?: NotePeriod;
+  },
+): Promise<Id<"notes">> {
+  const now = Date.now();
+  return ctx.db.insert("notes", {
+    userId,
+    title: args.title.trim(),
+    body: args.body,
+    pinned: args.pinned ?? false,
+    periodType: args.periodType ?? "none",
+    createdAt: now,
+    updatedAt: now,
+  });
+}
 
 export const update = mutation({
   args: {
@@ -105,20 +136,35 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
-      throw new Error("Note not found");
-    }
-    const now = Date.now();
-    const patch: Record<string, unknown> = { updatedAt: now };
-    if (args.title !== undefined) patch.title = args.title.trim();
-    if (args.body !== undefined) patch.body = args.body;
-    if (args.pinned !== undefined) patch.pinned = args.pinned;
-    if (args.periodType !== undefined) patch.periodType = args.periodType;
-    await ctx.db.patch(args.noteId, patch as typeof note);
-    return args.noteId;
+    return updateNoteForUser(ctx, user._id, args);
   },
 });
+
+/** Shared by `update` and the MCP tools. Scoped to `userId`. */
+export async function updateNoteForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: {
+    noteId: Id<"notes">;
+    title?: string;
+    body?: string;
+    pinned?: boolean;
+    periodType?: NotePeriod;
+  },
+): Promise<Id<"notes">> {
+  const note = await ctx.db.get(args.noteId);
+  if (!note || note.userId !== userId || note.deletedAt !== undefined) {
+    throw new Error("Note not found");
+  }
+  const now = Date.now();
+  const patch: Record<string, unknown> = { updatedAt: now };
+  if (args.title !== undefined) patch.title = args.title.trim();
+  if (args.body !== undefined) patch.body = args.body;
+  if (args.pinned !== undefined) patch.pinned = args.pinned;
+  if (args.periodType !== undefined) patch.periodType = args.periodType;
+  await ctx.db.patch(args.noteId, patch as typeof note);
+  return args.noteId;
+}
 
 export const togglePin = mutation({
   args: { noteId: v.id("notes") },

@@ -94,3 +94,17 @@ deployment `ceaseless-dog-617` via `convex-deploy-test`. Live is Amit's.
 - Live: Phase H release step, right after the live Convex deploy (Amit only):
   `npx convex run --prod approval:approveAllExistingUsers '{"dryRun":true}'`, then without `dryRun`.
 
+## 2026-10-06 — TEMPO-MCP-01 personal MCP tokens + `/mcp` endpoint
+- New table `mcpTokens` {userId, name, tokenHash (SHA-256 hex), prefix, createdAt, lastUsedAt?,
+  revokedAt?, windowStartMs?, windowCount?}; indexes `by_tokenHash`, `by_userId`. New table, so no
+  backfill. The two `window*` fields back the 120 calls/minute limit.
+- New HTTP route `POST|GET|DELETE|OPTIONS {CONVEX_SITE_URL}/mcp` (MCP Streamable HTTP, stateless,
+  protocol 2025-06-18). Bearer token auth. GET and DELETE return 405.
+- New public functions `mcp.createToken` / `listTokens` / `revokeToken`; internal `mcp.resolveToken`,
+  `touchToken`, `authorizeCall`; internal `mcpTools.runReadTool` / `runWriteTool` / `runBrainDump`.
+- Shared `(ctx, userId, args)` helpers extracted in tasks, notes, calendar_events, dayPlans and
+  brain_dump. Public functions keep their signatures and behaviour.
+- Optional Convex env var `TEMPO_MCP_ALLOWED_ORIGINS` (comma separated) for browser Origins.
+  Requests with no Origin (server-side MCP clients) and localhost always pass.
+- Deploy: merge to `integration` deploys test (`ceaseless-dog-617`). Live is Amit's.
+

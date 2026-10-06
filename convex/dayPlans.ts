@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, type QueryCtx, mutation, query } from "./_generated/server";
+import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { isLocalDate } from "./lib/habitCheckInStreak";
 import { requireUser } from "./lib/requireUser";
 
@@ -100,10 +100,19 @@ export const getForDate = query({
 	returns: v.union(dayPlanValidator, v.null()),
 	handler: async (ctx, args) => {
 		const user = await requireUser(ctx);
-		assertLocalDate(args.localDate);
-		return findLivePlan(ctx, user._id, args.localDate);
+		return getDayPlanForUser(ctx, user._id, args.localDate);
 	},
 });
+
+/** Shared by `getForDate` and the MCP tools. */
+export async function getDayPlanForUser(
+	ctx: QueryCtx,
+	userId: Id<"users">,
+	localDate: string,
+): Promise<Doc<"dayPlans"> | null> {
+	assertLocalDate(localDate);
+	return findLivePlan(ctx, userId, localDate);
+}
 
 export const upsert = mutation({
 	args: {
@@ -168,7 +177,11 @@ export const commit = mutation({
 		if (existing.status === "committed" && existing.committedAt !== undefined) {
 			return { dayPlanId: existing._id, committedAt: existing.committedAt };
 		}
-		await ctx.db.patch(existing._id, { status: "committed", committedAt: now, updatedAt: now });
+		await ctx.db.patch(existing._id, {
+			status: "committed",
+			committedAt: now,
+			updatedAt: now,
+		});
 		return { dayPlanId: existing._id, committedAt: now };
 	},
 });
@@ -187,7 +200,9 @@ export const listCarryOver = query({
 			.order("asc")
 			.collect();
 		return rows
-			.filter((t) => t.deletedAt === undefined && (t.status === "todo" || t.status === "in_progress"))
+			.filter(
+				(t) => t.deletedAt === undefined && (t.status === "todo" || t.status === "in_progress"),
+			)
 			.slice(0, MAX_CARRY_OVER);
 	},
 });
@@ -201,7 +216,10 @@ export const moveTaskToDay = mutation({
 		if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
 			throw new Error("Task not found");
 		}
-		await ctx.db.patch(args.taskId, { dueAt: args.dueAt, updatedAt: Date.now() });
+		await ctx.db.patch(args.taskId, {
+			dueAt: args.dueAt,
+			updatedAt: Date.now(),
+		});
 		return args.taskId;
 	},
 });
