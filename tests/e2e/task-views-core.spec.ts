@@ -11,7 +11,7 @@ test.describe("core task views", () => {
     });
   });
 
-  test("today, inbox, project, and priority views share one persisted task record", async ({
+  test("today, inbox, project, priority, and energy views share one persisted task record", async ({
     page,
   }) => {
     const main = page.getByRole("main");
@@ -36,22 +36,20 @@ test.describe("core task views", () => {
     await expect(page.getByText(updatedTitle)).toBeVisible();
 
     await page.goto("/projects");
-    await expect(
-      main.getByRole("heading", { name: "Home reset" }),
-    ).toBeVisible();
+    await expect(main.getByRole("heading", { name: "Home reset" })).toBeVisible();
     await expect(page.getByText(updatedTitle)).toBeVisible();
-    await page
-      .getByRole("button", { name: `Mark ${updatedTitle} complete` })
-      .click();
+    await page.getByRole("button", { name: `Mark ${updatedTitle} complete` }).click();
     await expect(page.getByText("Done")).toBeVisible();
 
     await page.goto("/tasks/priority");
-    await expect(
-      main.getByRole("heading", { name: "Priority", exact: true }),
-    ).toBeVisible();
-    await expect(
-      main.getByRole("heading", { name: "High priority" }),
-    ).toBeVisible();
+    await expect(main.getByRole("heading", { name: "Priority", exact: true })).toBeVisible();
+    await expect(main.getByRole("heading", { name: "High priority" })).toBeVisible();
+    await expect(page.getByText(updatedTitle)).toBeVisible();
+    await expect(page.getByText("Done")).toBeVisible();
+
+    await page.goto("/tasks/energy");
+    await expect(main.getByRole("heading", { name: "Energy", exact: true })).toBeVisible();
+    await expect(main.getByRole("heading", { name: "Low energy" })).toBeVisible();
     await expect(page.getByText(updatedTitle)).toBeVisible();
     await expect(page.getByText("Done")).toBeVisible();
 
