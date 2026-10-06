@@ -69,13 +69,14 @@ Hard limits: 35 min for Bugbot, 60 min for the PR checks, 30 min for the Vercel 
 
 ## One-time setup before the first real release (Amit, in GitHub settings)
 
+Status 6 Oct 2026, ~12:50 IDT. Steps 2 to 6 are **done** (approved by Amit 12:44 IDT; JSON backups of every setting before the change are kept outside the repo). Only step 1, the token, is still open.
 The workflow checks all of these in preflight and names any that are missing. A dry run works before they are done. It just reports them.
 
-1. **Release token.** Add repo secret `FACTORY_BATCH_TOKEN`: a Division6066 fine-grained token, repo tempo-rhythm only, 365 days max. Permissions: Contents, Pull requests, Issues and Workflows = Read and write; Administration = Read only, so preflight can read master protection (Metadata read is automatic). The repo is public, so reading checks and deployments needs nothing extra. The workflow uses it to open the PR, ask Bugbot, label and merge. Workflows write is needed because a release merges workflow files into master.
-2. **factory-live ruleset** (Settings → Rules → Rulesets → factory-live): delete the rule **Restrict updates**. With no bypass list, it blocks every merge into master, including yours. Also untick **Require branches to be up to date before merging**. Keep the 5 required checks.
-3. **Classic master protection** (Settings → Branches → master): untick **Require branches to be up to date** and **Require linear history**.
-4. **Allow merge commits** (Settings → General → Pull Requests). The release uses a merge commit, so master keeps integration's history and the next release has no conflicts. The integration merge queue stays squash.
-5. **One-time history sync.** Today master's tip (007d28a, the 4 Oct squash of #327) is not in integration's history. That makes integration → master conflict in 40 files. Record it once in integration with a merge that changes no files. Integration's ruleset allows no direct push, so add yourself as a bypass on factory-integration for a minute, then:
+1. **Release token (OPEN).** Add repo secret `FACTORY_BATCH_TOKEN`: a Division6066 fine-grained token, repo tempo-rhythm only, 365 days max. Permissions: Contents, Pull requests, Issues and Workflows = Read and write; Administration = Read only, so preflight can read master protection (Metadata read is automatic). The repo is public, so reading checks and deployments needs nothing extra. The workflow uses it to open the PR, ask Bugbot, label and merge. Workflows write is needed because a release merges workflow files into master.
+2. **(done)** **factory-live ruleset** (Settings → Rules → Rulesets → factory-live): delete the rule **Restrict updates**. With no bypass list, it blocks every merge into master, including yours. Also untick **Require branches to be up to date before merging**. Keep the 5 required checks.
+3. **(done)** **Classic master protection** (Settings → Branches → master): untick **Require branches to be up to date** and **Require linear history**.
+4. **(done)** **Allow merge commits** (Settings → General → Pull Requests). The release uses a merge commit, so master keeps integration's history and the next release has no conflicts. The integration merge queue stays squash.
+5. **(done: integration 58c296b, tree unchanged; temporary bypass removed)** **One-time history sync.** Today master's tip (007d28a, the 4 Oct squash of #327) is not in integration's history. That makes integration → master conflict in 40 files. Record it once in integration with a merge that changes no files. Integration's ruleset allows no direct push, so add yourself as a bypass on factory-integration for a minute, then:
    ```bash
    git fetch origin
    git checkout -B release-sync origin/integration
@@ -84,7 +85,8 @@ The workflow checks all of these in preflight and names any that are missing. A 
    git push origin release-sync:integration
    ```
    Then remove the bypass. Alternative: reset master to 06bde50, which has the same files as 007d28a. That is a force push to master, so it is your call.
-6. **Convex prod key** (only when a release changes `convex/`, which the first one does): environment secret `CONVEX_DEPLOY_KEY_LIVE` on the GitHub environment **Production**. It must be a deploy key for `prod:precious-wildcat-890`. The workflow checks the prefix and never prints it.
+6. **(done)** **Convex prod key** (only when a release changes `convex/`, which the first one does): environment secret `CONVEX_DEPLOY_KEY_LIVE` on the GitHub environment **Production**. It must be a deploy key for `prod:precious-wildcat-890`. The workflow checks the prefix and never prints it.
+   Recommended hardening (still open): Settings → Environments → **Production** → Deployment branches and tags → **Selected branches**: `integration` and `master`. Today any branch's workflow job that names `environment: Production` can read this key.
 
 Why not squash into master? A squash commit is never in integration's history. So every later release conflicts again and needs step 5 again. If you still want squash, set repo variable `RELEASE_MERGE_METHOD=squash` and redo step 5 after each release.
 
@@ -98,7 +100,7 @@ You asked for one click, so the merge needs no approval. If you ever want a conf
 |---|---|---|---|
 | `FACTORY_BATCH_TOKEN` | repo secret | PR, Bugbot request, labels, merge | **no** |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | repo secret | Playwright on the protected preview | yes |
-| `CONVEX_DEPLOY_KEY_LIVE` | secret on environment Production | Convex prod deploy (only when convex/ changed) | **no** |
+| `CONVEX_DEPLOY_KEY_LIVE` | secret on environment Production | Convex prod deploy (only when convex/ changed) | yes (set 6 Oct) |
 | `RELEASE_MERGE_METHOD` | repo variable, optional | `merge` (default) or `squash` | not set (merge) |
 | `RELEASE_PREVIEW_SPECS` | repo variable, optional | narrow the preview Playwright run | not set (whole suite) |
 | `RELEASE_PREVIEW_URL` | repo variable, optional | fallback preview URL | not set (preview.tempoflow.dev) |
