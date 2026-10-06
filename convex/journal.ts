@@ -129,6 +129,17 @@ export const restore = mutation({
     if (!isRestorable(entry.deletedAt, now)) {
       return { success: false };
     }
+
+    const entries = await ctx.db
+      .query("journalEntries")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", user._id).eq("dateKey", entry.dateKey),
+      )
+      .collect();
+    if (entries.some((candidate) => candidate.deletedAt === undefined)) {
+      throw new Error("Journal entry already exists for this date");
+    }
+
     await ctx.db.patch(args.id, { deletedAt: undefined, updatedAt: now });
     return { success: true };
   },

@@ -110,4 +110,25 @@ describe("journal entry lifecycle", () => {
     expect(await handler(journal.restore)(ctx, { id })).toEqual({ success: true });
     expect(await handler(journal.getDaily)(ctx, { dateKey: "2026-10-06" })).not.toBeNull();
   });
+
+  test("restore rejects a duplicate live entry for the same day", async () => {
+    const { ctx, rows } = makeFakeCtx();
+    const removedId = (await handler(journal.create)(ctx, {
+      dateKey: "2026-10-06",
+      body: "Removed text",
+    })) as string;
+    await handler(journal.remove)(ctx, { id: removedId });
+    const liveId = (await handler(journal.updateDaily)(ctx, {
+      dateKey: "2026-10-06",
+      body: "Replacement text",
+    })) as string;
+
+    await expect(handler(journal.restore)(ctx, { id: removedId })).rejects.toThrow(
+      "Journal entry already exists for this date",
+    );
+    expect(typeof rows.get(removedId)?.deletedAt).toBe("number");
+    expect((await handler(journal.getDaily)(ctx, { dateKey: "2026-10-06" }))?._id).toBe(
+      liveId,
+    );
+  });
 });
