@@ -46,10 +46,11 @@ test.describe("command screen", () => {
     const options = page.getByRole("option");
     await expect(options.first()).toHaveAttribute("aria-selected", "true");
     await filter.press("ArrowDown");
+    await expect(options.nth(1)).toContainText("Tasks");
     await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
 
     await filter.press("Enter");
-    await expect(page).toHaveURL(url("/brain-dump"));
+    await expect(page).toHaveURL(url("/tasks"));
   });
 
   test("opens a matching screen when clicked", async ({ page }) => {
