@@ -30,6 +30,8 @@ import { frontMatter, labelNames, addLabels, removeLabel, comment, BASE } from "
 import { fetchBugbot } from "./review-gate.mjs";
 import { appendFile } from "node:fs/promises";
 
+// Ticket labels a landed batch clears (status:done is added). status:ready stayed on f3-1's tickets.
+export const FINALIZE_CLEARS = ["status:ready", "status:dispatched", "status:in-pr", "waiting:data"];
 export const REQUIRED = ["ci", "e2e-preview", "secret-scan", "config-guard", "scope-guard"];
 export const batchBranch = (loop) => {
   if (!/^[A-Za-z0-9._-]+$/.test(loop || "")) throw new Error("--loop must match ^[A-Za-z0-9._-]+$");
@@ -236,7 +238,7 @@ async function finalize(owner, repo, loop) {
       await comment(owner, repo, p.number, `Landed on \`${BASE}\` via batch PR #${pr.number} (${pr.merge_commit_sha?.slice(0, 8) || "merge queue"}). This PR was merged into \`${branch}\`; the batch PR carried it through Bugbot and the merge queue.`);
       await addLabels(owner, repo, p.number, ["merged-via-batch"]);
       const [t] = linkedTickets(p.body);
-      if (t) { await addLabels(owner, repo, t, ["status:done"]); await removeLabel(owner, repo, t, "status:in-pr"); await removeLabel(owner, repo, t, "status:dispatched"); }
+      if (t) { await addLabels(owner, repo, t, ["status:done"]); for (const l of FINALIZE_CLEARS) await removeLabel(owner, repo, t, l); }
     });
   }
 }
