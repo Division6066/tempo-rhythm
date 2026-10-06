@@ -1,30 +1,29 @@
 "use client";
 
+import { isHabitCompletedOnUtcDay } from "@/convex/lib/habitStreak";
 import { useConvexAuth, useQuery } from "convex/react";
 import { Flame } from "lucide-react";
 import Link from "next/link";
+import { checkedHabitIds, localDateKey } from "@/components/habit-checkin-strip/checkedState";
 import { HabitsLibrary } from "@/components/habits-library/HabitsLibrary";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
-import { checkedHabitIds, localDateKey } from "../habit-checkin-strip/checkedState";
 import { HabitEnergySuggestions } from "./HabitEnergySuggestions";
 
 export function HabitsScreen() {
+  const now = Date.now();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
-  const habits = useQuery(
-    api.habits.list,
-    isAuthenticated && hasConvexUser ? {} : "skip",
-  );
+  const canQuery = isAuthenticated && hasConvexUser;
+  const habits = useQuery(api.habits.list, canQuery ? {} : "skip");
+  // Done today = a habitCheckIns row for the local date (what HabitsLibrary and the
+  // Today strip read), or a legacy completeToday mark.
   const bounds = useLocalDayBounds();
   const localDate = localDateKey(new Date(bounds.startMs));
-  const checkIns = useQuery(
-    api.habitCheckIns.listForDate,
-    isAuthenticated && hasConvexUser ? { localDate } : "skip",
-  );
+  const checkIns = useQuery(api.habitCheckIns.listForDate, canQuery ? { localDate } : "skip");
   const isLoading =
     isAuthLoading ||
     (isAuthenticated &&
@@ -61,7 +60,7 @@ export function HabitsScreen() {
     );
   }
 
-  const checkedIds = checkedHabitIds(checkIns);
+  const checkedToday = checkedHabitIds(checkIns);
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
@@ -87,10 +86,13 @@ export function HabitsScreen() {
       </header>
 
       <HabitEnergySuggestions
+        key={localDate}
         habits={habits.map((habit) => ({
           _id: habit._id,
           name: habit.name,
-          completedToday: checkedIds.has(habit._id),
+          completedToday:
+            checkedToday.has(habit._id) ||
+            isHabitCompletedOnUtcDay(habit.lastCompletedAt, now),
         }))}
       />
 
