@@ -185,6 +185,10 @@ t("review gate: Bugbot clean / findings / pending / blocked", () => {
   assert.equal(bugbotState({ headSha: "abc", checkRuns: [run({ status: "in_progress", conclusion: null })] }).state, "pending");
   assert.equal(bugbotState({ headSha: "abc", checkRuns: [run({ conclusion: "failure" })] }).state, "findings");
   assert.equal(bugbotState({ headSha: "abc", comments: [{ user: { login: "cursor[bot]" }, body: "Bugbot couldn't run — GitHub account mismatch" }] }).state, "blocked");
+  // The release gate's own Actions job is not Bugbot: it must not make the gate wait on itself.
+  const gateJob = { name: "gate Bugbot (one review)", app: { slug: "github-actions" }, status: "in_progress", conclusion: null };
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [gateJob, run()] }).state, "clean");
+  assert.equal(bugbotState({ headSha: "abc", checkRuns: [gateJob] }).state, "pending");
   assert.ok(findingsNote([th()]).startsWith("BUGBOT REVIEW FINDINGS"));
 });
 t("review fix loop: 3 attempts then blocked:amit", () => {
@@ -242,6 +246,7 @@ t("batch loop: CI gate, readiness (drafts allowed), order, body, one review requ
   const head = { headSha: "abc", headDate: "2026-10-06T08:00:00Z" };
   assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [] }).need, true);
   assert.equal(reviewNeeded({ ...head, checkRuns: [{ name: "Cursor Bugbot", status: "in_progress" }], comments: [] }).need, false);
+  assert.equal(reviewNeeded({ ...head, checkRuns: [{ name: "gate Bugbot (one review)", app: { slug: "github-actions" }, status: "in_progress" }], comments: [] }).need, true);
   assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [{ user: { login: "Division6066" }, body: "@cursor review", created_at: "2026-10-06T08:01:00Z" }] }).need, false);
   assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [{ user: { login: "Division6066" }, body: "@cursor review", created_at: "2026-10-06T07:00:00Z" }] }).need, true);
 });

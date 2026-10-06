@@ -10,7 +10,8 @@ import { gh, ghAll } from "./gh-api.mjs";
 
 export const BUGBOT_LOGINS = ["cursor[bot]", "cursor"];
 const isBugbotUser = (u) => !!u && BUGBOT_LOGINS.includes(u.login || u);
-const isBugbotRun = (r) => /bugbot/i.test(r.name || "") || (r.app && /cursor/i.test(r.app.slug || "") && /review|bug/i.test(r.name || ""));
+// GitHub Actions jobs are never Bugbot: the release gate's own job is named "gate Bugbot (one review)".
+export const isBugbotRun = (r) => r.app?.slug !== "github-actions" && (/bugbot/i.test(r.name || "") || (r.app && /cursor/i.test(r.app.slug || "") && /review|bug/i.test(r.name || "")));
 
 export function bugbotState({ headSha, checkRuns = [], threads = [], comments = [] }) {
   const blockedNote = comments.filter((c) => isBugbotUser(c.user) && /couldn.?t run|account mismatch|usage limit/i.test(c.body || "")).pop();

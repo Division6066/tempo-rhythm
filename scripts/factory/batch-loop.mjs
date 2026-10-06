@@ -31,7 +31,7 @@
 import { quietHours } from "./quiet-hours.mjs";
 import { gh, ghAll, repoParts, summary, linkedTickets } from "./gh-api.mjs";
 import { frontMatter, labelNames, addLabels, removeLabel, comment, BASE } from "./factory-lib.mjs";
-import { fetchBugbot } from "./review-gate.mjs";
+import { fetchBugbot, isBugbotRun } from "./review-gate.mjs";
 import { appendFile } from "node:fs/promises";
 
 // Ticket labels a landed batch clears (status:done is added). status:ready stayed on f3-1's tickets.
@@ -82,7 +82,7 @@ export function batchBody({ loop, merged, skipped }) {
 }
 // Is a Bugbot review already done / running / requested for the head commit?
 export function reviewNeeded({ headSha, headDate, checkRuns, comments }) {
-  const runs = checkRuns.filter((r) => /bugbot/i.test(r.name || ""));
+  const runs = checkRuns.filter(isBugbotRun);
   if (runs.length) return { need: false, why: `Bugbot check already ${runs.some((r) => r.status !== "completed") ? "running" : "done"} on ${String(headSha).slice(0, 7)}` };
   const t = Date.parse(headDate || 0) || 0;
   const req = comments.filter((c) => REVIEW_REQ.test(c.body || "") && !/\[bot\]$/.test(c.user?.login || "") && (Date.parse(c.created_at) || 0) >= t);
