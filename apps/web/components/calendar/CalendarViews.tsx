@@ -153,8 +153,6 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const removeConvexEvent = useMutation(api.calendar_events.remove);
   const restoreConvexEvent = useMutation(api.calendar_events.restore);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const authState = getAddEventAuthState({ isAuthenticated, isLoading: isAuthLoading });
-  const isAuthWaiting = eventSourceMode === "convex" && authState === "wait";
 
   useEffect(() => {
     if (eventSourceMode === "local") {
@@ -174,6 +172,12 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
     api.users.getProfile,
     eventSourceMode === "convex" && isAuthenticated ? {} : "skip"
   );
+  const authState = getAddEventAuthState({
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    profile,
+  });
+  const isAuthWaiting = eventSourceMode === "convex" && authState === "wait";
   const hasConvexUser = eventSourceMode === "convex" && isAuthenticated && profile != null;
   const convexEvents = useQuery(
     api.calendar_events.listInRange,
@@ -313,7 +317,11 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
             disabled={isSubmitting || isAuthWaiting}
             type="submit"
           >
-            {isAuthWaiting ? "One moment…" : isSubmitting ? "Adding..." : "Add event"}
+            {isAuthWaiting
+              ? "Getting your calendar ready…"
+              : isSubmitting
+                ? "Adding..."
+                : "Add event"}
           </button>
         </div>
 
