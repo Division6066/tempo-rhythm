@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, mutation } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { AiAuthError, AiContextTooLargeError, AiRateLimitedError, AiUpstreamError } from "./lib/ai_errors";
+import { requireApprovedForAi } from "./lib/aiGate";
 import { callLLM } from "./lib/ai_router";
 import { validateBrainDumpInput } from "./lib/brainDumpInput";
 import {
@@ -46,6 +47,8 @@ export const prioritize = action({
     if (!identity) {
       throw new Error("Sign in to use planning on this device.");
     }
+    // Sign-up approval gate: no model call for pending/revoked accounts.
+    await requireApprovedForAi(ctx);
 
     const validated = validateBrainDumpInput(args.rawText);
     if (!validated.ok) {

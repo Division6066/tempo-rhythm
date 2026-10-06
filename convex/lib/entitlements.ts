@@ -66,8 +66,16 @@ function storedFullName(fullName: string | undefined): string | undefined {
   return trimmed;
 }
 
-/** Field set for a brand-new account. Signup is open, so everyone gets `max`. */
-export function newUserFields(profile: SignInProfile, now: number) {
+/**
+ * Field set for a brand-new account. Everyone gets `max`, but the account starts
+ * `approvalStatus: "pending"` (sign-up approval gate, convex/lib/approval.ts) unless
+ * the caller passes "approved" (admin emails from TEMPO_ADMIN_EMAILS).
+ */
+export function newUserFields(
+  profile: SignInProfile,
+  now: number,
+  approvalStatus: "pending" | "approved" = "pending",
+) {
   const fullName = storedFullName(profile.fullName);
   return {
     email: profile.email,
@@ -77,7 +85,9 @@ export function newUserFields(profile: SignInProfile, now: number) {
     userType: GRANTED_USER_TYPE,
     betaAccess: GRANTED_BETA_ACCESS,
     entitlementTier: GRANTED_ENTITLEMENT_TIER,
-    betaApprovedAt: now,
+    approvalStatus,
+    approvalUpdatedAt: now,
+    ...(approvalStatus === "approved" ? { betaApprovedAt: now } : {}),
     isActive: true,
     createdAt: now,
     updatedAt: now,

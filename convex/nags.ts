@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalQuery, mutation, query } from "./_generated/server";
 import { AiAuthError, AiRateLimitedError, AiUpstreamError } from "./lib/ai_errors";
+import { requireApprovedForAi } from "./lib/aiGate";
 import { callLLM } from "./lib/ai_router";
 import { parseProposals, validatePhrase } from "./lib/nagPhrase";
 import { requireUser } from "./lib/requireUser";
@@ -203,6 +204,8 @@ export const proposePhrases = action({
     if (!identity) {
       throw new Error("Sign in to use phrase suggestions.");
     }
+    // Sign-up approval gate: no model call for pending/revoked accounts.
+    await requireApprovedForAi(ctx);
     const nag = await ctx.runQuery(internal.nags.getForProposal, { nagId: args.nagId });
     if (!nag) {
       throw new Error("Nag not found");
