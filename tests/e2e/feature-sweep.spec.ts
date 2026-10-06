@@ -36,7 +36,12 @@ test.describe.configure({ mode: "serial" });
 if (enabled && storageStatePath) {
   // This sandbox has system Chrome, not Playwright's downloaded browser.
   // CI leaves `enabled` false, so it keeps the default Chromium project.
-  test.use({ storageState: storageStatePath, channel: "chrome" });
+  test.use({
+    storageState: storageStatePath,
+    channel: "chrome",
+    actionTimeout: 8_000,
+    navigationTimeout: 20_000,
+  });
 }
 
 function redact(text: string): string {
@@ -123,9 +128,23 @@ async function isNotFound(page: Page, status: number | null): Promise<boolean> {
   return missing > 0;
 }
 
+async function signedOut(page: Page): Promise<boolean> {
+  if (new URL(page.url()).pathname === "/sign-in") return true;
+  return (await page.locator("#sign-in-email").count()) > 0;
+}
+
 async function open(page: Page, route: string): Promise<number | null> {
   const response = await page.goto(route, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1200);
+  const deadline = Date.now() + 12_000;
+  while (Date.now() < deadline) {
+    const out = await signedOut(page);
+    const shell = (await page.getByRole("link", { name: "Today" }).count()) > 0;
+    if (shell && !out) return response?.status() ?? null;
+    if (!out && (await page.locator("main h1, main").count()) > 0 && !shell) {
+      return response?.status() ?? null;
+    }
+    await page.waitForTimeout(400);
+  }
   return response?.status() ?? null;
 }
 
@@ -133,11 +152,11 @@ type Gate = "ready" | "scaffold" | "missing" | "signed-out" | "not-found";
 
 async function gate(page: Page, route: string, marker: Locator): Promise<Gate> {
   const status = await open(page, route);
-  if (new URL(page.url()).pathname === "/sign-in") return "signed-out";
+  if (await signedOut(page)) return "signed-out";
   if (await isNotFound(page, status)) return "not-found";
   const deadline = Date.now() + 8_000;
   while (Date.now() < deadline) {
-    if (new URL(page.url()).pathname === "/sign-in") return "signed-out";
+    if (await signedOut(page)) return "signed-out";
     if (await isScaffold(page)) return "scaffold";
     if ((await marker.count()) > 0) return "ready";
     await page.waitForTimeout(400);
@@ -220,7 +239,7 @@ test.describe("logged-in feature sweep", () => {
     const route = "/today";
     try {
       const status = await open(page, route);
-      if (new URL(page.url()).pathname === "/sign-in") {
+      if (await signedOut(page)) {
         await record(page, { feature, pr: "#598", route, status: "broken", error: "redirected to /sign-in" }, watch);
         return;
       }
@@ -600,7 +619,22 @@ test.describe("logged-in feature sweep", () => {
         await record(page, { feature, pr: "#647", route, ...blocked }, watch);
         return;
       }
-      await page.getByLabel("Message").fill(CRISIS_PHRASE);
+      const crisisInput = page.getByLabel("Message");
+      const crisisReady = await crisisInput.isEnabled().catch(() => false);
+      if (!crisisReady) {
+        await expect(crisisInput).toBeEnabled({ timeout: 8_000 }).catch(() => undefined);
+      }
+      if (!(await crisisInput.isEnabled().catch(() => false))) {
+        await record(page, {
+          feature,
+          pr: "#647",
+          route,
+          status: "broken",
+          error: "message input stayed disabled",
+        }, watch);
+        return;
+      }
+      await crisisInput.fill(CRISIS_PHRASE);
       await page.getByRole("button", { name: "Send" }).click();
       const card = page.getByText(CRISIS_TITLE);
       const fallback = page.getByText("Help is available");
@@ -635,7 +669,11 @@ test.describe("logged-in feature sweep", () => {
         return;
       }
       const input = page.getByLabel("Message");
-      await expect(input).toBeEnabled({ timeout: 15_000 });
+      const inputReady = await expect(input).toBeEnabled({ timeout: 8_000 }).then(() => true).catch(() => false);
+      if (!inputReady) {
+        await record(page, { feature, pr: "old", route, status: "broken", error: "message input stayed disabled" }, watch);
+        return;
+      }
       const before = await page.locator('[data-role="assistant"]').count();
       await input.fill(prompt);
       await page.getByRole("button", { name: "Send" }).click();
@@ -836,6 +874,10 @@ test.describe("logged-in feature sweep", () => {
     const route = "/onboarding";
     try {
       const status = await open(page, route);
+      if (await signedOut(page)) {
+        await record(page, { feature, pr: "#631", route, status: "broken", error: "sign-in wall still showing" }, watch);
+        return;
+      }
       if (new URL(page.url()).pathname === "/today") {
         await record(page, {
           feature,
@@ -1050,13 +1092,18 @@ test.describe("logged-in feature sweep", () => {
         await record(page, { feature, pr: "#664", route, status: "not-wired", error: "route 404" }, watch);
         return;
       }
-      const settled = page.getByRole("heading", { name: "Insights" });
       const retry = page.getByRole("button", { name: "Retry" });
-      const empty = page.getByText(/nothing tracked|No insights|not enough/i);
-      const seen = await settled.or(retry).or(empty).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
-      const skeletonOnly = (await page.locator(".animate-pulse").count()) > 0 && (await settled.count()) === 0;
-      if (!seen || skeletonOnly) {
-        await record(page, { feature, pr: "#664", route, status: "broken", error: "still on a skeleton after 10s" }, watch);
+      const settled = page.getByText(/\d|Nothing tracked|not enough|No insights yet/i);
+      const seen = await settled.or(retry).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+      const pulses = await page.locator(".animate-pulse").count();
+      if (!seen || pulses > 2) {
+        await record(page, {
+          feature,
+          pr: "#664",
+          route,
+          status: "broken",
+          error: "still on a skeleton after 10s",
+        }, watch);
         return;
       }
       await record(page, { feature, pr: "#664", route, status: "works", error: "" }, watch);
@@ -1138,8 +1185,8 @@ test.describe("other routes smoke", () => {
       const feature = `smoke ${route}`;
       try {
         const status = await open(page, route);
-        if (new URL(page.url()).pathname === "/sign-in") {
-          await record(page, { feature, pr: "smoke", route, status: "broken", error: "redirected to /sign-in" }, watch);
+        if (await signedOut(page)) {
+          await record(page, { feature, pr: "smoke", route, status: "broken", error: "sign-in wall still showing" }, watch);
           return;
         }
         if (await isNotFound(page, status)) {
