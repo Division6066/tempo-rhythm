@@ -117,3 +117,17 @@ notes for ticket sync: <follow-ups, doc errors, or none>
 - The report is posted on the ticket.
 
 What happens after that is automatic: the PR merges into the loop's batch branch, the batch PR gets one review and goes through the merge queue into integration, and integration deploys to preview. Deploying to live is the owner's job.
+
+## Picking up a factory ticket (Freebuff / OpenCode)
+
+For any agent a person runs by hand, such as Freebuff or OpenCode. The router sends a ticket here only when Claude, Codex and Cursor are all at their usage limits (`docs/factory/AGENT-LIMITS.md`).
+
+1. **Quiet hours:** don't start anything new between 22:00 and 09:00 Asia/Jerusalem. Work already running may finish. No new branches, PRs or comments in those hours.
+2. **Where tickets live:** GitHub issues in this repo labelled `status:ready` + `needs:manual-run` + an `agent:*` label. Only take an issue whose `agent:*` label matches you (`agent:freebuff`, `agent:opencode`).
+3. **Read before you code:** the whole issue and its comments (FOR / GOAL / SCOPE / DONE), this AGENTS.md, `RULES.md`, and `.github/workflows/*`, so you know which checks must pass (ci, e2e-preview, secret-scan, config-guard, scope-guard).
+4. **Branch:** `t/<issue>-<ticket-id-lowercase>` off `integration`, e.g. `t/712-b04-03`, the factory's name (`ticketBranch()` in `scripts/factory/factory-lib.mjs`). If the branch already exists, continue on it.
+5. **PR:** a **draft** PR **into `integration`** (never `master` or `live`), opened as Division6066, with `Closes #<issue>` in the body. One ticket per PR. Then remove `needs:manual-run` and the `agent:*` label, and add `status:in-pr`.
+6. **CI must pass:** run `bun run lint`, `bun run typecheck`, `bun run test` and the ticket's DONE commands locally first. A PR with red CI isn't done: fix it, or comment that you're blocked.
+7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
+8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
+9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
