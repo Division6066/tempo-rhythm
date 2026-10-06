@@ -18,6 +18,7 @@ import { loopRouting } from "./validate-tickets.mjs";
 import { shouldDeploy, assertLiveKeyTarget, judgeSmoke } from "./deploy-live-plan.mjs";
 import { israelDate, isReleaseTitle, prNumbersFromMessage, renderReleaseBody } from "./release-pr.mjs";
 import { quietHours, inWindow, parseHour, jerusalemHour } from "./quiet-hours.mjs";
+import { chooseLane, preference, atLimit, available, ticketKind, FALLBACK_LABELS } from "./lane-limits.mjs";
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log(`ok ${n} - ${name}`); };
 const T = (number, ticket, batch, type, scope, labels = ["status:ready"], extra = {}) => ({ number, title: ticket, labels, fm: { ticket, batch, type, scope, ...extra } });
@@ -55,11 +56,15 @@ t("depends_on must be status:done; max in flight", () => {
   const m = pick([T(1, "B02-01", "B02", "component", ["a/"]), T(2, "B02-02", "B02", "component", ["b/"])], { ...ENV, FACTORY_MAX_IN_FLIGHT: "1" });
   assert.equal(m.ready.length, 1);
 });
-t("data tickets always claude; lane quota thirds; codex manual -> two lanes", () => {
+t("lanes: data -> claude; build split claude+codex, cursor last; codex manual -> claude only", () => {
   const all = Array.from({ length: 9 }, (_, i) => T(i + 1, `B02-0${i + 1}`, "B02", i === 0 ? "data" : "component", [`f${i}/`]));
   const r = pick(all, ENV);
-  assert.equal(r.ready[0].lane, "claude"); assert.deepEqual(r.lane_quota.B02.remaining, { claude: 3, codex: 3, cursor: 3 });
-  assert.deepEqual(pick(all, { ...ENV, FACTORY_CODEX_MODE: "manual" }).lane_quota.B02.remaining, { claude: 5, cursor: 4 });
+  assert.equal(r.ready[0].lane, "claude");
+  const n = (res, l) => res.ready.filter((x) => x.lane === l).length;
+  assert.equal(n(r, "cursor"), 0); assert.equal(n(r, "claude"), 5); assert.equal(n(r, "codex"), 4);
+  assert.deepEqual(r.agent_preference, ["claude", "codex", "cursor"]); assert.deepEqual(r.available_lanes, ["claude", "codex", "cursor"]);
+  const m = pick(all, { ...ENV, FACTORY_CODEX_MODE: "manual" });
+  assert.equal(n(m, "codex"), 0); assert.equal(n(m, "claude"), 9);
 });
 t("merge order: per batch data first, then ticket order", () => {
   const o = order([{ fm: { batch: "B02", type: "component", ticket: "B02-10" } }, { fm: { batch: "B02", type: "data", ticket: "B02-05" } }, { fm: { batch: "B01", type: "component", ticket: "B01-02" } }, { fm: { batch: "B02", type: "component", ticket: "B02-2" } }]);
@@ -301,6 +306,55 @@ t("quiet hours: next-tickets dispatches nothing at night (paused + reason), even
   const day = pick(tk, env, IL("2026-10-06T13:00:00+03:00"));
   assert.equal(day.paused, false);
   assert.equal(day.ready.length, 1);
+});
+
+
+t("lane-limits: preference var, unknown names ignored, missing lanes appended", () => {
+  assert.deepEqual(preference({}), ["claude", "codex", "cursor"]);
+  assert.deepEqual(preference({ FACTORY_AGENT_PREFERENCE: "cursor, Codex,foo,cursor" }), ["cursor", "codex", "claude"]);
+  assert.deepEqual(preference({ FACTORY_AGENT_PREFERENCE: "codex" }), ["codex", "claude", "cursor"]);
+  assert.deepEqual(atLimit({ FACTORY_CURSOR_AT_LIMIT: "TRUE", FACTORY_CODEX_AT_LIMIT: "false" }), { claude: false, codex: false, cursor: true });
+  assert.deepEqual(available({ FACTORY_CLAUDE_AT_LIMIT: "true" }, { codexMode: "manual" }), ["cursor"]);
+});
+t("lane-limits: cursor at limit -> claude/codex only; codex at limit -> claude, then cursor", () => {
+  const cur = { FACTORY_CURSOR_AT_LIMIT: "true" };
+  assert.equal(chooseLane({ want: "cursor" }, cur).lane, "claude");
+  assert.equal(chooseLane({ kind: "browser", want: "cursor" }, cur).lane, "codex");
+  assert.equal(chooseLane({ kind: "browser" }, cur).lane, "codex");
+  assert.equal(chooseLane({ counts: { claude: 3, codex: 1 } }, cur).lane, "codex");
+  const cod = { FACTORY_CODEX_AT_LIMIT: "true" };
+  assert.equal(chooseLane({}, cod).lane, "claude");
+  assert.equal(chooseLane({ counts: { claude: 9 } }, cod).lane, "claude"); // cursor is the fallback, not a balancing peer
+  assert.equal(chooseLane({ want: "codex" }, cod).lane, "claude");
+  assert.equal(chooseLane({ kind: "browser" }, cod).lane, "cursor");
+  assert.equal(chooseLane({}, { ...cod, FACTORY_CLAUDE_AT_LIMIT: "true" }).lane, "cursor");
+  assert.equal(chooseLane({ kind: "data" }, { FACTORY_CLAUDE_AT_LIMIT: "true" }).lane, "codex");
+  assert.equal(chooseLane({ kind: "browser" }, { FACTORY_CODEX_AT_LIMIT: "true", FACTORY_CURSOR_AT_LIMIT: "true" }).lane, "claude");
+  assert.equal(ticketKind({ type: "component", browser_test: "true" }), "browser"); assert.equal(ticketKind({ type: "data", browser_test: "true" }), "data");
+});
+t("lane-limits: all three at limit -> freebuff (manual), never a paid API lane", () => {
+  const all = { FACTORY_CLAUDE_AT_LIMIT: "true", FACTORY_CODEX_AT_LIMIT: "true", FACTORY_CURSOR_AT_LIMIT: "true" };
+  for (const kind of ["build", "data", "browser"]) for (const want of [null, "claude", "codex", "cursor"]) {
+    const c = chooseLane({ kind, want }, all);
+    assert.equal(c.lane, "freebuff"); assert.equal(c.manual, true); assert.match(c.reason, /usage limits/);
+  }
+  assert.deepEqual(FALLBACK_LABELS, ["agent:freebuff", "needs:manual-run"]);
+  for (const env of [{}, all, { FACTORY_AGENT_PREFERENCE: "metered,api,copilot" }]) {
+    assert.ok(["claude", "codex", "cursor", "freebuff"].includes(chooseLane({}, env).lane));
+  }
+});
+t("next-tickets: limits route lanes, pinned lanes, all-at-limit -> manual_fallback without a slot", () => {
+  const tk = [T(1, "B02-01", "B02", "component", ["a/"], ["status:ready"], { lane: "cursor", lane_pin: "true" }),
+    T(2, "B02-02", "B02", "component", ["b/"], ["status:ready"], { browser_test: "true", lane: "cursor" }),
+    T(3, "B02-03", "B02", "component", ["c/"], ["status:ready", "needs:manual-run", "agent:freebuff"])];
+  const r = pick(tk, ENV);
+  assert.equal(r.ready[0].lane, "cursor"); assert.equal(r.ready[1].lane, "codex"); assert.equal(r.ready.length, 2);
+  assert.ok(r.skipped.some((x) => x.issue === 3 && /needs:manual-run/.test(x.reason)));
+  const c = pick(tk, { ...ENV, FACTORY_CURSOR_AT_LIMIT: "true" });
+  assert.equal(c.ready[0].lane, "claude"); assert.match(c.ready[0].lane_reason, /cursor at usage limit/);
+  const all = pick(tk, { ...ENV, FACTORY_MAX_IN_FLIGHT: "2", FACTORY_CLAUDE_AT_LIMIT: "true", FACTORY_CODEX_AT_LIMIT: "true", FACTORY_CURSOR_AT_LIMIT: "true" });
+  assert.equal(all.ready.length, 0); assert.equal(all.all_at_limit, true);
+  assert.deepEqual(all.manual_fallback.map((x) => [x.issue, x.lane, x.labels.join("+")]), [[1, "freebuff", "agent:freebuff+needs:manual-run"], [2, "freebuff", "agent:freebuff+needs:manual-run"]]);
 });
 
 console.log(`all ${n} passed`);

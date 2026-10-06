@@ -64,6 +64,11 @@ jobs:
       issue: ${{ steps.pick.outputs.issue }}
       base: ${{ steps.pick.outputs.base }}
     steps:
+      - name: Checkout lane-limits script (default branch, no credentials)
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
       - id: pick
         env:
           GH_TOKEN: ${{ github.token }}
@@ -75,6 +80,11 @@ jobs:
           INPUT_BASE: ${{ inputs.base }}
           LABEL_NAME: ${{ github.event.label.name }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          # Usage limits + preference (scripts/factory/lane-limits.mjs, docs/factory/AGENT-LIMITS.md).
+          FACTORY_CLAUDE_AT_LIMIT: ${{ vars.FACTORY_CLAUDE_AT_LIMIT }}
+          FACTORY_CODEX_AT_LIMIT: ${{ vars.FACTORY_CODEX_AT_LIMIT }}
+          FACTORY_CURSOR_AT_LIMIT: ${{ vars.FACTORY_CURSOR_AT_LIMIT }}
+          FACTORY_AGENT_PREFERENCE: ${{ vars.FACTORY_AGENT_PREFERENCE }}
         run: |
           set -euo pipefail
           # Label and workflow_dispatch both spend a write token. Triage and
@@ -106,6 +116,25 @@ jobs:
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue must be digits"; exit 1 ;;
           esac
+          # Usage limits: an agent at its limit (FACTORY_*_AT_LIMIT) gets nothing new; fall back in FACTORY_AGENT_PREFERENCE
+          # order; all three at their limit -> Freebuff (free, manual run). Never a pay-per-use agent.
+          res=$(node scripts/factory/lane-limits.mjs --want "$$AGENT")
+          new_lane=$(printf '%s\n' "$res" | sed -n 's/^lane=//p')
+          manual=$(printf '%s\n' "$res" | sed -n 's/^manual=//p')
+          reason=$(printf '%s\n' "$res" | sed -n 's/^reason=//p')
+          if [ "$manual" = true ]; then
+            for l in agent:freebuff needs:manual-run; do gh label create "$l" -R "$REPO" --color FBCA04 --force >/dev/null; done
+            gh issue edit "$ISSUE" -R "$REPO" --add-label "agent:freebuff" --add-label "needs:manual-run"
+            gh issue comment "$ISSUE" -R "$REPO" --body "Agent router: usage limits - Claude, Codex and Cursor are all at their limit. Fallback: Freebuff (free), manual run by Dots/Amit; see docs/factory/AGENT-LIMITS.md."
+            echo "::notice title=Usage limits::#$ISSUE -> agent:freebuff + needs:manual-run"
+            echo "agent=" >> "$GITHUB_OUTPUT"
+            echo "issue=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$new_lane" != "$AGENT" ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "Agent router: $reason (usage limits; docs/factory/AGENT-LIMITS.md)."
+            AGENT="$new_lane"
+          fi
           BASE="${INPUT_BASE:-integration}"
           case "$BASE" in
             master|main|*/master|*/main)
