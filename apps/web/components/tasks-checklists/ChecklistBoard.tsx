@@ -12,6 +12,7 @@ import {
   renameStep,
   toggleStep,
   type ChecklistStep,
+  undoFeedback,
 } from "./checklistOps";
 
 type OpenTask = Doc<"tasks"> & { checklist?: ChecklistStep[] };
@@ -90,9 +91,9 @@ export function ChecklistBoard() {
     setPendingTaskId(removed.taskId);
     setFeedback("");
     try {
-      await restoreTask({ taskId: removed.taskId });
+      const result = await restoreTask({ taskId: removed.taskId });
       setRemoved(null);
-      setFeedback("Task restored.");
+      setFeedback(undoFeedback(result));
     } catch (error) {
       setFeedback(messageFor(error));
     } finally {
