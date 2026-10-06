@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { findScreen, TEMPO_SCREENS } from "@/lib/tempo-nav";
 import { Command, Moon, Search, Sun } from "@tempo/ui/icons";
+import { GreetingName } from "@/components/account/GreetingName";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
 type Props = {
@@ -38,6 +39,10 @@ export function Topbar({ onOpenPalette }: Props) {
       </h1>
 
       <div className="ml-auto flex items-center gap-2">
+        <span className="hidden sm:inline text-small text-muted-foreground mr-2">
+          <GreetingName />
+        </span>
+
         {/* @action openCommandPalette */}
         <button
           type="button"
