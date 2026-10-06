@@ -4,6 +4,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { buildExecutorSetup } from "./executorSetup";
 
 export const MCP_PENDING_COPY =
   "Your account is waiting for approval. You can create MCP tokens once it is approved.";
@@ -25,8 +26,11 @@ export function McpTokensCard() {
   const [pending, setPending] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [executorCopied, setExecutorCopied] = useState(false);
+  const [showExecutorFallback, setShowExecutorFallback] = useState(false);
 
   const endpoint = typeof window === "undefined" ? "/api/mcp" : `${window.location.origin}/api/mcp`;
+  const executorSetup = buildExecutorSetup(endpoint);
   const active = (tokens ?? []).filter((t) => t.revokedAt === undefined);
 
   const handleCreate = async () => {
@@ -70,6 +74,21 @@ export function McpTokensCard() {
       await revokeToken({ tokenId });
     } catch {
       setMessage("We couldn't revoke that token. Try again in a moment.");
+    }
+  };
+
+  const handleExecutorCopy = async () => {
+    setExecutorCopied(false);
+    if (!navigator.clipboard?.writeText) {
+      setShowExecutorFallback(true);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(executorSetup);
+      setExecutorCopied(true);
+      setShowExecutorFallback(false);
+    } catch {
+      setShowExecutorFallback(true);
     }
   };
 
@@ -178,10 +197,36 @@ export function McpTokensCard() {
 
       <div className="mt-6 space-y-2 text-sm text-muted-foreground">
         <h3 className="font-medium text-foreground">Connect Executor</h3>
-        <p>Add an MCP source of type Streamable HTTP with these values:</p>
+        <p>Copy a ready-to-paste MCP source setup, then replace the token placeholder.</p>
         <pre className="overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
-          {`URL: ${endpoint}\nHeader: Authorization: Bearer <your token>`}
+          {executorSetup}
         </pre>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => void handleExecutorCopy()}>
+            {executorCopied ? "Copied" : "Copy Executor setup"}
+          </Button>
+          <a
+            href="https://github.com/Levidavidspublic/tempo-rhythm/blob/integration/docs/ops/EXECUTOR.md"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            Full guide
+          </a>
+        </div>
+        {showExecutorFallback ? (
+          <label className="block space-y-1">
+            <span>Clipboard access is unavailable. Select and copy this setup:</span>
+            <textarea
+              readOnly
+              aria-label="Executor setup"
+              value={executorSetup}
+              onFocus={(event) => event.currentTarget.select()}
+              rows={4}
+              className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+            />
+          </label>
+        ) : null}
       </div>
     </section>
   );
