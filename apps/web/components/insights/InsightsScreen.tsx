@@ -2,13 +2,16 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import { BarChart3, CheckCircle2, Compass, Flame } from "lucide-react";
-import type { ReactNode } from "react";
+import { Component, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { startOfLocalWeekMondayMs } from "@/lib/localDay";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { deriveInsightsState } from "./insightsState";
+
+const LOADING_TIMEOUT_MS = 10_000;
 
 /**
  * Read-only insights surface (reads `analytics.insightsSummary`; mutates nothing).
@@ -102,9 +105,79 @@ function BucketBars({
   );
 }
 
+function InsightsSkeleton() {
+  return (
+    <div className="container mx-auto max-w-5xl px-6 py-12">
+      <div className="space-y-6">
+        <div className="h-12 w-64 animate-pulse rounded-xl bg-muted" />
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="h-56 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-56 animate-pulse rounded-2xl bg-muted" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InsightsRetryCard({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="container mx-auto max-w-5xl px-6 py-16 text-center">
+      <SoftCard className="mx-auto max-w-xl">
+        <h1 className="font-heading text-2xl font-semibold text-foreground">Insights</h1>
+        <p className="mt-3 text-muted-foreground" role="alert">
+          We couldn&apos;t load your overview. Try again.
+        </p>
+        <Button className="mt-6" onClick={onRetry}>
+          Retry
+        </Button>
+      </SoftCard>
+    </div>
+  );
+}
+
+/** Catches a thrown `insightsSummary` query so the screen shows a calm retry card. */
+class InsightsErrorBoundary extends Component<
+  { onRetry: () => void; children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (this.state.failed) {
+      return (
+        <InsightsRetryCard
+          onRetry={() => {
+            this.setState({ failed: false });
+            this.props.onRetry();
+          }}
+        />
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function InsightsScreen() {
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+  return (
+    <InsightsErrorBoundary onRetry={retry}>
+      <InsightsContent key={attempt} onRetry={retry} />
+    </InsightsErrorBoundary>
+  );
+}
+
+function InsightsContent({ onRetry }: { onRetry: () => void }) {
   const bounds = useLocalDayBounds();
-  const weekStartMs = startOfLocalWeekMondayMs(new Date(bounds.startMs));
+  const weekStartMs = Math.min(startOfLocalWeekMondayMs(new Date(bounds.startMs)), bounds.startMs);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
@@ -115,31 +188,26 @@ export function InsightsScreen() {
       : "skip",
   );
 
-  const isLoading =
-    isAuthLoading ||
-    (isAuthenticated && (profile === undefined || (hasConvexUser && summary === undefined)));
+  const [timedOut, setTimedOut] = useState(false);
+  const input = { isAuthLoading, isAuthenticated, profile, summary };
+  const stillLoading = deriveInsightsState({ ...input, failed: false }) === "loading";
+  useEffect(() => {
+    // Each loading phase gets its own full timeout: reset when loading ends, so a later reload
+    // (e.g. local-day rollover changing the query args) waits again instead of failing at once.
+    if (!stillLoading) {
+      setTimedOut(false);
+      return;
+    }
+    const id = setTimeout(() => setTimedOut(true), LOADING_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [stillLoading]);
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto max-w-5xl px-6 py-12">
-        <div className="space-y-6">
-          <div className="h-12 w-64 animate-pulse rounded-xl bg-muted" />
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <div className="h-36 animate-pulse rounded-2xl bg-muted" />
-            <div className="h-36 animate-pulse rounded-2xl bg-muted" />
-            <div className="h-36 animate-pulse rounded-2xl bg-muted" />
-            <div className="h-36 animate-pulse rounded-2xl bg-muted" />
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="h-56 animate-pulse rounded-2xl bg-muted" />
-            <div className="h-56 animate-pulse rounded-2xl bg-muted" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const state = deriveInsightsState({ ...input, failed: timedOut && stillLoading });
 
-  if (!isAuthenticated || !profile || !summary) {
+  if (state === "loading") return <InsightsSkeleton />;
+  if (state === "error") return <InsightsRetryCard onRetry={onRetry} />;
+
+  if (state === "signed-out" || !summary) {
     return (
       <div className="container mx-auto max-w-5xl px-6 py-16 text-center">
         <SoftCard className="mx-auto max-w-xl">
@@ -155,11 +223,7 @@ export function InsightsScreen() {
     );
   }
 
-  const nothingTrackedYet =
-    summary.tasksOpen === 0 &&
-    summary.tasksCompletedThisWeek === 0 &&
-    summary.habitsTotal === 0 &&
-    summary.goalsActive === 0;
+  const nothingTrackedYet = state === "empty";
 
   return (
     <div className="container mx-auto max-w-5xl px-6 py-12">
@@ -216,7 +280,7 @@ export function InsightsScreen() {
                 detail={
                   summary.tasksOverdue === 0
                     ? "Everything open is either scheduled or flexible."
-                    : `${summary.tasksOverdue} of these have been waiting patiently — pick them up whenever you're ready.`
+                    : `${summary.tasksOverdue} of these are waiting for a new date — pick them up whenever you're ready.`
                 }
               />
               <StatCard
