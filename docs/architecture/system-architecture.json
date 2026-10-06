@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "06bde50ef129320cc818b7851c2841c91a1449cc"
+      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
     }
   },
   "components": [
@@ -63,7 +63,7 @@
         160,
         60
       ],
-      "tag": "prod host UNKNOWN",
+      "tag": "prod www.tempoflow.dev",
       "sources": [
         {
           "path": "apps/web/vercel.json",
@@ -72,10 +72,10 @@
           "label": "Next.js on Vercel"
         },
         {
-          "path": "docs/ENVIRONMENTS.md",
-          "line": 5,
-          "end_line": 5,
-          "label": "preview.tempoflow.dev"
+          "path": ".github/workflows/release.yml",
+          "line": 12,
+          "end_line": 14,
+          "label": "prod health check URL"
         }
       ]
     },
@@ -162,7 +162,7 @@
       "id": "convex",
       "type": "backend",
       "label": "Convex functions",
-      "sublabel": "queries, mutations, http",
+      "sublabel": "queries, mutations, http, /mcp",
       "pos": [
         560,
         240
@@ -183,14 +183,48 @@
           "line": 7,
           "end_line": 17,
           "label": "auth routes + webhook"
+        },
+        {
+          "path": "convex/http.ts",
+          "line": 20,
+          "end_line": 24,
+          "label": "MCP route"
         }
       ]
     },
     {
-      "id": "mistral",
+      "id": "mcpclient",
       "type": "external",
-      "label": "Mistral API",
-      "sublabel": "fast, balanced, deep",
+      "label": "MCP clients",
+      "sublabel": "personal token",
+      "pos": [
+        860,
+        48
+      ],
+      "size": [
+        160,
+        60
+      ],
+      "sources": [
+        {
+          "path": "apps/web/app/api/mcp/route.ts",
+          "line": 1,
+          "end_line": 30,
+          "label": "web proxy to /mcp"
+        },
+        {
+          "path": "convex/mcpHttp.ts",
+          "line": 1,
+          "end_line": 1,
+          "label": "Streamable HTTP handler"
+        }
+      ]
+    },
+    {
+      "id": "deepinfra",
+      "type": "external",
+      "label": "DeepInfra",
+      "sublabel": "DeepSeek V4.1 Flash",
       "pos": [
         560,
         470
@@ -202,9 +236,9 @@
       "sources": [
         {
           "path": "convex/lib/ai_router.ts",
-          "line": 26,
-          "end_line": 71,
-          "label": "native fetch to Mistral"
+          "line": 27,
+          "end_line": 37,
+          "label": "callLLM to DeepInfra"
         }
       ]
     },
@@ -356,9 +390,16 @@
       "variant": "security"
     },
     {
-      "id": "convex-mistral",
+      "id": "mcp-convex",
+      "from": "mcpclient",
+      "to": "convex",
+      "label": "POST /mcp",
+      "variant": "security"
+    },
+    {
+      "id": "convex-deepinfra",
       "from": "convex",
-      "to": "mistral",
+      "to": "deepinfra",
       "label": "chat completions"
     },
     {
@@ -375,7 +416,7 @@
       "title": "Apps and host",
       "items": [
         "Web is apps/web (Next.js 16). Mobile is apps/mobile (Expo 54). Package manager is Bun.",
-        "Vercel preview of integration is https://preview.tempoflow.dev (docs/ENVIRONMENTS.md). Production hostname: UNKNOWN.",
+        "Vercel preview of integration is https://preview.tempoflow.dev (docs/ENVIRONMENTS.md). Production is https://www.tempoflow.dev (release.yml health check).",
         "Polar checkout route sets server to sandbox."
       ]
     },
@@ -385,24 +426,24 @@
       "items": [
         "Registry: dev tremendous-bass-443, staging ceaseless-dog-617, prod precious-wildcat-890.",
         "Workflows call ceaseless-dog-617 the test deployment. ENVIRONMENTS.md also allows a personal dev slug.",
-        "convex-deploy-test pushes integration convex/ to the test deployment. Live prod deploys are Amit only."
+        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow."
       ]
     },
     {
       "dot": "violet",
       "title": "AI slots",
       "items": [
-        "convex/lib/ai_router.ts calls https://api.mistral.ai/v1/chat/completions with native fetch.",
-        "Slots: fast mistral-small-latest, balanced mistral-medium-latest, deep mistral-large-latest.",
-        "TRD section 3 still names OpenRouter and Gemma. That is not what this router calls."
+        "convex/lib/ai_router.ts calls https://api.deepinfra.com/v1/openai/chat/completions with native fetch (key: Convex env DEEPINFRA_API_KEY).",
+        "Model is TEMPO_AI_MODEL, default deepseek-ai/DeepSeek-V4.1-Flash. Tiers fast, balanced and deep all map to it for now.",
+        "MCP: external clients POST /mcp on Convex HTTP with a per-user token; apps/web/app/api/mcp proxies to it."
       ]
     },
     {
       "dot": "rose",
       "title": "Trust boundary",
       "items": [
-        "People, Vercel, Polar, Mistral, and RevenueCat sit outside the Convex security group.",
-        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook is the crossing into Convex.",
+        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex security group.",
+        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
         "Web checkout calls Polar from the Next.js route. The access token stays in server env."
       ]
     }

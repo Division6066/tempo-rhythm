@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "06bde50ef129320cc818b7851c2841c91a1449cc"
+      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
     }
   },
   "lanes": [
@@ -92,7 +92,7 @@
       "col": 1,
       "type": "backend",
       "label": "Dispatcher",
-      "sublabel": "Copilot, routing",
+      "sublabel": "Copilot, router",
       "tag": "routing only",
       "sources": [
         {
@@ -106,6 +106,12 @@
           "line": 24,
           "end_line": 26,
           "label": "gh-aw Copilot model var"
+        },
+        {
+          "path": ".github/workflows/agent-router.yml",
+          "line": 1,
+          "end_line": 3,
+          "label": "agent-router"
         }
       ]
     },
@@ -143,8 +149,21 @@
       "col": 4,
       "type": "security",
       "label": "Bugbot",
-      "sublabel": "planned",
-      "tag": "no workflow file"
+      "sublabel": "one per batch PR",
+      "sources": [
+        {
+          "path": ".github/workflows/factory-batch.yml",
+          "line": 1,
+          "end_line": 6,
+          "label": "factory-batch"
+        },
+        {
+          "path": ".github/workflows/factory-review-fix.yml",
+          "line": 1,
+          "end_line": 3,
+          "label": "factory-review-fix"
+        }
+      ]
     },
     {
       "id": "ship",
@@ -152,7 +171,7 @@
       "col": 5,
       "type": "cloud",
       "label": "Ship",
-      "sublabel": "queue, preview, live",
+      "sublabel": "queue, preview, release",
       "sources": [
         {
           "path": ".github/workflows/convex-deploy-test.yml",
@@ -161,10 +180,10 @@
           "label": "test deploy on push"
         },
         {
-          "path": "apps/web/vercel.json",
+          "path": ".github/workflows/release.yml",
           "line": 1,
-          "end_line": 8,
-          "label": "web hosting config"
+          "end_line": 14,
+          "label": "Release to production, Amit only"
         },
         {
           "path": ".github/workflows/e2e-preview.yml",
@@ -297,17 +316,18 @@
       "title": "Present workflows",
       "items": [
         "Ticket files land via factory-write-tickets. factory-promote opens GitHub issues from docs/tickets.",
-        "Dispatcher is factory-dispatch (gh-aw lock + markdown). Engine is Copilot. Model is FACTORY_MODEL_DISPATCH. It routes; it does not implement the ticket.",
-        "Lanes: factory-lane-claude, factory-lane-cursor, factory-lane-codex. Checks present: CI, scope-guard, config-guard, Security."
+        "Dispatcher is factory-dispatch (gh-aw lock + markdown, Copilot). agent-router and dispatch-router route by usage limits and agent preference (claude, codex, cursor); Freebuff and OpenCode are manual fallbacks. It routes; it does not implement the ticket.",
+        "Lanes: factory-lane-claude, factory-lane-cursor, factory-lane-codex. Checks present: CI, scope-guard, config-guard, Security.",
+        "factory-quiet-hours gates new work 22:00-09:00 Asia/Jerusalem."
       ]
     },
     {
       "dot": "amber",
-      "title": "Planned or UNKNOWN",
+      "title": "Review and ship",
       "items": [
-        "Bugbot review is planned. No Bugbot workflow file is in .github/workflows/.",
-        "Ship means: GitHub merge queue into integration, then Vercel preview plus convex-deploy-test to ceaseless-dog-617. Queue enabled on the repo: UNKNOWN. No merge_group workflow file is present.",
-        "One-click live deploy is planned. No deploy-live workflow is in .github/workflows/. Live prod remains Amit only. graphify.yml pause and archify.yml are added in this config change; they are not on the mapped integration commit yet."
+        "Batch loop (factory-batch, factory/LOOP.md): component PRs merge into batch/<loop-id>; ONE Cursor Bugbot review runs on the batch PR. factory-review-fix sends findings back to the lane, max 3 rounds, then blocked:amit.",
+        "Ship: batch PR enters the GitHub merge queue (enqueue via GraphQL) into integration, then Vercel preview plus convex-deploy-test to ceaseless-dog-617. Queue enabled on the repo: UNKNOWN.",
+        "Live: Amit runs Release to production (release.yml). It opens one integration to master release PR, re-runs CI, secret scans, Playwright and Bugbot, deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists."
       ]
     },
     {
