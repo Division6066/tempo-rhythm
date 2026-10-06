@@ -4,7 +4,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 
@@ -54,8 +54,12 @@ export function GoalsScreen({ goalId }: { goalId?: string }) {
 
 function GoalList() {
   const router = useRouter();
-  const { isAuthenticated } = useConvexAuth();
-  const goals = useQuery(api.goals.list, isAuthenticated ? {} : "skip");
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  // goals.list calls requireUser, so wait for the non-throwing profile query to
+  // confirm that the Convex user row exists before starting the subscription.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const hasConvexUser = profile != null;
+  const goals = useQuery(api.goals.list, isAuthenticated && hasConvexUser ? {} : "skip");
   const createGoal = useMutation(api.goals.create);
   const removeGoal = useMutation(api.goals.remove);
   const [isCreating, setIsCreating] = useState(false);
@@ -90,12 +94,12 @@ function GoalList() {
               Keep the finish line visible, then move toward it one milestone at a time.
             </p>
           </div>
-          <Button type="button" disabled={isCreating} onClick={() => void handleCreate()}>
+          <Button type="button" disabled={isCreating || !hasConvexUser} onClick={() => void handleCreate()}>
             {isCreating ? "Creating…" : "New goal"}
           </Button>
         </header>
 
-        {goals === undefined && isAuthenticated ? (
+        {isAuthLoading || (isAuthenticated && (profile === undefined || (hasConvexUser && goals === undefined))) ? (
           <p className="text-muted-foreground">Loading your goals.</p>
         ) : visibleGoals.length === 0 ? (
           <section className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-14 text-center">
@@ -162,21 +166,26 @@ function GoalList() {
 
 function GoalDetail({ goalId }: { goalId: string }) {
   const router = useRouter();
-  const { isAuthenticated } = useConvexAuth();
-  const goal = useQuery(
-    api.goals.get,
-    isAuthenticated ? { goalId: goalId as Id<"goals"> } : "skip",
-  );
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  // Use the Ticket 0 list contract rather than adding a component-owned backend
+  // query. Waiting for getProfile also prevents requireUser from racing sign-in.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const hasConvexUser = profile != null;
+  const goals = useQuery(api.goals.list, isAuthenticated && hasConvexUser ? {} : "skip");
+  const goal = goals?.find((candidate) => candidate._id === goalId) ?? null;
   const updateGoal = useMutation(api.goals.update);
   const removeGoal = useMutation(api.goals.remove);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const hydratedGoalId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!goal) return;
+    if (!goal || hydratedGoalId.current === goal._id) return;
+    hydratedGoalId.current = goal._id;
     setTitle(goal.title);
     setDescription(goal.description ?? "");
     setTargetDate(formatTargetDate(goal.targetDate));
@@ -185,13 +194,19 @@ function GoalDetail({ goalId }: { goalId: string }) {
   const handleSave = async () => {
     if (!goal) return;
     setSaveState("saving");
-    await updateGoal({
-      goalId: goal._id,
-      title,
-      description: description || null,
-      targetDate: targetDate ? Date.parse(`${targetDate}T00:00:00.000Z`) : null,
-    });
-    setSaveState("saved");
+    setSaveError(null);
+    try {
+      await updateGoal({
+        goalId: goal._id,
+        title,
+        description: description || null,
+        targetDate: targetDate ? Date.parse(`${targetDate}T00:00:00.000Z`) : null,
+      });
+      setSaveState("saved");
+    } catch {
+      setSaveState("idle");
+      setSaveError("Changes could not be saved. Please try again.");
+    }
   };
 
   const handleMilestone = async () => {
@@ -209,11 +224,15 @@ function GoalDetail({ goalId }: { goalId: string }) {
     router.push("/goals");
   };
 
-  if (goal === undefined && isAuthenticated) {
+  const isLoading =
+    isAuthLoading ||
+    (isAuthenticated && (profile === undefined || (hasConvexUser && goals === undefined)));
+
+  if (isLoading) {
     return <main className="container mx-auto max-w-4xl px-6 py-12 text-muted-foreground">Loading goal.</main>;
   }
 
-  if (goal === null) {
+  if (!hasConvexUser || goal === null) {
     return (
       <main className="container mx-auto max-w-4xl px-6 py-12">
         <Link href="/goals" className="text-sm font-medium text-primary">← Back to goals</Link>
@@ -246,7 +265,7 @@ function GoalDetail({ goalId }: { goalId: string }) {
               <input
                 aria-label="Goal title"
                 value={title}
-                onChange={(event) => { setTitle(event.target.value); setSaveState("idle"); }}
+                onChange={(event) => { setTitle(event.target.value); setSaveState("idle"); setSaveError(null); }}
                 className="w-full border-0 border-b border-border bg-transparent pb-3 font-heading text-3xl font-semibold text-foreground outline-none focus:border-primary"
               />
             </label>
@@ -257,7 +276,7 @@ function GoalDetail({ goalId }: { goalId: string }) {
                 value={description}
                 rows={7}
                 placeholder="Why does this goal matter?"
-                onChange={(event) => { setDescription(event.target.value); setSaveState("idle"); }}
+                onChange={(event) => { setDescription(event.target.value); setSaveState("idle"); setSaveError(null); }}
                 className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
             </label>
@@ -267,7 +286,7 @@ function GoalDetail({ goalId }: { goalId: string }) {
                 aria-label="Target date"
                 type="date"
                 value={targetDate}
-                onChange={(event) => { setTargetDate(event.target.value); setSaveState("idle"); }}
+                onChange={(event) => { setTargetDate(event.target.value); setSaveState("idle"); setSaveError(null); }}
                 className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
             </label>
@@ -276,7 +295,7 @@ function GoalDetail({ goalId }: { goalId: string }) {
                 {saveState === "saving" ? "Saving…" : "Save changes"}
               </Button>
               <output className="text-sm text-muted-foreground">
-                {saveState === "saved" ? "Saved" : ""}
+                {saveError ?? (saveState === "saved" ? "Saved" : "")}
               </output>
             </div>
           </div>

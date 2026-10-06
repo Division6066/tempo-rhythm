@@ -22,18 +22,6 @@ export const list = query({
   },
 });
 
-export const get = query({
-  args: { goalId: v.id("goals") },
-  handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
-    const goal = await ctx.db.get(args.goalId);
-    if (!goal || goal.userId !== user._id) {
-      return null;
-    }
-    return goal;
-  },
-});
-
 export const create = mutation({
   args: {
     title: v.string(),
