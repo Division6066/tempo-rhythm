@@ -166,7 +166,11 @@ export function MemoryManager() {
       {rows.length === 0 ? (
         refreshing ? null : (
           <p className="text-sm text-muted-foreground">
-            {searching ? "No memories match that search." : "Nothing remembered yet."}
+            {searching
+              ? "No memories match that search."
+              : filter
+                ? `No ${SECTOR_LABELS[filter].toLowerCase()} memories. Choose All kinds to see the rest.`
+                : "Nothing remembered yet."}
           </p>
         )
       ) : (
