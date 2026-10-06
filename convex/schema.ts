@@ -280,7 +280,10 @@ export default defineSchema({
     body: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_user_date", ["userId", "dateKey"]),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_user_date", ["userId", "dateKey"]),
 
   habits: defineTable({
     userId: v.id("users"),

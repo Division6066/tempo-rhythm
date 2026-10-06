@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { isRestorable, undoUntil } from "./lib/softDelete";
 
 const MAX_BODY_LENGTH = 20_000;
 const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -34,11 +35,12 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     const user = await requireUser(ctx);
-    return ctx.db
+    const entries = await ctx.db
       .query("journalEntries")
       .withIndex("by_user_date", (q) => q.eq("userId", user._id))
       .order("desc")
-      .take(50);
+      .collect();
+    return entries.filter((entry) => entry.deletedAt === undefined).slice(0, 50);
   },
 });
 
@@ -47,12 +49,13 @@ export const getDaily = query({
   handler: async (ctx, args) => {
     validateDateKey(args.dateKey);
     const user = await requireUser(ctx);
-    return ctx.db
+    const entries = await ctx.db
       .query("journalEntries")
       .withIndex("by_user_date", (q) =>
         q.eq("userId", user._id).eq("dateKey", args.dateKey),
       )
-      .first();
+      .collect();
+    return entries.find((entry) => entry.deletedAt === undefined) ?? null;
   },
 });
 
@@ -61,6 +64,15 @@ export const create = mutation({
   handler: async (ctx, args) => {
     validateDateKey(args.dateKey);
     const user = await requireUser(ctx);
+    const entries = await ctx.db
+      .query("journalEntries")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", user._id).eq("dateKey", args.dateKey),
+      )
+      .collect();
+    if (entries.some((entry) => entry.deletedAt === undefined)) {
+      throw new Error("Journal entry already exists for this date");
+    }
     const now = Date.now();
     return ctx.db.insert("journalEntries", {
       userId: user._id,
@@ -77,7 +89,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const entry = await ctx.db.get(args.id);
-    if (!entry || entry.userId !== user._id) {
+    if (!entry || entry.userId !== user._id || entry.deletedAt !== undefined) {
       throw new Error("Journal entry not found");
     }
 
@@ -94,11 +106,30 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const entry = await ctx.db.get(args.id);
+    if (!entry || entry.userId !== user._id || entry.deletedAt !== undefined) {
+      throw new Error("Journal entry not found");
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.id, { deletedAt: now, updatedAt: now });
+    return { success: true, undoUntilMs: undoUntil(now) };
+  },
+});
+
+export const restore = mutation({
+  args: { id: v.id("journalEntries") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const entry = await ctx.db.get(args.id);
     if (!entry || entry.userId !== user._id) {
       throw new Error("Journal entry not found");
     }
 
-    await ctx.db.delete(args.id);
+    const now = Date.now();
+    if (!isRestorable(entry.deletedAt, now)) {
+      return { success: false };
+    }
+    await ctx.db.patch(args.id, { deletedAt: undefined, updatedAt: now });
     return { success: true };
   },
 });
@@ -108,12 +139,13 @@ export const updateDaily = mutation({
   handler: async (ctx, args) => {
     validateDateKey(args.dateKey);
     const user = await requireUser(ctx);
-    const existing = await ctx.db
+    const entries = await ctx.db
       .query("journalEntries")
       .withIndex("by_user_date", (q) =>
         q.eq("userId", user._id).eq("dateKey", args.dateKey),
       )
-      .first();
+      .collect();
+    const existing = entries.find((entry) => entry.deletedAt === undefined);
     const now = Date.now();
 
     if (existing) {
