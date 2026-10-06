@@ -26,6 +26,9 @@ import {
 
 type PendingUndo = { focusBlockId: Id<"focusBlocks">; undoUntilMs: number };
 
+// Users whose legacy localStorage import is running in this tab (survives remounts of /tracking).
+const importsInFlight = new Set<string>();
+
 export function TrackingDashboard() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
@@ -34,7 +37,24 @@ export function TrackingDashboard() {
     api.streaks.getCurrent,
     isAuthenticated && hasConvexUser ? {} : "skip"
   );
-  const [nowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  // Roll the 7-day window over at local midnight (and when a tab wakes up on a new day), so an open
+  // tab never treats yesterday as today and new blocks stay inside listInRange.
+  useEffect(() => {
+    const nextMidnight = new Date(nowMs);
+    nextMidnight.setHours(24, 0, 1, 0);
+    const timer = setTimeout(() => setNowMs(Date.now()), Math.max(1000, nextMidnight.getTime() - Date.now()));
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && new Date().toDateString() !== new Date(nowMs).toDateString()) {
+        setNowMs(Date.now());
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [nowMs]);
   const range = useMemo(() => lastLocalDaysRange(nowMs), [nowMs]);
   const blocks = useQuery(
     api.focusBlocks.listInRange,
@@ -72,7 +92,19 @@ export function TrackingDashboard() {
     if (buildTrackingDashboard(remaining).chart.points.length === 0) {
       return;
     }
-    void (async () => {
+    // One import at a time per user: across remounts in this tab (module-level set) and across tabs
+    // (Web Locks, when the browser has them). A run that can't get the lock retries on the next visit.
+    if (importsInFlight.has(userId)) {
+      return;
+    }
+    importsInFlight.add(userId);
+    const runImport = async () => {
+      // Re-read inside the lock: another tab may already have imported some or all logs.
+      try {
+        remaining = parseTrackingLogs(localStorage.getItem(key));
+      } catch {
+        return;
+      }
       try {
         for (const log of [...remaining]) {
           const durationMs = Math.max(1, Math.round(log.durationMinutes * 60_000));
@@ -88,6 +120,24 @@ export function TrackingDashboard() {
       } catch {
         // Keep what is left; the next visit tries again.
         migratedFor.current = null;
+      }
+    };
+    void (async () => {
+      try {
+        const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
+        if (locks) {
+          await locks.request(`tempo-tracking-import:${userId}`, { ifAvailable: true }, async (lock) => {
+            if (!lock) {
+              migratedFor.current = null;
+              return;
+            }
+            await runImport();
+          });
+        } else {
+          await runImport();
+        }
+      } finally {
+        importsInFlight.delete(userId);
       }
     })();
   }, [userId, createBlock]);
