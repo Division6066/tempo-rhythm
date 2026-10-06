@@ -1,23 +1,17 @@
-/**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: template-builder
- * @category: You
- * @source: docs/design/claude-export/design-system/screens-template-builder.jsx + -ui.jsx + -slash.jsx
- * @summary: Full-screen template builder with slash command DSL.
- * @queries: templates.get
- * @mutations: templates.save
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
- */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { TemplateBuilderScreen } from "@/components/template-builder/TemplateBuilder";
 
-export default function Page() {
+type SearchParams = { from?: string | string[] };
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const { from } = await searchParams;
+  const fromId = Array.isArray(from) ? from[0] : from;
   return (
-    <ScaffoldScreen
-      title="Template builder"
-      category="You"
-      source="screens-template-builder.jsx + -ui.jsx + -slash.jsx"
-      summary="Full-screen template builder with slash command DSL."
-    />
+    <div data-testid="template-builder-route">
+      <TemplateBuilderScreen fromId={fromId || undefined} />
+    </div>
   );
 }
