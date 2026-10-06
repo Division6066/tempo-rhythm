@@ -18,6 +18,8 @@ name: factory-batch
 #   GH_TOKEN=<Division6066 token> GITHUB_REPOSITORY=Levidavidspublic/tempo-rhythm \
 #     node scripts/factory/batch-loop.mjs run --loop <id>
 # finalize only comments/labels, so it uses github.token.
+# Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem build/run never START a new loop (batch branch missing
+# -> notice, green). In-flight loops, open/review/status/enqueue and merge/finalize are not gated (batch-loop.mjs).
 
 on:
   workflow_dispatch:
@@ -117,6 +119,9 @@ jobs:
           PRS: ${{ inputs.prs }}
           WAIT_AUTO: ${{ inputs.wait_auto || '0' }}
           DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
+          FACTORY_QUIET_START: ${{ vars.FACTORY_QUIET_START }}
+          FACTORY_QUIET_END: ${{ vars.FACTORY_QUIET_END }}
+          FACTORY_QUIET_HOURS: ${{ vars.FACTORY_QUIET_HOURS }}
         run: |
           set -euo pipefail
           extra=()

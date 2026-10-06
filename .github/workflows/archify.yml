@@ -44,9 +44,17 @@ env:
   ARCHIFY_UPDATE_CHECK_DISABLED: "1"
 
 jobs:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem no refresh is started; the run ends green.
+    # The next push after 09:00 (or a manual run) catches up: the refresh diffs from the last mapped commit.
+    if: (github.event_name == 'push' && vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true))
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "Archify refresh (Claude run + config PR)"
   gate:
     name: Debounce and dispatch
-    if: github.event_name == 'push' && vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true'
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && github.event_name == 'push' && vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -70,7 +78,8 @@ jobs:
 
   refresh:
     name: Refresh docs/architecture
-    if: github.event_name == 'workflow_dispatch' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true)
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && github.event_name == 'workflow_dispatch' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:

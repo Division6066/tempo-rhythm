@@ -36,6 +36,14 @@ sets `drafts: false` + `frequency: oncePerPr`, but the YAML has **no manual-only
 - config-guard unchanged. Branch protection unchanged: `integration` = PR + 5 required checks + merge queue (0 approvals);
   `batch/*` has no rules (merges into it need no review).
 
+## Quiet hours (Amit 2026-10-06)
+**22:00-09:00 Asia/Jerusalem nothing NEW starts**: no tickets, no `status:ready` promotion, no lane dispatch, no new
+batch loop (`build`/`run` won't create a new `batch/<loop>`), no scheduled builder, no new cloud agent. Work in flight
+finishes: lane fix runs (`fix_note`), batch open/review/status/enqueue/finalize, the merge queue. Required checks and
+`convex-deploy-test` are never gated. Monitoring (nightly E2E, weekly report) runs outside 20:00-09:00.
+Vars `FACTORY_QUIET_START`=22 / `FACTORY_QUIET_END`=9; override `FACTORY_QUIET_HOURS=off`. Details and the workflow
+table: `docs/factory/QUIET-HOURS.md`. Script: `scripts/factory/quiet-hours.mjs`.
+
 ## Tokens (R15)
 `build` / `open` / `review` / `enqueue` need a **user** token (Division6066): PRs opened with GITHUB_TOKEN start no CI, and
 Bugbot needs a covered author. In Actions that is secret `FACTORY_BATCH_TOKEN` (not set → PARKED); otherwise run

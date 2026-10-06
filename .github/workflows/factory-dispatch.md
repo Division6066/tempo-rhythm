@@ -3,7 +3,9 @@ name: factory-dispatch
 description: Factory dispatcher (Phase 04 Step 4). Picks lanes for ready tickets and dispatches them. Paused by FACTORY_PAUSED_ALL / FACTORY_PAUSED.
 on:
   schedule:
-    - cron: "7,37 * * * *"
+    # 06:07-18:37 UTC = 09:07-21:37 Israel summer time. Quiet hours (factory/LOOP.md): nothing new is dispatched
+    # 22:00-09:00 Asia/Jerusalem; next-tickets.mjs enforces it for every trigger (winter, label events, manual).
+    - cron: "7,37 6-18 * * *"
   workflow_dispatch:
     inputs:
       force:
@@ -41,6 +43,9 @@ steps:
       FACTORY_ACTIVE_BATCHES: ${{ vars.FACTORY_ACTIVE_BATCHES }}
       FACTORY_CODEX_MODE: ${{ vars.FACTORY_CODEX_MODE }}
       FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force == true }}
+      FACTORY_QUIET_START: ${{ vars.FACTORY_QUIET_START }}
+      FACTORY_QUIET_END: ${{ vars.FACTORY_QUIET_END }}
+      FACTORY_QUIET_HOURS: ${{ vars.FACTORY_QUIET_HOURS }}
     run: node scripts/factory/next-tickets.mjs --out ready.json
 tools:
   github:

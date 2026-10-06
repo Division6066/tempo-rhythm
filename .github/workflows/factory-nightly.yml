@@ -3,12 +3,14 @@ name: factory-nightly
 # Phase 04 Step 9. Every night: the FULL Playwright E2E suite against the Vercel preview of
 # integration's latest commit; screenshots/traces uploaded as evidence. A failure opens (or
 # updates) ONE issue "Nightly E2E failing" assigned to Amit (github.token; an issue, not a PR).
-# Cron is UTC: 00:30 UTC = 03:30 Israel summer time (UTC+3) / 02:30 winter (UTC+2).
+# Cron is UTC: 16:30 UTC = 19:30 Israel summer time (UTC+3) / 18:30 winter (UTC+2). Moved from 00:30 UTC on
+# 6 Oct 2026: it is monitoring, and monitoring is off 20:00-09:00 Asia/Jerusalem (factory/LOOP.md "Quiet hours").
+# factory-release-pr runs after it (workflow_run) and is itself quiet-hours gated.
 # Also dispatched by the merge agent at the end of the stress run (rung 3).
 
 on:
   schedule:
-    - cron: "30 0 * * *"
+    - cron: "30 16 * * *"
   workflow_dispatch:
     inputs:
       force:

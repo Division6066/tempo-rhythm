@@ -6,7 +6,8 @@
 //     has a scope folder equal to, inside, or containing one of its scope folders
 //     (exception: both have overlap_test: true);
 //  4. open factory tickets < FACTORY_MAX_IN_FLIGHT (picks fill the remaining capacity);
-//  5. not paused (FACTORY_PAUSED_ALL / FACTORY_PAUSED, unless FORCE=true from a manual run);
+//  5. not paused (FACTORY_PAUSED_ALL / FACTORY_PAUSED, unless FORCE=true from a manual run) and not inside quiet
+//     hours (22:00-09:00 Asia/Jerusalem, FACTORY_QUIET_START/END; FACTORY_QUIET_HOURS=off overrides; FORCE does not);
 //  6. its batch is in FACTORY_ACTIVE_BATCHES (comma list) or that is `all` (`none`/empty = nothing).
 // Also: the lane quota per batch (equal thirds; data tickets always claude) for the agent, and
 // codex_mode (FACTORY_CODEX_MODE: issue | pr | manual; manual = codex gets no tickets, its share
@@ -14,6 +15,7 @@
 // Usage: node next-tickets.mjs [--out ready.json] [--local <dir-of-ticket-.md-files>]
 //   --local reads tickets from files (dry run): front-matter + optional `labels:` line in the
 //   front-matter for status labels. No API calls in --local mode.
+import { quietHours } from "./quiet-hours.mjs";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { frontMatter, scopeOf, listOf, labelNames, truthy, allTickets } from "./factory-lib.mjs";
@@ -32,7 +34,7 @@ export function activeBatches(v) {
 }
 
 // tickets: [{ number, title, labels: [..], fm }]
-export function pick(tickets, env) {
+export function pick(tickets, env, now = new Date()) {
   const paused = (env.FACTORY_PAUSED_ALL === "true" || env.FACTORY_PAUSED === "true") && env.FORCE !== "true";
   const max = Number(env.FACTORY_MAX_IN_FLIGHT || 15);
   const batches = activeBatches(env.FACTORY_ACTIVE_BATCHES);
@@ -41,6 +43,8 @@ export function pick(tickets, env) {
   const open = tickets.filter((t) => t.labels.some((l) => OPEN.includes(l)));
   const out = { paused, codex_mode: codexMode, max_in_flight: max, open: open.length, active_batches: batches === "all" ? "all" : [...batches], ready: [], skipped: [], lane_quota: {} };
   if (paused) { out.reason = "paused (FACTORY_PAUSED_ALL or FACTORY_PAUSED is true)"; return out; }
+  const q = quietHours({ env, now });
+  if (q.quiet) { out.paused = true; out.reason = q.reason; return out; }
   let capacity = max - open.length;
   const taken = open.map((t) => t);
   const ready = tickets.filter((t) => t.labels.includes("status:ready"))

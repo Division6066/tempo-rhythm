@@ -17,10 +17,12 @@ import { ciGreen, readiness, mergeOrder, batchBody, reviewNeeded, batchBranch, i
 import { loopRouting } from "./validate-tickets.mjs";
 import { shouldDeploy, assertLiveKeyTarget, judgeSmoke } from "./deploy-live-plan.mjs";
 import { israelDate, isReleaseTitle, prNumbersFromMessage, renderReleaseBody } from "./release-pr.mjs";
+import { quietHours, inWindow, parseHour, jerusalemHour } from "./quiet-hours.mjs";
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log(`ok ${n} - ${name}`); };
 const T = (number, ticket, batch, type, scope, labels = ["status:ready"], extra = {}) => ({ number, title: ticket, labels, fm: { ticket, batch, type, scope, ...extra } });
-const ENV = { FACTORY_PAUSED_ALL: "false", FACTORY_PAUSED: "false", FACTORY_MAX_IN_FLIGHT: "15", FACTORY_ACTIVE_BATCHES: "B02" };
+// FACTORY_QUIET_HOURS=off keeps the older pick() tests independent of the wall clock (quiet hours have their own tests).
+const ENV = { FACTORY_PAUSED_ALL: "false", FACTORY_PAUSED: "false", FACTORY_MAX_IN_FLIGHT: "15", FACTORY_ACTIVE_BATCHES: "B02", FACTORY_QUIET_HOURS: "off" };
 
 t("overlap: equal, inside, containing; siblings don't", () => {
   assert.ok(overlaps(["apps/web/a/"], ["apps/web/a"]));
@@ -251,6 +253,54 @@ t("loop routing: browser tests -> cursor/codex, others -> claude; 2..5 per lane"
   assert.ok(loopRouting([...ok, C("y", "cursor", "false")]).some((p) => p.includes("goes to lane claude")));
   assert.ok(loopRouting([...ok, C("z", "auto", "false")]).some((p) => p.includes("lane must be")));
   assert.ok(loopRouting(ok.slice(0, 5)).some((p) => p.includes("lane codex has 1")));
+});
+
+// Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts.
+const IL = (iso) => new Date(iso); // explicit offsets below: +03:00 = IDT (summer), +02:00 = IST (winter)
+t("quiet hours: hour is Asia/Jerusalem wall clock in summer and winter (DST-safe)", () => {
+  assert.equal(jerusalemHour(IL("2026-10-06T22:00:00+03:00")), 22);
+  assert.equal(jerusalemHour(IL("2026-10-06T19:00:00Z")), 22); // 19:00 UTC = 22:00 IDT
+  assert.equal(jerusalemHour(IL("2026-12-01T20:00:00Z")), 22); // 20:00 UTC = 22:00 IST
+  assert.equal(jerusalemHour(IL("2026-12-01T06:59:00Z")), 8);
+});
+t("quiet hours: window 22-9 wraps midnight; start inclusive, end exclusive; start == end = none", () => {
+  for (const h of [22, 23, 0, 3, 8]) assert.ok(inWindow(h, 22, 9), `hour ${h}`);
+  for (const h of [9, 12, 19, 20, 21]) assert.ok(!inWindow(h, 22, 9), `hour ${h}`);
+  assert.ok(inWindow(10, 10, 16) && !inWindow(16, 10, 16));
+  assert.ok(!inWindow(5, 7, 7));
+});
+t("quiet hours: defaults 22/9, vars override, bad values fall back with a warning", () => {
+  const w = [];
+  assert.equal(parseHour("", 22), 22);
+  assert.equal(parseHour(" 21 ", 22), 21);
+  assert.equal(parseHour("25", 9, w), 9);
+  assert.equal(parseHour("nine", 9, w), 9);
+  assert.equal(w.length, 2);
+  assert.equal(quietHours({ env: {}, now: IL("2026-10-06T23:30:00+03:00") }).quiet, true);
+  assert.equal(quietHours({ env: {}, now: IL("2026-10-06T09:00:00+03:00") }).quiet, false);
+  assert.equal(quietHours({ env: {}, now: IL("2026-10-06T21:59:00+03:00") }).quiet, false);
+  assert.equal(quietHours({ env: { FACTORY_QUIET_START: "20" }, now: IL("2026-10-06T21:00:00+03:00") }).quiet, true);
+  assert.equal(quietHours({ env: { FACTORY_QUIET_END: "7" }, now: IL("2026-10-06T08:00:00+03:00") }).quiet, false);
+});
+t("quiet hours: FACTORY_QUIET_HOURS=off and in-flight exemption never skip; reason says 'quiet hours, skipped'", () => {
+  const night = IL("2026-10-07T02:00:00+03:00");
+  const q = quietHours({ env: {}, now: night });
+  assert.ok(q.quiet && q.reason.startsWith("quiet hours, skipped"));
+  assert.equal(quietHours({ env: { FACTORY_QUIET_HOURS: "off" }, now: night }).quiet, false);
+  assert.equal(quietHours({ env: { FACTORY_QUIET_HOURS: "OFF " }, now: night }).quiet, false);
+  const ex = quietHours({ env: { QUIET_EXEMPT: "true", QUIET_EXEMPT_REASON: "fix run" }, now: night });
+  assert.ok(!ex.quiet && ex.reason.includes("fix run"));
+});
+t("quiet hours: next-tickets dispatches nothing at night (paused + reason), even with FORCE; daytime unchanged", () => {
+  const tk = [T(1, "TEMPO-B02-00", "B02", "data", ["convex/"])];
+  const env = { ...ENV, FACTORY_QUIET_HOURS: "" };
+  const night = pick(tk, { ...env, FORCE: "true" }, IL("2026-10-06T23:00:00+03:00"));
+  assert.equal(night.paused, true);
+  assert.ok(night.reason.startsWith("quiet hours"));
+  assert.equal(night.ready.length, 0);
+  const day = pick(tk, env, IL("2026-10-06T13:00:00+03:00"));
+  assert.equal(day.paused, false);
+  assert.equal(day.ready.length, 1);
 });
 
 console.log(`all ${n} passed`);

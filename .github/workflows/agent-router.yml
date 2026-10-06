@@ -48,7 +48,16 @@ permissions:
   actions: read
 
 jobs:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
+    # Only agent:* labels / manual runs (other label events never pick an agent anyway).
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.label.name, 'agent:')
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "agent-router (lane start)"
   route:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && (github.event_name == 'workflow_dispatch' || startsWith(github.event.label.name, 'agent:'))
     runs-on: ubuntu-latest
     outputs:
       agent: ${{ steps.pick.outputs.agent }}
