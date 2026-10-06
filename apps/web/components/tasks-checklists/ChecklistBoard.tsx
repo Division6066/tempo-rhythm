@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
@@ -21,7 +21,13 @@ function messageFor(error: unknown) {
 }
 
 export function ChecklistBoard() {
-  const tasks = useQuery(api.tasks.list, {});
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const hasConvexUser = profile != null;
+  const tasks = useQuery(
+    api.tasks.list,
+    isAuthenticated && hasConvexUser ? {} : "skip",
+  );
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
   const restoreTask = useMutation(api.tasks.restore);
@@ -49,6 +55,10 @@ export function ChecklistBoard() {
   );
   const withSteps = openTasks.filter((task) => (task.checklist?.length ?? 0) > 0);
   const withoutSteps = openTasks.filter((task) => (task.checklist?.length ?? 0) === 0);
+  const isLoading =
+    isAuthLoading ||
+    (isAuthenticated &&
+      (profile === undefined || (hasConvexUser && tasks === undefined)));
 
   async function saveChecklist(task: OpenTask, checklist: ChecklistStep[]) {
     setPendingTaskId(task._id);
@@ -113,9 +123,9 @@ export function ChecklistBoard() {
         )}
       </div>
 
-      {tasks === undefined ? <p className="text-muted-foreground">Loading checklists…</p> : null}
+      {isLoading ? <p className="text-muted-foreground">Loading checklists…</p> : null}
 
-      {tasks !== undefined ? (
+      {!isLoading && tasks !== undefined ? (
         <div className="space-y-12">
           <section aria-labelledby="checklists-with-steps" className="space-y-4">
             <h2 id="checklists-with-steps" className="font-heading text-2xl font-semibold">
