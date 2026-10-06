@@ -12,7 +12,8 @@ describe("HabitsScreen leftover wiring", () => {
       "utf8"
     );
     expect(source).toContain("HabitEnergySuggestions");
-    expect(source).toContain("isHabitCompletedOnUtcDay");
+    expect(source).toContain("checkedHabitIds");
+    expect(source).not.toContain("isHabitCompletedOnUtcDay");
   });
 });
 

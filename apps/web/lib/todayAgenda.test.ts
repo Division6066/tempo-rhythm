@@ -47,7 +47,7 @@ describe("TodayScreen leftover wiring", () => {
       "utf8",
     );
     expect(source).toContain("TodayAgenda");
-    expect(source).toContain("TodayHabitStrip");
+    expect(source).toContain("HabitCheckInStrip");
     expect(source).toContain("TodayEnergyRecommendations");
     expect(source).toContain('view="today"');
     expect(source).toContain("api.calendar_events.listInRange");

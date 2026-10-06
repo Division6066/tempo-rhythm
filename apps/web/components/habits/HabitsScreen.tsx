@@ -1,6 +1,5 @@
 "use client";
 
-import { isHabitCompletedOnUtcDay } from "@/convex/lib/habitStreak";
 import { useConvexAuth, useQuery } from "convex/react";
 import { Flame } from "lucide-react";
 import Link from "next/link";
@@ -8,10 +7,11 @@ import { HabitsLibrary } from "@/components/habits-library/HabitsLibrary";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { checkedHabitIds, localDateKey } from "../habit-checkin-strip/checkedState";
 import { HabitEnergySuggestions } from "./HabitEnergySuggestions";
 
 export function HabitsScreen() {
-  const now = Date.now();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
@@ -19,10 +19,17 @@ export function HabitsScreen() {
     api.habits.list,
     isAuthenticated && hasConvexUser ? {} : "skip",
   );
+  const bounds = useLocalDayBounds();
+  const localDate = localDateKey(new Date(bounds.startMs));
+  const checkIns = useQuery(
+    api.habitCheckIns.listForDate,
+    isAuthenticated && hasConvexUser ? { localDate } : "skip",
+  );
   const isLoading =
     isAuthLoading ||
     (isAuthenticated &&
-      (profile === undefined || (hasConvexUser && habits === undefined)));
+      (profile === undefined ||
+        (hasConvexUser && (habits === undefined || checkIns === undefined))));
 
   if (isLoading) {
     return (
@@ -36,7 +43,7 @@ export function HabitsScreen() {
     );
   }
 
-  if (!isAuthenticated || !profile || !habits) {
+  if (!isAuthenticated || !profile || !habits || !checkIns) {
     return (
       <main className="mx-auto w-full max-w-4xl p-8 text-center">
         <SoftCard className="mx-auto max-w-xl">
@@ -53,6 +60,8 @@ export function HabitsScreen() {
       </main>
     );
   }
+
+  const checkedIds = checkedHabitIds(checkIns);
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
@@ -81,7 +90,7 @@ export function HabitsScreen() {
         habits={habits.map((habit) => ({
           _id: habit._id,
           name: habit.name,
-          completedToday: isHabitCompletedOnUtcDay(habit.lastCompletedAt, now),
+          completedToday: checkedIds.has(habit._id),
         }))}
       />
 
