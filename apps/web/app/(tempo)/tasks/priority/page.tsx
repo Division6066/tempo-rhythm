@@ -1,5 +1,5 @@
-import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
+import { PriorityBoard } from "@/components/tasks-priority/PriorityBoard";
 
 export default function PriorityTasksPage() {
-  return <TaskViewsScreen view="priority" />;
+  return <PriorityBoard />;
 }
