@@ -36,7 +36,7 @@ Amit, 6 Oct 2026 13:21 IDT. Applies to tempo-rhythm (the only repo with factory 
 | factory-nightly | cron 16:30 UTC | moved (monitoring) |
 | factory-weekly-report | cron Sun 07:00 UTC | moved (monitoring) |
 | factory-merge | cron every 15 min | not gated: merges in-flight PRs (PARKED, no Factory App) |
-| factory-refresh (gh-aw) | merged factory PR, PRD/TRD push | **not yet gated**: its files are in open config PR #676; add the same gate after #676 lands |
+| factory-refresh (gh-aw) | merged factory PR, PRD/TRD push, manual | custom job `quiet` gates the generated `agent` job; no refresher agent at night (next merge / PRD push after 09:00 or a manual run catches up) |
 | claude.yml | `@claude` mention by a person | not gated (interactive, used on in-flight PRs) |
 
 ## Cursor automations (none scheduled, no change needed)

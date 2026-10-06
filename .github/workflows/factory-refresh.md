@@ -52,6 +52,32 @@ steps:
         echo "## Open 'Proposed ticket changes' PR (update this one; never open a second)"
         gh pr list --base integration --state open --label config --search 'in:title "Proposed ticket changes"' --json number,title,headRefName --jq '.[] | "#\(.number) \(.title) branch \(.headRefName)"'
       } > refresh-context.md
+jobs:
+  # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem the refresher agent never starts (it proposes new
+  # ticket changes = new work). A ticket merged at night is picked up by the next merge / PRD push after 09:00, or a
+  # manual run. Override: variable FACTORY_QUIET_HOURS=off.
+  quiet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      quiet: ${{ steps.q.outputs.quiet }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
+      - name: Quiet hours?
+        id: q
+        env:
+          FACTORY_QUIET_START: ${{ vars.FACTORY_QUIET_START }}
+          FACTORY_QUIET_END: ${{ vars.FACTORY_QUIET_END }}
+          FACTORY_QUIET_HOURS: ${{ vars.FACTORY_QUIET_HOURS }}
+        run: node scripts/factory/quiet-hours.mjs --what "factory-refresh (ticket refresher agent)"
+  agent:
+    needs: [quiet]
+    if: needs.quiet.outputs.quiet != 'true'
 tools:
   github:
     toolsets: [repos, issues, pull_requests]
