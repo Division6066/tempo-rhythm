@@ -13,7 +13,7 @@ import { linkedTickets } from "./gh-api.mjs";
 import { bugbotState, findingsNote } from "./review-gate.mjs";
 import { nextStep, ownerTicket } from "./review-fix.mjs";
 import { judge as scopeJudge, judgeBatch, isBatchPR } from "./scope-guard.mjs";
-import { ciGreen, readiness, mergeOrder, batchBody, reviewNeeded, batchBranch, isConflict } from "./batch-loop.mjs";
+import { ciGreen, readiness, mergeOrder, batchBody, reviewNeeded, batchBranch, isConflict, FINALIZE_CLEARS } from "./batch-loop.mjs";
 import { loopRouting } from "./validate-tickets.mjs";
 import { shouldDeploy, assertLiveKeyTarget, judgeSmoke } from "./deploy-live-plan.mjs";
 import { israelDate, isReleaseTitle, prNumbersFromMessage, renderReleaseBody } from "./release-pr.mjs";
@@ -231,6 +231,7 @@ t("batch loop: CI gate, readiness (drafts allowed), order, body, one review requ
   assert.equal(batchBranch("f3-1"), "batch/f3-1"); assert.throws(() => batchBranch("a b"));
   assert.equal(isConflict(new Error("GitHub API POST /merges -> 409 {\"message\":\"Merge conflict\"}")), true);
   assert.equal(isConflict(new Error("GitHub API POST /merges -> 403 forbidden")), false);
+  assert.ok(FINALIZE_CLEARS.includes("status:ready") && !FINALIZE_CLEARS.includes("status:done"));
   const head = { headSha: "abc", headDate: "2026-10-06T08:00:00Z" };
   assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [] }).need, true);
   assert.equal(reviewNeeded({ ...head, checkRuns: [{ name: "Cursor Bugbot", status: "in_progress" }], comments: [] }).need, false);
