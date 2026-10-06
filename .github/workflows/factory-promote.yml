@@ -9,6 +9,8 @@ name: factory-promote
 # without it a push run prints the plan (step summary) plus a "promote by hand" warning and ends green, so every
 # ticket-file merge stops sending a "Run failed" notification (break watch 2026-10-06, run 37446092740).
 # A manual workflow_dispatch with dry_run=false and no App still fails loudly. dry_run=true writes nothing.
+# Quiet hours (factory/LOOP.md): a push 22:00-09:00 Asia/Jerusalem promotes nothing (green, notice); promote
+# those tickets by hand after 09:00 or re-run with dry_run=false. dry_run=true is exempt (read-only).
 
 on:
   push:
@@ -30,7 +32,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-promote (new tickets / status:ready)"
+      exempt: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+      exempt_reason: read-only dry run
   promote:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

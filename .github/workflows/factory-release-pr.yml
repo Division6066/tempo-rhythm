@@ -31,8 +31,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release-pr:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-release-pr (Release PR integration -> master)"
+  release-pr:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

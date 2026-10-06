@@ -49,8 +49,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  write:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
     if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-write-tickets (new ticket batch)"
+  write:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true))
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

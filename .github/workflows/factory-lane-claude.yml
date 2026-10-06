@@ -45,8 +45,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
     if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-lane-claude #${{ inputs.issue_number }}"
+      exempt: ${{ inputs.fix_note != '' }}
+      exempt_reason: fix run for work already in flight (fix_note)
+  build:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true))
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
