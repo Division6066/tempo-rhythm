@@ -160,9 +160,14 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
     () => getCalendarRangeMs(view, selectedDate ?? new Date()),
     [selectedDate, view]
   );
-  // Gate on the Convex auth session only: requireUser resolves the user server-side, so a
-  // separate getProfile round trip could leave listInRange skipped and new events invisible.
-  const hasConvexUser = eventSourceMode === "convex" && isAuthenticated;
+  // listInRange / listDueInRange call requireUser, which THROWS while the backend identity or the
+  // user row isn't ready (e.g. during sign-in). getProfile returns null instead, so subscribe to the
+  // lists only once it has resolved a user; until then the page shows its loading state, not an error.
+  const profile = useQuery(
+    api.users.getProfile,
+    eventSourceMode === "convex" && isAuthenticated ? {} : "skip"
+  );
+  const hasConvexUser = eventSourceMode === "convex" && isAuthenticated && profile != null;
   const convexEvents = useQuery(
     api.calendar_events.listInRange,
     hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
@@ -186,6 +191,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const isLoading =
     eventSourceMode === "convex" &&
     (isAuthLoading ||
+      (isAuthenticated && profile === undefined) ||
       (hasConvexUser && (convexEvents === undefined || dueTasks === undefined)));
 
   const handleExpireToast = useCallback(() => setUndoToast(null), []);

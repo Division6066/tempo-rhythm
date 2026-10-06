@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { fromDateInputValue, toDateInputValue } from "@/lib/calendar/date-math";
 
 export type EventRowEvent = {
@@ -151,6 +151,10 @@ export function UndoToast({
   onExpire: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  // Ignore further clicks while a restore is in flight: a second restore would hit the already
+  // restored row and report a false "can no longer be restored".
+  const [isUndoing, setIsUndoing] = useState(false);
+  const undoingRef = useRef(false);
   const { undoUntilMs } = toast;
 
   useEffect(() => {
@@ -168,10 +172,21 @@ export function UndoToast({
       <span className="text-small text-foreground">Event removed.</span>
       <button
         className="min-h-11 text-small font-medium text-primary"
+        disabled={isUndoing}
+        aria-busy={isUndoing}
         onClick={() => {
-          onUndo().catch((err: unknown) =>
-            setError(err instanceof Error ? err.message : "Could not undo that yet.")
-          );
+          if (undoingRef.current) return;
+          undoingRef.current = true;
+          setIsUndoing(true);
+          setError(null);
+          onUndo()
+            .catch((err: unknown) =>
+              setError(err instanceof Error ? err.message : "Could not undo that yet.")
+            )
+            .finally(() => {
+              undoingRef.current = false;
+              setIsUndoing(false);
+            });
         }}
         type="button"
       >
