@@ -34,7 +34,9 @@ const results: Result[] = [];
 test.describe.configure({ mode: "serial" });
 
 if (enabled && storageStatePath) {
-  test.use({ storageState: storageStatePath });
+  // This sandbox has system Chrome, not Playwright's downloaded browser.
+  // CI leaves `enabled` false, so it keeps the default Chromium project.
+  test.use({ storageState: storageStatePath, channel: "chrome" });
 }
 
 function redact(text: string): string {

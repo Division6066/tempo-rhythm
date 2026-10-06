@@ -62,6 +62,7 @@ async function mail(path, { method = "GET", token, body } = {}) {
 }
 
 function members(payload) {
+  if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];
   return payload["hydra:member"] ?? payload.member ?? [];
 }
@@ -210,7 +211,9 @@ async function main() {
   log("inbox", { type: inbox.inbox });
 
   const seen = await listIds(inbox.token);
-  const browser = await chromium.launch({ headless: true });
+  // Playwright's downloaded browser is not in this sandbox. Use the
+  // already-installed Chrome binary through Playwright's chromium launcher.
+  const browser = await chromium.launch({ headless: true, channel: "chrome" });
   const context = await browser.newContext({
     extraHTTPHeaders: Object.keys(headers).length > 0 ? headers : undefined,
   });
