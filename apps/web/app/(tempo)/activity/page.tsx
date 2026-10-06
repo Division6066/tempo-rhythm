@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { CalendarDays, CheckCircle2, Clock3, FileText, Flag, Flame } from "lucide-react";
 import Link from "next/link";
 import { api } from "../../../../../convex/_generated/api";
@@ -20,7 +20,11 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 export default function Page() {
-  const activity = useQuery(api.activity.list, {});
+  const { isAuthenticated } = useConvexAuth();
+  // activity.list calls requireUser, which throws until the Convex user row exists.
+  // getProfile is non-throwing, so wait for it to resolve before subscribing.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const activity = useQuery(api.activity.list, isAuthenticated && profile ? {} : "skip");
 
   return (
     <main className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-10">
