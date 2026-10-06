@@ -294,7 +294,9 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         const cfgId = await createRepeatCfg({
           repeatCycle: draft.repeat === "daily" ? "DAILY" : "WEEKLY",
           repeatEvery: 1,
-          weekdays: draft.repeat === "weekly" ? [new Date().getDay()] : [],
+          // The repeat engine compares weekdays in UTC, so keep the stored
+          // value in that same time basis until repeat configs carry a zone.
+          weekdays: draft.repeat === "weekly" ? [new Date().getUTCDay()] : [],
           skipOverdue: true,
         });
         await setTaskRepeatCfg({ taskId, repeatCfgId: cfgId });
@@ -801,7 +803,7 @@ function TaskRow({
               </span>
             ) : null}
           </div>
-          {task.checklist && task.checklist.length > 0 ? (
+          {!editing && task.checklist && task.checklist.length > 0 ? (
             <ul className="space-y-2 pt-1" aria-label={`${task.title} checklist`}>
               {task.checklist.map((item) => (
                 <li key={item.id}>

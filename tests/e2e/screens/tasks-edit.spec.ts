@@ -36,6 +36,7 @@ test.describe("task editing", () => {
 
     const row = page.getByRole("listitem").filter({ hasText: title });
     await row.getByRole("button", { name: `Edit ${title}` }).click();
+    await expect(row.getByRole("checkbox")).toHaveCount(0);
     await row.getByLabel("Edit priority").selectOption("high");
     await row.getByLabel("Edit energy").selectOption("low");
     await row.getByLabel("New checklist step").fill("Second step");
