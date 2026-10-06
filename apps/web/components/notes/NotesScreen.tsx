@@ -18,6 +18,26 @@ function sortPinnedFirst(notes: NoteRecord[]): NoteRecord[] {
   });
 }
 
+export const PIN_SIGNED_OUT_COPY = "Sign in to pin notes.";
+export const PIN_ERROR_COPY = "We couldn't update that pin. Try again in a moment.";
+
+export type PinToggleOutcome = "toggled" | "signed-out" | "error";
+
+export async function runPinToggle(
+  isAuthenticated: boolean,
+  toggle: () => Promise<unknown>,
+): Promise<PinToggleOutcome> {
+  if (!isAuthenticated) return "signed-out";
+  try {
+    await toggle();
+    return "toggled";
+  } catch {
+    return "error";
+  }
+}
+
+export { sortPinnedFirst };
+
 function snippet(body: string): string {
   const trimmed = body.trim();
   if (!trimmed) return "No content yet.";
@@ -44,6 +64,8 @@ function NotesList() {
   const removeNote = useMutation(api.notes.remove);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [pinningId, setPinningId] = useState<string | null>(null);
+  const [pinMessage, setPinMessage] = useState<string | null>(null);
 
   const isLoading = isAuthenticated && notes === undefined;
   const visibleNotes = sortPinnedFirst(notes ?? []);
@@ -60,7 +82,16 @@ function NotesList() {
   };
 
   const handleTogglePin = async (id: Id<"notes">) => {
-    await togglePin({ noteId: id });
+    if (pinningId) return;
+    setPinMessage(null);
+    setPinningId(id);
+    try {
+      const outcome = await runPinToggle(isAuthenticated, () => togglePin({ noteId: id }));
+      if (outcome === "signed-out") setPinMessage(PIN_SIGNED_OUT_COPY);
+      else if (outcome === "error") setPinMessage(PIN_ERROR_COPY);
+    } finally {
+      setPinningId(null);
+    }
   };
 
   const handleDelete = async (id: Id<"notes">) => {
@@ -87,6 +118,12 @@ function NotesList() {
             New note
           </Button>
         </header>
+
+        {pinMessage ? (
+          <p role="alert" className="text-sm text-muted-foreground">
+            {pinMessage}
+          </p>
+        ) : null}
 
         {visibleNotes.length === 0 && !isLoading ? (
           <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
@@ -116,6 +153,7 @@ function NotesList() {
                     <Button
                       type="button"
                       variant="outline"
+                      disabled={pinningId !== null}
                       aria-label={note.pinned ? `Unpin ${note.title || "Untitled note"}` : `Pin ${note.title || "Untitled note"}`}
                       onClick={() => void handleTogglePin(note._id)}
                     >
