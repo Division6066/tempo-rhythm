@@ -16,17 +16,23 @@
 //   - data tickets (convex/): claude, then the preference order.
 //   - a pinned lane (front-matter lane_pin: true, or an explicit agent:/area: router choice) is kept unless that agent
 //     is at its limit; then the first available lane in that ticket's order.
-//   - nothing available (claude, codex and cursor all at their limit) -> lane "freebuff", manual: true. Freebuff
-//     (freebuff.com, free ad-supported agent built on Codebuff) has no GitHub trigger yet, so the caller labels the
-//     ticket `agent:freebuff` + `needs:manual-run` and starts nothing; Dots or Amit runs Freebuff Cloud / CLI on it
-//     (docs/factory/AGENT-LIMITS.md). This replaces blocked:amit for that case.
+//   - nothing available (claude, codex and cursor all at their limit) -> MANUAL fallbacks, in this order:
+//       1. freebuff (freebuff.com, free ad-supported agent built on Codebuff)  - skipped if FACTORY_FREEBUFF_AT_LIMIT=true
+//       2. opencode (OpenCode: free models / Go plan; Amit's)                  - skipped if FACTORY_OPENCODE_AT_LIMIT=true
+//     Neither has a GitHub trigger wired yet (OpenCode needs a key from Amit), so the caller labels the ticket
+//     `agent:<fallback>` + `needs:manual-run` and starts nothing; Dots or Amit runs it by hand
+//     (docs/factory/AGENT-LIMITS.md). This replaces blocked:amit. Only when BOTH are also at their limit does the
+//     ticket get `blocked:amit` ("usage limits").
 //   - There is NO pay-per-use fallback: claude (subscription OAuth), codex (ChatGPT plan), cursor (plan), then the free
-//     Freebuff. Never a metered API key. Copilot is not a lane (last resort, by a person only).
+//     Freebuff, then OpenCode free models / Go plan. Never a metered API key. Copilot is not a lane (last resort, by a
+//     person only).
 export const LANES = ["claude", "codex", "cursor"];
 export const DEFAULT_PREFERENCE = "claude,codex,cursor";
 export const USAGE_LIMITS = "usage limits";
-export const FALLBACK = "freebuff"; // free, manual run (no GitHub trigger yet)
-export const FALLBACK_LABELS = ["agent:freebuff", "needs:manual-run"];
+// Manual fallbacks after the three lanes, in order (no GitHub trigger yet -> labels only, a person runs them).
+export const MANUAL_FALLBACKS = ["freebuff", "opencode"];
+export const fallbackLabels = (agent) => [`agent:${agent}`, "needs:manual-run"];
+export const BLOCKED_LABEL = "blocked:amit";
 const on = (v) => String(v ?? "").trim().toLowerCase() === "true";
 
 export function preference(env = {}) {
@@ -37,7 +43,8 @@ export function preference(env = {}) {
 }
 
 export function atLimit(env = {}) {
-  return { claude: on(env.FACTORY_CLAUDE_AT_LIMIT), codex: on(env.FACTORY_CODEX_AT_LIMIT), cursor: on(env.FACTORY_CURSOR_AT_LIMIT) };
+  return { claude: on(env.FACTORY_CLAUDE_AT_LIMIT), codex: on(env.FACTORY_CODEX_AT_LIMIT), cursor: on(env.FACTORY_CURSOR_AT_LIMIT),
+    freebuff: on(env.FACTORY_FREEBUFF_AT_LIMIT), opencode: on(env.FACTORY_OPENCODE_AT_LIMIT) };
 }
 
 // Lanes that may get a new ticket, in preference order. codexMode "manual" (FACTORY_CODEX_MODE) also removes codex.
@@ -55,7 +62,14 @@ export function candidates(kind, env = {}) {
 
 export const ticketKind = (fm = {}) => (fm.type === "data" ? "data" : ["true", true, "yes"].includes(fm.browser_test) ? "browser" : "build");
 
-const freebuff = (from) => ({ lane: FALLBACK, manual: true, ...(from ? { from } : {}), reason: `${USAGE_LIMITS}: claude, codex and cursor all at their limit -> freebuff (manual run)` });
+// claude, codex and cursor are all out for this ticket: first manual fallback not at its limit, else blocked:amit.
+const manualFallback = (env, from) => {
+  const lim = atLimit(env);
+  const f = MANUAL_FALLBACKS.find((x) => !lim[x]);
+  const base = from ? { from } : {};
+  if (!f) return { lane: null, manual: false, blocked: true, labels: [BLOCKED_LABEL], ...base, reason: `${USAGE_LIMITS}: claude, codex, cursor, freebuff and opencode all at their limit -> blocked:amit` };
+  return { lane: f, manual: true, labels: fallbackLabels(f), ...base, reason: `${USAGE_LIMITS}: claude, codex and cursor all at their limit -> ${f} (manual run)` };
+};
 
 // want: pinned lane or null. counts: { lane: n } tickets already in that lane (balancing build tickets).
 export function chooseLane({ kind = "build", want = null, counts = {} } = {}, env = {}, opts = {}) {
@@ -66,10 +80,10 @@ export function chooseLane({ kind = "build", want = null, counts = {} } = {}, en
   if (want && LANES.includes(want)) {
     if (avail.has(want)) return { lane: want, reason: `lane ${want} kept` };
     const fb = candidates(kind, env).filter((l) => l !== want && avail.has(l));
-    return fb.length ? { lane: fb[0], from: want, reason: `${why(want)} -> ${fb[0]}` } : freebuff(want);
+    return fb.length ? { lane: fb[0], from: want, reason: `${why(want)} -> ${fb[0]}` } : manualFallback(env, want);
   }
   const cand = candidates(kind, env).filter((l) => avail.has(l));
-  if (!cand.length) return freebuff(null);
+  if (!cand.length) return manualFallback(env, null);
   if (kind !== "build") return { lane: cand[0], reason: `${kind} ticket -> ${cand[0]} (preference ${pref.join(",")})` };
   const last = pref[pref.length - 1];
   const early = cand.filter((l) => l !== last);
@@ -84,8 +98,8 @@ export function limitsSummary(env = {}, opts = {}) {
 }
 
 // CLI for the bash routers: node lane-limits.mjs --want <lane> [--kind build|data|browser]
-// Prints `lane=<claude|codex|cursor|freebuff>`, `manual=<true|false>` and `reason=<text>` (one line each).
-// manual=true (freebuff) means: label agent:freebuff + needs:manual-run and start nothing.
+// Prints `lane=<claude|codex|cursor|freebuff|opencode or empty>`, `manual=<true|false>`, `labels=<comma list>` and
+// `reason=<text>` (one line each). manual=true or an empty lane means: add `labels` and start nothing.
 async function main() {
   const a = process.argv.slice(2);
   const arg = (k) => (a.includes(k) ? a[a.indexOf(k) + 1] : undefined);
@@ -94,6 +108,6 @@ async function main() {
   if (want && !LANES.includes(want)) { console.error(`unknown lane ${want}`); process.exit(2); }
   if (!["build", "data", "browser"].includes(kind)) { console.error(`unknown kind ${kind}`); process.exit(2); }
   const r = chooseLane({ kind, want }, process.env);
-  process.stdout.write(`lane=${r.lane}\nmanual=${r.manual === true}\nreason=${r.reason.replace(/[\r\n]/g, " ")}\n`);
+  process.stdout.write(`lane=${r.lane || ""}\nmanual=${r.manual === true}\nlabels=${(r.labels || []).join(",")}\nreason=${r.reason.replace(/[\r\n]/g, " ")}\n`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) main();

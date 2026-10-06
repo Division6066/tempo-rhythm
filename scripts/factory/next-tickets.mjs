@@ -12,14 +12,15 @@
 // Also: the final lane of every ready ticket (scripts/factory/lane-limits.mjs: FACTORY_*_AT_LIMIT and
 // FACTORY_AGENT_PREFERENCE; build tickets balanced over claude+codex by default, cursor last; browser_test -> codex,
 // then cursor; data -> claude first), and codex_mode (FACTORY_CODEX_MODE: issue | pr | manual; manual = codex gets
-// no tickets). A ticket no agent can take (claude, codex and cursor all at their limit) goes to `manual_fallback`
-// (lane freebuff): the dispatcher labels it agent:freebuff + needs:manual-run and starts nothing (free Freebuff is run
-// by Dots/Amit by hand). It does not use a capacity slot. Tickets already labelled needs:manual-run are skipped.
+// no tickets). A ticket no lane can take (claude, codex and cursor all at their limit) goes to `manual_fallback`
+// with lane freebuff, or opencode if FACTORY_FREEBUFF_AT_LIMIT=true, and `labels` agent:<x> + needs:manual-run; the
+// dispatcher adds the labels and starts nothing (a person runs it). If both fallbacks are at their limit too, `labels`
+// is blocked:amit ("usage limits"). No capacity slot is used. Tickets labelled needs:manual-run are skipped.
 // Usage: node next-tickets.mjs [--out ready.json] [--local <dir-of-ticket-.md-files>]
 //   --local reads tickets from files (dry run): front-matter + optional `labels:` line in the
 //   front-matter for status labels. No API calls in --local mode.
 import { quietHours } from "./quiet-hours.mjs";
-import { LANES, FALLBACK_LABELS, chooseLane, limitsSummary, ticketKind } from "./lane-limits.mjs";
+import { LANES, chooseLane, limitsSummary, ticketKind } from "./lane-limits.mjs";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { frontMatter, scopeOf, listOf, labelNames, truthy, allTickets } from "./factory-lib.mjs";
@@ -63,7 +64,7 @@ export function pick(tickets, env, now = new Date()) {
     const id = t.fm.ticket, skip = (reason) => out.skipped.push({ issue: t.number, ticket: id, reason });
     if (t.labels.includes("blocked:amit")) { skip("blocked:amit"); continue; }
     if (t.labels.includes("paused:dependency")) { skip("paused:dependency"); continue; }
-    if (t.labels.includes("needs:manual-run")) { skip("needs:manual-run (agent:freebuff, waiting for a person)"); continue; }
+    if (t.labels.includes("needs:manual-run")) { skip("needs:manual-run (manual fallback agent, waiting for a person)"); continue; }
     if (t.labels.some((l) => OPEN.includes(l))) { skip("already dispatched / in PR"); continue; }
     if (batches !== "all" && !batches.has(String(t.fm.batch))) { skip(`batch ${t.fm.batch} not in FACTORY_ACTIVE_BATCHES`); continue; }
     const deps = listOf(t.fm.depends_on).filter((d) => !(byId.get(d)?.labels || []).includes("status:done"));
@@ -76,7 +77,7 @@ export function pick(tickets, env, now = new Date()) {
     const kind = ticketKind(t.fm);
     const want = truthy(t.fm.lane_pin) && LANES.includes(t.fm.lane) ? t.fm.lane : null;
     const c = chooseLane({ kind, want, counts: laneCounts(String(t.fm.batch)) }, env, { codexMode });
-    if (c.manual) { out.manual_fallback.push({ issue: t.number, ticket: id, lane: c.lane, labels: FALLBACK_LABELS, reason: c.reason }); skip(c.reason); continue; }
+    if (c.manual || c.blocked) { out.manual_fallback.push({ issue: t.number, ticket: id, lane: c.lane, labels: c.labels, reason: c.reason }); skip(c.reason); continue; }
     capacity--; taken.push(t); laneCounts(String(t.fm.batch))[c.lane]++;
     out.ready.push({ issue: t.number, ticket: id, batch: t.fm.batch, type: t.fm.type, kind, lane: c.lane, lane_reason: c.reason, scope, title: t.title });
   }
@@ -108,9 +109,9 @@ async function main() {
   const result = pick(tickets, process.env);
   await writeFile(outFile, JSON.stringify(result, null, 2) + "\n");
   await summary([`## next-tickets`, `paused: ${result.paused}${result.reason ? ` (${result.reason})` : ""}; open ${result.open}/${result.max_in_flight}; active batches: ${JSON.stringify(result.active_batches)}; codex_mode: ${result.codex_mode}`,
-    `agents: preference ${result.agent_preference.join(",")}; at limit: ${Object.keys(result.at_limit).filter((k) => result.at_limit[k]).join(", ") || "none"}; available: ${result.available_lanes.join(", ") || "NONE (usage limits -> freebuff, manual)"}`,
+    `agents: preference ${result.agent_preference.join(",")}; at limit: ${Object.keys(result.at_limit).filter((k) => result.at_limit[k]).join(", ") || "none"}; available: ${result.available_lanes.join(", ") || "NONE (usage limits -> freebuff/opencode, manual)"}`,
     ...result.ready.map((r) => `- READY #${r.issue} ${r.ticket} (${r.type}, lane ${r.lane}: ${r.lane_reason}) scope ${r.scope.join(", ")}`),
-    ...result.manual_fallback.map((u) => `- FREEBUFF (manual) #${u.issue} ${u.ticket}: ${u.reason} -> ${u.labels.join(" + ")}`),
+    ...result.manual_fallback.map((u) => `- MANUAL ${u.lane || "none"} #${u.issue} ${u.ticket}: ${u.reason} -> ${u.labels.join(" + ")}`),
     ...result.skipped.map((s) => `- skip #${s.issue} ${s.ticket}: ${s.reason}`)]);
 }
 

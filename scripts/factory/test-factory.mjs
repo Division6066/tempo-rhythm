@@ -18,7 +18,7 @@ import { loopRouting } from "./validate-tickets.mjs";
 import { shouldDeploy, assertLiveKeyTarget, judgeSmoke } from "./deploy-live-plan.mjs";
 import { israelDate, isReleaseTitle, prNumbersFromMessage, renderReleaseBody } from "./release-pr.mjs";
 import { quietHours, inWindow, parseHour, jerusalemHour } from "./quiet-hours.mjs";
-import { chooseLane, preference, atLimit, available, ticketKind, FALLBACK_LABELS } from "./lane-limits.mjs";
+import { chooseLane, preference, atLimit, available, ticketKind, MANUAL_FALLBACKS } from "./lane-limits.mjs";
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log(`ok ${n} - ${name}`); };
 const T = (number, ticket, batch, type, scope, labels = ["status:ready"], extra = {}) => ({ number, title: ticket, labels, fm: { ticket, batch, type, scope, ...extra } });
@@ -313,7 +313,7 @@ t("lane-limits: preference var, unknown names ignored, missing lanes appended", 
   assert.deepEqual(preference({}), ["claude", "codex", "cursor"]);
   assert.deepEqual(preference({ FACTORY_AGENT_PREFERENCE: "cursor, Codex,foo,cursor" }), ["cursor", "codex", "claude"]);
   assert.deepEqual(preference({ FACTORY_AGENT_PREFERENCE: "codex" }), ["codex", "claude", "cursor"]);
-  assert.deepEqual(atLimit({ FACTORY_CURSOR_AT_LIMIT: "TRUE", FACTORY_CODEX_AT_LIMIT: "false" }), { claude: false, codex: false, cursor: true });
+  assert.deepEqual(atLimit({ FACTORY_CURSOR_AT_LIMIT: "TRUE", FACTORY_CODEX_AT_LIMIT: "false" }), { claude: false, codex: false, cursor: true, freebuff: false, opencode: false });
   assert.deepEqual(available({ FACTORY_CLAUDE_AT_LIMIT: "true" }, { codexMode: "manual" }), ["cursor"]);
 });
 t("lane-limits: cursor at limit -> claude/codex only; codex at limit -> claude, then cursor", () => {
@@ -332,16 +332,23 @@ t("lane-limits: cursor at limit -> claude/codex only; codex at limit -> claude, 
   assert.equal(chooseLane({ kind: "browser" }, { FACTORY_CODEX_AT_LIMIT: "true", FACTORY_CURSOR_AT_LIMIT: "true" }).lane, "claude");
   assert.equal(ticketKind({ type: "component", browser_test: "true" }), "browser"); assert.equal(ticketKind({ type: "data", browser_test: "true" }), "data");
 });
-t("lane-limits: all three at limit -> freebuff (manual), never a paid API lane", () => {
+t("lane-limits: all three at limit -> freebuff, then opencode (manual), then blocked:amit; never a paid API lane", () => {
   const all = { FACTORY_CLAUDE_AT_LIMIT: "true", FACTORY_CODEX_AT_LIMIT: "true", FACTORY_CURSOR_AT_LIMIT: "true" };
   for (const kind of ["build", "data", "browser"]) for (const want of [null, "claude", "codex", "cursor"]) {
     const c = chooseLane({ kind, want }, all);
     assert.equal(c.lane, "freebuff"); assert.equal(c.manual, true); assert.match(c.reason, /usage limits/);
+    assert.deepEqual(c.labels, ["agent:freebuff", "needs:manual-run"]);
   }
-  assert.deepEqual(FALLBACK_LABELS, ["agent:freebuff", "needs:manual-run"]);
-  for (const env of [{}, all, { FACTORY_AGENT_PREFERENCE: "metered,api,copilot" }]) {
-    assert.ok(["claude", "codex", "cursor", "freebuff"].includes(chooseLane({}, env).lane));
+  assert.deepEqual(MANUAL_FALLBACKS, ["freebuff", "opencode"]);
+  const oc = chooseLane({}, { ...all, FACTORY_FREEBUFF_AT_LIMIT: "true" });
+  assert.equal(oc.lane, "opencode"); assert.equal(oc.manual, true); assert.deepEqual(oc.labels, ["agent:opencode", "needs:manual-run"]);
+  const none = chooseLane({ want: "cursor" }, { ...all, FACTORY_FREEBUFF_AT_LIMIT: "true", FACTORY_OPENCODE_AT_LIMIT: "true" });
+  assert.equal(none.lane, null); assert.equal(none.blocked, true); assert.deepEqual(none.labels, ["blocked:amit"]); assert.match(none.reason, /usage limits/);
+  assert.equal(chooseLane({}, { FACTORY_FREEBUFF_AT_LIMIT: "true", FACTORY_OPENCODE_AT_LIMIT: "true" }).lane, "claude"); // fallbacks only after the 3 lanes
+  for (const env of [{}, all, { FACTORY_AGENT_PREFERENCE: "metered,api,copilot,freebuff,opencode" }]) {
+    assert.ok(["claude", "codex", "cursor"].includes(chooseLane({}, env === all ? {} : env).lane));
   }
+  assert.deepEqual(preference({ FACTORY_AGENT_PREFERENCE: "opencode,freebuff,cursor" }), ["cursor", "claude", "codex"]); // fallbacks can't be promoted
 });
 t("next-tickets: limits route lanes, pinned lanes, all-at-limit -> manual_fallback without a slot", () => {
   const tk = [T(1, "B02-01", "B02", "component", ["a/"], ["status:ready"], { lane: "cursor", lane_pin: "true" }),
@@ -355,6 +362,8 @@ t("next-tickets: limits route lanes, pinned lanes, all-at-limit -> manual_fallba
   const all = pick(tk, { ...ENV, FACTORY_MAX_IN_FLIGHT: "2", FACTORY_CLAUDE_AT_LIMIT: "true", FACTORY_CODEX_AT_LIMIT: "true", FACTORY_CURSOR_AT_LIMIT: "true" });
   assert.equal(all.ready.length, 0); assert.equal(all.all_at_limit, true);
   assert.deepEqual(all.manual_fallback.map((x) => [x.issue, x.lane, x.labels.join("+")]), [[1, "freebuff", "agent:freebuff+needs:manual-run"], [2, "freebuff", "agent:freebuff+needs:manual-run"]]);
+  const oc = pick(tk, { ...ENV, FACTORY_CLAUDE_AT_LIMIT: "true", FACTORY_CODEX_AT_LIMIT: "true", FACTORY_CURSOR_AT_LIMIT: "true", FACTORY_FREEBUFF_AT_LIMIT: "true" });
+  assert.deepEqual(oc.manual_fallback.map((x) => x.labels.join("+")), ["agent:opencode+needs:manual-run", "agent:opencode+needs:manual-run"]);
 });
 
 console.log(`all ${n} passed`);

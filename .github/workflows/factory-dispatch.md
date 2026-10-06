@@ -85,7 +85,7 @@ safe-outputs:
     workflows: [factory-lane-claude, factory-lane-codex, factory-lane-cursor]
     max: 15
   add-labels:
-    allowed: [status:dispatched, lane:claude, lane:codex, lane:cursor, agent:freebuff, needs:manual-run]
+    allowed: [status:dispatched, lane:claude, lane:codex, lane:cursor, agent:freebuff, agent:opencode, needs:manual-run, blocked:amit]
     max: 15
     target: "*"
   add-comment:
@@ -107,5 +107,5 @@ You assign factory tickets to build lanes. You cannot write code or merge; you o
    - `dispatch_workflow` with `workflow_name` = `factory-lane-<lane>` and inputs `{ "issue_number": "<issue>" }`. Never set `force` or `fix_note`.
    - `add_comment` on the issue with ONE line: `Factory: lane <lane> (model <FACTORY_MODEL_* for that lane, or "Codex settings" for codex>) - <short reason>.`
 5. For each ticket in `manual_fallback` (Claude, Codex and Cursor are all at their usage limits):
-   - `add_labels` on the issue: `agent:freebuff` and `needs:manual-run`. Do NOT add `status:dispatched` and do NOT call `dispatch_workflow`.
-   - `add_comment` on the issue with ONE line: `Factory: usage limits - Claude, Codex and Cursor are all at their limit. Fallback: Freebuff (free), manual run by Dots/Amit; see docs/factory/AGENT-LIMITS.md.`
+   - `add_labels` on the issue: exactly the ticket's `labels` (`agent:freebuff` or `agent:opencode`, plus `needs:manual-run`; or `blocked:amit` when every fallback is at its limit too). Do NOT add `status:dispatched` and do NOT call `dispatch_workflow`.
+   - `add_comment` on the issue with ONE line: `Factory: <reason>. Nothing started; see docs/factory/AGENT-LIMITS.md.`

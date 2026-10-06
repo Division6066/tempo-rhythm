@@ -12,8 +12,8 @@
 #   3. No match -> no dispatch; the router comments asking for an area: label.
 #
 # Usage limits: scripts/factory/lane-limits.mjs re-checks the picked lane (FACTORY_*_AT_LIMIT, FACTORY_AGENT_PREFERENCE);
-# an agent at its limit is replaced by the next available one; all three at their limit -> agent:freebuff +
-# needs:manual-run (Freebuff, free, run by hand). docs/factory/AGENT-LIMITS.md.
+# an agent at its limit is replaced by the next available one; all three at their limit -> agent:freebuff (then
+# agent:opencode) + needs:manual-run, run by hand. docs/factory/AGENT-LIMITS.md.
 # Guards: the person who applied `ready` must have write/maintain/admin on the repo (triage is not
 # enough), and nothing dispatches on Friday or Saturday (Asia/Jerusalem), per the cloud-agent policy.
 # Capacity: max 2 running tickets per lane per repo (claude, cursor). "Running" = open issue labeled
@@ -108,16 +108,18 @@ jobs:
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
           fi
           # Usage limits: an agent at its limit (FACTORY_*_AT_LIMIT) gets nothing new; fall back in FACTORY_AGENT_PREFERENCE
-          # order; all three at their limit -> Freebuff (free, manual run). Never a pay-per-use agent.
-          res=$(node scripts/factory/lane-limits.mjs --want "$$lane")
+          # order; claude, codex and cursor all at their limit -> Freebuff, then OpenCode (manual run, labels only), then
+          # blocked:amit. Never a pay-per-use agent.
+          res=$(node scripts/factory/lane-limits.mjs --want "$lane")
           new_lane=$(printf '%s\n' "$res" | sed -n 's/^lane=//p')
           manual=$(printf '%s\n' "$res" | sed -n 's/^manual=//p')
+          add_labels=$(printf '%s\n' "$res" | sed -n 's/^labels=//p')
           reason=$(printf '%s\n' "$res" | sed -n 's/^reason=//p')
-          if [ "$manual" = true ]; then
-            for l in agent:freebuff needs:manual-run; do gh label create "$l" -R "$REPO" --color FBCA04 --force >/dev/null; done
-            gh issue edit "$ISSUE" -R "$REPO" --add-label "agent:freebuff" --add-label "needs:manual-run"
-            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: usage limits - Claude, Codex and Cursor are all at their limit. Fallback: Freebuff (free), manual run by Dots/Amit; see docs/factory/AGENT-LIMITS.md."
-            echo "::notice title=Usage limits::#$ISSUE -> agent:freebuff + needs:manual-run"
+          if [ "$manual" = true ] || [ -z "$new_lane" ]; then
+            IFS=, read -ra fl <<< "$add_labels"
+            for l in "${fl[@]}"; do gh label create "$l" -R "$REPO" --color FBCA04 --force >/dev/null; gh issue edit "$ISSUE" -R "$REPO" --add-label "$l"; done
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: $reason. Nothing started; see docs/factory/AGENT-LIMITS.md."
+            echo "::notice title=Usage limits::#$ISSUE -> $add_labels"
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if [ "$new_lane" != "$lane" ]; then why="$why; $reason"; lane="$new_lane"; fi
