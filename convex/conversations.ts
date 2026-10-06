@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
+import { requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
 
 async function requireOwnedLiveConversation(
@@ -49,7 +50,8 @@ export const create = mutation({
     technique: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
+    // Chat: pending/revoked accounts are rejected (sign-up approval gate).
+    const user = await requireApprovedUser(ctx);
 
     const now = Date.now();
     const conversationId = await ctx.db.insert("conversations", {

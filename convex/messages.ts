@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
+import { requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
 
 const messageRoleValidator = v.union(
@@ -117,6 +118,8 @@ export const create = mutation({
     toolCalls: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    // Chat write: pending/revoked accounts are rejected (sign-up approval gate).
+    await requireApprovedUser(ctx);
     await requireOwnedLiveConversation(ctx, args.conversationId);
 
     if (args.role !== "user") {
