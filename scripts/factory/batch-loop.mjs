@@ -35,6 +35,8 @@ export const batchBranch = (loop) => {
   if (!/^[A-Za-z0-9._-]+$/.test(loop || "")) throw new Error("--loop must match ^[A-Za-z0-9._-]+$");
   return `batch/${loop}`;
 };
+// POST /merges answers 409 for a merge conflict; other failures are not conflicts.
+export const isConflict = (e) => / -> 409 /.test(String(e?.message || ""));
 const REVIEW_REQ = /(^|\s)@?(cursor review|bugbot run)\b/i;
 
 // Latest check run per name on a commit -> { name: conclusion|status }.
@@ -130,7 +132,16 @@ async function build(owner, repo, loop) {
     try {
       const m = await gh(`/repos/${owner}/${repo}/merges`, { method: "POST", body: { base: branch, head: it.pr.head.sha, commit_message: `Merge #${it.number} (${it.fm?.ticket || "ticket"}) into ${branch}` } });
       say(`merged #${it.number} into ${branch}${m ? ` (${m.sha.slice(0, 8)})` : " (already contained)"}`); merged.push(it);
-    } catch (e) { ok = false; say(`merge #${it.number} failed: ${e.message.slice(0, 200)}`); }
+    } catch (e) {
+      say(`merge #${it.number} failed: ${e.message.slice(0, 200)}`);
+      // Only 409 = a real merge conflict. Anything else (auth, rate limit, 5xx) is not the PR's fault: undo the
+      // retarget and stop the build, so it can simply be re-run.
+      if (!isConflict(e)) {
+        await gh(`/repos/${owner}/${repo}/pulls/${it.number}`, { method: "PATCH", body: { base: BASE } }).catch(() => {});
+        throw new Error(`build stopped at #${it.number} (not a conflict; base restored to ${BASE}): ${e.message.slice(0, 200)}`);
+      }
+      ok = false;
+    }
     if (!ok) {
       await gh(`/repos/${owner}/${repo}/pulls/${it.number}`, { method: "PATCH", body: { base: BASE } });
       await addLabels(owner, repo, it.number, ["batch:conflict"]);
@@ -143,8 +154,8 @@ async function build(owner, repo, loop) {
 
 async function open(owner, repo, loop, built) {
   const branch = batchBranch(loop);
-  const existing = await findBatchPR(owner, repo, loop);
-  if (existing && existing.state === "open") { say(`batch PR exists: #${existing.number} ${existing.html_url}`); return existing; }
+  const found = await findBatchPR(owner, repo, loop);
+  const existing = found && found.state === "open" ? found : null;
   // Tickets = every PR merged into the batch branch (all builds so far), plus this run's.
   const all = await ghAll(`/repos/${owner}/${repo}/pulls?state=closed&base=${encodeURIComponent(branch)}`);
   const merged = [];
@@ -154,8 +165,15 @@ async function open(owner, repo, loop, built) {
     merged.push({ number: p.number, ticket, fm: issue ? frontMatter(issue.body) : null });
   }
   for (const m of built?.merged || []) if (!merged.some((x) => x.number === m.number)) merged.push(m);
-  if (!merged.length) { say(`nothing merged into ${branch} yet: no batch PR.`); return null; }
+  if (!merged.length) { say(`nothing merged into ${branch} yet: no batch PR.`); return existing; }
   const body = batchBody({ loop, merged: mergeOrder(merged).filter((m) => m.ticket), skipped: built?.skipped || [] });
+  if (existing) {
+    // A later build may have merged more PRs: keep the Closes lines (and scope-guard rule i's ticket union) current.
+    say(`batch PR exists: #${existing.number} ${existing.html_url}`);
+    if ((existing.body || "").trim() !== body.trim())
+      await act(`update #${existing.number} body (${merged.length} ticket(s))`, () => gh(`/repos/${owner}/${repo}/pulls/${existing.number}`, { method: "PATCH", body: { body, title: `[batch ${loop}] ${merged.length} factory tickets` } }));
+    return existing;
+  }
   let pr = null;
   await act(`open PR ${branch} -> ${BASE} with ${merged.length} ticket(s)`, async () => {
     pr = await gh(`/repos/${owner}/${repo}/pulls`, { method: "POST", body: { title: `[batch ${loop}] ${merged.length} factory tickets`, head: branch, base: BASE, body } });

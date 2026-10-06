@@ -93,12 +93,13 @@ jobs:
           CLAUDE_BRANCH: ${{ steps.ctx.outputs.branch }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          base_branch: integration
+          # Batch fix runs work on (and push to) batch/<loop-id>; they get no `gh pr create` tool.
+          base_branch: ${{ inputs.target_branch || 'integration' }}
           prompt: ${{ steps.ctx.outputs.prompt }}
           claude_args: >-
             --model ${{ vars.FACTORY_MODEL_CLAUDE }}
             --max-turns 60
-            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(bun install:*),Bash(bun run:*),Bash(bun test:*),Bash(bunx:*),Bash(git status:*),Bash(git diff:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git log:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh issue view:*)"
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(bun install:*),Bash(bun run:*),Bash(bun test:*),Bash(bunx:*),Bash(git status:*),Bash(git diff:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git log:*)${{ inputs.target_branch == '' && ',Bash(gh pr create:*)' || '' }},Bash(gh pr view:*),Bash(gh issue view:*)"
       - name: Factory App configured?
         id: app
         if: always()
