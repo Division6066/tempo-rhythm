@@ -27,5 +27,9 @@ describe("note previews and period filters", () => {
     expect(plainPreview('[{"task":"hidden"}]\nShown')).toBe("Shown");
     expect(plainPreview('  {"a":1}\n  ["b"]\n"c"\nPlain')).toBe("Plain");
     expect(plainPreview("~~~json\n{}\n~~~\nFirst\nSecond")).toBe("First");
+    expect(plainPreview("- [ ] Call the bank\n- [x] Done")).toBe("Call the bank");
+    expect(plainPreview("[[Weekly review]] notes")).toBe("[[Weekly review]] notes");
+    expect(plainPreview('"Rest is productive," she said')).toBe('"Rest is productive," she said');
+    expect(plainPreview('"key": 1,\n[1, 2]\n[]\n}\n- ["x", "y"]\nText')).toBe("Text");
   });
 });

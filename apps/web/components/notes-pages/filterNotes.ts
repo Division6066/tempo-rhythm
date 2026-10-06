@@ -8,8 +8,15 @@ export function filterByPeriod<T extends { periodType: PeriodType }>(
   return notes.filter((note) => type === "all" || note.periodType === type);
 }
 
-// Lines that start like raw JSON (objects, arrays, strings) are never shown as a preview.
-const JSON_START = new Set(["{", "[", "}", "]", '"']);
+// Lines that look like raw JSON (objects, arrays, string values, keys, closing brackets) are never
+// shown as a preview. Markdown that merely starts with "[" ([[wiki]] links, [ ] checklists, [links](...))
+// or a quoted sentence is still prose.
+const JSON_LINE =
+  /^(?:[{}\]]|\[\]|\[\s*(?:[{"\d-]|\[\s*[{"\d]|true\b|false\b|null\b)|"(?:[^"\\]|\\.)*"\s*(?::|,?$))/;
+
+export function looksLikeJson(text: string): boolean {
+  return JSON_LINE.test(text.trim());
+}
 
 export function plainPreview(body: string): string {
   let fenced = false;
@@ -19,13 +26,14 @@ export function plainPreview(body: string): string {
       fenced = !fenced;
       continue;
     }
-    if (fenced || !trimmed || JSON_START.has(trimmed[0] ?? "")) continue;
+    if (fenced || !trimmed || looksLikeJson(trimmed)) continue;
     const plain = trimmed
       .replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+\.\s+)/, "")
+      .replace(/^\[[ xX]\]\s+/, "")
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
       .replace(/[*_`~]/g, "");
     // Check again after removing list / quote / heading markers: `- {"a":1}` is still JSON.
-    if (JSON_START.has(plain.trim()[0] ?? "")) continue;
+    if (looksLikeJson(plain)) continue;
     if (plain) return plain.length > 140 ? `${plain.slice(0, 140)}…` : plain;
   }
   return "No content yet.";
