@@ -19,7 +19,14 @@ const priorityLabels: Record<Priority, string> = {
 
 export function PriorityBoard() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const tasks = useQuery(api.tasks.list, isAuthenticated ? {} : "skip");
+  // tasks.list calls requireUser, so wait until the non-throwing profile query
+  // confirms that the authenticated identity has a corresponding user row.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const hasConvexUser = profile != null;
+  const tasks = useQuery(
+    api.tasks.list,
+    isAuthenticated && hasConvexUser ? {} : "skip"
+  );
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
   const restoreTask = useMutation(api.tasks.restore);
@@ -91,7 +98,11 @@ export function PriorityBoard() {
     }
   }
 
-  if (isAuthLoading || (isAuthenticated && tasks === undefined)) {
+  if (
+    isAuthLoading ||
+    (isAuthenticated &&
+      (profile === undefined || (hasConvexUser && tasks === undefined)))
+  ) {
     return <p className="text-sm text-muted-foreground">Loading your priorities…</p>;
   }
 
