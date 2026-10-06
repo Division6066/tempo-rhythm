@@ -1,0 +1,48 @@
+# Factory loop — one Bugbot review per loop (batch loop)
+<!-- Approved by Amit 2026-10-06 10:26 IDT. Goal: Cursor Bugbot (~$1.20/review) runs ONCE per loop, not once per PR. -->
+
+## The loop
+| Step | What | Who / tool | Review |
+|---|---|---|---|
+| 0 | **Ticket 0** (`type: data`, label `ticket:data`): the Convex architecture for EVERY component in the loop: schema tables, indexes, queries / mutations / actions, regenerated `convex/_generated/`. | Claude lane | CI only |
+| 0b | Ticket 0 lands on `integration` through the merge queue (deploys to TEST `ceaseless-dog-617` via convex-deploy-test). Component tickets start only after this. | merge queue | — |
+| 1 | **8–14 component tickets**, 3–5 per lane (each lane 2–5; 8 can't give every lane 3). Routing by `browser_test:` — `true` (real browser / Playwright check) → **Cursor** (preferred) or **Codex** (cloud computers); `false` → **Claude**. Components never touch `convex/`. | lanes | CI only (lint, typecheck, unit, Playwright). PRs open as **draft**. No `@cursor review`. |
+| 2 | When the loop's component PRs are CI-green: `factory-batch` **build** creates `batch/<loop-id>` from `integration`, retargets each PR to it and merges its head (merges API). GitHub shows each component PR as **merged into `batch/<loop-id>`** (history kept; no "closed unmerged" noise). | `scripts/factory/batch-loop.mjs build` | — |
+| 3 | **open**: ONE PR `batch/<loop-id>` → `integration`, labels `batch` + `factory`, body = `Closes #N` for every ticket (they close when the batch lands). | `… open` (user token) | — |
+| 4 | **review**: ONE `@cursor review` on the batch PR (skipped if Bugbot already ran / runs on the head). | `… review` | **Bugbot, once** |
+| 5 | Findings → fixed **on the batch branch** (`factory-review-fix` → `factory-lane-claude` `target_branch=batch/<loop-id>`, or a person). Each fix round = one more `review`. **Max 3 rounds** (`review-fix:1..3`), then `blocked:amit`. | review-fix / lane | Bugbot per round |
+| 6 | Bugbot clean + the 5 required checks green → **enqueue** (GraphQL `enqueuePullRequest`, squash). | `… enqueue` | — |
+| 7 | **finalize** (automatic when the batch PR merges): comment "landed via #B" + label `merged-via-batch` on each component PR; tickets → `status:done`. | factory-batch (`pull_request: closed`) | — |
+
+Conflicts while building: the PR goes back to `integration`, label `batch:conflict`, and rolls to the next loop.
+
+## Why component PRs are drafts
+Bugbot reviews non-draft PRs automatically on every push while the dashboard auto-run is on. `.cursor/config/bugbot.yaml`
+sets `drafts: false` + `frequency: oncePerPr`, but the YAML has **no manual-only switch**. Until Amit turns on
+"Run only when mentioned" (below), draft is what keeps Bugbot off the component PRs. `build` merges drafts directly.
+
+## Bugbot settings (docs: https://cursor.com/docs/bugbot)
+- In repo: `.cursor/config/bugbot.yaml` (read from the PR's **base** branch): `drafts: false`, `oncePerPr`, autofix disabled.
+  `.cursor/BUGBOT.md`: batch-PR review rules.
+- Dashboard (Amit; not settable from the repo): **cursor.com/dashboard → Automations → Bugbot → Personal settings →
+  "Run only when mentioned"** ON for the Cursor account linked to GitHub **Division6066** (it authors every factory PR).
+  Team backstop: Bugbot → Repository settings → tempo-rhythm → **"Run only once per PR"** ON. Team-level manual-only exists
+  only as the Admin API `POST /bugbot/repo/update {"manualTriggerOnly": true}` (needs a team Admin API key = Amit).
+
+## Guards
+- **scope-guard rule h**: a component PR that changes `convex/**` fails unless it has the `convex-arch` label added by
+  Division6066. **Rule i**: a batch PR may link many tickets; files must sit inside the union of their scopes; no
+  `convex/` (unless `convex-arch`), no shared hot files.
+- config-guard unchanged. Branch protection unchanged: `integration` = PR + 5 required checks + merge queue (0 approvals);
+  `batch/*` has no rules (merges into it need no review).
+
+## Tokens (R15)
+`build` / `open` / `review` / `enqueue` need a **user** token (Division6066): PRs opened with GITHUB_TOKEN start no CI, and
+Bugbot needs a covered author. In Actions that is secret `FACTORY_BATCH_TOKEN` (not set → PARKED); otherwise run
+`GH_TOKEN=… GITHUB_REPOSITORY=Levidavidspublic/tempo-rhythm node scripts/factory/batch-loop.mjs run --loop <id>`.
+
+## Known limit — Codex can't push from a PR-comment task
+Codex cloud tasks started by `@codex` on a PR run in a sandbox without GitHub write access: on #670 Codex fixed the findings
+but could not push. Until fixed: route `browser_test: true` tickets to **Cursor first**; Codex gets them only when its
+environment can push (Codex → Environments → tempo-rhythm: allow internet/GitHub access and "push to branch", or let
+Codex open its own PR from the Codex web app). Fallback: a person/Claude applies Codex's diff on the branch.

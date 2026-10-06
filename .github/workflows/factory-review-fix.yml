@@ -9,6 +9,9 @@ name: factory-review-fix
 # Enqueue to MQ only after Bugbot clean + 5 required checks green (Scout / GraphQL enqueuePullRequest).
 # Uses github.token only for labels, a comment and workflow_dispatch (no PR creation, no merge: R15).
 # Known limit: Bugbot reviews bot-authored PRs (claude[bot], cursor) only when a Cursor team covers this repo.
+# Batch loop (2026-10-06, factory/LOOP.md): Bugbot reviews ONLY the loop's batch PR (head batch/<loop-id>),
+# so the automatic trigger fires only for batch/* heads; the fix goes to the batch branch. Component PRs
+# (t/*, factory/*) get CI only - no per-PR Bugbot, no per-PR review-fix. workflow_dispatch still works for any PR.
 
 on:
   pull_request_review:
@@ -39,8 +42,7 @@ jobs:
     if: >-
       vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true' &&
       (github.event_name == 'workflow_dispatch' ||
-       ((startsWith(github.event.pull_request.head.ref, 'factory/') ||
-         startsWith(github.event.pull_request.head.ref, 't/')) &&
+       (startsWith(github.event.pull_request.head.ref, 'batch/') &&
         (github.event.review.user.login == 'cursor[bot]' || github.event.review.user.login == 'cursor')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
