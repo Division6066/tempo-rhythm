@@ -29,17 +29,17 @@ export function ProfileReady({
   if (isLoading || (isAuthenticated && profile === undefined)) {
     if (fallback !== undefined) return <>{fallback}</>;
     return (
-      <p role="status" className="text-sm text-muted-foreground">
+      <output className="block text-sm text-muted-foreground">
         Loading…
-      </p>
+      </output>
     );
   }
   if (!isAuthenticated || !profile) {
     if (fallback !== undefined) return <>{fallback}</>;
     return (
-      <p role="status" className="text-sm text-muted-foreground">
+      <output className="block text-sm text-muted-foreground">
         Sign in to see this page.
-      </p>
+      </output>
     );
   }
   return <>{children}</>;
