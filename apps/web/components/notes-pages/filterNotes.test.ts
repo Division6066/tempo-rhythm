@@ -23,6 +23,7 @@ describe("note previews and period filters", () => {
       "Hello there"
     );
     expect(plainPreview('{"task":"hidden"}')).toBe("No content yet.");
+    expect(plainPreview('- {"token":"visible"}\n> ["x"]\nReal text')).toBe("Real text");
     expect(plainPreview('[{"task":"hidden"}]\nShown')).toBe("Shown");
     expect(plainPreview('  {"a":1}\n  ["b"]\n"c"\nPlain')).toBe("Plain");
     expect(plainPreview("~~~json\n{}\n~~~\nFirst\nSecond")).toBe("First");

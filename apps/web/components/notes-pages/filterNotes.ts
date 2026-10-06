@@ -24,6 +24,8 @@ export function plainPreview(body: string): string {
       .replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+\.\s+)/, "")
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
       .replace(/[*_`~]/g, "");
+    // Check again after removing list / quote / heading markers: `- {"a":1}` is still JSON.
+    if (JSON_START.has(plain.trim()[0] ?? "")) continue;
     if (plain) return plain.length > 140 ? `${plain.slice(0, 140)}…` : plain;
   }
   return "No content yet.";

@@ -42,22 +42,30 @@ export function MemoryManager() {
     return () => window.clearTimeout(id);
   }, [search]);
 
+  // memory.list / recall / context call requireUser, which throws until the user row exists.
+  // getProfile returns null instead, so subscribe only once it has resolved a user.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const userId = isAuthenticated && profile ? profile._id : null;
+  const hasUser = userId !== null;
+
   const searching = debounced.length >= 2;
   const listed = useQuery(
     api.memory.list,
-    isAuthenticated && !searching ? { sector: filter || undefined, limit: LIST_LIMIT } : "skip"
+    hasUser && !searching ? { sector: filter || undefined, limit: LIST_LIMIT } : "skip"
   );
   const recalled = useQuery(
     api.memory.recall,
-    isAuthenticated && searching ? { query: debounced, limit: LIST_LIMIT } : "skip"
+    hasUser && searching ? { query: debounced, limit: LIST_LIMIT } : "skip"
   );
-  const preview = useQuery(api.memory.context, isAuthenticated && showContext ? {} : "skip");
+  const preview = useQuery(api.memory.context, hasUser && showContext ? {} : "skip");
 
   const current = searching ? recalled : listed;
-  // Keep the last results on screen while args change, so the page chrome stays mounted.
-  const lastRaw = useRef(current);
-  if (current !== undefined) lastRaw.current = current;
-  const raw = current ?? lastRaw.current;
+  // Keep the last results on screen while args change, so the page chrome stays mounted. Keyed by
+  // user: after sign-out or an account switch the previous user's memories are never shown.
+  const lastRaw = useRef<{ userId: string; value: NonNullable<typeof current> } | null>(null);
+  if (!userId) lastRaw.current = null;
+  else if (current !== undefined) lastRaw.current = { userId, value: current };
+  const raw = current ?? (lastRaw.current?.userId === userId ? lastRaw.current?.value : undefined);
   const refreshing = isAuthenticated && current === undefined && raw !== undefined;
   const rows =
     raw === undefined

@@ -21,7 +21,11 @@ export function NotesList() {
   const { isAuthenticated } = useConvexAuth();
   const [search, setSearch] = useState("");
   const [pinnedOnly, setPinnedOnly] = useState(false);
-  const notes = useQuery(api.notes.list, isAuthenticated ? { search, pinnedOnly } : "skip");
+  // notes.list calls requireUser, which throws until the user row exists. getProfile returns null
+  // instead, so subscribe only once it has resolved a user (until then: loading state, not an error).
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const userId = isAuthenticated && profile ? profile._id : null;
+  const notes = useQuery(api.notes.list, userId ? { search, pinnedOnly } : "skip");
   const create = useMutation(api.notes.create);
   const togglePin = useMutation(api.notes.togglePin);
   const remove = useMutation(api.notes.remove);
@@ -34,10 +38,11 @@ export function NotesList() {
   const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   // Keep the last result on screen while a new search / pinned filter loads, so typing doesn't blank the list.
-  const lastNotes = useRef<typeof notes>(undefined);
-  if (notes !== undefined) lastNotes.current = notes;
-  if (!isAuthenticated) lastNotes.current = undefined;
-  const shown = notes ?? lastNotes.current;
+  // Keyed by user, so an account switch never shows the previous user's notes.
+  const lastNotes = useRef<{ userId: string; value: NonNullable<typeof notes> } | null>(null);
+  if (!userId) lastNotes.current = null;
+  else if (notes !== undefined) lastNotes.current = { userId, value: notes };
+  const shown = notes ?? (lastNotes.current?.userId === userId ? lastNotes.current?.value : undefined);
   const isLoading = isAuthenticated && shown === undefined;
   const visible = filterByPeriod(shown ?? [], type).sort(
     (a, b) => Number(b.pinned) - Number(a.pinned)
