@@ -56,6 +56,8 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
   { slug: "settings", title: "Profile", route: "/settings/profile", category: "Settings", icon: "User" },
   { slug: "settings-prefs", title: "Preferences", route: "/settings/preferences", category: "Settings", icon: "Settings" },
   { slug: "settings-integrations", title: "Integrations", route: "/settings/integrations", category: "Settings", icon: "Link" },
+  { slug: "settings-nags", title: "Nags", route: "/settings/nags", category: "Settings", icon: "Bell" },
+  { slug: "settings-memory", title: "Memory", route: "/settings/memory", category: "Settings", icon: "Sparkles" },
   { slug: "billing", title: "Trial & billing", route: "/billing", category: "Settings", icon: "Star" },
   { slug: "notifications", title: "Notifications", route: "/notifications", category: "Settings", icon: "Bell" },
   { slug: "ask-founder", title: "Ask the founder", route: "/ask-founder", category: "Settings", icon: "Mail" },
