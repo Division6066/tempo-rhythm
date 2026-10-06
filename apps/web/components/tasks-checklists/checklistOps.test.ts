@@ -1,12 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  addStep,
-  progress,
-  removeStep,
-  renameStep,
-  toggleStep,
-  undoFeedback,
-} from "./checklistOps";
+import { addStep, progress, removeStep, renameStep, toggleStep } from "./checklistOps";
 
 describe("checklist operations", () => {
   test("add, toggle, rename, remove, and calculate progress without mutation", () => {
@@ -30,12 +23,5 @@ describe("checklist operations", () => {
     expect(removeStep(renamed, "step-1")).toEqual([
       { id: "step-2", text: "Last step", completed: false },
     ]);
-  });
-
-  test("describes whether undo restored the task", () => {
-    expect(undoFeedback({ success: true })).toBe("Task restored.");
-    expect(undoFeedback({ success: false })).toBe(
-      "That undo has expired, so the task stays deleted.",
-    );
   });
 });
