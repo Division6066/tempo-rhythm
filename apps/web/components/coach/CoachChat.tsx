@@ -6,7 +6,6 @@ import { CrisisResourcesCard } from "@/components/coach-crisis/CrisisResourcesCa
 import { useCrisisGuard } from "@/components/coach-crisis/useCrisisGuard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
-import { useUserReady } from "@/lib/useUserReady";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +33,9 @@ export function CoachCrisisReply() {
 
 export function CoachChat() {
   const { isAuthenticated } = useConvexAuth();
-  const userReady = useUserReady();
-  const conversations = useQuery(api.conversations.list, userReady ? {} : "skip");
+  // conversations.list calls requireUser: wait for the users row (getProfile is null until then).
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const conversations = useQuery(api.conversations.list, isAuthenticated && profile ? {} : "skip");
   const createConversation = useMutation(api.conversations.create);
   const sendMessage = useMutation(api.coach.sendMessage);
   const { guard } = useCrisisGuard();

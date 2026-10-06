@@ -308,8 +308,6 @@ mock.module("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
 
-mock.module("@/lib/useUserReady", () => ({ useUserReady: () => true }));
-
 mock.module("convex/react", () => ({
   useQuery: (_ref: unknown, args: unknown) => {
     if (args === "skip") return undefined;

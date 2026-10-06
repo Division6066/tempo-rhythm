@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
-import { useUserReady } from "@/lib/useUserReady";
 import { ResultGroup } from "./ResultGroup";
 
 const DEBOUNCE_MS = 250;
@@ -36,8 +35,7 @@ export function SearchScreen() {
     return () => clearTimeout(timer);
   }, [draft, query, router, pathname]);
 
-  const userReady = useUserReady();
-  const results = useQuery(api.search.all, query && userReady ? { query } : "skip");
+  const results = useQuery(api.search.all, query ? { query } : "skip");
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== "Enter") return;

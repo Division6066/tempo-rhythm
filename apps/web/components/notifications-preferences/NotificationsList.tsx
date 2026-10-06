@@ -4,11 +4,9 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
-import { useUserReady } from "@/lib/useUserReady";
 
 export function NotificationsList() {
-  const userReady = useUserReady();
-  const notifications = useQuery(api.notifications.list, userReady ? {} : "skip");
+  const notifications = useQuery(api.notifications.list, {});
   const markRead = useMutation(api.notifications.markRead);
   const markAllRead = useMutation(api.notifications.markAllRead);
   const [error, setError] = useState("");

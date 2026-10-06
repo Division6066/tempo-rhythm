@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { ProfileReady } from "@/components/today/ProfileReady";
 import { CoachChat } from "@/components/coach/CoachChat";
 import { CoachControls } from "@/components/coach-controls/CoachControls";
 import { CoachProposalCard } from "@/components/coach-proposal/CoachProposalCard";
@@ -39,10 +40,14 @@ export default function Page() {
     <>
       <BesideChat>
         <div data-coach-marker="dial-panic" data-testid="coach-controls">
-          <CoachControls />
+          <ProfileReady fallback={null}>
+            <CoachControls />
+          </ProfileReady>
         </div>
         <div data-coach-marker="proposal" data-testid="coach-proposal">
-          <CoachProposalCard />
+          <ProfileReady fallback={null}>
+            <CoachProposalCard />
+          </ProfileReady>
         </div>
       </BesideChat>
       <CoachChat />

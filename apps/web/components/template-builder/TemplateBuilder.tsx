@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useUserReady } from "@/lib/useUserReady";
 import { type TemplateDraft, TemplateForm } from "./TemplateForm";
 
 const EMPTY_DRAFT: TemplateDraft = {
@@ -74,11 +73,7 @@ function draftFromTemplate(template: {
 
 export function TemplateBuilderScreen({ fromId }: { fromId?: string }) {
   const router = useRouter();
-  const userReady = useUserReady();
-  const template = useQuery(
-    api.templates.get,
-    fromId && userReady ? { templateId: fromId } : "skip",
-  );
+  const template = useQuery(api.templates.get, fromId ? { templateId: fromId } : "skip");
   const create = useMutation(api.templates.create);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -133,8 +128,7 @@ export function TemplateBuilderScreen({ fromId }: { fromId?: string }) {
 
 export function TemplateEditorScreen({ templateId }: { templateId: string }) {
   const router = useRouter();
-  const userReady = useUserReady();
-  const template = useQuery(api.templates.get, userReady ? { templateId } : "skip");
+  const template = useQuery(api.templates.get, { templateId });
   const update = useMutation(api.templates.update);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");

@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
-import { useUserReady } from "@/lib/useUserReady";
 import {
   BAD_DAY_BANNER,
   EMPTY_COPY,
@@ -19,8 +18,7 @@ type Outcome = { status: "accepted" | "rejected"; taskLoad: number };
 
 export function CoachProposalCard() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const userReady = useUserReady();
-  const args = userReady ? {} : "skip";
+  const args = isAuthenticated ? {} : "skip";
   const settings = useQuery(api.coach.getSettings, args);
   const badDay = useQuery(api.coach.badDay, args);
   const proposal = useQuery(api.coach.currentProposal, args);

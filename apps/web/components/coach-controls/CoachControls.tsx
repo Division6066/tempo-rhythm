@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
-import { useUserReady } from "@/lib/useUserReady";
 import {
   clampDial,
   dialLabel,
@@ -27,8 +26,7 @@ function minutesCopy(minutes: number): string {
 
 export function CoachControls() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const userReady = useUserReady();
-  const settings = useQuery(api.coach.getSettings, userReady ? {} : "skip");
+  const settings = useQuery(api.coach.getSettings, isAuthenticated ? {} : "skip");
   const setDial = useMutation(api.coach.setDial);
   const pressPanic = useMutation(api.coach.pressPanic);
   const clearPanic = useMutation(api.coach.clearPanic);

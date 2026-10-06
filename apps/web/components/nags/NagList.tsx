@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
-import { useUserReady } from "@/lib/useUserReady";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { acceptedPhrases, canEnable, enableHint, validateLabel } from "./nagRules";
@@ -26,8 +25,7 @@ function countCopy(n: number): string {
 
 export function NagList({ onSelect }: { onSelect?: (nagId: Id<"nags">) => void }) {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const userReady = useUserReady();
-  const nags = useQuery(api.nags.list, userReady ? {} : "skip");
+  const nags = useQuery(api.nags.list, isAuthenticated ? {} : "skip");
   const create = useMutation(api.nags.create);
   const setEnabled = useMutation(api.nags.setEnabled);
   const remove = useMutation(api.nags.remove);

@@ -8,15 +8,18 @@
  * @auth: required
  */
 import { Suspense } from "react";
+import { ProfileReady } from "@/components/today/ProfileReady";
 import { SearchScreen } from "@/components/global-search/SearchScreen";
 
 export default function Page() {
   return (
     <main className="mx-auto w-full max-w-4xl p-8" data-testid="search-route">
       <h1 className="mb-6 font-heading text-4xl font-semibold text-foreground">Search</h1>
-      <Suspense fallback={null}>
-        <SearchScreen />
-      </Suspense>
+      <ProfileReady>
+        <Suspense fallback={null}>
+          <SearchScreen />
+        </Suspense>
+      </ProfileReady>
     </main>
   );
 }

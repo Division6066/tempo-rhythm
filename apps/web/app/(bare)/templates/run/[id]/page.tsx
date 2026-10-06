@@ -1,3 +1,4 @@
+import { ProfileReady } from "@/components/today/ProfileReady";
 import { TemplateRun } from "@/components/template-run/TemplateRun";
 
 type Params = { id: string };
@@ -10,7 +11,9 @@ export default async function Page({
   const { id } = await params;
   return (
     <div data-testid="template-run-route">
-      <TemplateRun templateId={id} />
+      <ProfileReady>
+        <TemplateRun templateId={id} />
+      </ProfileReady>
     </div>
   );
 }

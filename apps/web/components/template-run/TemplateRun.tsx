@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
-import { useUserReady } from "@/lib/useUserReady";
 import { ProposalBanner } from "./ProposalBanner";
 
 type Block =
@@ -127,8 +126,7 @@ function MarkdownPreview({ body }: { body: string }) {
 
 export function TemplateRun({ templateId }: { templateId: string }) {
   const router = useRouter();
-  const userReady = useUserReady();
-  const template = useQuery(api.templates.get, userReady ? { templateId } : "skip");
+  const template = useQuery(api.templates.get, { templateId });
   const applyToNote = useMutation(api.templates.applyToNote);
   const [title, setTitle] = useState("");
   const [pending, setPending] = useState(false);
