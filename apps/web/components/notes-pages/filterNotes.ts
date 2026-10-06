@@ -8,6 +8,9 @@ export function filterByPeriod<T extends { periodType: PeriodType }>(
   return notes.filter((note) => type === "all" || note.periodType === type);
 }
 
+// Lines that start like raw JSON (objects, arrays, strings) are never shown as a preview.
+const JSON_START = new Set(["{", "[", "}", "]", '"']);
+
 export function plainPreview(body: string): string {
   let fenced = false;
   for (const line of body.split(/\r?\n/)) {
@@ -16,7 +19,7 @@ export function plainPreview(body: string): string {
       fenced = !fenced;
       continue;
     }
-    if (fenced || !trimmed || /^[{[}\]"]/.test(trimmed)) continue;
+    if (fenced || !trimmed || JSON_START.has(trimmed[0] ?? "")) continue;
     const plain = trimmed
       .replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+\.\s+)/, "")
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")

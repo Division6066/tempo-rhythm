@@ -33,8 +33,13 @@ export function NotesList() {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  const isLoading = isAuthenticated && notes === undefined;
-  const visible = filterByPeriod(notes ?? [], type).sort(
+  // Keep the last result on screen while a new search / pinned filter loads, so typing doesn't blank the list.
+  const lastNotes = useRef<typeof notes>(undefined);
+  if (notes !== undefined) lastNotes.current = notes;
+  if (!isAuthenticated) lastNotes.current = undefined;
+  const shown = notes ?? lastNotes.current;
+  const isLoading = isAuthenticated && shown === undefined;
+  const visible = filterByPeriod(shown ?? [], type).sort(
     (a, b) => Number(b.pinned) - Number(a.pinned)
   );
 
