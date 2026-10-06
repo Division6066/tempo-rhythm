@@ -78,10 +78,41 @@ export function approvalStatusOf(
 	if (user.approvalStatus) {
 		return user.approvalStatus;
 	}
-	return (user._creationTime ?? 0) < APPROVAL_GATE_EPOCH_MS ? "approved" : "pending";
+	return (user._creationTime ?? 0) < APPROVAL_GATE_EPOCH_MS
+		? "approved"
+		: "pending";
 }
 
-export function isApproved(user: ApprovalUser, admins: string[] = adminEmails()): boolean {
+export type ReleaseApprovalDecision =
+	| "approve"
+	| "already"
+	| "revoked"
+	| "deleted"
+	| "new";
+
+/**
+ * TEMPO-GATE-03 release backfill: what `approval.approveAllExistingUsers` does
+ * with one account. Every account that exists before `cutoffMs` becomes
+ * approved, except an explicit admin `revoked` decision and soft-deleted rows.
+ * Accounts created at or after the cutoff are left alone (they start pending).
+ */
+export function releaseApprovalDecision(
+	user: Pick<Doc<"users">, "approvalStatus" | "deletedAt"> & {
+		_creationTime: number;
+	},
+	cutoffMs: number,
+): ReleaseApprovalDecision {
+	if (user._creationTime >= cutoffMs) return "new";
+	if (user.deletedAt !== undefined) return "deleted";
+	if (user.approvalStatus === "approved") return "already";
+	if (user.approvalStatus === "revoked") return "revoked";
+	return "approve";
+}
+
+export function isApproved(
+	user: ApprovalUser,
+	admins: string[] = adminEmails(),
+): boolean {
 	return approvalStatusOf(user, admins) === "approved";
 }
 

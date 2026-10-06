@@ -1,12 +1,18 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import {
+	internalMutation,
+	internalQuery,
+	mutation,
+	query,
+} from "./_generated/server";
 import {
 	APPROVAL_GATE_EPOCH_MS,
 	type ApprovalStatus,
 	approvalStatusOf,
 	isAdminUser,
 	normalizeEmail,
+	releaseApprovalDecision,
 	requireAdmin,
 	requireApprovedUser,
 } from "./lib/approval";
@@ -48,8 +54,12 @@ function adminRow(user: Doc<"users">) {
 		status: approvalStatusOf(user),
 		isAdmin: isAdminUser(user),
 		createdAt: user.createdAt ?? user._creationTime,
-		...(user.approvalUpdatedAt !== undefined ? { approvalUpdatedAt: user.approvalUpdatedAt } : {}),
-		...(user.approvalUpdatedBy !== undefined ? { approvalUpdatedBy: user.approvalUpdatedBy } : {}),
+		...(user.approvalUpdatedAt !== undefined
+			? { approvalUpdatedAt: user.approvalUpdatedAt }
+			: {}),
+		...(user.approvalUpdatedBy !== undefined
+			? { approvalUpdatedBy: user.approvalUpdatedBy }
+			: {}),
 	};
 }
 
@@ -61,7 +71,11 @@ export const myStatus = query({
 	args: {},
 	returns: v.union(
 		v.null(),
-		v.object({ status: statusValidator, isAdmin: v.boolean(), email: v.string() }),
+		v.object({
+			status: statusValidator,
+			isAdmin: v.boolean(),
+			email: v.string(),
+		}),
 	),
 	handler: async (ctx) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -72,7 +86,11 @@ export const myStatus = query({
 		if (!user || isInactiveAccount(user)) {
 			return null;
 		}
-		return { status: approvalStatusOf(user), isAdmin: isAdminUser(user), email: user.email };
+		return {
+			status: approvalStatusOf(user),
+			isAdmin: isAdminUser(user),
+			email: user.email,
+		};
 	},
 });
 
@@ -97,10 +115,16 @@ export const listForAdmin = query({
 			.withIndex("by_deletedAt", (q) => q.eq("deletedAt", undefined))
 			.order("desc")
 			.take(500);
-		const rank: Record<ApprovalStatus, number> = { pending: 0, revoked: 1, approved: 2 };
+		const rank: Record<ApprovalStatus, number> = {
+			pending: 0,
+			revoked: 1,
+			approved: 2,
+		};
 		return users
 			.map(adminRow)
-			.sort((a, b) => rank[a.status] - rank[b.status] || b.createdAt - a.createdAt);
+			.sort(
+				(a, b) => rank[a.status] - rank[b.status] || b.createdAt - a.createdAt,
+			);
 	},
 });
 
@@ -129,7 +153,11 @@ export const setStatus = mutation({
 /** CLI path (`npx convex run approval:setStatusByEmail ...`). Internal: not callable from a browser. */
 export const setStatusByEmail = internalMutation({
 	args: { email: v.string(), status: statusValidator },
-	returns: v.object({ userId: v.id("users"), email: v.string(), status: statusValidator }),
+	returns: v.object({
+		userId: v.id("users"),
+		email: v.string(),
+		status: statusValidator,
+	}),
 	handler: async (ctx, args) => {
 		const email = normalizeEmail(args.email);
 		const matches = await ctx.db
@@ -176,7 +204,10 @@ export const approveExistingUsers = internalMutation({
 		let updated = 0;
 		const now = Date.now();
 		for (const u of users) {
-			if (u.approvalStatus === undefined && u._creationTime < APPROVAL_GATE_EPOCH_MS) {
+			if (
+				u.approvalStatus === undefined &&
+				u._creationTime < APPROVAL_GATE_EPOCH_MS
+			) {
 				await ctx.db.patch(u._id, {
 					approvalStatus: "approved",
 					approvalUpdatedAt: now,
@@ -186,5 +217,60 @@ export const approveExistingUsers = internalMutation({
 			}
 		}
 		return { updated };
+	},
+});
+
+/**
+ * TEMPO-GATE-03 release migration (Amit, 6 Oct 2026): every account that
+ * exists when this runs becomes `approved`; accounts created later keep
+ * starting `pending`. Keeps explicit `revoked` and soft-deleted accounts.
+ * Idempotent; safe to re-run. Runs on live as a Phase H release step:
+ *   npx convex run approval:approveAllExistingUsers '{"dryRun":true}'
+ *   npx convex run approval:approveAllExistingUsers
+ * (`--prod` for live, Amit only.) Prints counts only, never emails.
+ */
+export const approveAllExistingUsers = internalMutation({
+	args: { cutoffMs: v.optional(v.number()), dryRun: v.optional(v.boolean()) },
+	returns: v.object({
+		scanned: v.number(),
+		updated: v.number(),
+		alreadyApproved: v.number(),
+		skippedRevoked: v.number(),
+		skippedDeleted: v.number(),
+		skippedNew: v.number(),
+		cutoffMs: v.number(),
+		dryRun: v.boolean(),
+	}),
+	handler: async (ctx, args) => {
+		const now = Date.now();
+		const cutoffMs = args.cutoffMs ?? now;
+		const dryRun = args.dryRun ?? false;
+		const counts = {
+			scanned: 0,
+			updated: 0,
+			alreadyApproved: 0,
+			skippedRevoked: 0,
+			skippedDeleted: 0,
+			skippedNew: 0,
+		};
+		for await (const user of ctx.db.query("users")) {
+			counts.scanned++;
+			const decision = releaseApprovalDecision(user, cutoffMs);
+			if (decision === "already") counts.alreadyApproved++;
+			else if (decision === "revoked") counts.skippedRevoked++;
+			else if (decision === "deleted") counts.skippedDeleted++;
+			else if (decision === "new") counts.skippedNew++;
+			else {
+				counts.updated++;
+				if (!dryRun) {
+					await ctx.db.patch(user._id, {
+						approvalStatus: "approved",
+						approvalUpdatedAt: now,
+						approvalUpdatedBy: "release-backfill",
+					});
+				}
+			}
+		}
+		return { ...counts, cutoffMs, dryRun };
 	},
 });
