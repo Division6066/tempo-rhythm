@@ -15,9 +15,12 @@ test.describe("plan wiring", () => {
     await expect(plan.getByRole("heading", { name: "Day timeline" })).toBeVisible();
     await expect(plan.getByText("Sign in to see this day's blocks and events.")).toBeVisible();
 
-    await expect(page.getByRole("heading", { name: "Planning", exact: true })).toHaveCount(0);
-    await expect(page.getByText("Week / month planning grid.")).toHaveCount(0);
-    await expect(page.getByText("Beta preview")).toHaveCount(0);
-    await expect(page.getByText("Primary action")).toHaveCount(0);
+    // The shell topbar still titles this route "Planning". ScaffoldScreen is the
+    // placeholder copy below, which this route must not render.
+    const main = page.locator("main");
+    await expect(main.getByText("Week / month planning grid.")).toHaveCount(0);
+    await expect(main.getByText("Beta preview")).toHaveCount(0);
+    await expect(main.getByText("Primary action")).toHaveCount(0);
+    await expect(main.getByText("Continue in beta")).toHaveCount(0);
   });
 });
