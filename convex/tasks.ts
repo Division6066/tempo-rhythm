@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, query } from "./_generated/server";
+import { type MutationCtx, type QueryCtx, mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { isRestorable, undoUntil } from "./lib/softDelete";
 import { filterTasksDueInRange } from "./lib/task_filters";
@@ -64,39 +64,58 @@ export const list = query({
   returns: v.array(taskReturnValidator),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    let rows = await ctx.db
-      .query("tasks")
-      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
-      .collect();
-
-    if (args.status) {
-      rows = rows.filter((t) => t.status === args.status);
-    }
-    if (args.projectId?.trim()) {
-      rows = rows.filter((t) => t.projectId === args.projectId?.trim());
-    }
-    if (args.priority) {
-      rows = rows.filter((t) => t.priority === args.priority);
-    }
-    if (args.energy) {
-      rows = rows.filter((t) => (t.energy ?? "medium") === args.energy);
-    }
-    if (args.search?.trim()) {
-      const q = args.search.trim().toLowerCase();
-      rows = rows.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) || (t.description?.toLowerCase().includes(q) ?? false)
-      );
-    }
-    if (args.dueFrom !== undefined && args.dueTo !== undefined) {
-      rows = filterTasksDueInRange(rows, args.dueFrom, args.dueTo, {
-        excludeCancelled: false,
-      });
-    }
-    rows.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt));
-    return rows;
+    return listTasksForUser(ctx, user._id, args);
   },
 });
+
+type TaskListArgs = {
+  status?: Doc<"tasks">["status"];
+  search?: string;
+  dueFrom?: number;
+  dueTo?: number;
+  projectId?: string;
+  priority?: Doc<"tasks">["priority"];
+  energy?: "low" | "medium" | "high";
+};
+
+/** Shared by `list` and the MCP tools (`convex/mcpTools.ts`). */
+export async function listTasksForUser(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  args: TaskListArgs
+): Promise<Doc<"tasks">[]> {
+  let rows = await ctx.db
+    .query("tasks")
+    .withIndex("by_userId_deletedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
+    .collect();
+
+  if (args.status) {
+    rows = rows.filter((t) => t.status === args.status);
+  }
+  if (args.projectId?.trim()) {
+    rows = rows.filter((t) => t.projectId === args.projectId?.trim());
+  }
+  if (args.priority) {
+    rows = rows.filter((t) => t.priority === args.priority);
+  }
+  if (args.energy) {
+    rows = rows.filter((t) => (t.energy ?? "medium") === args.energy);
+  }
+  if (args.search?.trim()) {
+    const q = args.search.trim().toLowerCase();
+    rows = rows.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) || (t.description?.toLowerCase().includes(q) ?? false)
+    );
+  }
+  if (args.dueFrom !== undefined && args.dueTo !== undefined) {
+    rows = filterTasksDueInRange(rows, args.dueFrom, args.dueTo, {
+      excludeCancelled: false,
+    });
+  }
+  rows.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt));
+  return rows;
+}
 
 /** Tasks due on a given calendar day (local interpretation: day boundaries passed as ms). */
 export const listDueInRange = query({
@@ -132,25 +151,48 @@ export const create = mutation({
   returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const now = Date.now();
-    return ctx.db.insert("tasks", {
-      userId: user._id,
-      title: args.title.trim(),
-      description: args.description?.trim(),
-      status: args.status ?? "todo",
-      priority: args.priority ?? "medium",
-      energy: args.energy ?? "medium",
-      ...(args.flexibility !== undefined ? { flexibility: args.flexibility } : {}),
-      ...(args.timeEstimate !== undefined ? { timeEstimate: args.timeEstimate } : {}),
-      projectId: args.projectId?.trim(),
-      projectName: args.projectName?.trim(),
-      dueAt: args.dueAt,
-      checklist: normalizeChecklist(args.checklist),
-      createdAt: now,
-      updatedAt: now,
-    });
+    return createTaskForUser(ctx, user._id, args);
   },
 });
+
+type TaskCreateArgs = {
+  title: string;
+  description?: string;
+  status?: Doc<"tasks">["status"];
+  priority?: Doc<"tasks">["priority"];
+  energy?: "low" | "medium" | "high";
+  flexibility?: "fixed" | "elastic";
+  timeEstimate?: number;
+  projectId?: string;
+  projectName?: string;
+  dueAt?: number;
+  checklist?: { id: string; text: string; completed: boolean }[];
+};
+
+/** Shared by `create` and the MCP tools. */
+export async function createTaskForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: TaskCreateArgs
+): Promise<Id<"tasks">> {
+  const now = Date.now();
+  return ctx.db.insert("tasks", {
+    userId,
+    title: args.title.trim(),
+    description: args.description?.trim(),
+    status: args.status ?? "todo",
+    priority: args.priority ?? "medium",
+    energy: args.energy ?? "medium",
+    ...(args.flexibility !== undefined ? { flexibility: args.flexibility } : {}),
+    ...(args.timeEstimate !== undefined ? { timeEstimate: args.timeEstimate } : {}),
+    projectId: args.projectId?.trim(),
+    projectName: args.projectName?.trim(),
+    dueAt: args.dueAt,
+    checklist: normalizeChecklist(args.checklist),
+    createdAt: now,
+    updatedAt: now,
+  });
+}
 
 export const update = mutation({
   args: {
@@ -170,49 +212,74 @@ export const update = mutation({
   returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
-      throw new Error("Task not found");
-    }
-    const now = Date.now();
-    const patch: Record<string, unknown> = { updatedAt: now };
-    if (args.title !== undefined) patch.title = args.title.trim();
-    if (args.description !== undefined) {
-      patch.description = args.description === null ? undefined : args.description;
-    }
-    if (args.status !== undefined) {
-      patch.status = args.status;
-      if (args.status === "done" && task.status !== "done") {
-        patch.completedAt = now;
-      } else if (args.status !== "done" && task.status === "done") {
-        patch.completedAt = undefined;
-      }
-    }
-    if (args.priority !== undefined) patch.priority = args.priority;
-    if (args.energy !== undefined) patch.energy = args.energy;
-    if (args.flexibility !== undefined) patch.flexibility = args.flexibility;
-    if (args.timeEstimate !== undefined) {
-      patch.timeEstimate = args.timeEstimate === null ? undefined : args.timeEstimate;
-    }
-    if (args.projectId !== undefined) {
-      patch.projectId = args.projectId === null ? undefined : args.projectId.trim();
-    }
-    if (args.projectName !== undefined) {
-      patch.projectName = args.projectName === null ? undefined : args.projectName.trim();
-    }
-    if (args.dueAt !== undefined) {
-      patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
-    }
-    if (args.checklist !== undefined) {
-      patch.checklist = args.checklist === null ? undefined : normalizeChecklist(args.checklist);
-    }
-    await ctx.db.patch(args.taskId, patch as typeof task);
-    if (args.status === "done" && task.status !== "done") {
-      await spawnRepeatAfterCompletion(ctx, user._id, task, now);
-    }
-    return args.taskId;
+    return updateTaskForUser(ctx, user._id, args);
   },
 });
+
+type TaskUpdateArgs = {
+  taskId: Id<"tasks">;
+  title?: string;
+  description?: string | null;
+  status?: Doc<"tasks">["status"];
+  priority?: Doc<"tasks">["priority"];
+  energy?: "low" | "medium" | "high";
+  flexibility?: "fixed" | "elastic";
+  timeEstimate?: number | null;
+  projectId?: string | null;
+  projectName?: string | null;
+  dueAt?: number | null;
+  checklist?: { id: string; text: string; completed: boolean }[] | null;
+};
+
+/** Shared by `update` and the MCP tools. Scoped to `userId`. */
+export async function updateTaskForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: TaskUpdateArgs
+): Promise<Id<"tasks">> {
+  const user = { _id: userId };
+  const task = await ctx.db.get(args.taskId);
+  if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
+    throw new Error("Task not found");
+  }
+  const now = Date.now();
+  const patch: Record<string, unknown> = { updatedAt: now };
+  if (args.title !== undefined) patch.title = args.title.trim();
+  if (args.description !== undefined) {
+    patch.description = args.description === null ? undefined : args.description;
+  }
+  if (args.status !== undefined) {
+    patch.status = args.status;
+    if (args.status === "done" && task.status !== "done") {
+      patch.completedAt = now;
+    } else if (args.status !== "done" && task.status === "done") {
+      patch.completedAt = undefined;
+    }
+  }
+  if (args.priority !== undefined) patch.priority = args.priority;
+  if (args.energy !== undefined) patch.energy = args.energy;
+  if (args.flexibility !== undefined) patch.flexibility = args.flexibility;
+  if (args.timeEstimate !== undefined) {
+    patch.timeEstimate = args.timeEstimate === null ? undefined : args.timeEstimate;
+  }
+  if (args.projectId !== undefined) {
+    patch.projectId = args.projectId === null ? undefined : args.projectId.trim();
+  }
+  if (args.projectName !== undefined) {
+    patch.projectName = args.projectName === null ? undefined : args.projectName.trim();
+  }
+  if (args.dueAt !== undefined) {
+    patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
+  }
+  if (args.checklist !== undefined) {
+    patch.checklist = args.checklist === null ? undefined : normalizeChecklist(args.checklist);
+  }
+  await ctx.db.patch(args.taskId, patch as typeof task);
+  if (args.status === "done" && task.status !== "done") {
+    await spawnRepeatAfterCompletion(ctx, user._id, task, now);
+  }
+  return args.taskId;
+}
 
 export const remove = mutation({
   args: { taskId: v.id("tasks") },
@@ -372,7 +439,10 @@ async function spawnRepeatAfterCompletion(
     dueAt: spawned.dueAt,
     ...(task.checklist
       ? {
-          checklist: task.checklist.map((item) => ({ ...item, completed: false })),
+          checklist: task.checklist.map((item) => ({
+            ...item,
+            completed: false,
+          })),
         }
       : {}),
     createdAt: now,

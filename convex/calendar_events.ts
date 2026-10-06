@@ -1,5 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  type MutationCtx,
+  mutation,
+  type QueryCtx,
+  query,
+} from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { isRestorable, undoUntil } from "./lib/softDelete";
 
@@ -31,18 +37,30 @@ export const listInRange = query({
     }
 
     const user = await requireUser(ctx);
-    return await ctx.db
-      .query("calendarEvents")
-      .withIndex("by_userId_deletedAt_startsAtMs", (q) =>
-        q
-          .eq("userId", user._id)
-          .eq("deletedAt", undefined)
-          .gte("startsAtMs", args.startMs)
-          .lt("startsAtMs", args.endMs),
-      )
-      .collect();
+    return listEventsInRangeForUser(ctx, user._id, args.startMs, args.endMs);
   },
 });
+
+/** Shared by `listInRange` and the MCP tools (range checks stay in the callers). */
+export async function listEventsInRangeForUser(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  startMs: number,
+  endMs: number,
+): Promise<Doc<"calendarEvents">[]> {
+  return await ctx.db
+    .query("calendarEvents")
+    .withIndex("by_userId_deletedAt_startsAtMs", (q) =>
+      q
+        .eq("userId", userId)
+        .eq("deletedAt", undefined)
+        .gte("startsAtMs", startMs)
+        .lt("startsAtMs", endMs),
+    )
+    .collect();
+}
+
+export { maxCalendarRangeMs };
 
 export const create = mutation({
   args: {
@@ -52,21 +70,30 @@ export const create = mutation({
   returns: v.id("calendarEvents"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const title = args.title.trim();
-    if (!title) {
-      throw new Error("Give the event a gentle label first.");
-    }
-
-    const now = Date.now();
-    return await ctx.db.insert("calendarEvents", {
-      userId: user._id,
-      title,
-      startsAtMs: args.startsAtMs,
-      createdAt: now,
-      updatedAt: now,
-    });
+    return createEventForUser(ctx, user._id, args);
   },
 });
+
+/** Shared by `create` and the MCP tools. */
+export async function createEventForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: { title: string; startsAtMs: number },
+): Promise<Id<"calendarEvents">> {
+  const title = args.title.trim();
+  if (!title) {
+    throw new Error("Give the event a gentle label first.");
+  }
+
+  const now = Date.now();
+  return await ctx.db.insert("calendarEvents", {
+    userId,
+    title,
+    startsAtMs: args.startsAtMs,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
 
 export const update = mutation({
   args: {
@@ -77,25 +104,34 @@ export const update = mutation({
   returns: v.id("calendarEvents"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const event = await ctx.db.get(args.eventId);
-    if (!event || event.userId !== user._id || event.deletedAt !== undefined) {
-      throw new Error("Event not found");
-    }
-    const patch: { title?: string; startsAtMs?: number; updatedAt: number } = {
-      updatedAt: Date.now(),
-    };
-    if (args.title !== undefined) {
-      const title = args.title.trim();
-      if (!title) {
-        throw new Error("Give the event a gentle label first.");
-      }
-      patch.title = title;
-    }
-    if (args.startsAtMs !== undefined) patch.startsAtMs = args.startsAtMs;
-    await ctx.db.patch(args.eventId, patch);
-    return args.eventId;
+    return updateEventForUser(ctx, user._id, args);
   },
 });
+
+/** Shared by `update` and the MCP tools. Scoped to `userId`. */
+export async function updateEventForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: { eventId: Id<"calendarEvents">; title?: string; startsAtMs?: number },
+): Promise<Id<"calendarEvents">> {
+  const event = await ctx.db.get(args.eventId);
+  if (!event || event.userId !== userId || event.deletedAt !== undefined) {
+    throw new Error("Event not found");
+  }
+  const patch: { title?: string; startsAtMs?: number; updatedAt: number } = {
+    updatedAt: Date.now(),
+  };
+  if (args.title !== undefined) {
+    const title = args.title.trim();
+    if (!title) {
+      throw new Error("Give the event a gentle label first.");
+    }
+    patch.title = title;
+  }
+  if (args.startsAtMs !== undefined) patch.startsAtMs = args.startsAtMs;
+  await ctx.db.patch(args.eventId, patch);
+  return args.eventId;
+}
 
 export const remove = mutation({
   args: { eventId: v.id("calendarEvents") },

@@ -472,4 +472,23 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_createdAt", ["userId", "createdAt"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /**
+   * TEMPO-MCP-01 — personal MCP tokens. Only the SHA-256 hex of the token is stored.
+   * Revoked tokens stay as rows (`revokedAt`); they are never hard-deleted by the app.
+   * `windowStartMs` / `windowCount` back the 120 calls/minute rate limit.
+   */
+  mcpTokens: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    tokenHash: v.string(),
+    prefix: v.string(),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    windowStartMs: v.optional(v.number()),
+    windowCount: v.optional(v.number()),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_userId", ["userId"]),
 });
