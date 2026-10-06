@@ -83,3 +83,14 @@ Additive only. No backfill required.
 
 Deployed to: **not deployed by this ticket**. Merge to `integration` deploys the test
 deployment `ceaseless-dog-617` via `convex-deploy-test`. Live is Amit's.
+
+## 2026-10-06 — TEMPO-GATE-03 approve every existing account (release step)
+- New internal mutation `approval.approveAllExistingUsers({cutoffMs?, dryRun?})`:
+  every account created before the cutoff (default: now) gets `approvalStatus: "approved"`
+  (`approvalUpdatedBy: "release-backfill"`). Keeps explicit `revoked` and soft-deleted rows.
+  Accounts created later still start `pending`. Idempotent. Prints counts only.
+- No schema change.
+- Test (ceaseless-dog-617): done 6 Oct 14:06 IDT (15 approved, 0 pending).
+- Live: Phase H release step, right after the live Convex deploy (Amit only):
+  `npx convex run --prod approval:approveAllExistingUsers '{"dryRun":true}'`, then without `dryRun`.
+
