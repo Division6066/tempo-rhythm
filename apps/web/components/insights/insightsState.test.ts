@@ -48,4 +48,15 @@ describe("deriveInsightsState", () => {
       deriveInsightsState({ ...base, isAuthLoading: true, profile: undefined, summary: undefined, failed: true }),
     ).toBe("error");
   });
+  test("auth dropped mid-load leaves the skeleton", () => {
+    expect(
+      deriveInsightsState({ ...base, isAuthenticated: false, profile: undefined, summary: undefined }),
+    ).not.toBe("loading");
+  });
+  test("summary undefined past the timeout is an error", () => {
+    expect(deriveInsightsState({ ...base, summary: undefined, failed: true })).toBe("error");
+  });
+  test("summary null is an error, never the skeleton", () => {
+    expect(deriveInsightsState({ ...base, summary: null })).toBe("error");
+  });
 });
