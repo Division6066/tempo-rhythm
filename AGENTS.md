@@ -17,6 +17,31 @@ Every tool is a slot. `factory/SLOTS.md` says which tool fills each slot in this
 Use the exact commands under **Commands** in `factory/SLOTS.md` (install, dev, test, lint, typecheck, build, e2e).
 If a command you need is missing there, report `blocked: missing command <name>`. Don't invent one.
 
+## Testing (cloud agents)
+For cloud agent tasks (for example an agent mention on a PR). The commands match **Commands** in `factory/SLOTS.md` and the `ci` jobs in `.github/workflows/ci.yml`.
+The environment setup script may already have run `bun install` and installed Chromium. The agent phase may have no internet.
+
+Before you finish, run all of these from the repo root, in order. Run every step even if an earlier one fails:
+0. Make sure Bun is 1.3.9 (older Bun has no `describe.serial` and misreads `bun.lock`, which gives mismatched `react`/`react-dom`). Run `bun --version`. If it does not print `1.3.9`, run `curl -fsSL https://bun.sh/install | bash -s bun-v1.3.9 && export PATH=$HOME/.bun/bin:$PATH`, then check `bun --version` again. Then run `bun install --frozen-lockfile` (again, if it already ran with another Bun). If Bun 1.3.9 can't be installed (no internet), report `UNKNOWN: bun 1.3.9 (install blocked)` and run the rest anyway.
+1. `bun install --frozen-lockfile` (skip if step 0 just ran it)
+2. `bun run lint`
+3. `bun run typecheck`
+4. `bun run test`
+5. `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices`
+6. `CI=1 bunx playwright test --reporter=line`. `playwright.config.ts` starts the web dev server on `localhost:3000` with mock values (placeholder Convex URL, E2E auth bypass). Tests that need `TEMPO_E2E_STORAGE_STATE` or `PLAYWRIGHT_BASE_URL` skip; that is expected.
+7. `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build`.
+
+Sandbox network failures are `UNKNOWN`, not code failures:
+- Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`) blocked or unreachable, in the build or the dev server: report `UNKNOWN: <command> (Google Fonts blocked)`.
+- Playwright browser download from its CDN failing (for example 403), or the Playwright `webServer` timing out only because of a Google Fonts fetch: report `UNKNOWN: e2e (Playwright CDN / fonts blocked)`. You may use an already-installed Chromium instead.
+
+Don't:
+- set `PLAYWRIGHT_BASE_URL`, or run tests against a preview or live URL;
+- use real keys, or run `convex dev`, `convex deploy` or any `convex:*` script;
+- edit test config, CI files or scan baselines, or skip tests, to get green.
+
+Report the results in the PR body (or your final message when you're not opening a PR) under `Test results (cloud agent sandbox)`: the Bun version used, then each command with pass, fail or skip counts, plus the last 20 lines of any failure. Anything you could not run goes in as `UNKNOWN: <command> (<reason>)`.
+
 ## Layout
 - `packages/backend` — schema and backend functions. Only a batch's backend ticket edits this.
 - In this repo the backend folder is the one named in SLOTS.md (tempo: convex/).
