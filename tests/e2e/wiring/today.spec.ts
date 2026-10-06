@@ -10,7 +10,7 @@ test.describe("today wiring", () => {
   test("/today mounts habit check-in and day plan markers", async ({ page }) => {
     await page.goto("/today");
     await expect(page).not.toHaveURL(/\/sign-in/);
-    await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("heading", { name: "Today" })).toBeVisible();
     await expect(page.getByTestId("today-habit-checkin")).toBeAttached();
     await expect(page.getByTestId("today-day-plan-summary")).toBeAttached();
     await expect(page.getByTestId("today-day-plan-panel")).toBeAttached();
