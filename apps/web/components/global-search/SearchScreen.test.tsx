@@ -11,6 +11,8 @@ let queryParam = "";
 let result: unknown;
 const useQueryCalls: unknown[][] = [];
 
+mock.module("@/lib/useUserReady", () => ({ useUserReady: () => true }));
+
 mock.module("convex/react", () => ({
   useQuery: (...args: unknown[]) => {
     useQueryCalls.push(args);

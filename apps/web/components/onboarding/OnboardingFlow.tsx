@@ -10,7 +10,7 @@ import { NameStep } from "./NameStep";
 export function OnboardingFlow() {
   const router = useRouter();
   const profile = useQuery(api.users.getProfile, {});
-  const starters = useQuery(api.templates.list, { scope: "starter" });
+  const starters = useQuery(api.templates.list, profile ? { scope: "starter" } : "skip");
   const completeOnboarding = useMutation(api.users.completeOnboarding);
   const [step, setStep] = useState<"name" | "templates">("name");
   const [typed, setTyped] = useState<string | null>(null);

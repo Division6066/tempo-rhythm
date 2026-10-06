@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useUserReady } from "@/lib/useUserReady";
 import { TemplateCard, type TemplateCardModel } from "./TemplateCard";
 
 type LibraryScope = "all" | "starter" | "mine";
@@ -51,7 +52,8 @@ function emptyCopy(scope: LibraryScope): { title: string; detail: string } {
 }
 
 export function TemplatesLibrary() {
-  const templates = useQuery(api.templates.list, { scope: "all" });
+  const userReady = useUserReady();
+  const templates = useQuery(api.templates.list, userReady ? { scope: "all" } : "skip");
   const remove = useMutation(api.templates.remove);
   const [scope, setScope] = useState<LibraryScope>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);

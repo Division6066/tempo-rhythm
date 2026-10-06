@@ -18,6 +18,7 @@ mock.module("convex/react", () => ({
 
 mock.module("@/convex/_generated/api", () => ({
   api: {
+    users: { getProfile: "users.getProfile" },
     conversations: { list: "conversations.list", create: "conversations.create" },
     messages: { list: "messages.list" },
     coach: { sendMessage: "coach.sendMessage" },

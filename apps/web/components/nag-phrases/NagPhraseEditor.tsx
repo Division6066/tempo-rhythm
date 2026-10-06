@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import { useUserReady } from "@/lib/useUserReady";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
   isCurrentNagRequest,
@@ -60,7 +61,8 @@ function ChoiceRow({
 
 export function NagPhraseEditor({ nagId }: { nagId: Id<"nags"> }) {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const nags = useQuery(api.nags.list, isAuthenticated ? {} : "skip");
+  const userReady = useUserReady();
+  const nags = useQuery(api.nags.list, userReady ? {} : "skip");
   const addPhrase = useMutation(api.nags.addPhrase);
   const decidePhrase = useMutation(api.nags.decidePhrase);
   const proposePhrases = useAction(api.nags.proposePhrases);

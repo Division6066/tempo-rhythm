@@ -386,6 +386,8 @@ let listed: ListedTemplate[] | undefined = [starter, own];
 let queryArgs: unknown;
 const remove = mock(async () => null);
 
+mock.module("@/lib/useUserReady", () => ({ useUserReady: () => true }));
+
 mock.module("convex/react", () => ({
   useQuery: (_query: unknown, args: unknown) => {
     queryArgs = args;

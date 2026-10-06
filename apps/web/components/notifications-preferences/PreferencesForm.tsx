@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import { useUserReady } from "@/lib/useUserReady";
 
 type Theme = "system" | "light" | "dark";
 type Locale = "en" | "he";
@@ -32,7 +33,8 @@ function listTimeZones(current: string): string[] {
 }
 
 export function PreferencesForm() {
-  const preferences = useQuery(api.preferences.get, {});
+  const userReady = useUserReady();
+  const preferences = useQuery(api.preferences.get, userReady ? {} : "skip");
   const updatePreferences = useMutation(api.preferences.update);
   const { setTheme } = useTheme();
   const [message, setMessage] = useState("");

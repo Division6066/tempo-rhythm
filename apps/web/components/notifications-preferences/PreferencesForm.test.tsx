@@ -335,6 +335,8 @@ mock.module("@/convex/_generated/api", () => ({
   },
 }));
 
+mock.module("@/lib/useUserReady", () => ({ useUserReady: () => true }));
+
 mock.module("convex/react", () => ({
   useQuery: (ref: string) => (ref === "preferences.get" ? prefs : items),
   useMutation: (ref: string) =>
