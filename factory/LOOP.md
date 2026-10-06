@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 0 | **Ticket 0** (`type: data`, label `ticket:data`): the Convex architecture for EVERY component in the loop: schema tables, indexes, queries / mutations / actions, regenerated `convex/_generated/`. | Claude lane | CI only |
 | 0b | Ticket 0 lands on `integration` through the merge queue (deploys to TEST `ceaseless-dog-617` via convex-deploy-test). Component tickets start only after this. | merge queue | — |
-| 1 | **8–14 component tickets**, 3–5 per lane (each lane 2–5; 8 can't give every lane 3). Routing by `browser_test:` — `true` (real browser / Playwright check) → **Cursor** (preferred) or **Codex** (cloud computers); `false` → **Claude**. Components never touch `convex/`. | lanes | CI only (lint, typecheck, unit, Playwright). PRs open as **draft**. No `@cursor review`. |
+| 1 | **8–14 component tickets**, 3–5 per lane (each lane 2–5; 8 can't give every lane 3). Routing at dispatch: `scripts/factory/lane-limits.mjs` (usage limits `FACTORY_*_AT_LIMIT`, order `FACTORY_AGENT_PREFERENCE`, default claude,codex,cursor; `docs/factory/AGENT-LIMITS.md`): build tickets → **Claude/Codex**, browser tests → **Codex** (Playwright), Cursor last; all at limit → Freebuff, then OpenCode (manual, `needs:manual-run`). Components never touch `convex/`. | lanes | CI only (lint, typecheck, unit, Playwright). PRs open as **draft**. No `@cursor review`. |
 | 2 | When the loop's component PRs are CI-green: `factory-batch` **build** creates `batch/<loop-id>` from `integration`, retargets each PR to it and merges its head (merges API). GitHub shows each component PR as **merged into `batch/<loop-id>`** (history kept; no "closed unmerged" noise). | `scripts/factory/batch-loop.mjs build` | — |
 | 3 | **open**: ONE PR `batch/<loop-id>` → `integration`, labels `batch` + `factory`, body = `Closes #N` for every ticket (they close when the batch lands). | `… open` (user token) | — |
 | 4 | **review**: ONE `@cursor review` on the batch PR (skipped if Bugbot already ran / runs on the head). | `… review` | **Bugbot, once** |
@@ -51,6 +51,6 @@ Bugbot needs a covered author. In Actions that is secret `FACTORY_BATCH_TOKEN` (
 
 ## Known limit — Codex can't push from a PR-comment task
 Codex cloud tasks started by `@codex` on a PR run in a sandbox without GitHub write access: on #670 Codex fixed the findings
-but could not push. Until fixed: route `browser_test: true` tickets to **Cursor first**; Codex gets them only when its
-environment can push (Codex → Environments → tempo-rhythm: allow internet/GitHub access and "push to branch", or let
+but could not push. Codex now has Playwright and gets `browser_test: true` tickets first (lane-limits.mjs); if a PR-comment
+fix task still can't push, the fix needs its environment to allow it (Codex → Environments → tempo-rhythm: allow internet/GitHub access and "push to branch", or let
 Codex open its own PR from the Codex web app). Fallback: a person/Claude applies Codex's diff on the branch.
