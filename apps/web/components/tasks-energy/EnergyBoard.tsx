@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,10 @@ const columns: { energy: Energy; label: string }[] = [
   { energy: "high", label: "High energy" },
 ];
 
+const allowLocalTaskViews =
+  process.env.NODE_ENV !== "production" &&
+  process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1";
+
 type RemovedTask = {
   taskId: Id<"tasks">;
   undoUntilMs: number;
@@ -25,7 +29,14 @@ function isEnergy(value: string | null): value is Energy {
 }
 
 export function EnergyBoard() {
-  const tasks = useQuery(api.tasks.list, {});
+  const { isAuthenticated } = useConvexAuth();
+  // tasks.list requires an app user. getProfile is non-throwing while that row is
+  // being created, so wait for it before subscribing to the protected query.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const tasks = useQuery(
+    api.tasks.list,
+    isAuthenticated && profile ? {} : "skip",
+  );
   const updateTask = useMutation(api.tasks.update);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
   const removeTask = useMutation(api.tasks.remove);
@@ -117,7 +128,7 @@ export function EnergyBoard() {
                 </span>
               </div>
 
-              {tasks === undefined ? (
+              {!allowLocalTaskViews && tasks === undefined ? (
                 <p className="text-sm text-muted-foreground">
                   Loading tasks...
                 </p>
