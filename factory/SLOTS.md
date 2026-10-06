@@ -18,7 +18,7 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | B-3b | Agent lane B | Claude Code in GitHub Actions (subscription token as org secret `CLAUDE_CODE_OAUTH_TOKEN`) | workflow file `.github/workflows/factory-lane-claude.yml` exists. Whether the secret is set: UNKNOWN |
 | B-3c | Agent lane C | Codex cloud via @codex (subscription only, never an OpenAI API key) | workflow file `.github/workflows/factory-lane-codex.yml` exists. Whether a task actually starts: UNKNOWN |
 | B-4 | Checks | GitHub Actions CI + Playwright | confirmed: `.github/workflows/ci.yml` and `.github/workflows/e2e-preview.yml` |
-| B-5 | Review gate | Cursor Bugbot (interim, set 2026-10-05); CodeRabbit optional later | **pre-queue only** (not an MQ required check). Fix loop: `factory-review-fix.yml` → lane with `fix_note`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after Bugbot clean + 5 checks green. |
+| B-5 | Review gate | Cursor Bugbot (interim, set 2026-10-05); CodeRabbit optional later | **Batch loop (2026-10-06, `factory/LOOP.md`): Bugbot reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after Bugbot clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). |
 | B-6 | Auto-merge | GitHub merge queue (public repos) / GitHub auto-merge (private repos) | tempo-rhythm is public, so this slot is the GitHub merge queue on `integration`. The 5 required checks below have a `merge_group` trigger in this change. Bugbot is the review gate before a PR enters the queue when Bugbot is enabled. It is not a required queue check. The active ruleset has no merge-queue rule (checked 2026-10-05). The queue itself is not turned on in this change |
 | B-7 | Preview host | Vercel preview | Preview environments exist (`Preview`, `Preview – tempo-web`). Whether `FACTORY_HAS_PREVIEW` is `true`: UNKNOWN (variables not readable) |
 | — | Backend | Convex | folder `convex/` (not `packages/backend`) |
@@ -29,8 +29,9 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 
 
 ## Review gate loop (B-5) — how to invoke
-1. Lane opens a PR (`t/<issue>-…` or `factory/…`); Bugbot reviews (auto on push, or comment `bugbot run`).
-2. `factory-review-fix` runs on Bugbot `pull_request_review` (factory/ or t/ heads) **or** by hand:
+0. Batch loop (`factory/LOOP.md`): component PRs get CI only (draft, no Bugbot). `batch-loop.mjs build/open` makes the batch PR; `review` posts ONE `@cursor review` on it. Steps 2-3 below apply to the batch PR.
+1. (Before 2026-10-06) Lane opens a PR (`t/<issue>-…` or `factory/…`); Bugbot reviews (auto on push, or comment `bugbot run`).
+2. `factory-review-fix` runs on Bugbot `pull_request_review` (batch/ heads only since 2026-10-06) **or** by hand:
    - Actions → `factory-review-fix` → Run workflow → `pr_number` (optional `dry_run`).
    - Findings → `workflow_dispatch` the PR's `factory-lane-<lane>` with `fix_note` = findings; same branch. Labels `review-fix:1..3`; after 3 → `blocked:amit`.
    - Bugbot "couldn't run" → `blocked:amit`.

@@ -13,15 +13,19 @@ const isBugbotUser = (u) => !!u && BUGBOT_LOGINS.includes(u.login || u);
 const isBugbotRun = (r) => /bugbot/i.test(r.name || "") || (r.app && /cursor/i.test(r.app.slug || "") && /review|bug/i.test(r.name || ""));
 
 export function bugbotState({ headSha, checkRuns = [], threads = [], comments = [] }) {
-  const blockedNote = comments.filter((c) => isBugbotUser(c.user) && /couldn.?t run|account mismatch/i.test(c.body || "")).pop();
+  const blockedNote = comments.filter((c) => isBugbotUser(c.user) && /couldn.?t run|account mismatch|usage limit/i.test(c.body || "")).pop();
   const findings = threads.filter((t) => !t.isResolved && !t.isOutdated && isBugbotUser(t.author));
   if (findings.length) return { state: "findings", findings, detail: `${findings.length} unresolved Bugbot thread(s)` };
   const runs = checkRuns.filter(isBugbotRun);
   if (runs.some((r) => r.status !== "completed")) return { state: "pending", findings: [], detail: "Bugbot running" };
   const done = runs.filter((r) => r.status === "completed");
   if (done.some((r) => ["failure", "timed_out", "action_required"].includes(r.conclusion))) return { state: "findings", findings: [], detail: "Bugbot check failed (see its check run)" };
+  // A "couldn't run" / "usage limit reached" note posted AFTER the newest completed run means the latest
+  // request did not produce a review: blocked, not clean (2026-10-06: usage-limit runs ended neutral).
+  const lastDone = done.map((r) => Date.parse(r.completed_at || 0) || 0).sort((a, b) => b - a)[0] || 0;
+  if (blockedNote && done.length && (Date.parse(blockedNote.created_at || 0) || 0) > lastDone) return { state: "blocked", findings: [], detail: `Bugbot couldn't run after its last check run: ${(blockedNote.body || "").split("\n")[0].replace(/<[^>]+>/g, "").slice(0, 120)}` };
   if (done.length) return { state: "clean", findings: [], detail: `Bugbot ${done.map((r) => r.conclusion).join(",")} on ${String(headSha).slice(0, 7)}` };
-  if (blockedNote) return { state: "blocked", findings: [], detail: "Bugbot couldn't run (account mismatch: PR author not covered by a Cursor team)" };
+  if (blockedNote) return { state: "blocked", findings: [], detail: `Bugbot couldn't run: ${(blockedNote.body || "").split("\n")[0].replace(/<[^>]+>/g, "").slice(0, 120)}` };
   return { state: "pending", findings: [], detail: "no Bugbot result for the head commit yet" };
 }
 
