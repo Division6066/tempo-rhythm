@@ -68,7 +68,7 @@
     "pr": "#632",
     "route": "/brain-dump",
     "status": "not-wired",
-    "error": "ScaffoldScreen (Beta preview)",
+    "error": "ScaffoldScreen (Beta preview). Sort it is not mounted. Re-checked after approval.",
     "screenshot": "docs/reports/feature-test-2026-10-06/brain-dump-sort-and-accept.png"
   },
   {
@@ -100,15 +100,15 @@
     "pr": "#647",
     "route": "/coach",
     "status": "broken",
-    "error": "ACCOUNT_PENDING_APPROVAL: your account is waiting for approval. Message input stayed disabled.",
+    "error": "Recorded while the inbox was pending: message input stayed disabled. Not re-sent after approval.",
     "screenshot": "docs/reports/feature-test-2026-10-06/coach-crisis-card.png"
   },
   {
     "feature": "Coach chat send and reload",
     "pr": "old",
     "route": "/coach",
-    "status": "broken",
-    "error": "ACCOUNT_PENDING_APPROVAL: your account is waiting for approval. Message input stayed disabled.",
+    "status": "works",
+    "error": "After approval, send survived reload. Reply: What's the smallest step you could take without any resistance? Start there \u2014 that's the whole assignment.",
     "screenshot": "docs/reports/feature-test-2026-10-06/coach-chat-send-and-reload.png"
   },
   {
@@ -124,7 +124,7 @@
     "pr": "#654",
     "route": "/settings/nags",
     "status": "not-wired",
-    "error": "route 404 | console: Failed to load resource: the server responded with a status of 404 () | http: 404 preview.tempoflow.dev/settings/nags",
+    "error": "route 404. Suggest was not reached. Re-checked after approval.",
     "screenshot": "docs/reports/feature-test-2026-10-06/nag-phrases-and-suggestions.png"
   },
   {
@@ -462,5 +462,21 @@
     "status": "works",
     "error": "",
     "screenshot": "docs/reports/feature-test-2026-10-06/smoke-terms.png"
+  },
+  {
+    "feature": "Brain dump AI (Turn this into a plan)",
+    "pr": "#632",
+    "route": "/today",
+    "status": "works",
+    "error": "Server planner returned 4 ordered lines (Reply to Sam now, kettle, walk, receipt) after the account was approved.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/brain-dump-ai-approved.png"
+  },
+  {
+    "feature": "Approval gate",
+    "pr": "#693",
+    "route": "/coach",
+    "status": "works",
+    "error": "While the inbox was pending, conversations.create returned ACCOUNT_PENDING_APPROVAL: your account is waiting for approval. That rejection is the gate. After approval the same inbox can chat.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/coach-chat-send-and-reload.png"
   }
 ]
