@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as activity from "../activity.js";
 import type * as ai_smoke from "../ai_smoke.js";
 import type * as analytics from "../analytics.js";
 import type * as approval from "../approval.js";
@@ -78,6 +79,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  activity: typeof activity;
   ai_smoke: typeof ai_smoke;
   analytics: typeof analytics;
   approval: typeof approval;
