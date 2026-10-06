@@ -45,8 +45,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
     if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-lane-claude #${{ inputs.issue_number }}"
+      exempt: ${{ inputs.fix_note != '' }}
+      exempt_reason: fix run for work already in flight (fix_note)
+  build:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true))
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -93,6 +102,11 @@ jobs:
           CLAUDE_BRANCH: ${{ steps.ctx.outputs.branch }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # factory-review-fix (batch loop step 5) dispatches with github.token -> actor github-actions[bot].
+          # Without this the action refuses ("non-human actor"), which failed every auto fix run (audit 2026-10-06).
+          # Only that bot (GITHUB_TOKEN-dispatched runs: factory-dispatch, factory-review-fix, factory-failures).
+          # Fresh automated builds stay gated by FACTORY_ACTIVE_BATCHES (unset = factory-dispatch picks nothing).
+          allowed_bots: "github-actions"
           # Batch fix runs work on (and push to) batch/<loop-id>; they get no `gh pr create` tool.
           base_branch: ${{ inputs.target_branch || 'integration' }}
           prompt: ${{ steps.ctx.outputs.prompt }}

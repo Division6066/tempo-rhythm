@@ -12,6 +12,7 @@ import {
   taskMinutes,
 } from "./lib/coachLoad";
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
+import { requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
 
 const DEFAULT_DIAL = 5;
@@ -68,7 +69,8 @@ export const sendMessage = mutation({
   },
   returns: v.object({ success: v.literal(true), crisis: v.optional(v.boolean()) }),
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
+    // Coach chat is an AI surface: pending/revoked accounts are rejected server-side.
+    const user = await requireApprovedUser(ctx);
     const conv = await ctx.db.get(args.conversationId);
     if (!conv || conv.userId !== user._id) {
       throw new Error("Conversation not found");

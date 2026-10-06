@@ -18,6 +18,9 @@
 //            merged-via-batch; tickets -> status:done (GitHub closes them via the batch PR's Closes lines).
 //   plan     read-only: which PRs are in the loop and whether each is ready.
 //   run      build -> open -> review.
+// Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem `build`/`run` never START a new loop (batch branch
+// missing -> notice, exit 0). An in-flight loop (branch exists) keeps going; open/review/status/enqueue/finalize
+// are never gated. Override: FACTORY_QUIET_HOURS=off.
 // Bugbot fix loop: factory-review-fix (Bugbot review on a batch/* head) dispatches factory-lane-claude with
 // target_branch=batch/<loop-id>; each fix push then needs `review` again (max 3 rounds, review-fix:1..3).
 // Loop PRs = --prs 1,2,3, else open PRs into integration or batch/<loop-id> whose linked ticket has
@@ -25,11 +28,14 @@
 // Usage: node scripts/factory/batch-loop.mjs <command> --loop <id> [--prs 1,2] [--dry-run] [--wait-auto 180]
 // Env: GH_TOKEN = a USER token (Division6066; never GITHUB_TOKEN for build/open/review/enqueue: R15 - PRs
 //      opened with GITHUB_TOKEN start no CI, and Bugbot needs a covered human author), GITHUB_REPOSITORY.
+import { quietHours } from "./quiet-hours.mjs";
 import { gh, ghAll, repoParts, summary, linkedTickets } from "./gh-api.mjs";
 import { frontMatter, labelNames, addLabels, removeLabel, comment, BASE } from "./factory-lib.mjs";
 import { fetchBugbot } from "./review-gate.mjs";
 import { appendFile } from "node:fs/promises";
 
+// Ticket labels a landed batch clears (status:done is added). status:ready stayed on f3-1's tickets.
+export const FINALIZE_CLEARS = ["status:ready", "status:dispatched", "status:in-pr", "waiting:data"];
 export const REQUIRED = ["ci", "e2e-preview", "secret-scan", "config-guard", "scope-guard"];
 export const batchBranch = (loop) => {
   if (!/^[A-Za-z0-9._-]+$/.test(loop || "")) throw new Error("--loop must match ^[A-Za-z0-9._-]+$");
@@ -91,6 +97,7 @@ const log = [];
 const say = (s) => { log.push(s); console.log(s); };
 const act = async (what, fn) => { say(`${DRY ? "[dry-run] would " : ""}${what}`); if (!DRY) return fn(); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export const QUIET = Symbol("quiet-hours");
 
 async function checksOf(owner, repo, sha) {
   return ghAll(`/repos/${owner}/${repo}/commits/${sha}/check-runs`, (j) => j.check_runs);
@@ -119,6 +126,8 @@ async function build(owner, repo, loop) {
   const branch = batchBranch(loop);
   const ref = await gh(`/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(branch).replace(/%2F/g, "/")}`, { allow404: true });
   if (!ref) {
+    const q = quietHours();
+    if (q.quiet) { say(`Quiet hours: new loop ${branch} not started (${q.reason}). Run build again after ${String(q.end).padStart(2, "0")}:00.`); return QUIET; }
     const base = await gh(`/repos/${owner}/${repo}/git/ref/heads/${BASE}`);
     await act(`create ${branch} from ${BASE} @ ${base.object.sha.slice(0, 8)}`, () => gh(`/repos/${owner}/${repo}/git/refs`, { method: "POST", body: { ref: `refs/heads/${branch}`, sha: base.object.sha } }));
   } else say(`${branch} exists @ ${ref.object.sha.slice(0, 8)}`);
@@ -236,7 +245,7 @@ async function finalize(owner, repo, loop) {
       await comment(owner, repo, p.number, `Landed on \`${BASE}\` via batch PR #${pr.number} (${pr.merge_commit_sha?.slice(0, 8) || "merge queue"}). This PR was merged into \`${branch}\`; the batch PR carried it through Bugbot and the merge queue.`);
       await addLabels(owner, repo, p.number, ["merged-via-batch"]);
       const [t] = linkedTickets(p.body);
-      if (t) { await addLabels(owner, repo, t, ["status:done"]); await removeLabel(owner, repo, t, "status:in-pr"); await removeLabel(owner, repo, t, "status:dispatched"); }
+      if (t) { await addLabels(owner, repo, t, ["status:done"]); for (const l of FINALIZE_CLEARS) await removeLabel(owner, repo, t, l); }
     });
   }
 }
@@ -261,8 +270,11 @@ async function main() {
   else if (cmd === "status") await status(owner, repo, loop);
   else if (cmd === "enqueue") await enqueue(owner, repo, loop);
   else if (cmd === "finalize") await finalize(owner, repo, loop);
-  else if (cmd === "run") { const b = await build(owner, repo, loop); const pr = await open(owner, repo, loop, b); if (pr) await review(owner, repo, loop); }
+  else if (cmd === "run") { const b = await build(owner, repo, loop); if (b === QUIET) return finish(); const pr = await open(owner, repo, loop, b); if (pr) await review(owner, repo, loop); }
   else throw new Error("command must be plan|build|open|review|status|enqueue|finalize|run");
+  await finish();
+}
+async function finish() {
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, log.join("\n") + "\n");
 }
 

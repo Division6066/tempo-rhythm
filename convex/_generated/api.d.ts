@@ -8,13 +8,9 @@
  * @module
  */
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
 import type * as ai_smoke from "../ai_smoke.js";
 import type * as analytics from "../analytics.js";
+import type * as approval from "../approval.js";
 import type * as auth from "../auth.js";
 import type * as brain_dump from "../brain_dump.js";
 import type * as calendar_events from "../calendar_events.js";
@@ -28,8 +24,10 @@ import type * as habitCheckIns from "../habitCheckIns.js";
 import type * as habits from "../habits.js";
 import type * as http from "../http.js";
 import type * as lib_accountDeletion from "../lib/accountDeletion.js";
+import type * as lib_aiGate from "../lib/aiGate.js";
 import type * as lib_ai_errors from "../lib/ai_errors.js";
 import type * as lib_ai_router from "../lib/ai_router.js";
+import type * as lib_approval from "../lib/approval.js";
 import type * as lib_brainDumpInput from "../lib/brainDumpInput.js";
 import type * as lib_brainDumpParse from "../lib/brainDumpParse.js";
 import type * as lib_coachLoad from "../lib/coachLoad.js";
@@ -63,17 +61,16 @@ import type * as templates from "../templates.js";
 import type * as timeBlocks from "../timeBlocks.js";
 import type * as users from "../users.js";
 
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
+
 declare const fullApi: ApiFromModules<{
   ai_smoke: typeof ai_smoke;
   analytics: typeof analytics;
+  approval: typeof approval;
   auth: typeof auth;
   brain_dump: typeof brain_dump;
   calendar_events: typeof calendar_events;
@@ -87,8 +84,10 @@ declare const fullApi: ApiFromModules<{
   habits: typeof habits;
   http: typeof http;
   "lib/accountDeletion": typeof lib_accountDeletion;
+  "lib/aiGate": typeof lib_aiGate;
   "lib/ai_errors": typeof lib_ai_errors;
   "lib/ai_router": typeof lib_ai_router;
+  "lib/approval": typeof lib_approval;
   "lib/brainDumpInput": typeof lib_brainDumpInput;
   "lib/brainDumpParse": typeof lib_brainDumpParse;
   "lib/coachLoad": typeof lib_coachLoad;
@@ -122,11 +121,31 @@ declare const fullApi: ApiFromModules<{
   timeBlocks: typeof timeBlocks;
   users: typeof users;
 }>;
+
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">
 >;
+
+export declare const components: {};

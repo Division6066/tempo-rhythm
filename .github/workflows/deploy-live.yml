@@ -50,6 +50,12 @@ concurrency:
 jobs:
   plan:
     name: plan
+    # A master push made by release.yml (Phase H, commit trailer "Release-Workflow: release.yml") is already
+    # deployed by that workflow's own path (Vercel Git production deploy + Convex prod job after the gate).
+    # Skip here so the same release is not deployed twice.
+    if: >-
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, 'Release-Workflow: release.yml')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:

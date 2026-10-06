@@ -3,6 +3,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { isInactiveAccount, softDeleteUserAccount } from "./lib/accountDeletion";
+import { initialApprovalStatus } from "./lib/approval";
 import { buildReturningUserPatch, newUserFields } from "./lib/entitlements";
 import { requireUser, resolveUserFromIdentity } from "./lib/requireUser";
 import { assertClientMaySetUserType } from "./lib/subscriptionGuards";
@@ -150,7 +151,10 @@ export const createOrUpdateUser = mutation({
       return existing._id;
     }
 
-    const userId = await ctx.db.insert("users", newUserFields(profile, now));
+    const userId = await ctx.db.insert(
+      "users",
+      newUserFields(profile, now, initialApprovalStatus(profile.email)),
+    );
     if (!fullName) {
       await dropPlaceholderFullName(ctx, userId);
     }

@@ -31,18 +31,36 @@ permissions:
   issues: write
   pull-requests: read
 
-concurrency:
-  group: factory-lane-${{ github.event_name == 'issues' && github.event.issue.number || inputs.issue_number }}
-  cancel-in-progress: false
-
 jobs:
-  start:
-    # Label path: only when run:cursor was added. Dispatch path: honor pause unless force.
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
+    # Same condition as `start`, so unrelated label events still start no job at all.
     if: >
       (github.event_name == 'issues' && github.event.label.name == 'run:cursor' &&
         vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true')
       || (github.event_name == 'workflow_dispatch' &&
         ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true))
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-lane-cursor #${{ github.event.issue.number || inputs.issue_number }}"
+      exempt: ${{ github.event_name == 'workflow_dispatch' && inputs.fix_note != '' }}
+      exempt_reason: fix run for work already in flight (fix_note)
+  start:
+    # Label path: only when run:cursor was added. Dispatch path: honor pause unless force.
+    needs: quiet
+    if: >
+      needs.quiet.outputs.quiet != 'true' && (
+      (github.event_name == 'issues' && github.event.label.name == 'run:cursor' &&
+        vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true')
+      || (github.event_name == 'workflow_dispatch' &&
+        ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true)))
+    # Job-level (was workflow-level): every other `labeled` event on the issue used to join
+    # factory-lane-<issue> too, so a burst of labels cancelled pending runs in that group - 70 cancelled
+    # runs in 2 days, and it could cancel a pending run:cursor start or a pending claude/codex lane run
+    # for the same issue (same group name). Skipped jobs never take the group. (audit 2026-10-06)
+    concurrency:
+      group: factory-lane-${{ github.event_name == 'issues' && github.event.issue.number || inputs.issue_number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

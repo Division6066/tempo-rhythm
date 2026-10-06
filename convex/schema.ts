@@ -42,8 +42,19 @@ export default defineSchema({
     deletedAt: v.optional(v.number()),
     /** Set when the person finishes onboarding. Absent until then. */
     onboardedAt: v.optional(v.number()),
+    /**
+     * Sign-up approval gate (convex/lib/approval.ts). New accounts start "pending";
+     * an admin sets "approved" or "revoked". Absent on pre-gate rows (count as approved).
+     */
+    approvalStatus: v.optional(
+      v.union(v.literal("pending"), v.literal("approved"), v.literal("revoked")),
+    ),
+    approvalUpdatedAt: v.optional(v.number()),
+    /** Admin email, "cli" or "backfill". */
+    approvalUpdatedBy: v.optional(v.string()),
   })
     .index("by_email", ["email"])
+    .index("by_approvalStatus", ["approvalStatus"])
     .index("by_role", ["role"])
     .index("by_userType", ["userType"])
     .index("by_betaAccess", ["betaAccess"])
