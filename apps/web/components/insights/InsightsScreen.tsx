@@ -192,7 +192,12 @@ function InsightsContent({ onRetry }: { onRetry: () => void }) {
   const input = { isAuthLoading, isAuthenticated, profile, summary };
   const stillLoading = deriveInsightsState({ ...input, failed: false }) === "loading";
   useEffect(() => {
-    if (!stillLoading) return;
+    // Each loading phase gets its own full timeout: reset when loading ends, so a later reload
+    // (e.g. local-day rollover changing the query args) waits again instead of failing at once.
+    if (!stillLoading) {
+      setTimedOut(false);
+      return;
+    }
     const id = setTimeout(() => setTimedOut(true), LOADING_TIMEOUT_MS);
     return () => clearTimeout(id);
   }, [stillLoading]);
