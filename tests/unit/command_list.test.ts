@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { REAL_SCREENS } from "./CommandList";
+import { REAL_SCREENS } from "../../apps/web/components/tempo/CommandList";
 
 describe("REAL_SCREENS", () => {
   test("includes implemented routes while excluding scaffold routes", () => {
