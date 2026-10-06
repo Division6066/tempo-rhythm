@@ -1,31 +1,51 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
-import { IBM_Plex_Mono, Inter, Newsreader } from "next/font/google";
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/providers/providers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { themeInitScript } from "@/lib/theme-script";
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const inter = localFont({
+  src: "../fonts/inter/Inter-latin.woff2",
+  weight: "400 700",
+  style: "normal",
   variable: "--font-inter",
   display: "swap",
+  adjustFontFallback: "Arial",
 });
 
-const newsreader = Newsreader({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const newsreader = localFont({
+  src: "../fonts/newsreader/Newsreader-latin.woff2",
+  weight: "400 700",
+  style: "normal",
   variable: "--font-newsreader",
   display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const ibmPlexMono = localFont({
+  src: [
+    {
+      path: "../fonts/ibm-plex-mono/IBMPlexMono-latin-400.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../fonts/ibm-plex-mono/IBMPlexMono-latin-500.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../fonts/ibm-plex-mono/IBMPlexMono-latin-600.woff2",
+      weight: "600",
+      style: "normal",
+    },
+  ],
   variable: "--font-ibm-mono",
   display: "swap",
+  adjustFontFallback: "Arial",
 });
 
 export const metadata: Metadata = {
