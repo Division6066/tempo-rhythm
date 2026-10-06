@@ -24,7 +24,7 @@ const plannedIntegrations = [
 export default function Page() {
   return (
     <>
-      <main className="container mx-auto max-w-4xl px-6 py-12">
+      <main className="container mx-auto max-w-4xl px-6 py-12" data-testid="integrations-page">
         <header className="max-w-2xl">
           <p className="font-eyebrow text-muted-foreground">Settings</p>
           <h1 className="mt-2 font-heading text-3xl font-semibold text-foreground">Integrations</h1>

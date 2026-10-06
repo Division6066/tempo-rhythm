@@ -26,12 +26,13 @@ test.describe("integrations screen", () => {
     const consoleErrors = collectConsoleErrors(page);
 
     await page.goto(url("/settings/integrations"));
+    const integrationsPage = page.getByTestId("integrations-page");
 
-    await expect(page.getByRole("heading", { name: "Integrations" })).toBeVisible();
-    await expect(page.getByText("Google Calendar")).toBeVisible();
-    await expect(page.getByText("Apple Calendar")).toBeVisible();
-    await expect(page.getByText("Coming soon")).toHaveCount(2);
-    await expect(page.getByRole("button", { name: /^Connect/i })).toHaveCount(0);
+    await expect(integrationsPage.getByRole("heading", { name: "Integrations", exact: true })).toBeVisible();
+    await expect(integrationsPage.getByText("Google Calendar")).toBeVisible();
+    await expect(integrationsPage.getByText("Apple Calendar")).toBeVisible();
+    await expect(integrationsPage.getByText("Coming soon")).toHaveCount(2);
+    await expect(integrationsPage.getByRole("button", { name: /^Connect/i })).toHaveCount(0);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -39,7 +40,9 @@ test.describe("integrations screen", () => {
     const consoleErrors = collectConsoleErrors(page);
 
     await page.goto(url("/settings/integrations"));
-    const founderLink = page.getByRole("link", { name: "Ask the founder" });
+    const founderLink = page
+      .getByTestId("integrations-page")
+      .getByRole("link", { name: "Ask the founder", exact: true });
 
     await expect(founderLink).toHaveAttribute("href", "/ask-founder");
     await founderLink.click();
