@@ -26,8 +26,12 @@ export function McpTokensCard() {
   const [pending, setPending] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [executorCopied, setExecutorCopied] = useState(false);
-  const [showExecutorFallback, setShowExecutorFallback] = useState(false);
+  const [executorCopied, setExecutorCopied] = useState<"endpoint" | "authorization" | null>(
+    null,
+  );
+  const [executorFallback, setExecutorFallback] = useState<
+    "endpoint" | "authorization" | null
+  >(null);
 
   const endpoint = typeof window === "undefined" ? "/api/mcp" : `${window.location.origin}/api/mcp`;
   const executorSetup = buildExecutorSetup(endpoint);
@@ -77,18 +81,21 @@ export function McpTokensCard() {
     }
   };
 
-  const handleExecutorCopy = async () => {
-    setExecutorCopied(false);
+  const handleExecutorCopy = async (
+    field: "endpoint" | "authorization",
+    value: string,
+  ) => {
+    setExecutorCopied(null);
     if (!navigator.clipboard?.writeText) {
-      setShowExecutorFallback(true);
+      setExecutorFallback(field);
       return;
     }
     try {
-      await navigator.clipboard.writeText(executorSetup);
-      setExecutorCopied(true);
-      setShowExecutorFallback(false);
+      await navigator.clipboard.writeText(value);
+      setExecutorCopied(field);
+      setExecutorFallback(null);
     } catch {
-      setShowExecutorFallback(true);
+      setExecutorFallback(field);
     }
   };
 
@@ -197,36 +204,69 @@ export function McpTokensCard() {
 
       <div className="mt-6 space-y-2 text-sm text-muted-foreground">
         <h3 className="font-medium text-foreground">Connect Executor</h3>
-        <p>Copy a ready-to-paste MCP source setup, then replace the token placeholder.</p>
-        <pre className="overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
-          {executorSetup}
-        </pre>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" onClick={() => void handleExecutorCopy()}>
-            {executorCopied ? "Copied" : "Copy Executor setup"}
-          </Button>
-          <a
-            href="https://github.com/Levidavidspublic/tempo-rhythm/blob/integration/docs/ops/EXECUTOR.md"
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-foreground underline underline-offset-4"
-          >
-            Full guide
-          </a>
-        </div>
-        {showExecutorFallback ? (
+        <p>Copy each value into its matching Streamable HTTP source field.</p>
+        <div className="space-y-3 rounded-xl bg-muted p-3">
           <label className="block space-y-1">
-            <span>Clipboard access is unavailable. Select and copy this setup:</span>
-            <textarea
-              readOnly
-              aria-label="Executor setup"
-              value={executorSetup}
-              onFocus={(event) => event.currentTarget.select()}
-              rows={4}
-              className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
-            />
+            <span className="font-medium text-foreground">Endpoint URL</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                readOnly
+                aria-label="Executor endpoint URL"
+                value={executorSetup.endpoint}
+                onFocus={(event) => event.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void handleExecutorCopy("endpoint", executorSetup.endpoint)
+                }
+              >
+                {executorCopied === "endpoint" ? "Copied" : "Copy endpoint"}
+              </Button>
+            </div>
           </label>
+          <label className="block space-y-1">
+            <span className="font-medium text-foreground">Authorization header value</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                readOnly
+                aria-label="Executor Authorization header value"
+                value={executorSetup.authorizationHeader}
+                onFocus={(event) => event.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void handleExecutorCopy(
+                    "authorization",
+                    executorSetup.authorizationHeader,
+                  )
+                }
+              >
+                {executorCopied === "authorization" ? "Copied" : "Copy header value"}
+              </Button>
+            </div>
+          </label>
+        </div>
+        {executorFallback ? (
+          <p role="alert">
+            Clipboard access is unavailable. Select the {executorFallback === "endpoint"
+              ? "endpoint URL"
+              : "Authorization header value"} above and copy it manually.
+          </p>
         ) : null}
+        <a
+          href="https://github.com/Levidavidspublic/tempo-rhythm/blob/integration/docs/ops/EXECUTOR.md"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block font-medium text-foreground underline underline-offset-4"
+        >
+          Full guide
+        </a>
       </div>
     </section>
   );
