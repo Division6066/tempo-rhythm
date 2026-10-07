@@ -45,16 +45,30 @@ async function liveCheckInsForHabit(ctx: MutationCtx, habitId: Id<"habits">) {
 }
 
 /**
- * Recompute and patch the habit's streak cache from its live check-ins.
- * Always evaluates "current" relative to UTC today (not the toggled localDate),
- * so historical grid edits cannot corrupt the live streak. Preserves
- * longestStreak / lastCompletedAt written by habits.completeToday when
- * check-in rows would otherwise wipe them (dual-writer safe).
+ * Resolve the "current" local date for streak evaluation. A supplied
+ * `asOfLocalDate` must be a real calendar date; omission falls back to UTC today
+ * (legacy callers). Never derived from the toggled (historical) localDate.
  */
-async function refreshHabitCache(ctx: MutationCtx, habit: Doc<"habits">, _toggledLocalDate: string) {
+function resolveAsOfLocalDate(asOfLocalDate: string | undefined): string {
+	if (asOfLocalDate === undefined) {
+		return new Date().toISOString().slice(0, 10);
+	}
+	if (!isLocalDate(asOfLocalDate)) {
+		throw new Error("asOfLocalDate must be YYYY-MM-DD");
+	}
+	return asOfLocalDate;
+}
+
+/**
+ * Recompute and patch the habit's streak cache from its live check-ins.
+ * Evaluates "current" relative to the caller's as-of local date (UTC today when
+ * omitted), never the toggled localDate, so historical grid edits cannot corrupt
+ * the live streak. Preserves longestStreak / lastCompletedAt written by
+ * habits.completeToday when check-in rows would otherwise wipe them
+ * (dual-writer safe).
+ */
+async function refreshHabitCache(ctx: MutationCtx, habit: Doc<"habits">, asOfLocalDate: string) {
 	const rows = await liveCheckInsForHabit(ctx, habit._id);
-	// Choice (Bugbot E1 fix): as-of = UTC today, never the edited historical day.
-	const asOfLocalDate = new Date().toISOString().slice(0, 10);
 	const streaks = computeHabitCheckInStreaks(
 		rows.map((r) => r.localDate),
 		asOfLocalDate,
@@ -123,6 +137,7 @@ export const check = mutation({
 		localDate: v.string(),
 		source: v.union(v.literal("habits"), v.literal("today"), v.literal("suggestion")),
 		note: v.optional(v.string()),
+		asOfLocalDate: v.optional(v.string()),
 	},
 	returns: v.object({
 		checkInId: v.id("habitCheckIns"),
@@ -135,6 +150,7 @@ export const check = mutation({
 		if (!isLocalDate(args.localDate)) {
 			throw new Error("localDate must be YYYY-MM-DD");
 		}
+		const asOf = resolveAsOfLocalDate(args.asOfLocalDate);
 		const habit = await getOwnedHabit(ctx, user._id, args.habitId);
 
 		const existing = (await liveCheckInsForHabit(ctx, habit._id)).find(
@@ -161,7 +177,7 @@ export const check = mutation({
 			createdAt: now,
 			updatedAt: now,
 		});
-		const streaks = await refreshHabitCache(ctx, habit, args.localDate);
+		const streaks = await refreshHabitCache(ctx, habit, asOf);
 		return {
 			checkInId,
 			alreadyChecked: false,
@@ -172,7 +188,11 @@ export const check = mutation({
 });
 
 export const undo = mutation({
-	args: { habitId: v.id("habits"), localDate: v.string() },
+	args: {
+		habitId: v.id("habits"),
+		localDate: v.string(),
+		asOfLocalDate: v.optional(v.string()),
+	},
 	returns: v.object({
 		removed: v.boolean(),
 		currentStreak: v.number(),
@@ -183,6 +203,7 @@ export const undo = mutation({
 		if (!isLocalDate(args.localDate)) {
 			throw new Error("localDate must be YYYY-MM-DD");
 		}
+		const asOf = resolveAsOfLocalDate(args.asOfLocalDate);
 		const habit = await getOwnedHabit(ctx, user._id, args.habitId);
 
 		const existing = (await liveCheckInsForHabit(ctx, habit._id)).find(
@@ -198,7 +219,7 @@ export const undo = mutation({
 
 		const now = Date.now();
 		await ctx.db.patch(existing._id, { deletedAt: now, updatedAt: now });
-		const streaks = await refreshHabitCache(ctx, habit, args.localDate);
+		const streaks = await refreshHabitCache(ctx, habit, asOf);
 		return {
 			removed: true,
 			currentStreak: streaks.currentStreak,

@@ -1,0 +1,355 @@
+import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
+import * as habitCheckIns from "./habitCheckIns";
+
+type Row = Record<string, unknown>;
+
+/** Minimal in-memory Convex ctx (same idea as `convex/dayPlans.test.ts`), eq-only indexes. */
+function makeFakeCtx(userId: string) {
+	const tables = new Map<string, Map<string, Row>>();
+	let nextId = 1;
+	const table = (name: string) => {
+		let t = tables.get(name);
+		if (!t) {
+			t = new Map();
+			tables.set(name, t);
+		}
+		return t;
+	};
+	table("users").set(userId, { _id: userId, email: "a@example.com" });
+	table("users").set("users:b", { _id: "users:b", email: "b@example.com" });
+
+	function builder(rows: Row[]) {
+		return {
+			withIndex: (_name: string, fn: (q: any) => unknown) => {
+				const conds: Array<[string, unknown]> = [];
+				const q: any = {
+					eq: (field: string, value: unknown) => {
+						conds.push([field, value]);
+						return q;
+					},
+				};
+				fn(q);
+				return builder(rows.filter((r) => conds.every(([f, v]) => r[f] === v)));
+			},
+			collect: async () => [...rows],
+		};
+	}
+
+	const db = {
+		normalizeId: (t: string, id: string) => (table(t).has(id) ? id : null),
+		get: async (id: string) => table(id.split(":")[0]).get(id) ?? null,
+		insert: async (t: string, doc: Row) => {
+			const id = `${t}:${nextId++}`;
+			table(t).set(id, { _id: id, _creationTime: 0, ...doc });
+			return id;
+		},
+		patch: async (id: string, patch: Row) => {
+			const t = table(id.split(":")[0]);
+			t.set(id, { ...t.get(id), ...patch });
+		},
+		query: (t: string) => builder(Array.from(table(t).values())),
+	};
+	return { auth: { getUserIdentity: async () => ({ subject: userId }) }, db } as any;
+}
+
+const USER = "users:a";
+const run = (fn: unknown, ctx: unknown, args: unknown) => (fn as any)._handler(ctx, args);
+
+async function addHabit(ctx: any, over: Row = {}) {
+	return ctx.db.insert("habits", {
+		userId: USER,
+		name: "h",
+		currentStreak: 0,
+		longestStreak: 0,
+		createdAt: 1,
+		updatedAt: 1,
+		...over,
+	});
+}
+
+async function addCheckIn(ctx: any, habitId: string, localDate: string, over: Row = {}) {
+	return ctx.db.insert("habitCheckIns", {
+		userId: USER,
+		habitId,
+		localDate,
+		checkedAt: 1000,
+		source: "habits",
+		createdAt: 1,
+		updatedAt: 1,
+		...over,
+	});
+}
+
+const check = (ctx: any, habitId: string, localDate: string, asOfLocalDate?: string) =>
+	run(habitCheckIns.check, ctx, {
+		habitId,
+		localDate,
+		source: "habits",
+		...(asOfLocalDate === undefined ? {} : { asOfLocalDate }),
+	});
+const undo = (ctx: any, habitId: string, localDate: string, asOfLocalDate?: string) =>
+	run(habitCheckIns.undo, ctx, {
+		habitId,
+		localDate,
+		...(asOfLocalDate === undefined ? {} : { asOfLocalDate }),
+	});
+
+afterEach(() => {
+	setSystemTime();
+});
+
+describe("habitCheckIns.check asOfLocalDate", () => {
+	test("west of UTC: local date still the 6th while UTC is already the 7th", async () => {
+		// 2026-10-07T03:00Z is still 2026-10-06 in the Americas.
+		setSystemTime(new Date("2026-10-07T03:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await addCheckIn(ctx, habitId, "2026-10-05");
+		const res = await check(ctx, habitId, "2026-10-06", "2026-10-06");
+		expect(res.alreadyChecked).toBe(false);
+		expect(res.currentStreak).toBe(2);
+		expect((await ctx.db.get(habitId)).currentStreak).toBe(2);
+	});
+
+	test("west of UTC: UTC fallback would break the streak, local as-of keeps it", async () => {
+		setSystemTime(new Date("2026-10-08T02:00:00Z"));
+		// UTC is already 10-08 but the user is still on 10-07.
+		const setup = async () => {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			await addCheckIn(ctx, habitId, "2026-10-05");
+			return { ctx, habitId };
+		};
+		const a = await setup();
+		const legacy = await check(a.ctx, a.habitId, "2026-10-06");
+		expect(legacy.currentStreak).toBe(0); // UTC today 10-08: latest 10-06 is 2 days back
+		const b = await setup();
+		const local = await check(b.ctx, b.habitId, "2026-10-06", "2026-10-07");
+		expect(local.currentStreak).toBe(2); // local today 10-07: latest 10-06 is yesterday
+	});
+
+	test("east of UTC: local date is already the 8th while UTC is the 7th", async () => {
+		setSystemTime(new Date("2026-10-07T20:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await addCheckIn(ctx, habitId, "2026-10-06");
+		// Local today 10-08: a check-in on 10-06 is two days old -> streak is 0.
+		const res = await check(ctx, habitId, "2026-10-04", "2026-10-08");
+		expect(res.currentStreak).toBe(0);
+		// UTC fallback (10-07) would still count 10-06.
+		const ctx2 = makeFakeCtx(USER);
+		const h2 = await addHabit(ctx2);
+		await addCheckIn(ctx2, h2, "2026-10-06");
+		const legacy = await check(ctx2, h2, "2026-10-04");
+		expect(legacy.currentStreak).toBe(1);
+	});
+
+	test("UTC midnight boundary: fallback flips at 00:00Z, explicit date does not", async () => {
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await addCheckIn(ctx, habitId, "2026-10-05");
+		setSystemTime(new Date("2026-10-06T23:59:59Z"));
+		const before = await check(ctx, habitId, "2026-10-01");
+		expect(before.currentStreak).toBe(1);
+		setSystemTime(new Date("2026-10-07T00:00:00Z"));
+		const explicit = await check(ctx, habitId, "2026-10-02", "2026-10-06");
+		expect(explicit.currentStreak).toBe(1);
+		const after = await undo(ctx, habitId, "2026-10-02");
+		expect(after.currentStreak).toBe(0);
+	});
+
+	test("historical toggle uses distinct current as-of date, not localDate", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await addCheckIn(ctx, habitId, "2026-10-05");
+		await addCheckIn(ctx, habitId, "2026-10-06");
+		const res = await check(ctx, habitId, "2026-09-01", "2026-10-07");
+		expect(res.currentStreak).toBe(2);
+		expect(res.longestStreak).toBe(2);
+	});
+
+	test("omitted asOfLocalDate falls back to UTC today", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		const res = await check(ctx, habitId, "2026-10-06");
+		expect(res).toEqual({
+			checkInId: expect.any(String),
+			alreadyChecked: false,
+			currentStreak: 1,
+			longestStreak: 1,
+		});
+		const stale = await check(ctx, habitId, "2026-10-01");
+		expect(stale.currentStreak).toBe(1);
+	});
+
+	test("preserves longestStreak (Math.max) and lastCompletedAt from completeToday", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx, { longestStreak: 9, lastCompletedAt: 5000 });
+		const res = await check(ctx, habitId, "2026-10-07", "2026-10-07");
+		expect(res.currentStreak).toBe(1);
+		expect(res.longestStreak).toBe(9);
+		const habit = await ctx.db.get(habitId);
+		expect(habit.longestStreak).toBe(9);
+		expect(habit.lastCompletedAt).toBe(Date.parse("2026-10-07T12:00:00Z"));
+	});
+
+	test("lastCompletedAt is preserved when no check-in rows remain after undo", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx, { longestStreak: 4, lastCompletedAt: 5000 });
+		await addCheckIn(ctx, habitId, "2026-10-07");
+		const res = await undo(ctx, habitId, "2026-10-07", "2026-10-07");
+		expect(res).toEqual({ removed: true, currentStreak: 0, longestStreak: 4 });
+		const habit = await ctx.db.get(habitId);
+		expect(habit.lastCompletedAt).toBe(5000);
+		expect(habit.longestStreak).toBe(4);
+	});
+
+	test("idempotent re-check returns cached values and does not recompute", async () => {
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx, { currentStreak: 3, longestStreak: 5 });
+		const existing = await addCheckIn(ctx, habitId, "2026-10-06");
+		const res = await check(ctx, habitId, "2026-10-06", "2026-10-30");
+		expect(res).toEqual({
+			checkInId: existing,
+			alreadyChecked: true,
+			currentStreak: 3,
+			longestStreak: 5,
+		});
+		expect((await ctx.db.get(habitId)).currentStreak).toBe(3);
+	});
+});
+
+describe("habitCheckIns.undo asOfLocalDate", () => {
+	test("historical undo recomputes against the supplied current date", async () => {
+		setSystemTime(new Date("2026-10-07T03:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await addCheckIn(ctx, habitId, "2026-10-04");
+		await addCheckIn(ctx, habitId, "2026-10-05");
+		await addCheckIn(ctx, habitId, "2026-10-06");
+		await addCheckIn(ctx, habitId, "2026-09-01");
+		const res = await undo(ctx, habitId, "2026-09-01", "2026-10-06");
+		expect(res).toEqual({ removed: true, currentStreak: 3, longestStreak: 3 });
+		expect((await ctx.db.get(habitId)).currentStreak).toBe(3);
+	});
+
+	test("no-op undo returns cached values and leaves the habit untouched", async () => {
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx, { currentStreak: 2, longestStreak: 6 });
+		const res = await undo(ctx, habitId, "2026-10-06", "2026-10-07");
+		expect(res).toEqual({ removed: false, currentStreak: 2, longestStreak: 6 });
+		expect((await ctx.db.get(habitId)).updatedAt).toBe(1);
+	});
+
+	test("omitted asOfLocalDate falls back to UTC today", async () => {
+		setSystemTime(new Date("2026-10-10T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await addCheckIn(ctx, habitId, "2026-10-06");
+		await addCheckIn(ctx, habitId, "2026-10-05");
+		const res = await undo(ctx, habitId, "2026-10-05");
+		expect(res).toEqual({ removed: true, currentStreak: 0, longestStreak: 1 });
+	});
+});
+
+describe("habitCheckIns asOfLocalDate validation", () => {
+	const bad = ["", "2026-13-01", "2026-02-30", "2026-1-1", "tomorrow", "2026-10-07T00:00:00Z"];
+
+	for (const value of bad) {
+		test(`check rejects ${JSON.stringify(value)} before writes`, async () => {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			await expect(check(ctx, habitId, "2026-10-06", value)).rejects.toThrow(
+				"asOfLocalDate must be YYYY-MM-DD",
+			);
+			expect(await ctx.db.query("habitCheckIns").collect()).toHaveLength(0);
+			expect((await ctx.db.get(habitId)).updatedAt).toBe(1);
+		});
+
+		test(`check rejects ${JSON.stringify(value)} on the already-checked no-op path`, async () => {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			await addCheckIn(ctx, habitId, "2026-10-06");
+			await expect(check(ctx, habitId, "2026-10-06", value)).rejects.toThrow(
+				"asOfLocalDate must be YYYY-MM-DD",
+			);
+		});
+
+		test(`undo rejects ${JSON.stringify(value)} before writes`, async () => {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			const id = await addCheckIn(ctx, habitId, "2026-10-06");
+			await expect(undo(ctx, habitId, "2026-10-06", value)).rejects.toThrow(
+				"asOfLocalDate must be YYYY-MM-DD",
+			);
+			expect((await ctx.db.get(id)).deletedAt).toBeUndefined();
+		});
+
+		test(`undo rejects ${JSON.stringify(value)} on the nothing-to-remove no-op path`, async () => {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			await expect(undo(ctx, habitId, "2026-10-06", value)).rejects.toThrow(
+				"asOfLocalDate must be YYYY-MM-DD",
+			);
+		});
+	}
+
+	test("localDate is still validated independently", async () => {
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await expect(check(ctx, habitId, "2026-02-30", "2026-10-07")).rejects.toThrow(
+			"localDate must be YYYY-MM-DD",
+		);
+		await expect(undo(ctx, habitId, "nope", "2026-10-07")).rejects.toThrow(
+			"localDate must be YYYY-MM-DD",
+		);
+	});
+});
+
+describe("habitCheckIns ownership and deletion", () => {
+	test("another user's habit is not found and untouched, for both mutations", async () => {
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx, { userId: "users:b", currentStreak: 2 });
+		await expect(check(ctx, habitId, "2026-10-06", "2026-10-07")).rejects.toThrow("Habit not found");
+		await expect(undo(ctx, habitId, "2026-10-06", "2026-10-07")).rejects.toThrow("Habit not found");
+		expect(await ctx.db.query("habitCheckIns").collect()).toHaveLength(0);
+		expect((await ctx.db.get(habitId)).currentStreak).toBe(2);
+	});
+
+	test("soft-deleted habits are not revived by either mutation", async () => {
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx, { deletedAt: 5 });
+		await expect(check(ctx, habitId, "2026-10-06", "2026-10-07")).rejects.toThrow("Habit not found");
+		await expect(undo(ctx, habitId, "2026-10-06", "2026-10-07")).rejects.toThrow("Habit not found");
+		const habit = await ctx.db.get(habitId);
+		expect(habit.deletedAt).toBe(5);
+		expect(habit.currentStreak).toBe(0);
+	});
+
+	test("soft-deleted check-ins are ignored: re-check inserts a new row and does not revive", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		const deleted = await addCheckIn(ctx, habitId, "2026-10-06", { deletedAt: 9 });
+		const res = await check(ctx, habitId, "2026-10-06", "2026-10-07");
+		expect(res.alreadyChecked).toBe(false);
+		expect(res.checkInId).not.toBe(deleted);
+		expect((await ctx.db.get(deleted)).deletedAt).toBe(9);
+	});
+
+	test("another user's check-ins on the same date do not affect isolation", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const mine = await addHabit(ctx);
+		const theirs = await addHabit(ctx, { userId: "users:b" });
+		await addCheckIn(ctx, theirs, "2026-10-06", { userId: "users:b" });
+		const res = await check(ctx, mine, "2026-10-07", "2026-10-07");
+		expect(res.currentStreak).toBe(1);
+		const other = await undo(ctx, mine, "2026-10-06", "2026-10-07");
+		expect(other.removed).toBe(false);
+	});
+});
