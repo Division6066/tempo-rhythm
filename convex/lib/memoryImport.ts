@@ -26,7 +26,57 @@ function objectItem(value: unknown): string | null {
 	return null;
 }
 
-function jsonItems(value: unknown): string[] | null {
+function markdownItems(value: unknown): string[] {
+	return typeof value === "string" ? lineItems(value) : [];
+}
+
+function claudeAccountItems(value: unknown): string[] | null {
+	if (!Array.isArray(value)) return null;
+	const accounts = value.filter(
+		(account): account is Record<string, unknown> =>
+			account !== null && typeof account === "object" && !Array.isArray(account),
+	);
+	if (
+		!accounts.some(
+			(account) =>
+				"conversations_memory" in account ||
+				"project_memories" in account ||
+				"memory_files" in account,
+		)
+	) {
+		return null;
+	}
+
+	const items: string[] = [];
+	for (const account of accounts) {
+		items.push(...markdownItems(account.conversations_memory));
+
+		if (
+			account.project_memories !== null &&
+			typeof account.project_memories === "object" &&
+			!Array.isArray(account.project_memories)
+		) {
+			for (const memory of Object.values(account.project_memories)) {
+				items.push(...markdownItems(memory));
+			}
+		}
+
+		if (Array.isArray(account.memory_files)) {
+			for (const file of account.memory_files) {
+				if (file !== null && typeof file === "object" && !Array.isArray(file)) {
+					items.push(...markdownItems((file as Record<string, unknown>).content));
+				}
+			}
+		}
+	}
+	return items;
+}
+
+function jsonItems(value: unknown, source: MemoryImportSource): string[] | null {
+	if (source === "claude") {
+		const accountItems = claudeAccountItems(value);
+		if (accountItems !== null) return accountItems;
+	}
 	const items = Array.isArray(value)
 		? value
 		: value && typeof value === "object"
@@ -54,13 +104,11 @@ function lineItems(text: string): string[] {
 
 /** Parse a pasted memory export without making assumptions about its provider. */
 export function parseMemoryExport(text: string, source: MemoryImportSource): string[] {
-	// The source is stored with imported rows; parsing remains deliberately provider-agnostic.
-	void source;
 	if (!text.trim() || /\0/.test(text)) return [];
 
 	let candidates: string[] | null = null;
 	try {
-		candidates = jsonItems(JSON.parse(text));
+		candidates = jsonItems(JSON.parse(text), source);
 	} catch {
 		// Export snippets are often incomplete JSON; treat those as ordinary pasted lines.
 	}
