@@ -209,10 +209,11 @@ describe("habitCheckIns.check asOfLocalDate", () => {
 	});
 
 	test("idempotent re-check returns cached values and does not recompute", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
 		const ctx = makeFakeCtx(USER);
 		const habitId = await addHabit(ctx, { currentStreak: 3, longestStreak: 5 });
 		const existing = await addCheckIn(ctx, habitId, "2026-10-06");
-		const res = await check(ctx, habitId, "2026-10-06", "2026-10-30");
+		const res = await check(ctx, habitId, "2026-10-06", "2026-10-08");
 		expect(res).toEqual({
 			checkInId: existing,
 			alreadyChecked: true,
@@ -238,6 +239,7 @@ describe("habitCheckIns.undo asOfLocalDate", () => {
 	});
 
 	test("no-op undo returns cached values and leaves the habit untouched", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
 		const ctx = makeFakeCtx(USER);
 		const habitId = await addHabit(ctx, { currentStreak: 2, longestStreak: 6 });
 		const res = await undo(ctx, habitId, "2026-10-06", "2026-10-07");
@@ -310,8 +312,105 @@ describe("habitCheckIns asOfLocalDate validation", () => {
 	});
 });
 
+describe("habitCheckIns asOfLocalDate trusted bounds", () => {
+	const NOW = "2026-10-07T12:00:00Z";
+	const outOfRange = ["2026-10-05", "2026-10-09", "2025-10-07", "2099-01-01"];
+	const message = "asOfLocalDate must be within one day of UTC today";
+
+	test("accepts UTC today -1, today and +1 inclusive", async () => {
+		setSystemTime(new Date(NOW));
+		for (const asOf of ["2026-10-06", "2026-10-07", "2026-10-08"]) {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			const res = await check(ctx, habitId, "2026-10-01", asOf);
+			expect(res.alreadyChecked).toBe(false);
+			const gone = await undo(ctx, habitId, "2026-10-01", asOf);
+			expect(gone.removed).toBe(true);
+		}
+	});
+
+	test("bounds follow month and year rollover", async () => {
+		setSystemTime(new Date("2026-12-31T23:59:59Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		await check(ctx, habitId, "2026-12-01", "2027-01-01");
+		await check(ctx, habitId, "2026-12-02", "2026-12-30");
+		await expect(check(ctx, habitId, "2026-12-03", "2027-01-02")).rejects.toThrow(message);
+		await expect(check(ctx, habitId, "2026-12-03", "2026-12-29")).rejects.toThrow(message);
+	});
+
+	test("bounds move with the UTC midnight boundary", async () => {
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		setSystemTime(new Date("2026-10-07T23:59:59Z"));
+		await check(ctx, habitId, "2026-10-01", "2026-10-08");
+		await expect(check(ctx, habitId, "2026-10-02", "2026-10-09")).rejects.toThrow(message);
+		setSystemTime(new Date("2026-10-08T00:00:00Z"));
+		await check(ctx, habitId, "2026-10-02", "2026-10-09");
+		await expect(check(ctx, habitId, "2026-10-03", "2026-10-06")).rejects.toThrow(message);
+	});
+
+	for (const value of outOfRange) {
+		test(`check rejects ${value} before writes`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			await expect(check(ctx, habitId, "2026-10-06", value)).rejects.toThrow(message);
+			expect(await ctx.db.query("habitCheckIns").collect()).toHaveLength(0);
+			expect((await ctx.db.get(habitId)).updatedAt).toBe(1);
+		});
+
+		test(`check rejects ${value} on the already-checked no-op path`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx, { currentStreak: 3 });
+			await addCheckIn(ctx, habitId, "2026-10-06");
+			await expect(check(ctx, habitId, "2026-10-06", value)).rejects.toThrow(message);
+			expect((await ctx.db.get(habitId)).currentStreak).toBe(3);
+		});
+
+		test(`undo rejects ${value} before writes`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx, { currentStreak: 3 });
+			const id = await addCheckIn(ctx, habitId, "2026-10-06");
+			await expect(undo(ctx, habitId, "2026-10-06", value)).rejects.toThrow(message);
+			expect((await ctx.db.get(id)).deletedAt).toBeUndefined();
+			expect((await ctx.db.get(habitId)).currentStreak).toBe(3);
+		});
+
+		test(`undo rejects ${value} on the nothing-to-remove no-op path`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			await expect(undo(ctx, habitId, "2026-10-06", value)).rejects.toThrow(message);
+		});
+	}
+
+	test("historical localDate edits stay allowed with a bounded as-of date", async () => {
+		setSystemTime(new Date(NOW));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		const res = await check(ctx, habitId, "2020-01-01", "2026-10-07");
+		expect(res.alreadyChecked).toBe(false);
+		const gone = await undo(ctx, habitId, "2020-01-01", "2026-10-07");
+		expect(gone.removed).toBe(true);
+	});
+
+	test("a rejected as-of date does not touch another user's habit or rows", async () => {
+		setSystemTime(new Date(NOW));
+		const ctx = makeFakeCtx(USER);
+		const theirs = await addHabit(ctx, { userId: "users:b", currentStreak: 2 });
+		const row = await addCheckIn(ctx, theirs, "2026-10-06", { userId: "users:b" });
+		await expect(undo(ctx, theirs, "2026-10-06", "2099-01-01")).rejects.toThrow(message);
+		expect((await ctx.db.get(row)).deletedAt).toBeUndefined();
+		expect((await ctx.db.get(theirs)).currentStreak).toBe(2);
+	});
+});
+
 describe("habitCheckIns ownership and deletion", () => {
 	test("another user's habit is not found and untouched, for both mutations", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
 		const ctx = makeFakeCtx(USER);
 		const habitId = await addHabit(ctx, { userId: "users:b", currentStreak: 2 });
 		await expect(check(ctx, habitId, "2026-10-06", "2026-10-07")).rejects.toThrow("Habit not found");
@@ -321,6 +420,7 @@ describe("habitCheckIns ownership and deletion", () => {
 	});
 
 	test("soft-deleted habits are not revived by either mutation", async () => {
+		setSystemTime(new Date("2026-10-07T12:00:00Z"));
 		const ctx = makeFakeCtx(USER);
 		const habitId = await addHabit(ctx, { deletedAt: 5 });
 		await expect(check(ctx, habitId, "2026-10-06", "2026-10-07")).rejects.toThrow("Habit not found");

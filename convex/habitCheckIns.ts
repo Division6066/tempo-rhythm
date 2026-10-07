@@ -46,15 +46,26 @@ async function liveCheckInsForHabit(ctx: MutationCtx, habitId: Id<"habits">) {
 
 /**
  * Resolve the "current" local date for streak evaluation. A supplied
- * `asOfLocalDate` must be a real calendar date; omission falls back to UTC today
- * (legacy callers). Never derived from the toggled (historical) localDate.
+ * `asOfLocalDate` must be a real calendar date within trusted UTC today -1..+1
+ * days inclusive (covers every real timezone offset); omission falls back to UTC
+ * today (legacy callers). Never derived from the toggled (historical) localDate.
  */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 function resolveAsOfLocalDate(asOfLocalDate: string | undefined): string {
+	const now = Date.now();
+	const utcToday = new Date(now).toISOString().slice(0, 10);
 	if (asOfLocalDate === undefined) {
-		return new Date().toISOString().slice(0, 10);
+		return utcToday;
 	}
 	if (!isLocalDate(asOfLocalDate)) {
 		throw new Error("asOfLocalDate must be YYYY-MM-DD");
+	}
+	const earliest = new Date(now - DAY_MS).toISOString().slice(0, 10);
+	const latest = new Date(now + DAY_MS).toISOString().slice(0, 10);
+	// YYYY-MM-DD strings compare chronologically.
+	if (asOfLocalDate < earliest || asOfLocalDate > latest) {
+		throw new Error("asOfLocalDate must be within one day of UTC today");
 	}
 	return asOfLocalDate;
 }
