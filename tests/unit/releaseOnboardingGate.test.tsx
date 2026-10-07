@@ -4,7 +4,7 @@
  * the entered name. Same dependency-free TestNode DOM harness as
  * apps/web/components/onboarding/OnboardingFlow.test.tsx (no Testing Library here).
  */
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
 // react is only installed under apps/web (not the repo root), so import it from there.
 import { act, createElement, type ReactElement, useEffect } from "../../apps/web/node_modules/react";
 import { createRoot, type Root } from "../../apps/web/node_modules/react-dom/client";
@@ -305,25 +305,56 @@ let profileResult: Profile | undefined;
 let startersResult: { templateId: string; name: string }[] | undefined;
 let approvalResult: Approval;
 
-mock.module("next/navigation", () => ({
-  useRouter: () => ({ push, replace }),
-}));
+// bun's mock.module is process-global and bun loads every test file before running any, so
+// OnboardingFlow.test.tsx's mocks of the same modules are registered by the time these tests
+// start. Snapshot whatever is registered then, install ours for this file only, and put the
+// snapshot back afterwards so neither file sees the other's router/query mocks.
+// These packages are installed under apps/web only, so key the mocks by the path they
+// resolve to from there (the same key OnboardingFlow.test.tsx's bare specifiers get).
+const webDir = `${process.cwd()}/apps/web`;
+const navigation = Bun.resolveSync("next/navigation", webDir);
+const authReact = Bun.resolveSync("@convex-dev/auth/react", webDir);
+const convexReact = Bun.resolveSync("convex/react", webDir);
+const MOCKED = [navigation, authReact, convexReact];
+let previous: Record<string, Record<string, unknown>> = {};
 
-mock.module("@convex-dev/auth/react", () => ({
-  useAuthActions: () => ({ signOut }),
-}));
+async function snapshotModuleMocks() {
+  previous = {};
+  for (const key of MOCKED) previous[key] = { ...(await import(key)) };
+}
 
-mock.module("convex/react", () => ({
-  useQuery: (_ref: unknown, args: unknown) => {
-    if (args === undefined) return approvalResult;
-    if (args && typeof args === "object" && "scope" in args) return startersResult;
-    return profileResult;
-  },
-  useMutation: () => completeOnboarding,
-}));
+function restoreModuleMocks() {
+  for (const key of MOCKED) mock.module(key, () => previous[key]);
+}
 
-const { ApprovalGate } = await import("../../apps/web/components/approval/ApprovalGate");
-const { OnboardingFlow } = await import("../../apps/web/components/onboarding/OnboardingFlow");
+function installModuleMocks() {
+  mock.module(navigation, () => ({
+    useRouter: () => ({ push, replace }),
+  }));
+
+  mock.module(authReact, () => ({
+    useAuthActions: () => ({ signOut }),
+  }));
+
+  mock.module(convexReact, () => ({
+    useQuery: (_ref: unknown, args: unknown) => {
+      if (args === undefined) return approvalResult;
+      if (args && typeof args === "object" && "scope" in args) return startersResult;
+      return profileResult;
+    },
+    useMutation: () => completeOnboarding,
+  }));
+}
+
+installModuleMocks();
+
+// The query suffix gives this file its own module instances, so it never shares (or
+// rebinds) the OnboardingFlow instance that OnboardingFlow.test.tsx imported.
+const { ApprovalGate } = await import("../../apps/web/components/approval/ApprovalGate?release-gate");
+const { OnboardingFlow } = await import(
+  "../../apps/web/components/onboarding/OnboardingFlow?release-gate"
+);
+
 
 function walk(node: TestNode, visit: (node: TestNode) => void) {
   visit(node);
@@ -371,6 +402,12 @@ async function rerender(element: Build) {
     root?.render(build(element));
   });
 }
+
+beforeAll(async () => {
+  await snapshotModuleMocks();
+  installModuleMocks();
+});
+afterAll(restoreModuleMocks);
 
 beforeEach(() => {
   mounts = 0;
