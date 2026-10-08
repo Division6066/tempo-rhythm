@@ -4,6 +4,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { buildExecutorSetup } from "./executorSetup";
 
 export const MCP_PENDING_COPY =
   "Your account is waiting for approval. You can create MCP tokens once it is approved.";
@@ -25,8 +26,15 @@ export function McpTokensCard() {
   const [pending, setPending] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [executorCopied, setExecutorCopied] = useState<"endpoint" | "authorization" | null>(
+    null,
+  );
+  const [executorFallback, setExecutorFallback] = useState<
+    "endpoint" | "authorization" | null
+  >(null);
 
   const endpoint = typeof window === "undefined" ? "/api/mcp" : `${window.location.origin}/api/mcp`;
+  const executorSetup = buildExecutorSetup(endpoint);
   const active = (tokens ?? []).filter((t) => t.revokedAt === undefined);
 
   const handleCreate = async () => {
@@ -70,6 +78,24 @@ export function McpTokensCard() {
       await revokeToken({ tokenId });
     } catch {
       setMessage("We couldn't revoke that token. Try again in a moment.");
+    }
+  };
+
+  const handleExecutorCopy = async (
+    field: "endpoint" | "authorization",
+    value: string,
+  ) => {
+    setExecutorCopied(null);
+    if (!navigator.clipboard?.writeText) {
+      setExecutorFallback(field);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      setExecutorCopied(field);
+      setExecutorFallback(null);
+    } catch {
+      setExecutorFallback(field);
     }
   };
 
@@ -178,10 +204,69 @@ export function McpTokensCard() {
 
       <div className="mt-6 space-y-2 text-sm text-muted-foreground">
         <h3 className="font-medium text-foreground">Connect Executor</h3>
-        <p>Add an MCP source of type Streamable HTTP with these values:</p>
-        <pre className="overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
-          {`URL: ${endpoint}\nHeader: Authorization: Bearer <your token>`}
-        </pre>
+        <p>Copy each value into its matching Streamable HTTP source field.</p>
+        <div className="space-y-3 rounded-xl bg-muted p-3">
+          <label className="block space-y-1">
+            <span className="font-medium text-foreground">Endpoint URL</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                readOnly
+                aria-label="Executor endpoint URL"
+                value={executorSetup.endpoint}
+                onFocus={(event) => event.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void handleExecutorCopy("endpoint", executorSetup.endpoint)
+                }
+              >
+                {executorCopied === "endpoint" ? "Copied" : "Copy endpoint"}
+              </Button>
+            </div>
+          </label>
+          <label className="block space-y-1">
+            <span className="font-medium text-foreground">Authorization header value</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                readOnly
+                aria-label="Executor Authorization header value"
+                value={executorSetup.authorizationHeader}
+                onFocus={(event) => event.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void handleExecutorCopy(
+                    "authorization",
+                    executorSetup.authorizationHeader,
+                  )
+                }
+              >
+                {executorCopied === "authorization" ? "Copied" : "Copy header value"}
+              </Button>
+            </div>
+          </label>
+        </div>
+        {executorFallback ? (
+          <p role="alert">
+            Clipboard access is unavailable. Select the {executorFallback === "endpoint"
+              ? "endpoint URL"
+              : "Authorization header value"} above and copy it manually.
+          </p>
+        ) : null}
+        <a
+          href="https://github.com/Levidavidspublic/tempo-rhythm/blob/integration/docs/ops/EXECUTOR.md"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block font-medium text-foreground underline underline-offset-4"
+        >
+          Full guide
+        </a>
       </div>
     </section>
   );
