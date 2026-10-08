@@ -5,6 +5,11 @@ const MAX_ITEM_LENGTH = 1000;
 const BULLET_PREFIX = /^\s*(?:[-*\u2022]|\d+[.)])\s+/;
 const HEADING = /^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/;
 
+/** Actual UTF-8 size of a string, without Node-only APIs. */
+export function utf8ByteLength(text: string): number {
+	return new TextEncoder().encode(text).length;
+}
+
 function cleanItem(value: string): string | null {
 	const cleaned = value
 		.replace(BULLET_PREFIX, "")
@@ -106,13 +111,15 @@ function lineItems(text: string): string[] {
 export function parseMemoryExport(text: string, source: MemoryImportSource): string[] {
 	if (!text.trim() || /\0/.test(text)) return [];
 
-	let candidates: string[] | null = null;
+	let candidates: string[];
 	try {
-		candidates = jsonItems(JSON.parse(text), source);
+		// Successfully parsed JSON in an unsupported shape yields nothing, so account or
+		// profile metadata is never imported as memories.
+		candidates = jsonItems(JSON.parse(text), source) ?? [];
 	} catch {
 		// Export snippets are often incomplete JSON; treat those as ordinary pasted lines.
+		candidates = lineItems(text);
 	}
-	if (candidates === null) candidates = lineItems(text);
 
 	const seen = new Set<string>();
 	const result: string[] = [];

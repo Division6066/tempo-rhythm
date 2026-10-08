@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
-import { parseMemoryExport } from "./lib/memoryImport";
+import { parseMemoryExport, utf8ByteLength } from "./lib/memoryImport";
 import { requireUser } from "./lib/requireUser";
 
-const MAX_IMPORT_LENGTH = 1024 * 1024;
+const MAX_IMPORT_BYTES =1024 * 1024;
 const sourceValidator = v.union(
 	v.literal("chatgpt"),
 	v.literal("claude"),
@@ -16,7 +16,7 @@ export const importMemories = mutation({
 	returns: v.object({ added: v.number(), skipped: v.number() }),
 	handler: async (ctx, args) => {
 		const user = await requireUser(ctx);
-		if (args.text.length > MAX_IMPORT_LENGTH) {
+		if (utf8ByteLength(args.text) > MAX_IMPORT_BYTES) {
 			throw new Error("That memory import is too large. Keep it under 1 MB.");
 		}
 

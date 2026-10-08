@@ -153,6 +153,21 @@ describe("parseMemoryExport", () => {
 		expect(result[1]).toHaveLength(1000);
 	});
 
+	test("returns nothing for valid JSON in an unsupported shape", () => {
+		const metadata = { account_uuid: "abc-123", email: "someone@example.com", name: "Not a memory" };
+		for (const source of ["chatgpt", "claude", "grok", "other"] as const) {
+			expect(parseMemoryExport(JSON.stringify(metadata), source)).toEqual([]);
+			expect(
+				parseMemoryExport(JSON.stringify({ profile: metadata, memories: "text" }), source),
+			).toEqual([]);
+			expect(parseMemoryExport(JSON.stringify([metadata]), source)).toEqual([]);
+			expect(parseMemoryExport('"Likes tea"', source)).toEqual([]);
+			expect(parseMemoryExport("12345", source)).toEqual([]);
+			expect(parseMemoryExport("null", source)).toEqual([]);
+		}
+		expect(parseMemoryExport("Likes tea 2024", "other")).toEqual(["Likes tea 2024"]);
+	});
+
 	test("falls back from bad JSON and ignores empty or garbled input", () => {
 		expect(parseMemoryExport("[not valid\n- Still usable", "chatgpt")).toEqual([
 			"[not valid",
@@ -208,10 +223,31 @@ describe("importMemories", () => {
 		expect(rows.filter((row: Row) => row.userId === "users:a")).toHaveLength(1);
 	});
 
-	test("rejects text over one megabyte", async () => {
-		const { ctx } = makeFakeCtx();
-		await expect(
-			run(ctx, { source: "other", text: "x".repeat(1024 * 1024 + 1) }),
-		).rejects.toThrow("under 1 MB");
+	test("does not write unsupported valid JSON", async () => {
+		const { ctx, db } = makeFakeCtx();
+		const text = JSON.stringify({ account_uuid: "abc-123", name: "Not a memory" });
+		expect(await run(ctx, { source: "claude", text })).toEqual({ added: 0, skipped: 0 });
+		expect(await db.query("memories").collect()).toHaveLength(0);
+	});
+
+	test("enforces the one megabyte limit on UTF-8 bytes", async () => {
+		const limit = 1024 * 1024;
+		const cases: [string, string, boolean][] = [
+			["ascii at limit", "x".repeat(limit), true],
+			["ascii over limit", "x".repeat(limit + 1), false],
+			["multibyte at limit", "é".repeat(limit / 2), true],
+			["multibyte over limit", `${"é".repeat(limit / 2)}x`, false],
+			["multibyte over by bytes only", "é".repeat(limit / 2 + 10), false],
+			["emoji at limit", "😀".repeat(limit / 4), true],
+			["emoji over limit", `${"😀".repeat(limit / 4)}x`, false],
+			["cjk over by bytes only", "日".repeat(Math.floor(limit / 3) + 1), false],
+		];
+		for (const [label, text, ok] of cases) {
+			const { ctx, db } = makeFakeCtx();
+			const attempt = run(ctx, { source: "other", text });
+			if (ok) await expect(attempt).resolves.toBeDefined();
+			else await expect(attempt).rejects.toThrow("under 1 MB");
+			if (!ok) expect(await db.query("memories").collect(), label).toHaveLength(0);
+		}
 	});
 });
