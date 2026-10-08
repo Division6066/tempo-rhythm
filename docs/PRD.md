@@ -325,7 +325,7 @@ Channels: web PWA first (MVP), then APK + TestFlight (Gen 1), then the stores (V
 
 ## 13. Amendment — 8 October 2026
 
-> **Dated:** 8 Oct 2026. **Owner request:** Amit Levin. **Status:** product requirements and targets only. Nothing here says a feature is built, verified, compliant or clinically effective. Earlier sections stay as written; the pointers added above mark the only statements this amendment touches.
+> **Dated:** 8 Oct 2026. **Owner request:** Amit Levin. **Status:** product requirements and targets only. The new requirements here are proposed targets, not built features; the only exception is a capability this section explicitly identifies as already existing (for example the inbound Tempo planner MCP in R-08 and F-101). The proposed shared-memory extension of that MCP is not built. Nothing here says a feature is fully ready, newly verified, compliant or clinically effective. Earlier sections stay as written; the pointers added above mark the only statements this amendment touches.
 > **Status words:** **Target** = intended, not delivered. **Future** = real requirement, no date. **Verified** = proven by a recorded check; this amendment marks nothing Verified. **UNKNOWN** = not established.
 > **Privacy of this file:** generic product requirements only. No personal medical reports, family stories, research membership, book text or identifiable private third parties belong here.
 
