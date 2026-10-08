@@ -453,3 +453,161 @@ describe("habitCheckIns ownership and deletion", () => {
 		expect(other.removed).toBe(false);
 	});
 });
+
+async function snapshot(ctx: any) {
+	const state: Record<string, Row[]> = {};
+	for (const name of ["users", "habits", "habitCheckIns"]) {
+		state[name] = structuredClone(await ctx.db.query(name).collect());
+	}
+	return state;
+}
+
+async function seedFullState(ctx: any) {
+	const habitId = await addHabit(ctx, {
+		currentStreak: 3,
+		longestStreak: 7,
+		lastCompletedAt: 4242,
+		updatedAt: 77,
+	});
+	await addCheckIn(ctx, habitId, "2026-10-06");
+	await addCheckIn(ctx, habitId, "2026-10-05", { deletedAt: 9 });
+	const other = await addHabit(ctx, { userId: "users:b", currentStreak: 2, updatedAt: 55 });
+	await addCheckIn(ctx, other, "2026-10-06", { userId: "users:b" });
+	return habitId;
+}
+
+describe("habitCheckIns rejected calls leave complete persisted state unchanged", () => {
+	const NOW = "2026-10-07T12:00:00Z";
+	const format = "asOfLocalDate must be YYYY-MM-DD";
+	const window = "asOfLocalDate must be within one day of UTC today";
+	const rejected: Array<[string, string]> = [
+		["", format],
+		["2026-13-01", format],
+		["2026-02-30", format],
+		["2026-1-1", format],
+		["tomorrow", format],
+		["2026-10-07T00:00:00Z", format],
+		["2026-10-05", window],
+		["2026-10-09", window],
+		["2099-01-01", window],
+	];
+
+	for (const [value, message] of rejected) {
+		const label = JSON.stringify(value);
+		// 2026-10-01 has no row (write path); 2026-10-06 already has one (no-op path).
+		test(`check ${label}: write path`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await seedFullState(ctx);
+			const before = await snapshot(ctx);
+			await expect(check(ctx, habitId, "2026-10-01", value)).rejects.toThrow(message);
+			expect(await snapshot(ctx)).toEqual(before);
+		});
+
+		test(`check ${label}: already-checked path`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await seedFullState(ctx);
+			const before = await snapshot(ctx);
+			await expect(check(ctx, habitId, "2026-10-06", value)).rejects.toThrow(message);
+			expect(await snapshot(ctx)).toEqual(before);
+		});
+
+		test(`undo ${label}: write path`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await seedFullState(ctx);
+			const before = await snapshot(ctx);
+			await expect(undo(ctx, habitId, "2026-10-06", value)).rejects.toThrow(message);
+			expect(await snapshot(ctx)).toEqual(before);
+		});
+
+		test(`undo ${label}: nothing-to-remove path`, async () => {
+			setSystemTime(new Date(NOW));
+			const ctx = makeFakeCtx(USER);
+			const habitId = await seedFullState(ctx);
+			const before = await snapshot(ctx);
+			await expect(undo(ctx, habitId, "2026-10-01", value)).rejects.toThrow(message);
+			expect(await snapshot(ctx)).toEqual(before);
+		});
+	}
+
+	test("malformed localDate is rejected without changing state", async () => {
+		setSystemTime(new Date(NOW));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await seedFullState(ctx);
+		const before = await snapshot(ctx);
+		await expect(check(ctx, habitId, "2026-02-30", "2026-10-07")).rejects.toThrow(
+			"localDate must be YYYY-MM-DD",
+		);
+		await expect(undo(ctx, habitId, "", "2026-10-07")).rejects.toThrow(
+			"localDate must be YYYY-MM-DD",
+		);
+		expect(await snapshot(ctx)).toEqual(before);
+	});
+});
+
+describe("habitCheckIns as-of window across leap day (2028)", () => {
+	const message = "asOfLocalDate must be within one day of UTC today";
+
+	/** Accepted dates work for check and undo (write and no-op); rejected dates change nothing. */
+	async function expectWindow(now: string, accepted: string[], rejectedDates: string[]) {
+		setSystemTime(new Date(now));
+		for (const asOf of accepted) {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			expect((await check(ctx, habitId, "2028-02-01", asOf)).alreadyChecked).toBe(false);
+			expect((await check(ctx, habitId, "2028-02-01", asOf)).alreadyChecked).toBe(true);
+			expect((await undo(ctx, habitId, "2028-02-01", asOf)).removed).toBe(true);
+			expect((await undo(ctx, habitId, "2028-02-01", asOf)).removed).toBe(false);
+		}
+		for (const asOf of rejectedDates) {
+			const ctx = makeFakeCtx(USER);
+			const habitId = await addHabit(ctx);
+			await addCheckIn(ctx, habitId, "2028-02-02");
+			const before = await snapshot(ctx);
+			await expect(check(ctx, habitId, "2028-02-01", asOf)).rejects.toThrow(message);
+			await expect(check(ctx, habitId, "2028-02-02", asOf)).rejects.toThrow(message);
+			await expect(undo(ctx, habitId, "2028-02-02", asOf)).rejects.toThrow(message);
+			await expect(undo(ctx, habitId, "2028-02-01", asOf)).rejects.toThrow(message);
+			expect(await snapshot(ctx)).toEqual(before);
+		}
+	}
+
+	test("UTC Feb 28 spans Feb 27..Feb 29, rejects Feb 26 and Mar 1", async () => {
+		await expectWindow(
+			"2028-02-28T23:59:59Z",
+			["2028-02-27", "2028-02-28", "2028-02-29"],
+			["2028-02-26", "2028-03-01"],
+		);
+	});
+
+	test("UTC Feb 29 spans Feb 28..Mar 1, rejects Feb 27 and Mar 2", async () => {
+		await expectWindow(
+			"2028-02-29T12:00:00Z",
+			["2028-02-28", "2028-02-29", "2028-03-01"],
+			["2028-02-27", "2028-03-02"],
+		);
+	});
+
+	test("UTC Mar 1 spans Feb 29..Mar 2, rejects Feb 28 and Mar 3", async () => {
+		await expectWindow(
+			"2028-03-01T00:00:00Z",
+			["2028-02-29", "2028-03-01", "2028-03-02"],
+			["2028-02-28", "2028-03-03"],
+		);
+	});
+
+	test("Feb 29 is impossible in non-leap 2027 and the window skips it", async () => {
+		setSystemTime(new Date("2027-02-28T12:00:00Z"));
+		const ctx = makeFakeCtx(USER);
+		const habitId = await addHabit(ctx);
+		const before = await snapshot(ctx);
+		await expect(check(ctx, habitId, "2027-02-01", "2027-02-29")).rejects.toThrow(
+			"asOfLocalDate must be YYYY-MM-DD",
+		);
+		expect(await snapshot(ctx)).toEqual(before);
+		expect((await check(ctx, habitId, "2027-02-01", "2027-03-01")).alreadyChecked).toBe(false);
+		await expect(check(ctx, habitId, "2027-02-02", "2027-03-02")).rejects.toThrow(message);
+	});
+});
