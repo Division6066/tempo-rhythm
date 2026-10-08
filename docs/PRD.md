@@ -339,7 +339,7 @@ These are dated targets. They are not delivered work and not a promise that all 
 
 | Date | Target |
 |---|---|
-| 9 Oct | Critique of the actual screens. The parent owner keeps that document. This PRD creates no screenshots and makes no claim about the UI. |
+| 9 Oct | Critique of the actual screens. The critique report is maintained separately. This PRD creates no screenshots and makes no claim about the UI. |
 | 10 Oct | Preview target. |
 | 11 Oct | Demonstration. |
 
@@ -374,9 +374,10 @@ These are dated targets. They are not delivered work and not a promise that all 
 - **G-2. Voice evidence.** Tested browser and capture source, plus English and Hebrew results. Status: **UNKNOWN**.
 - **G-3. Integration access.** For each of Slack, Gmail, Outlook and WhatsApp: a supported API, an access route and secret setup. Status: **UNKNOWN**.
 - **G-4. Inbox source access.** Which links, PDFs, transcripts and social references Tempo may lawfully and technically read. Status: **UNKNOWN**.
-- **G-5. Shared-modification licence.** Undecided. No LICENSE change.
+- **G-5. Shared-modification licence.** The repository's current LICENSE is Business Source License 1.1. The open-source or fork-sharing licence Tempo wants is a future choice that is still undecided. This PRD changes no LICENSE and gives no legal guarantee about what others may do with the code.
 - **G-6. Book adaptation.** Depends on receipt of the book and on permission. Not started.
 - **G-7. Retention.** How long raw audio and imported source text are kept, and the exact deletion and retrieval-exclusion behaviour. Status: **UNKNOWN** beyond the rules above.
+- **G-8. Optional Sign in with ChatGPT (subscription login).** Unresolved. The official documentation covers open-source and local-app use and directs paid or remotely hosted apps to an interest route. Open-source status alone does not make this hosted Tempo app eligible. The preview gives no access to private ChatGPT conversations or account memory, and offers no audio or video input or transcription API. Not a promised weekend feature. No OAuth setup, legal acceptance, entitlement assertion or service call is made. Sources: https://developers.openai.com/siwc/token-sharing-open-source and https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations . Status: **UNKNOWN**.
 - **Verification status:** this amendment verifies nothing. No item in §13 is Verified.
 
 
