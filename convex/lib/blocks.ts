@@ -105,7 +105,7 @@ function tempoFences(body: string): TempoFence[] {
   let line: RegExpExecArray | null;
   while ((line = lines.exec(body)) !== null && line[0].length > 0) {
     const content = line[0].replace(/(?:\r\n|\r|\n)$/, "");
-    const fence = /^(?<indent> {0,3})(?<marks>`{3,}|~{3,})(?<info>.*)$/.exec(content);
+    const fence = /^(?<indent> {0,3})(?<marks>`{3,}|~{3,})(?<info>[^\r\n]*)$/.exec(content);
     if (!fence?.groups) continue;
     const marks = fence.groups.marks;
     const marker = marks[0] as "`" | "~";

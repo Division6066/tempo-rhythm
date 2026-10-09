@@ -135,6 +135,28 @@ describe("Tempo block codec", () => {
     }
   });
 
+  test("keeps Unicode separators inside ordinary-fence info strings", () => {
+    for (const separator of ["\u2028", "\u2029"]) {
+      for (const { opener, closer } of [
+        { opener: `\`\`\`\`markdown${separator}example`, closer: "````" },
+        { opener: `~~~markdown${separator}example`, closer: "~~~" },
+      ]) {
+        const body = `${opener}\n${fence(task)}${closer}\n${fence(meta)}`;
+        const parsed = parseTempoBlocks(body);
+
+        expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.meta]);
+        expect(parsed[0]).toEqual({
+          kind: "markdown",
+          source: `${opener}\n${fence(task)}${closer}\n`,
+          start: 0,
+          end: `${opener}\n${fence(task)}${closer}\n`.length,
+        });
+        expect(serializeTempoBlocks(parsed)).toBe(body);
+        expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
+      }
+    }
+  });
+
   test("does not broaden exact Tempo openers or closers with ordinary-fence whitespace", () => {
     const body = ` \`\`\`json tempo\n${JSON.stringify(task)}\n\`\`\`\n${fence(meta)}`;
     expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.meta]);
