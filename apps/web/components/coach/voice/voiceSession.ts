@@ -73,6 +73,47 @@ export function createVoiceSessionState(): VoiceSessionState {
   };
 }
 
+/** Read only own data properties; never invoke an adapter's accessor. */
+function ownData(value: unknown, key: string): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  if (!descriptor) return undefined;
+  if (!("value" in descriptor)) throw new Error("Accessor-backed voice event");
+  return descriptor.value;
+}
+
+function snapshotIdentity(value: unknown): VoiceIdentity {
+  // These captured values remain untrusted until invalidIdentity checks them.
+  return Object.freeze({
+    conversationId: ownData(value, "conversationId"),
+    turnId: ownData(value, "turnId"),
+    requestKey: ownData(value, "requestKey"),
+    generation: ownData(value, "generation"),
+  }) as VoiceIdentity;
+}
+
+function snapshotEvent(input: VoiceSessionEvent): VoiceSessionEvent | null {
+  try {
+    if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+    const type = ownData(input, "type");
+    if (typeof type !== "string") return null;
+    // A Proxy can change each descriptor it exposes. Capture each allowlisted
+    // field once, including nested identities, then validate/use only this copy.
+    return Object.freeze({
+      type,
+      identity: snapshotIdentity(ownData(input, "identity")),
+      next: snapshotIdentity(ownData(input, "next")),
+      text: ownData(input, "text"),
+      attempt: ownData(input, "attempt"),
+      crisis: ownData(input, "crisis"),
+      code: ownData(input, "code"),
+    }) as VoiceSessionEvent;
+  } catch {
+    // Accessors, revoked proxies and throwing descriptor traps cannot authorize effects.
+    return null;
+  }
+}
+
 function validOpaqueId(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -195,13 +236,10 @@ function started(
  */
 export function reduceVoiceSession(
   state: VoiceSessionState,
-  event: VoiceSessionEvent
+  input: VoiceSessionEvent
 ): VoiceSessionResult {
-  // Runtime adapters may supply malformed values despite the typed event contract.
-  if (!event || typeof event !== "object" || Array.isArray(event))
-    return rejected(state, "invalid_event");
-  if (!Object.hasOwn(event, "type") || typeof event.type !== "string")
-    return rejected(state, "invalid_event");
+  const event = snapshotEvent(input);
+  if (!event) return rejected(state, "invalid_event");
   switch (event.type) {
     case "start":
     case "replace":

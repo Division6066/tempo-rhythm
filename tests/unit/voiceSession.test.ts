@@ -130,6 +130,133 @@ describe("inactive voice session reducer", () => {
     );
   });
 
+  test("rejects own accessor fields without evaluating mutable or throwing getters", () => {
+    for (const key of ["type", "identity", "next", "text", "attempt", "crisis", "code"]) {
+      let reads = 0;
+      const event = Object.defineProperty({ type: "reply", identity: id, attempt: 0 }, key, {
+        get() { reads++; throw new Error("must not execute"); },
+      });
+      const state = awaiting().state;
+      const result = reduceVoiceSession(state, event as VoiceSessionEvent);
+      expect(result.rejected).toBe("invalid_event");
+      expect(result.state).toBe(state);
+      expect(result.effects).toEqual([]);
+      expect(reads).toBe(0);
+    }
+  });
+
+  test("rejects nested identity accessors before cancellation or capture", () => {
+    for (const field of ["identity", "next"]) {
+      for (const key of ["conversationId", "turnId", "requestKey", "generation"]) {
+        let reads = 0;
+        const supplied = Object.defineProperty({ ...(field === "identity" ? id : next) }, key, {
+          get() { reads++; return "changed"; },
+        });
+        const event = { type: "replace", identity: id, next, [field]: supplied };
+        const state = speaking().state;
+        const result = reduceVoiceSession(state, event as VoiceSessionEvent);
+        expect(result.rejected).toBe("invalid_event");
+        expect(result.state).toBe(state);
+        expect(result.effects).toEqual([]);
+        expect(reads).toBe(0);
+      }
+    }
+  });
+
+  test("captures proxy fields once so validated text and submitted payload stay identical", () => {
+    const reads = new Map<PropertyKey, number>();
+    const nestedReads = new Map<PropertyKey, number>();
+    const identity = new Proxy({ ...id }, {
+      get() { throw new Error("must use captured data descriptors"); },
+      getOwnPropertyDescriptor(target, key) {
+        const count = (nestedReads.get(key) ?? 0) + 1;
+        nestedReads.set(key, count);
+        const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+        return descriptor && { ...descriptor, value: count === 1 ? descriptor.value : "changed" };
+      },
+    });
+    const event = new Proxy({ type: "final", identity, text: "short" }, {
+      get() { throw new Error("must not execute property getters"); },
+      getOwnPropertyDescriptor(target, key) {
+        const count = (reads.get(key) ?? 0) + 1;
+        reads.set(key, count);
+        const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+        return descriptor && { ...descriptor, value: count === 1 ? descriptor.value : "x".repeat(5001) };
+      },
+    });
+    const result = reduceVoiceSession(start().state, event as VoiceSessionEvent);
+    expect(result.rejected).toBeUndefined();
+    expect(result.state.acceptedText).toBe("short");
+    expect(result.effects.find((effect) => effect.type === "submitTurn")).toEqual({
+      type: "submitTurn", identity: id, text: "short", attempt: 0,
+    });
+    expect([...reads.values()].every((count) => count === 1)).toBe(true);
+    expect([...nestedReads.values()]).toEqual([1, 1, 1, 1]);
+  });
+
+  test("proxy snapshots preserve attempt, crisis, error and bounds validation", () => {
+    const cases = [
+      { state: awaiting().state, event: { type: "reply", identity: id, text: "hello", crisis: false }, key: "type", later: "stop", reason: "invalid_attempt" },
+      { state: awaiting().state, event: { type: "reply", identity: id, text: "hello", crisis: false, attempt: 1 }, key: "attempt", later: 0, reason: "stale_event" },
+      { state: awaiting().state, event: { type: "failure", identity: id, code: "reply_failed" }, key: "code", later: "capture_failed", reason: "invalid_attempt" },
+      { state: start().state, event: { type: "final", identity: id, text: "x".repeat(5001) }, key: "text", later: "short", reason: "invalid_text" },
+      { state: awaiting().state, event: { type: "reply", identity: id, text: "hello", crisis: true, attempt: 0 }, key: "crisis", later: false, reason: undefined },
+    ];
+    for (const { state, event, key, later, reason } of cases) {
+      let reads = 0;
+      const proxy = new Proxy(event, {
+        getOwnPropertyDescriptor(target, property) {
+          const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
+          if (property !== key || !descriptor) return descriptor;
+          return { ...descriptor, value: ++reads === 1 ? descriptor.value : later };
+        },
+      });
+      const result = reduceVoiceSession(state, proxy as VoiceSessionEvent);
+      expect(reads).toBe(1);
+      expect(result.rejected).toBe(reason);
+      expect(result.effects.some((effect) => effect.type === "speak")).toBe(false);
+      if (reason) {
+        expect(result.state).toBe(state);
+        expect(result.effects).toEqual([]);
+      } else {
+        expect(result.state.phase).toBe("idle");
+      }
+    }
+  });
+
+  test("replacement copies each next identity field once before validating and capturing", () => {
+    const reads = new Map<PropertyKey, number>();
+    const supplied = new Proxy({ ...next }, {
+      getOwnPropertyDescriptor(target, key) {
+        const count = (reads.get(key) ?? 0) + 1;
+        reads.set(key, count);
+        const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+        return descriptor && { ...descriptor, value: count === 1 ? descriptor.value : -1 };
+      },
+    });
+    const result = reduceVoiceSession(start().state, { type: "replace", identity: id, next: supplied });
+    expect(result.rejected).toBeUndefined();
+    expect(result.state.identity).toEqual(next);
+    expect(result.state.identity).not.toBe(supplied);
+    expect(result.effects.at(-1)).toEqual({ type: "startCapture", identity: next });
+    expect([...reads.values()]).toEqual([1, 1, 1, 1]);
+  });
+
+  test("revoked and throwing proxies reject safely at every untrusted object boundary", () => {
+    const revoked = Proxy.revocable({}, {});
+    revoked.revoke();
+    const throwing = new Proxy({}, { getOwnPropertyDescriptor() { throw new Error("private"); } });
+    for (const malformed of [revoked.proxy, throwing]) {
+      for (const event of [malformed, { type: "stop", identity: malformed }, { type: "replace", identity: id, next: malformed }]) {
+        const state = start().state;
+        const result = reduceVoiceSession(state, event as VoiceSessionEvent);
+        expect(result.rejected).toBe("invalid_event");
+        expect(result.state).toBe(state);
+        expect(result.effects).toEqual([]);
+      }
+    }
+  });
+
   test("starts only explicitly, with a copied allowlisted identity and inert capture intent", () => {
     expect(createVoiceSessionState()).toEqual({
       phase: "idle",
