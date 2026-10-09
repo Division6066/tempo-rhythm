@@ -46,6 +46,7 @@ export type VoiceSessionResult = Readonly<{
   state: VoiceSessionState;
   effects: readonly VoiceSessionEffect[];
   rejected?:
+    | "invalid_event"
     | "invalid_identity"
     | "invalid_attempt"
     | "attempt_exhausted"
@@ -196,6 +197,27 @@ export function reduceVoiceSession(
   state: VoiceSessionState,
   event: VoiceSessionEvent
 ): VoiceSessionResult {
+  // Runtime adapters may supply malformed values despite the typed event contract.
+  if (!event || typeof event !== "object" || Array.isArray(event))
+    return rejected(state, "invalid_event");
+  switch (event.type) {
+    case "start":
+    case "replace":
+    case "bargeIn":
+    case "stop":
+    case "unmount":
+    case "revoke":
+    case "captureEnded":
+    case "playbackEnded":
+    case "interim":
+    case "final":
+    case "retry":
+    case "reply":
+    case "failure":
+      break;
+    default:
+      return rejected(state, "invalid_event");
+  }
   const invalid = invalidIdentity(event.identity);
   if (invalid) return rejected(state, invalid);
   if (event.type === "start") {

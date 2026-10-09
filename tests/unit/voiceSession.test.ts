@@ -7,7 +7,7 @@ import {
   type VoiceSessionError,
   type VoiceSessionEvent,
   type VoiceSessionState,
-} from "./voiceSession";
+} from "../../apps/web/components/coach/voice/voiceSession";
 
 const id: VoiceIdentity = {
   conversationId: "conversation-a",
@@ -43,6 +43,33 @@ const effectTypes = (result: ReturnType<typeof reduceVoiceSession>) =>
   result.effects.map((effect) => effect.type);
 
 describe("inactive voice session reducer", () => {
+  test("malformed envelopes are rejected without changing any session phase", () => {
+    for (const state of [createVoiceSessionState(), ...phases()]) {
+      for (const event of [null, undefined, false, true, 0, 1, "start", [], ["start"]]) {
+        const result = reduceVoiceSession(state, event as unknown as VoiceSessionEvent);
+        expect(result.rejected).toBe("invalid_event");
+        expect(result.state).toBe(state);
+        expect(result.effects).toEqual([]);
+      }
+    }
+  });
+
+  test("missing and unknown event discriminators reject even with a matching identity", () => {
+    for (const state of [createVoiceSessionState(), ...phases()]) {
+      for (const type of [undefined, null, "", "unknown", "toString", 1, {}, []]) {
+        const event = { identity: state.identity ?? id, type };
+        const result = reduceVoiceSession(state, event as unknown as VoiceSessionEvent);
+        expect(result.rejected).toBe("invalid_event");
+        expect(result.state).toBe(state);
+        expect(result.effects).toEqual([]);
+      }
+      const result = reduceVoiceSession(state, { identity: state.identity ?? id } as VoiceSessionEvent);
+      expect(result.rejected).toBe("invalid_event");
+      expect(result.state).toBe(state);
+      expect(result.effects).toEqual([]);
+    }
+  });
+
   test("starts only explicitly, with a copied allowlisted identity and inert capture intent", () => {
     expect(createVoiceSessionState()).toEqual({
       phase: "idle",
