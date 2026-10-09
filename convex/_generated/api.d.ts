@@ -15,6 +15,7 @@ import type * as approval from "../approval.js";
 import type * as auth from "../auth.js";
 import type * as brain_dump from "../brain_dump.js";
 import type * as calendar_events from "../calendar_events.js";
+import type * as chat from "../chat.js";
 import type * as coach from "../coach.js";
 import type * as conversations from "../conversations.js";
 import type * as crisis from "../crisis.js";
@@ -88,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   brain_dump: typeof brain_dump;
   calendar_events: typeof calendar_events;
+  chat: typeof chat;
   coach: typeof coach;
   conversations: typeof conversations;
   crisis: typeof crisis;
