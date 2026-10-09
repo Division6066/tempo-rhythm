@@ -71,6 +71,27 @@ describe("Tempo block codec", () => {
     ]);
   });
 
+  test("recognizes only Markdown CR, LF, and CRLF line boundaries", () => {
+    for (const eol of ["\r", "\n", "\r\n"]) {
+      const body = `prefix${eol}${fence(task, eol)}suffix`;
+      const parsed = parseTempoBlocks(body);
+
+      expect(validSegments(body), JSON.stringify(eol)).toHaveLength(1);
+      expect(serializeTempoBlocks(parsed)).toBe(body);
+      expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
+    }
+
+    for (const separator of ["\u2028", "\u2029"]) {
+      const body = `prefix${separator}${fence(task)}`;
+      const parsed = parseTempoBlocks(body);
+
+      expect(validSegments(body), JSON.stringify(separator)).toHaveLength(0);
+      expect(parsed).toEqual([{ kind: "markdown", source: body, start: 0, end: body.length }]);
+      expect(serializeTempoBlocks(parsed)).toBe(body);
+      expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
+    }
+  });
+
   test("applies CommonMark indentation to ordinary fences without consuming Tempo blocks", () => {
     const nestedTempo = fence(meta);
     const indentedContainer = `  \`\`\`\`markdown\n${nestedTempo}   \`\`\`\`\n`;

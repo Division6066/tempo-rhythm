@@ -99,12 +99,12 @@ function exactTempoCloser(content: string): boolean {
 
 function tempoFences(body: string): TempoFence[] {
   const matches: TempoFence[] = [];
-  const lines = /^.*(?:\r?\n|$)/gm;
+  const lines = /[^\r\n]*(?:\r\n|\r|\n|$)/g;
   let ordinaryFence: { marker: "`" | "~"; length: number } | undefined;
   let tempoFence: TempoFence | undefined;
   let line: RegExpExecArray | null;
   while ((line = lines.exec(body)) !== null && line[0].length > 0) {
-    const content = line[0].replace(/\r?\n$/, "");
+    const content = line[0].replace(/(?:\r\n|\r|\n)$/, "");
     const fence = /^(?<indent> {0,3})(?<marks>`{3,}|~{3,})(?<info>.*)$/.exec(content);
     if (!fence?.groups) continue;
     const marks = fence.groups.marks;
@@ -186,7 +186,7 @@ export function parseTempoBlocks(body: string): BlockSegment[] {
     const end = close ? close.index + close[0].length : body.length;
     const source = body.slice(start, end);
     const contentEnd = close ? close.index : body.length;
-    const jsonSource = body.slice(contentStart, contentEnd).replace(/(?:\r?\n)$/, "");
+    const jsonSource = body.slice(contentStart, contentEnd).replace(/(?:\r\n|\r|\n)$/, "");
     position += 1;
 
     if (!close) {
