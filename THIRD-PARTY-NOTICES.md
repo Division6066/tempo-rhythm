@@ -381,4 +381,4 @@ section here. Add the entry in the same PR that adds the dependency.
 - Version: 4.3.6
 - License: MIT
 - Source: https://github.com/colinhacks/zod
-- Used by: package.json
+- Used by: package.json, packages/utils/package.json
