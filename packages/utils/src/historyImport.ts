@@ -162,7 +162,10 @@ function sourceDate(value: unknown, provider: HistoryImportProvider): SourceDate
   )
     return invalid;
   if (zone !== "Z" && (Number(zone.slice(1, 3)) > 23 || Number(zone.slice(4)) > 59)) return invalid;
-  const ms = Date.parse(value);
+  // ECMAScript guarantees exactly three fractional digits. Pad short fractions
+  // and truncate sub-millisecond precision instead of relying on browser extensions.
+  const milliseconds = (match[7] ?? "").slice(0, 3).padEnd(3, "0");
+  const ms = Date.parse(`${value.slice(0, 19)}.${milliseconds}${zone}`);
   return Number.isFinite(ms) ? { dateStatus: "valid", occurredAtMs: ms } : invalid;
 }
 
@@ -226,8 +229,12 @@ export function parseHistoryImport(
   const records: HistoryImportRecord[] = [];
   for (const conversation of conversations) {
     for (const [key, node] of conversation.nodes) {
+      if (provider === "chatgpt") {
+        if (node === null) continue;
+        if (!isObject(node) || !Object.hasOwn(node, "message")) return reject("unsupported_shape");
+      }
       const message = provider === "chatgpt" ? own(node, "message") : node;
-      if (provider === "chatgpt" && (message === null || message === undefined)) continue;
+      if (provider === "chatgpt" && message === null) continue;
       if (!isObject(message)) return reject("unsupported_shape");
       const messageId =
         provider === "chatgpt" && !Object.hasOwn(message, "id")
@@ -261,6 +268,7 @@ export function parseHistoryImport(
         } else nonText++;
       } else {
         const plainText = own(message, "text");
+        if (Object.hasOwn(message, "text") && typeof plainText !== "string") nonText++;
         const parts = own(message, "content");
         const strings: string[] = [];
         if (Array.isArray(parts)) {

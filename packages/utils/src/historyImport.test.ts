@@ -629,6 +629,117 @@ describe("history normalization (synthetic fixtures only)", () => {
     rejected(parseHistoryImport(overflow, "chatgpt"), "conflicting_identity");
   });
 
+  test.each([
+    42,
+    false,
+    "malformed",
+    [[]],
+    {},
+    { other: "private" },
+    { message: 42 },
+    { message: [] },
+  ])("rejects malformed ChatGPT nodes throughout the scan %j", (node) => {
+    rejected(parse([{ id: "c", mapping: { malformed: node } }]), "unsupported_shape");
+    const conversation = gConversation(
+      "c",
+      Array.from({ length: 301 }, (_, i) => gMessage(String(i)))
+    );
+    rejected(
+      parse([{ ...conversation, mapping: { ...conversation.mapping, late: node } }]),
+      "unsupported_shape"
+    );
+  });
+
+  test("explicit null ChatGPT nodes/messages are allowed throughout the scan", () => {
+    const conversation = gConversation(
+      "c",
+      Array.from({ length: 301 }, (_, i) => gMessage(String(i)))
+    );
+    const result = parsed(
+      parse([
+        {
+          ...conversation,
+          mapping: { early: null, ...conversation.mapping, late: { message: null } },
+        },
+      ])
+    );
+    expect(result.coverage.scannedMessages).toBe(303);
+    expect(result.coverage.retainedRecords).toBe(300);
+    expect(result.coverage.omittedOverLimit).toBe(1);
+    const onlyNull = parsed(parse([{ id: "c", mapping: { a: null, b: { message: null } } }]));
+    expect(onlyNull.coverage.scannedMessages).toBe(2);
+    expect(onlyNull.records).toEqual([]);
+    expect(onlyNull.incomplete).toBe(false);
+  });
+
+  test.each([
+    ["1", 100],
+    ["12", 120],
+    ["123", 123],
+    ["123456", 123],
+    ["999999", 999],
+    ["000001", 0],
+  ] as const)("Claude fraction .%s is normalized to milliseconds", (fraction, millis) => {
+    for (const [clock, zone] of [
+      ["12:30:40", "Z"],
+      ["14:30:40", "+02:00"],
+      ["07:00:40", "-05:30"],
+    ]) {
+      const timestamp = `2024-02-29T${clock}.${fraction}${zone}`;
+      const record = parsed(
+        parse([cConversation("c", [cMessage("m", "x", { created_at: timestamp })])], "claude")
+      ).records[0];
+      expect(record?.dateStatus).toBe("valid");
+      expect(record?.occurredAtMs).toBe(1709209840000 + millis);
+      const impossible = timestamp.replace("2024-02-29", "2023-02-29");
+      const invalid = parsed(
+        parse([cConversation("c", [cMessage("m", "x", { created_at: impossible })])], "claude")
+      );
+      expect(invalid.records[0]?.dateStatus).toBe("invalid");
+      expect(invalid.records[0]).not.toHaveProperty("occurredAtMs");
+      expect(invalid.coverage.invalidDates).toBe(1);
+    }
+  });
+
+  test.each([
+    null,
+    42,
+    false,
+    [[]],
+    { secret: "discarded private body" },
+  ])("counts non-string Claude text with and without content fallback %j", (text) => {
+    for (const fallback of [false, true]) {
+      const message = cMessage("m", "", {
+        text,
+        ...(fallback ? { content: [{ type: "text", text: "review me" }] } : {}),
+      });
+      const result = parsed(parse([cConversation("c", [message])], "claude"));
+      expect(result.coverage.omittedNonText).toBe(1);
+      expect(result.coverage.omittedEmpty).toBe(fallback ? 0 : 1);
+      expect(result.incomplete).toBe(true);
+      expect(result.records.map((record) => record.content)).toEqual(fallback ? ["review me"] : []);
+      expect(JSON.stringify(result)).not.toContain("discarded private body");
+    }
+  });
+
+  test("absent or empty Claude text does not add a non-text omission", () => {
+    for (const text of [undefined, "", " "]) {
+      const result = parsed(
+        parse(
+          [
+            cConversation("c", [
+              cMessage("m", "", { text, content: [{ type: "text", text: "fallback" }] }),
+            ]),
+          ],
+          "claude"
+        )
+      );
+      expect(result.coverage.omittedNonText).toBe(0);
+      expect(result.coverage.omittedEmpty).toBe(0);
+      expect(result.incomplete).toBe(false);
+    }
+  });
+
   test("errors do not leak source content or identities", () => {
     for (const result of [
       parseHistoryImport('{"private marker"', "chatgpt"),
