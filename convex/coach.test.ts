@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { coachReplyForTechnique } from "./coach";
+import { coachReplyForTechnique, isOpenTask } from "./coach";
 
 const KNOWN_TECHNIQUES = [
   "pomodoro",
@@ -43,5 +43,18 @@ describe("coachReplyForTechnique", () => {
 
   test.each([...KNOWN_TECHNIQUES])("reply for %s carries no shame language", (technique) => {
     expect(coachReplyForTechnique(technique)).not.toMatch(SHAME_WORDS);
+  });
+});
+
+describe("isOpenTask", () => {
+  test("todo and in-progress tasks are open", () => {
+    expect(isOpenTask({ status: "todo", deletedAt: undefined })).toBe(true);
+    expect(isOpenTask({ status: "in_progress", deletedAt: undefined })).toBe(true);
+  });
+
+  test("done, cancelled and soft-deleted tasks are closed", () => {
+    expect(isOpenTask({ status: "done", deletedAt: undefined })).toBe(false);
+    expect(isOpenTask({ status: "cancelled", deletedAt: undefined })).toBe(false);
+    expect(isOpenTask({ status: "todo", deletedAt: 1 })).toBe(false);
   });
 });

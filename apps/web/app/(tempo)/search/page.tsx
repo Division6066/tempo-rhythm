@@ -1,23 +1,25 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: search
  * @category: You
  * @source: docs/design/claude-export/design-system/screens-5.jsx
  * @summary: Global search with previews.
- * @queries: search.everything
+ * @queries: search.all
  * @mutations: (none)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { Suspense } from "react";
+import { ProfileReady } from "@/components/today/ProfileReady";
+import { SearchScreen } from "@/components/global-search/SearchScreen";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Search"
-      category="You"
-      source="screens-5.jsx"
-      summary="Global search with previews."
-    />
+    <main className="mx-auto w-full max-w-4xl p-8" data-testid="search-route">
+      <h1 className="mb-6 font-heading text-4xl font-semibold text-foreground">Search</h1>
+      <ProfileReady>
+        <Suspense fallback={null}>
+          <SearchScreen />
+        </Suspense>
+      </ProfileReady>
+    </main>
   );
 }

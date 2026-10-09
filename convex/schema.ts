@@ -40,8 +40,21 @@ export default defineSchema({
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
+    /** Set when the person finishes onboarding. Absent until then. */
+    onboardedAt: v.optional(v.number()),
+    /**
+     * Sign-up approval gate (convex/lib/approval.ts). New accounts start "pending";
+     * an admin sets "approved" or "revoked". Absent on pre-gate rows (count as approved).
+     */
+    approvalStatus: v.optional(
+      v.union(v.literal("pending"), v.literal("approved"), v.literal("revoked")),
+    ),
+    approvalUpdatedAt: v.optional(v.number()),
+    /** Admin email, "cli" or "backfill". */
+    approvalUpdatedBy: v.optional(v.string()),
   })
     .index("by_email", ["email"])
+    .index("by_approvalStatus", ["approvalStatus"])
     .index("by_role", ["role"])
     .index("by_userType", ["userType"])
     .index("by_betaAccess", ["betaAccess"])
@@ -139,6 +152,8 @@ export default defineSchema({
     energy: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
     /** Planned effort in ms. */
     timeEstimate: v.optional(v.number()),
+    /** Absent = elastic. Elastic items reflow around fixed ones. */
+    flexibility: v.optional(v.union(v.literal("fixed"), v.literal("elastic"))),
     /** Record<"YYYY-MM-DD", number> — tracked ms per local day. */
     timeSpentOnDay: v.optional(v.any()),
     repeatCfgId: v.optional(v.id("taskRepeatCfgs")),
@@ -225,6 +240,19 @@ export default defineSchema({
     .index("by_userId_deletedAt_startsAtMs", ["userId", "deletedAt", "startsAtMs"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  focusBlocks: defineTable({
+    userId: v.id("users"),
+    startedAtMs: v.number(),
+    durationMs: v.number(),
+    label: v.optional(v.string()),
+    taskId: v.optional(v.id("tasks")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt_startedAtMs", ["userId", "deletedAt", "startedAtMs"]),
+
   notes: defineTable({
     userId: v.id("users"),
     title: v.string(),
@@ -274,4 +302,203 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  dayPlans: defineTable({
+    userId: v.id("users"),
+    /** "YYYY-MM-DD" in the user's local time (computed by the client). */
+    localDate: v.string(),
+    timezone: v.optional(v.string()),
+    intention: v.optional(v.string()),
+    /** Max 3, enforced in dayPlans.upsert. */
+    topTaskIds: v.optional(v.array(v.id("tasks"))),
+    energy: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+    status: v.union(v.literal("draft"), v.literal("committed")),
+    committedAt: v.optional(v.number()),
+    reflection: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_deletedAt_localDate", ["userId", "deletedAt", "localDate"]),
+
+  timeBlocks: defineTable({
+    userId: v.id("users"),
+    localDate: v.string(),
+    dayPlanId: v.optional(v.id("dayPlans")),
+    title: v.string(),
+    /** Minutes since local midnight, 0-1439. */
+    startMinute: v.number(),
+    /** 5-720. */
+    durationMinutes: v.number(),
+    startsAtMs: v.number(),
+    endsAtMs: v.number(),
+    kind: v.union(
+      v.literal("focus"),
+      v.literal("task"),
+      v.literal("habit"),
+      v.literal("break"),
+      v.literal("other"),
+    ),
+    taskId: v.optional(v.id("tasks")),
+    habitId: v.optional(v.id("habits")),
+    status: v.union(v.literal("planned"), v.literal("done"), v.literal("skipped")),
+    source: v.union(v.literal("user"), v.literal("coach")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_deletedAt_localDate", ["userId", "deletedAt", "localDate"])
+    .index("by_userId_deletedAt_startsAtMs", ["userId", "deletedAt", "startsAtMs"])
+    .index("by_taskId", ["taskId"]),
+
+  habitCheckIns: defineTable({
+    userId: v.id("users"),
+    habitId: v.id("habits"),
+    localDate: v.string(),
+    checkedAt: v.number(),
+    source: v.union(
+      v.literal("habits"),
+      v.literal("today"),
+      v.literal("suggestion"),
+      v.literal("legacy"),
+    ),
+    note: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt_localDate", ["userId", "deletedAt", "localDate"])
+    .index("by_habitId_deletedAt_localDate", ["habitId", "deletedAt", "localDate"]),
+
+  /**
+   * Page templates. Starter templates live in code (`convex/lib/templateCatalog.ts`)
+   * and are not rows. Rows here are templates the person saved.
+   */
+  templates: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    periodType: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("none"),
+    ),
+    body: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /** One row per person. Missing row means the defaults in convex/preferences.ts. */
+  userPreferences: defineTable({
+    userId: v.id("users"),
+    theme: v.union(v.literal("system"), v.literal("light"), v.literal("dark")),
+    locale: v.union(v.literal("en"), v.literal("he")),
+    weekStartsOn: v.union(v.literal(0), v.literal(1), v.literal(6)),
+    timeZone: v.string(),
+    emailReminders: v.boolean(),
+    inAppNotifications: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /** A reminder the person defines. Phrases are their own words or derived from them. */
+  nags: defineTable({
+    userId: v.id("users"),
+    label: v.string(),
+    enabled: v.boolean(),
+    phrases: v.array(
+      v.object({
+        id: v.string(),
+        text: v.string(),
+        source: v.union(v.literal("user"), v.literal("derived")),
+        status: v.union(v.literal("proposed"), v.literal("accepted"), v.literal("rejected")),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /** One row per person. Missing row means the defaults in convex/coach.ts. */
+  coachSettings: defineTable({
+    userId: v.id("users"),
+    /** Integer 0-10. */
+    dial: v.number(),
+    /** 2-4 tasks per proposal. */
+    taskLoad: v.number(),
+    panicUntil: v.optional(v.number()),
+    acceptedStreak: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /** A proposal built by code. The person accepts or rejects it. */
+  coachProposals: defineTable({
+    userId: v.id("users"),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("rejected")),
+    taskIds: v.array(v.id("tasks")),
+    tenSecondAction: v.string(),
+    realism: v.object({
+      ok: v.boolean(),
+      totalMinutes: v.number(),
+      availableMinutes: v.number(),
+      note: v.string(),
+    }),
+    createdAt: v.number(),
+    decidedAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_status", ["userId", "status"])
+    .index("by_userId_status_deletedAt", ["userId", "status", "deletedAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  notifications: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+    kind: v.union(v.literal("system"), v.literal("reminder"), v.literal("billing")),
+    readAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /**
+   * TEMPO-MCP-01 — personal MCP tokens. Only the SHA-256 hex of the token is stored.
+   * Revoked tokens stay as rows (`revokedAt`); they are never hard-deleted by the app.
+   * `windowStartMs` / `windowCount` back the 120 calls/minute rate limit.
+   */
+  mcpTokens: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    tokenHash: v.string(),
+    prefix: v.string(),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    windowStartMs: v.optional(v.number()),
+    windowCount: v.optional(v.number()),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_userId", ["userId"]),
 });

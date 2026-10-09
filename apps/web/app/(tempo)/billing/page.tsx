@@ -1,23 +1,13 @@
-/**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: billing
- * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Trial countdown + RevenueCat entitlement status.
- * @queries: billing.status
- * @mutations: (none)
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
- */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { ProfileReady } from "@/components/today/ProfileReady";
+import { BillingPlan } from "@/components/billing-plan/BillingPlan";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Trial & billing"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Trial countdown + RevenueCat entitlement status."
-    />
+    <div data-testid="billing-page" className="flex flex-col gap-6 p-6">
+      <h2 className="text-lg font-medium">Trial &amp; billing</h2>
+      <ProfileReady>
+        <BillingPlan />
+      </ProfileReady>
+    </div>
   );
 }

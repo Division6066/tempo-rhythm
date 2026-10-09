@@ -1,8 +1,9 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import {
   type CalendarViewMode,
   fromDateInputValue,
@@ -17,6 +18,18 @@ import {
   type StoredCalendarEvent,
   saveCalendarEvents,
 } from "@/lib/calendar/event-source";
+import {
+  getAddEventAuthState,
+  SIGNED_OUT_MESSAGE,
+  toAddEventErrorMessage,
+} from "./addEventGuard";
+import {
+  EventRow,
+  type EventRowActions,
+  type EventRowEvent,
+  UndoToast,
+  type UndoToastState,
+} from "./EventRow";
 
 const viewOptions: Array<{ mode: CalendarViewMode; label: string }> = [
   { mode: "day", label: "Day" },
@@ -96,7 +109,15 @@ function DueTaskList({
   );
 }
 
-function EventList({ events, mode }: { events: DisplayCalendarEvent[]; mode: CalendarViewMode }) {
+function EventList({
+  events,
+  mode,
+  actions,
+}: {
+  events: DisplayCalendarEvent[];
+  mode: CalendarViewMode;
+  actions?: EventRowActions;
+}) {
   return (
     <section
       aria-label={`${mode} events`}
@@ -107,20 +128,7 @@ function EventList({ events, mode }: { events: DisplayCalendarEvent[]; mode: Cal
       {events.length > 0 ? (
         <ul className="mt-4 space-y-3">
           {events.map((event) => (
-            <li
-              className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3"
-              key={event.id}
-            >
-              <p className="font-medium text-foreground">{event.title}</p>
-              <p className="mt-1 text-caption text-muted-foreground">
-                {new Date(event.startsAtMs).toLocaleDateString(undefined, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </p>
-            </li>
+            <EventRow actions={actions} event={event} key={event.id} />
           ))}
         </ul>
       ) : (
@@ -139,12 +147,12 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const [localEvents, setLocalEvents] = useState<StoredCalendarEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [undoToast, setUndoToast] = useState<UndoToastState | null>(null);
   const createConvexEvent = useMutation(api.calendar_events.create);
+  const updateConvexEvent = useMutation(api.calendar_events.update);
+  const removeConvexEvent = useMutation(api.calendar_events.remove);
+  const restoreConvexEvent = useMutation(api.calendar_events.restore);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const profile = useQuery(
-    api.users.getProfile,
-    eventSourceMode === "convex" && isAuthenticated ? {} : "skip"
-  );
 
   useEffect(() => {
     if (eventSourceMode === "local") {
@@ -157,7 +165,20 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
     () => getCalendarRangeMs(view, selectedDate ?? new Date()),
     [selectedDate, view]
   );
-  const hasConvexUser = eventSourceMode === "convex" && profile != null;
+  // listInRange / listDueInRange call requireUser, which THROWS while the backend identity or the
+  // user row isn't ready (e.g. during sign-in). getProfile returns null instead, so subscribe to the
+  // lists only once it has resolved a user; until then the page shows its loading state, not an error.
+  const profile = useQuery(
+    api.users.getProfile,
+    eventSourceMode === "convex" && isAuthenticated ? {} : "skip"
+  );
+  const authState = getAddEventAuthState({
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    profile,
+  });
+  const isAuthWaiting = eventSourceMode === "convex" && authState === "wait";
+  const hasConvexUser = eventSourceMode === "convex" && isAuthenticated && profile != null;
   const convexEvents = useQuery(
     api.calendar_events.listInRange,
     hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
@@ -181,9 +202,35 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const isLoading =
     eventSourceMode === "convex" &&
     (isAuthLoading ||
-      (isAuthenticated &&
-        (profile === undefined ||
-          (hasConvexUser && (convexEvents === undefined || dueTasks === undefined)))));
+      (isAuthenticated && profile === undefined) ||
+      (hasConvexUser && (convexEvents === undefined || dueTasks === undefined)));
+
+  const handleExpireToast = useCallback(() => setUndoToast(null), []);
+  const rowActions = useMemo<EventRowActions | undefined>(() => {
+    if (eventSourceMode !== "convex") return undefined;
+    return {
+      onUpdate: async (event: EventRowEvent, patch) => {
+        await updateConvexEvent({
+          eventId: event.id as Id<"calendarEvents">,
+          title: patch.title,
+          startsAtMs: patch.startsAtMs,
+        });
+      },
+      onDelete: async (event: EventRowEvent) => {
+        const result = await removeConvexEvent({ eventId: event.id as Id<"calendarEvents"> });
+        setUndoToast({ eventId: event.id, title: event.title, undoUntilMs: result.undoUntilMs });
+      },
+    };
+  }, [eventSourceMode, removeConvexEvent, updateConvexEvent]);
+
+  async function handleUndo() {
+    if (!undoToast) return;
+    const result = await restoreConvexEvent({ eventId: undoToast.eventId as Id<"calendarEvents"> });
+    if (!result.success) {
+      throw new Error("That event can no longer be restored.");
+    }
+    setUndoToast(null);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -207,13 +254,19 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
         saveCalendarEvents(nextEvents);
         setLocalEvents(nextEvents);
       } else {
-        if (!isAuthenticated || !profile) {
-          throw new Error("Sign in again to add calendar events.");
+        if (authState !== "ready") {
+          setIsSubmitting(false);
+          if (authState === "signed-out") setError(SIGNED_OUT_MESSAGE);
+          return;
         }
-        await createConvexEvent({ title: cleanTitle, startsAtMs });
+        try {
+          await createConvexEvent({ title: cleanTitle, startsAtMs });
+        } catch (createErr) {
+          setError(toAddEventErrorMessage(createErr));
+          return;
+        }
       }
       setTitle("");
-      setView("day");
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "We could not add that event yet.");
@@ -261,16 +314,28 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
         <div className="flex flex-col justify-end">
           <button
             className="min-h-11 rounded-2xl bg-primary px-5 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAuthWaiting}
             type="submit"
           >
-            {isSubmitting ? "Adding..." : "Add event"}
+            {isAuthWaiting
+              ? "Getting your calendar ready…"
+              : isSubmitting
+                ? "Adding..."
+                : "Add event"}
           </button>
         </div>
 
         {error ? (
           <p className="text-small text-destructive md:col-span-3" role="alert">
             {error}
+            {error === SIGNED_OUT_MESSAGE ? (
+              <>
+                {" "}
+                <a className="underline" href="/sign-in?redirect=/calendar">
+                  Sign in
+                </a>
+              </>
+            ) : null}
           </p>
         ) : null}
       </form>
@@ -304,10 +369,13 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
         </section>
       ) : (
         <>
-          <EventList events={visibleEvents} mode={view} />
+          <EventList actions={rowActions} events={visibleEvents} mode={view} />
           {hasConvexUser ? <DueTaskList tasks={dueTasks ?? []} /> : null}
         </>
       )}
+      {undoToast ? (
+        <UndoToast onExpire={handleExpireToast} onUndo={handleUndo} toast={undoToast} />
+      ) : null}
     </main>
   );
 }

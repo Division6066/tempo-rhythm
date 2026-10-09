@@ -1,23 +1,13 @@
-/**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: notifications
- * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Quiet notification settings.
- * @queries: users.notificationPrefs
- * @mutations: users.updateNotificationPrefs
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
- */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { ProfileReady } from "@/components/today/ProfileReady";
+import { NotificationsList } from "@/components/notifications-preferences/NotificationsList";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Notifications"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Quiet notification settings."
-    />
+    <div data-testid="notifications-page" className="flex flex-col gap-6 p-6">
+      <h2 className="text-lg font-medium">Notifications</h2>
+      <ProfileReady>
+        <NotificationsList />
+      </ProfileReady>
+    </div>
   );
 }

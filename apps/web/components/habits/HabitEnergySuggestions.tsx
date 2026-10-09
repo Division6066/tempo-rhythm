@@ -10,6 +10,8 @@ import {
   resolveEnergySuggestion,
   type EnergySuggestion,
 } from "@tempo/utils";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { localDateKey } from "../habit-checkin-strip/checkedState";
 
 type HabitEnergySource = {
   _id: Id<"habits">;
@@ -38,7 +40,10 @@ export function HabitEnergySuggestions({
 }: {
   habits: readonly HabitEnergySource[];
 }) {
-  const completeToday = useMutation(api.habits.completeToday);
+  // Accepting a suggestion is a check-in (source "suggestion"), so HabitsLibrary and the
+  // Today check-in strip, which read habitCheckIns, both show it as done.
+  const checkIn = useMutation(api.habitCheckIns.check);
+  const bounds = useLocalDayBounds();
   const [suggestions, setSuggestions] = useState<EnergySuggestion[]>(() =>
     suggestionsFromHabits(habits),
   );
@@ -56,7 +61,11 @@ export function HabitEnergySuggestions({
   const accept = async (suggestionId: string) => {
     setPendingId(suggestionId);
     try {
-      await completeToday({ habitId: suggestionId as Id<"habits"> });
+      await checkIn({
+        habitId: suggestionId as Id<"habits">,
+        localDate: localDateKey(new Date(bounds.startMs)),
+        source: "suggestion",
+      });
       setSuggestions((current) =>
         resolveEnergySuggestion(current, suggestionId, "accepted"),
       );

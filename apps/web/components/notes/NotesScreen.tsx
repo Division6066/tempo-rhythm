@@ -8,6 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { NoteNotFound } from "./NoteNotFound";
+import { UndoDeleteToast } from "./UndoDeleteToast";
 
 type NoteRecord = Doc<"notes">;
 
@@ -18,6 +20,26 @@ function sortPinnedFirst(notes: NoteRecord[]): NoteRecord[] {
   });
 }
 
+export const PIN_SIGNED_OUT_COPY = "Sign in to pin notes.";
+export const PIN_ERROR_COPY = "We couldn't update that pin. Try again in a moment.";
+
+export type PinToggleOutcome = "toggled" | "signed-out" | "error";
+
+export async function runPinToggle(
+  isAuthenticated: boolean,
+  toggle: () => Promise<unknown>,
+): Promise<PinToggleOutcome> {
+  if (!isAuthenticated) return "signed-out";
+  try {
+    await toggle();
+    return "toggled";
+  } catch {
+    return "error";
+  }
+}
+
+export { sortPinnedFirst };
+
 function snippet(body: string): string {
   const trimmed = body.trim();
   if (!trimmed) return "No content yet.";
@@ -27,6 +49,14 @@ function snippet(body: string): string {
 type NotesScreenProps = {
   noteId?: string;
 };
+
+export type NoteLoadState = "loading" | "not-found" | "ready";
+
+export function getNoteLoadState(note: NoteRecord | null | undefined): NoteLoadState {
+  if (note === undefined) return "loading";
+  if (note === null) return "not-found";
+  return "ready";
+}
 
 export function NotesScreen({ noteId }: NotesScreenProps) {
   if (noteId) {
@@ -44,6 +74,8 @@ function NotesList() {
   const removeNote = useMutation(api.notes.remove);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [pinningId, setPinningId] = useState<string | null>(null);
+  const [pinMessage, setPinMessage] = useState<string | null>(null);
 
   const isLoading = isAuthenticated && notes === undefined;
   const visibleNotes = sortPinnedFirst(notes ?? []);
@@ -60,7 +92,16 @@ function NotesList() {
   };
 
   const handleTogglePin = async (id: Id<"notes">) => {
-    await togglePin({ noteId: id });
+    if (pinningId) return;
+    setPinMessage(null);
+    setPinningId(id);
+    try {
+      const outcome = await runPinToggle(isAuthenticated, () => togglePin({ noteId: id }));
+      if (outcome === "signed-out") setPinMessage(PIN_SIGNED_OUT_COPY);
+      else if (outcome === "error") setPinMessage(PIN_ERROR_COPY);
+    } finally {
+      setPinningId(null);
+    }
   };
 
   const handleDelete = async (id: Id<"notes">) => {
@@ -87,6 +128,12 @@ function NotesList() {
             New note
           </Button>
         </header>
+
+        {pinMessage ? (
+          <p role="alert" className="text-sm text-muted-foreground">
+            {pinMessage}
+          </p>
+        ) : null}
 
         {visibleNotes.length === 0 && !isLoading ? (
           <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
@@ -116,6 +163,7 @@ function NotesList() {
                     <Button
                       type="button"
                       variant="outline"
+                      disabled={pinningId !== null}
                       aria-label={note.pinned ? `Unpin ${note.title || "Untitled note"}` : `Pin ${note.title || "Untitled note"}`}
                       onClick={() => void handleTogglePin(note._id)}
                     >
@@ -161,18 +209,24 @@ type SaveState = "idle" | "saving" | "saved";
 function NoteEditor({ noteId }: { noteId: string }) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
+  // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
+  // During sign-in getProfile resolves safely while the user record is being created.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const note = useQuery(
-    api.notes.get,
-    isAuthenticated ? { noteId: noteId as Id<"notes"> } : "skip",
+    api.notes.getSafe,
+    isAuthenticated && profile != null ? { noteId } : "skip",
   );
   const updateNote = useMutation(api.notes.update);
   const togglePin = useMutation(api.notes.togglePin);
   const removeNote = useMutation(api.notes.remove);
+  const restoreNote = useMutation(api.notes.restore);
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [undoUntilMs, setUndoUntilMs] = useState<number | null>(null);
+  const wasDeleted = useRef(false);
   const loadedNoteId = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef("");
@@ -194,7 +248,9 @@ function NoteEditor({ noteId }: { noteId: string }) {
       if (!saveTimer.current) return;
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
-      void updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+      if (!wasDeleted.current) {
+        void updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+      }
     };
   }, [noteId, updateNote]);
 
@@ -225,11 +281,53 @@ function NoteEditor({ noteId }: { noteId: string }) {
   };
 
   const handleDelete = async () => {
-    await removeNote({ noteId: noteId as Id<"notes"> });
-    router.push("/notes");
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      await updateNote({
+        noteId: noteId as Id<"notes">,
+        title: titleRef.current,
+        body: bodyRef.current,
+      });
+    }
+    const result = await removeNote({ noteId: noteId as Id<"notes"> });
+    wasDeleted.current = true;
+    setUndoUntilMs(result.undoUntilMs);
+    window.history.replaceState(window.history.state, "", "/notes");
   };
 
-  if (note === undefined && isAuthenticated) {
+  const handleUndo = async () => {
+    const result = await restoreNote({ noteId: noteId as Id<"notes"> });
+    if (!result.success) return;
+    wasDeleted.current = false;
+    setConfirmingDelete(false);
+    window.history.replaceState(window.history.state, "", `/notes/${noteId}`);
+    setUndoUntilMs(null);
+    router.refresh();
+  };
+
+  const handleUndoExpire = () => {
+    // replaceState above changed the visible URL without changing Next's mounted route.
+    // A document navigation guarantees the deleted editor is unmounted on expiry.
+    window.location.replace("/notes");
+  };
+
+  if (undoUntilMs !== null) {
+    return (
+      <>
+        <NotesList />
+        <UndoDeleteToast
+          undoUntilMs={undoUntilMs}
+          onUndo={handleUndo}
+          onExpire={handleUndoExpire}
+        />
+      </>
+    );
+  }
+
+  const loadState = getNoteLoadState(note);
+
+  if (loadState === "loading" && isAuthenticated) {
     return (
       <main className="container mx-auto max-w-3xl px-6 py-12">
         <p className="text-muted-foreground">Loading note.</p>
@@ -237,17 +335,8 @@ function NoteEditor({ noteId }: { noteId: string }) {
     );
   }
 
-  if (note === null) {
-    return (
-      <main className="container mx-auto max-w-3xl px-6 py-12">
-        <div className="space-y-4">
-          <Link href="/notes" className="text-sm font-medium text-primary">
-            ← Back to notes
-          </Link>
-          <p className="text-lg font-medium text-foreground">This note could not be found.</p>
-        </div>
-      </main>
-    );
+  if (loadState === "not-found") {
+    return <NoteNotFound />;
   }
 
   return (
