@@ -91,13 +91,17 @@ export type BrokenBlockSegment = SourceSegment & {
 };
 export type BlockSegment = MarkdownSegment | ValidBlockSegment | BrokenBlockSegment;
 
-const closer = /^```[\t ]*(?:\r?\n|$)/gm;
+type TempoFence = { opener: RegExpExecArray; closer?: RegExpExecArray };
 
-function tempoOpenerMatches(body: string): RegExpExecArray[] {
-  const matches: RegExpExecArray[] = [];
+function exactTempoCloser(content: string): boolean {
+  return /^```[\t ]*$/.test(content);
+}
+
+function tempoFences(body: string): TempoFence[] {
+  const matches: TempoFence[] = [];
   const lines = /^.*(?:\r?\n|$)/gm;
   let ordinaryFence: { marker: "`" | "~"; length: number } | undefined;
-  let tempoFence = false;
+  let tempoFence: TempoFence | undefined;
   let line: RegExpExecArray | null;
   while ((line = lines.exec(body)) !== null && line[0].length > 0) {
     const content = line[0].replace(/\r?\n$/, "");
@@ -107,15 +111,18 @@ function tempoOpenerMatches(body: string): RegExpExecArray[] {
     const marker = marks[0] as "`" | "~";
     const info = fence.groups.info;
     if (tempoFence) {
-      if (marks === "```" && /^\s*$/.test(info)) tempoFence = false;
+      if (exactTempoCloser(content)) {
+        tempoFence.closer = line;
+        tempoFence = undefined;
+      }
     } else if (ordinaryFence) {
-      if (marker === ordinaryFence.marker && marks.length >= ordinaryFence.length && /^\s*$/.test(info)) {
+      if (marker === ordinaryFence.marker && marks.length >= ordinaryFence.length && /^[\t ]*$/.test(info)) {
         ordinaryFence = undefined;
       }
     } else if (fence.groups.indent === "" && marks === "```" && /^json tempo[\t ]*$/.test(info)) {
-      matches.push(line);
-      tempoFence = true;
-    } else {
+      tempoFence = { opener: line };
+      matches.push(tempoFence);
+    } else if (marker === "~" || !info.includes("`")) {
       ordinaryFence = { marker, length: marks.length };
     }
   }
@@ -168,17 +175,15 @@ export function parseTempoBlocks(body: string): BlockSegment[] {
   let seenPageMeta = false;
   let cursor = 0;
   let position = 0;
-  const openings = tempoOpenerMatches(body);
+  const fences = tempoFences(body);
 
-  for (const match of openings) {
+  for (const { opener: match, closer: close } of fences) {
     const start = match.index;
     if (start < cursor) continue;
     if (start > cursor) segments.push({ kind: "markdown", source: body.slice(cursor, start), start: cursor, end: start });
 
     const contentStart = start + match[0].length;
-    closer.lastIndex = contentStart;
-    const close = closer.exec(body);
-    const end = close ? closer.lastIndex : body.length;
+    const end = close ? close.index + close[0].length : body.length;
     const source = body.slice(start, end);
     const contentEnd = close ? close.index : body.length;
     const jsonSource = body.slice(contentStart, contentEnd).replace(/(?:\r?\n)$/, "");
@@ -208,15 +213,15 @@ export function parseTempoBlocks(body: string): BlockSegment[] {
       cursor = end;
       continue;
     }
+    const sourceId = syntacticallyValidBlockId(value);
+    const duplicateId = sourceId !== undefined && seenIds.has(sourceId);
+    if (sourceId !== undefined) seenIds.add(sourceId);
+
     if (jsonDepth(value) > BLOCK_CODEC_LIMITS.maxJsonDepth) {
       segments.push(broken(source, start, end, position, "nesting_too_deep", value));
       cursor = end;
       continue;
     }
-
-    const sourceId = syntacticallyValidBlockId(value);
-    const duplicateId = sourceId !== undefined && seenIds.has(sourceId);
-    if (sourceId !== undefined) seenIds.add(sourceId);
 
     const result = tempoBlockSchema.safeParse(value);
     if (duplicateId) {

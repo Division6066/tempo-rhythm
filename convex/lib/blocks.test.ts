@@ -88,6 +88,44 @@ describe("Tempo block codec", () => {
     expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
   });
 
+  test("uses the exact Tempo closer in both fence passes", () => {
+    const body =
+      fence(task).replace("\n```\n", "\n ```\n````markdown\n```\n") + fence(meta) + "````\n";
+    const parsed = parseTempoBlocks(body);
+
+    expect(brokenCodes(body)).toEqual(["malformed_json"]);
+    expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.meta]);
+    expect(serializeTempoBlocks(parsed)).toBe(body);
+    expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
+  });
+
+  test("distinguishes CommonMark backtick and tilde info-string rules", () => {
+    const cases = [
+      { prefix: "```markdown\n```\n", expected: 1 },
+      { prefix: "```markdown ` invalid\n", expected: 1 },
+      { prefix: "~~~markdown ` allowed\n~~~\n", expected: 1 },
+      { prefix: "~~~markdown ` allowed and unclosed\n", expected: 0 },
+    ];
+
+    for (const { prefix, expected } of cases) {
+      const body = prefix + fence(task);
+      expect(validSegments(body), prefix).toHaveLength(expected);
+      expect(serializeTempoBlocks(parseTempoBlocks(body))).toBe(body);
+    }
+  });
+
+  test("does not broaden exact Tempo openers or closers with ordinary-fence whitespace", () => {
+    const body = ` \`\`\`json tempo\n${JSON.stringify(task)}\n\`\`\`\n${fence(meta)}`;
+    expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.meta]);
+    expect(serializeTempoBlocks(parseTempoBlocks(body))).toBe(body);
+
+    for (const closing of [" ```", "\t```", "```\v"]) {
+      const candidate = fence(task).replace("\n```\n", `\n${closing}\n`) + fence(meta);
+      expect(serializeTempoBlocks(parseTempoBlocks(candidate))).toBe(candidate);
+      expect(validSegments(candidate)).toHaveLength(0);
+    }
+  });
+
   test("keeps malformed JSON and unclosed fences as broken source", () => {
     const malformed = "```json tempo\n{ nope }\n```\n";
     const unclosed = "tail\n```json tempo\n{}";
@@ -119,6 +157,17 @@ describe("Tempo block codec", () => {
       "duplicate_id",
     ]);
     const body = fence(invalidData) + fence(task);
+    expect(serializeTempoBlocks(parseTempoBlocks(body))).toBe(body);
+  });
+
+  test("reserves a parsed ID before rejecting excessive nesting", () => {
+    let nested: unknown = "leaf";
+    for (let index = 0; index <= BLOCK_CODEC_LIMITS.maxJsonDepth; index += 1) nested = [nested];
+    const deep = { ...task, data: nested };
+    const body = fence(deep) + fence(task);
+
+    expect(brokenCodes(body)).toEqual(["nesting_too_deep", "duplicate_id"]);
+    expect(validSegments(body)).toHaveLength(0);
     expect(serializeTempoBlocks(parseTempoBlocks(body))).toBe(body);
   });
 
