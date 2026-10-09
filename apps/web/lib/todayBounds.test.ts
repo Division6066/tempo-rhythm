@@ -157,21 +157,36 @@ describe("useLocalDayBounds lifecycle", () => {
       };
       let nextTimerId = 1;
       const timers = new Map();
+      const timerCallbacks = [];
       const cleared = [];
       globalThis.setTimeout = (callback, delay) => {
         const id = nextTimerId++;
         timers.set(id, { callback, delay });
+        timerCallbacks.push(callback);
         return id;
       };
       globalThis.clearTimeout = (id) => { cleared.push(id); timers.delete(id); };
+
+      const assertSingleTimer = (expectedDelay, label) => {
+        if (timers.size > 1) throw new Error(label + " left more than one pending timer");
+        if (timers.size !== 1 || [...timers.values()][0].delay !== expectedDelay) {
+          throw new Error(label + " did not install the exact replacement delay");
+        }
+      };
 
       const { useLocalDayBounds } = await import(${JSON.stringify(hookModuleUrl)});
       const returned = useLocalDayBounds();
       if (!effect || returned.startMs !== state.startMs) throw new Error("hook did not initialize");
       const cleanup = effect();
-      if (timers.size !== 1) throw new Error("initial timer count");
+      const initialStart = new Date(2026, 2, 8).getTime();
+      const initialEnd = new Date(2026, 2, 9).getTime();
+      const initialOffsets = [new Date(initialStart).getTimezoneOffset(), new Date(initialEnd).getTimezoneOffset()];
+      if (initialOffsets[0] !== 300 || initialOffsets[1] !== 240) {
+        throw new Error("New York fixture offsets unavailable");
+      }
+      if (state.startMs !== initialStart || state.endMs !== initialEnd) throw new Error("initial DST bounds");
+      assertSingleTimer(initialEnd - now + 50, "initial mount");
       const first = [...timers.entries()][0];
-      if (first[1].delay !== new Date(2026, 2, 9).getTime() - now + 50) throw new Error("DST delay");
 
       documentTarget.hidden = true;
       documentTarget.dispatch("visibilitychange");
@@ -183,32 +198,75 @@ describe("useLocalDayBounds lifecycle", () => {
       if (timers.size !== 1 || !cleared.includes(first[0]) || state.startMs !== new Date(2026, 2, 9).getTime()) {
         throw new Error("visible refresh did not replace timer with current clock");
       }
+      assertSingleTimer(new Date(2026, 2, 10).getTime() - now + 50, "first visible resume");
 
       const beforeFocusId = [...timers.keys()][0];
       windowTarget.dispatch("focus");
       if (timers.size !== 1 || !cleared.includes(beforeFocusId)) throw new Error("focus duplicated timer");
+      assertSingleTimer(new Date(2026, 2, 10).getTime() - now + 50, "first focus");
+
+      process.env.TZ = "Asia/Kolkata";
+      now = new Date(2026, 3, 15, 12, 34, 56, 789).getTime();
+      const changedStart = new Date(2026, 3, 15).getTime();
+      const changedEnd = new Date(2026, 3, 16).getTime();
+      if (new Date(changedStart).getTimezoneOffset() !== -330 || new Date(changedEnd).getTimezoneOffset() !== -330) {
+        throw new Error("runtime timezone change fixture unavailable");
+      }
+
+      for (let index = 0; index < 2; index += 1) {
+        const focusTimerId = [...timers.keys()][0];
+        windowTarget.dispatch("focus");
+        if (!cleared.includes(focusTimerId)) throw new Error("repeated focus did not replace timer");
+        if (state.startMs !== changedStart || state.endMs !== changedEnd) {
+          throw new Error("timezone change did not update both calendar endpoints");
+        }
+        assertSingleTimer(changedEnd - now + 50, "repeated focus " + index);
+
+        documentTarget.hidden = true;
+        documentTarget.dispatch("visibilitychange");
+        assertSingleTimer(changedEnd - now + 50, "hidden pause " + index);
+        documentTarget.hidden = false;
+        const resumeTimerId = [...timers.keys()][0];
+        documentTarget.dispatch("visibilitychange");
+        if (!cleared.includes(resumeTimerId)) throw new Error("repeated resume did not replace timer");
+        assertSingleTimer(changedEnd - now + 50, "repeated visible resume " + index);
+      }
 
       const firing = [...timers.entries()][0];
-      now = new Date(2026, 2, 10, 0, 0, 0, 50).getTime();
+      now = new Date(2026, 3, 16, 0, 0, 0, 50).getTime();
       timers.delete(firing[0]);
       firing[1].callback();
-      if (timers.size !== 1 || state.startMs !== new Date(2026, 2, 10).getTime()) throw new Error("tick did not update and rearm");
+      if (state.startMs !== changedEnd || state.endMs !== new Date(2026, 3, 17).getTime()) {
+        throw new Error("tick did not update both endpoints");
+      }
+      assertSingleTimer(new Date(2026, 3, 17).getTime() - now + 50, "timer tick");
 
       const updatesBeforeCleanup = updates;
-      const pending = [...timers.entries()][0];
       cleanup();
       if (timers.size !== 0 || documentTarget.listeners.size !== 0 || windowTarget.listeners.size !== 0) {
         throw new Error("cleanup incomplete");
       }
-      pending[1].callback();
+      for (const callback of timerCallbacks) callback();
       if (updates !== updatesBeforeCleanup || timers.size !== 0) throw new Error("cancelled callback updated or rearmed");
-      console.log(JSON.stringify({ updates, cleared: cleared.length }));
+      console.log(JSON.stringify({
+        updates,
+        cleared: cleared.length,
+        initialOffsets,
+        changedOffsets: [new NativeDate(changedStart).getTimezoneOffset(), new NativeDate(changedEnd).getTimezoneOffset()],
+        changedBounds: [changedStart, changedEnd],
+      }));
     `;
     const result = spawnSync(process.execPath, ["-e", script], {
       env: { ...process.env, TZ: "America/New_York" },
       stdio: "pipe",
     });
     expect(result.status, result.stderr.toString()).toBe(0);
-    expect(JSON.parse(result.stdout.toString())).toEqual({ updates: 2, cleared: 3 });
+    expect(JSON.parse(result.stdout.toString())).toEqual({
+      updates: 3,
+      cleared: 7,
+      initialOffsets: [300, 240],
+      changedOffsets: [-330, -330],
+      changedBounds: [Date.parse("2026-04-14T18:30:00.000Z"), Date.parse("2026-04-15T18:30:00.000Z")],
+    });
   });
 });
