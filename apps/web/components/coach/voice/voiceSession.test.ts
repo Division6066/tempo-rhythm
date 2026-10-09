@@ -22,6 +22,7 @@ const awaiting = () =>
 const speaking = () =>
   reduceVoiceSession(awaiting().state, {
     type: "reply",
+    attempt: 0,
     identity: id,
     text: "One small step",
     crisis: false,
@@ -31,8 +32,12 @@ const phases = (): VoiceSessionState[] => [
   reduceVoiceSession(start().state, { type: "captureEnded", identity: id }).state,
   awaiting().state,
   speaking().state,
-  reduceVoiceSession(awaiting().state, { type: "failure", identity: id, code: "reply_failed" })
-    .state,
+  reduceVoiceSession(awaiting().state, {
+    type: "failure",
+    identity: id,
+    code: "reply_failed",
+    attempt: 0,
+  }).state,
 ];
 const effectTypes = (result: ReturnType<typeof reduceVoiceSession>) =>
   result.effects.map((effect) => effect.type);
@@ -42,6 +47,7 @@ describe("inactive voice session reducer", () => {
     expect(createVoiceSessionState()).toEqual({
       phase: "idle",
       generation: -1,
+      replyAttempt: 0,
       identity: null,
       interimText: "",
       acceptedText: null,
@@ -82,7 +88,7 @@ describe("inactive voice session reducer", () => {
     expect(final.state.phase).toBe("awaitingReply");
     expect(final.effects).toEqual([
       { type: "cancelCapture", identity: id },
-      { type: "submitTurn", identity: id, text },
+      { type: "submitTurn", attempt: 0, identity: id, text },
     ]);
     expect(reduceVoiceSession(final.state, { type: "final", identity: id, text }).effects).toEqual(
       []
@@ -99,20 +105,31 @@ describe("inactive voice session reducer", () => {
       type: "failure",
       identity: id,
       code: "reply_failed",
+      attempt: 0,
     });
     expect(failed.state.phase).toBe("error");
     expect(failed.state.retryable).toBe(true);
     expect(failed.state.acceptedText).toBe(text);
     expect(
-      reduceVoiceSession(failed.state, { type: "retry", identity: id, text: text.trim() }).rejected
+      reduceVoiceSession(failed.state, {
+        type: "retry",
+        attempt: 0,
+        identity: id,
+        text: text.trim(),
+      }).rejected
     ).toBe("request_key_reused");
-    const retry = reduceVoiceSession(failed.state, { type: "retry", identity: id, text });
-    expect(retry.effects).toEqual([{ type: "submitTurn", identity: id, text }]);
+    const retry = reduceVoiceSession(failed.state, {
+      type: "retry",
+      attempt: 0,
+      identity: id,
+      text,
+    });
+    expect(retry.effects).toEqual([{ type: "submitTurn", attempt: 1, identity: id, text }]);
     expect(retry.state.error).toBeNull();
     expect(retry.state.phase).toBe("awaitingReply");
-    expect(reduceVoiceSession(retry.state, { type: "retry", identity: id, text }).effects).toEqual(
-      []
-    );
+    expect(
+      reduceVoiceSession(retry.state, { type: "retry", attempt: 0, identity: id, text }).effects
+    ).toEqual([]);
     expect(reduceVoiceSession(failed.state, { type: "final", identity: id, text }).effects).toEqual(
       []
     );
@@ -134,6 +151,7 @@ describe("inactive voice session reducer", () => {
     });
     expect(final.effects[1]).toEqual({
       type: "submitTurn",
+      attempt: 0,
       identity: next,
       text: "Plan one thing",
     });
@@ -155,10 +173,10 @@ describe("inactive voice session reducer", () => {
       const late: VoiceSessionEvent[] = [
         { type: "interim", identity: id, text: "late" },
         { type: "final", identity: id, text: "late" },
-        { type: "reply", identity: id, text: "late", crisis: false },
+        { type: "reply", attempt: 0, identity: id, text: "late", crisis: false },
         { type: "playbackEnded", identity: id },
-        { type: "failure", identity: id, code: "reply_failed" },
-        { type: "retry", identity: id, text: "Plan one thing" },
+        { type: "failure", identity: id, code: "reply_failed", attempt: 0 },
+        { type: "retry", attempt: 0, identity: id, text: "Plan one thing" },
         { type, identity: id },
       ];
       for (const event of late) {
@@ -188,6 +206,7 @@ describe("inactive voice session reducer", () => {
       expect(
         reduceVoiceSession(replaced.state, {
           type: "reply",
+          attempt: 0,
           identity: id,
           text: "old",
           crisis: false,
@@ -226,6 +245,7 @@ describe("inactive voice session reducer", () => {
     const pending = awaiting().state;
     const reply: VoiceSessionEvent = {
       type: "reply",
+      attempt: 0,
       identity: id,
       text: "Hello שלום",
       crisis: false,
@@ -239,6 +259,7 @@ describe("inactive voice session reducer", () => {
     expect(finished.state.identity).toBeNull();
     const crisis = reduceVoiceSession(pending, {
       type: "reply",
+      attempt: 0,
       identity: id,
       text: "resources",
       crisis: true,
@@ -264,10 +285,10 @@ describe("inactive voice session reducer", () => {
       { type: "replace", identity: wrong, next },
       { type: "bargeIn", identity: wrong, next },
       { type: "final", identity: wrong, text: "hello" },
-      { type: "retry", identity: wrong, text: "Plan one thing" },
-      { type: "reply", identity: wrong, text: "hello", crisis: false },
+      { type: "retry", attempt: 0, identity: wrong, text: "Plan one thing" },
+      { type: "reply", attempt: 0, identity: wrong, text: "hello", crisis: false },
       { type: "playbackEnded", identity: wrong },
-      { type: "failure", identity: wrong, code: "reply_failed" },
+      { type: "failure", identity: wrong, code: "reply_failed", attempt: 0 },
     ];
     for (const state of phases())
       for (const event of events) {
@@ -288,7 +309,8 @@ describe("inactive voice session reducer", () => {
     expect(result.state.phase).toBe("error");
     expect(result.state.retryable).toBe(false);
     expect(
-      reduceVoiceSession(result.state, { type: "retry", identity: id, text: "hello" }).effects
+      reduceVoiceSession(result.state, { type: "retry", attempt: 0, identity: id, text: "hello" })
+        .effects
     ).toEqual([]);
   });
 
@@ -304,7 +326,7 @@ describe("inactive voice session reducer", () => {
     const bad = reduceVoiceSession(start().state, {
       type: "failure",
       identity: id,
-      code: "private provider exception" as VoiceSessionError,
+      code: "private provider exception" as Exclude<VoiceSessionError, "reply_failed">,
     });
     expect(bad.rejected).toBe("invalid_error");
     expect(JSON.stringify(bad)).not.toContain("private provider exception");
@@ -339,8 +361,13 @@ describe("inactive voice session reducer", () => {
         reduceVoiceSession(start().state, { type: "interim", identity: id, text }).state.interimText
       ).toBe(text);
       expect(
-        reduceVoiceSession(awaiting().state, { type: "reply", identity: id, text, crisis: false })
-          .effects[0]
+        reduceVoiceSession(awaiting().state, {
+          type: "reply",
+          attempt: 0,
+          identity: id,
+          text,
+          crisis: false,
+        }).effects[0]
       ).toEqual({ type: "speak", identity: id, text });
     }
     expect(
@@ -350,6 +377,7 @@ describe("inactive voice session reducer", () => {
     expect(
       reduceVoiceSession(awaiting().state, {
         type: "reply",
+        attempt: 0,
         identity: id,
         text: "x".repeat(4001),
         crisis: false,
@@ -457,14 +485,150 @@ describe("inactive voice session reducer", () => {
     }
   });
 
+  test("retry fences delayed failure, success and crisis from the previous attempt", () => {
+    const failed = reduceVoiceSession(awaiting().state, {
+      type: "failure",
+      identity: id,
+      code: "reply_failed",
+      attempt: 0,
+    });
+    const retry = reduceVoiceSession(failed.state, {
+      type: "retry",
+      identity: id,
+      text: "Plan one thing",
+      attempt: 0,
+    });
+    expect(retry.state.replyAttempt).toBe(1);
+    expect(retry.effects).toEqual([
+      { type: "submitTurn", identity: id, text: "Plan one thing", attempt: 1 },
+    ]);
+    const late: VoiceSessionEvent[] = [
+      { type: "failure", identity: id, code: "reply_failed", attempt: 0 },
+      { type: "reply", identity: id, text: "stale success", crisis: false, attempt: 0 },
+      { type: "reply", identity: id, text: "stale crisis", crisis: true, attempt: 0 },
+    ];
+    for (const event of late) {
+      const ignored = reduceVoiceSession(retry.state, event);
+      expect(ignored.rejected).toBe("stale_event");
+      expect(ignored.state).toBe(retry.state);
+      expect(ignored.effects).toEqual([]);
+      const success = reduceVoiceSession(ignored.state, {
+        type: "reply",
+        identity: id,
+        text: "current success",
+        crisis: false,
+        attempt: 1,
+      });
+      expect(success.state.phase).toBe("speaking");
+      expect(success.effects).toEqual([{ type: "speak", identity: id, text: "current success" }]);
+      expect(reduceVoiceSession(success.state, event).state).toBe(success.state);
+    }
+  });
+
+  test("successive retries fence stale retry clicks while preserving durable identity and text", () => {
+    let state = awaiting().state;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      state = reduceVoiceSession(state, {
+        type: "failure",
+        identity: id,
+        code: "reply_failed",
+        attempt,
+      }).state;
+      if (attempt > 0) {
+        const stale = reduceVoiceSession(state, {
+          type: "retry",
+          identity: id,
+          text: "Plan one thing",
+          attempt: attempt - 1,
+        });
+        expect(stale.rejected).toBe("stale_event");
+        expect(stale.effects).toEqual([]);
+      }
+      const retry = reduceVoiceSession(state, {
+        type: "retry",
+        identity: id,
+        text: "Plan one thing",
+        attempt,
+      });
+      expect(retry.state.identity).toEqual(id);
+      expect(retry.state.acceptedText).toBe("Plan one thing");
+      expect(retry.state.replyAttempt).toBe(attempt + 1);
+      expect(retry.effects).toEqual([
+        { type: "submitTurn", identity: id, text: "Plan one thing", attempt: attempt + 1 },
+      ]);
+      state = retry.state;
+    }
+    const stopped = reduceVoiceSession(state, { type: "stop", identity: id }).state;
+    expect(stopped.acceptedText).toBeNull();
+    expect(
+      reduceVoiceSession(stopped, {
+        type: "reply",
+        identity: id,
+        text: "late",
+        crisis: false,
+        attempt: 3,
+      }).effects
+    ).toEqual([]);
+    const restarted = reduceVoiceSession(stopped, { type: "start", identity: next }).state;
+    expect(restarted.replyAttempt).toBe(0);
+    expect(
+      reduceVoiceSession(restarted, {
+        type: "failure",
+        identity: id,
+        code: "reply_failed",
+        attempt: 0,
+      }).rejected
+    ).toBe("stale_event");
+  });
+
+  test.each([
+    -1,
+    0.5,
+    NaN,
+    Infinity,
+    Number.MAX_SAFE_INTEGER + 1,
+    undefined,
+  ])("rejects malformed reply attempt %s", (value) => {
+    const attempt = value as number;
+    const pending = awaiting().state;
+    for (const event of [
+      { type: "reply", identity: id, text: "reply", crisis: false, attempt },
+      { type: "failure", identity: id, code: "reply_failed", attempt },
+    ] as VoiceSessionEvent[]) {
+      const result = reduceVoiceSession(pending, event);
+      expect(result.rejected).toBe("invalid_attempt");
+      expect(result.effects).toEqual([]);
+      expect(result.state).toBe(pending);
+    }
+  });
+
+  test("reply attempt exhaustion rejects retry without wrapping or changing the request", () => {
+    const state: VoiceSessionState = {
+      ...awaiting().state,
+      replyAttempt: Number.MAX_SAFE_INTEGER,
+      phase: "error",
+      retryable: true,
+      error: "reply_failed",
+    };
+    const result = reduceVoiceSession(state, {
+      type: "retry",
+      identity: id,
+      text: "Plan one thing",
+      attempt: Number.MAX_SAFE_INTEGER,
+    });
+    expect(result.rejected).toBe("attempt_exhausted");
+    expect(result.state).toBe(state);
+    expect(result.effects).toEqual([]);
+  });
+
   test("public transitions are deterministic and never mutate frozen inputs", () => {
     const events: VoiceSessionEvent[] = [
       { type: "start", identity: id },
       { type: "interim", identity: id, text: "שלום" },
       { type: "final", identity: id, text: "שלום\r\n😀" },
-      { type: "failure", identity: id, code: "reply_failed" },
-      { type: "retry", identity: id, text: "שלום\r\n😀" },
-      { type: "reply", identity: id, text: "reply", crisis: false },
+      { type: "failure", identity: id, code: "reply_failed", attempt: 0 },
+      { type: "retry", attempt: 0, identity: id, text: "שלום\r\n😀" },
+      { type: "reply", attempt: 1, identity: id, text: "reply", crisis: false },
       { type: "bargeIn", identity: id, next },
       { type: "stop", identity: next },
     ];

@@ -19,28 +19,36 @@ export type VoiceSessionState = Readonly<{
   identity: VoiceIdentity | null;
   interimText: string;
   acceptedText: string | null;
+  /** Local callback fence; never part of the durable request key or payload. */
+  replyAttempt: number;
   retryable: boolean;
   error: VoiceSessionError | null;
   /** Content-free guard against immediate request-key reuse after teardown. */
   lastRequest: Readonly<{ conversationId: string; requestKey: string }> | null;
 }>;
 type Identified = Readonly<{ identity: VoiceIdentity }>;
+type ReplyAttempt = Readonly<{ attempt: number }>;
 export type VoiceSessionEvent =
   | ({ type: "start" } & Identified)
   | ({ type: "replace" | "bargeIn"; next: VoiceIdentity } & Identified)
   | ({ type: "stop" | "unmount" | "revoke" | "captureEnded" | "playbackEnded" } & Identified)
-  | ({ type: "interim" | "final" | "retry"; text: string } & Identified)
-  | ({ type: "reply"; text: string; crisis: boolean } & Identified)
-  | ({ type: "failure"; code: VoiceSessionError } & Identified);
+  | ({ type: "interim" | "final"; text: string } & Identified)
+  | ({ type: "retry"; text: string } & Identified & ReplyAttempt)
+  | ({ type: "reply"; text: string; crisis: boolean } & Identified & ReplyAttempt)
+  | ({ type: "failure"; code: "reply_failed" } & Identified & ReplyAttempt)
+  | ({ type: "failure"; code: Exclude<VoiceSessionError, "reply_failed"> } & Identified);
 export type VoiceSessionEffect = Readonly<
   | ({ type: "startCapture" | "cancelCapture" | "cancelPlayback" | "clearBuffers" } & Identified)
-  | ({ type: "submitTurn" | "speak"; text: string } & Identified)
+  | ({ type: "submitTurn"; text: string } & Identified & ReplyAttempt)
+  | ({ type: "speak"; text: string } & Identified)
 >;
 export type VoiceSessionResult = Readonly<{
   state: VoiceSessionState;
   effects: readonly VoiceSessionEffect[];
   rejected?:
     | "invalid_identity"
+    | "invalid_attempt"
+    | "attempt_exhausted"
     | "invalid_generation"
     | "generation_exhausted"
     | "stale_event"
@@ -57,6 +65,7 @@ export function createVoiceSessionState(): VoiceSessionState {
     identity: null,
     interimText: "",
     acceptedText: null,
+    replyAttempt: 0,
     retryable: false,
     error: null,
     lastRequest: null,
@@ -163,6 +172,7 @@ function started(
       identity,
       interimText: "",
       acceptedText: null,
+      replyAttempt: 0,
       retryable: false,
       error: null,
       lastRequest: { conversationId: identity.conversationId, requestKey: identity.requestKey },
@@ -174,6 +184,9 @@ function started(
 /**
  * All asynchronous events and explicit teardown/replacement events must identify the
  * current session. A caller starting from idle must supply a newer generation.
+ * Adapters must echo each submitTurn attempt on its reply/reply_failed callbacks;
+ * Retry references the failed attempt and increments this local fence without changing
+ * the durable request key or accepted text. A delayed previous attempt has no effects.
  * Request-key/content checks cover the current turn (and immediate key reuse); durable
  * deduplication across older sessions belongs to the canonical backend, not this reducer.
  * clearBuffers means adapter capture/playback buffers; a reply-failure retry keeps only
@@ -191,6 +204,15 @@ export function reduceVoiceSession(
   }
   if (!matches(state.identity, event.identity)) return rejected(state, "stale_event");
   const identity = state.identity!;
+  if (
+    event.type === "reply" ||
+    event.type === "retry" ||
+    (event.type === "failure" && event.code === "reply_failed")
+  ) {
+    if (!Number.isSafeInteger(event.attempt) || event.attempt < 0)
+      return rejected(state, "invalid_attempt");
+    if (event.attempt !== state.replyAttempt) return rejected(state, "stale_event");
+  }
   switch (event.type) {
     case "stop":
     case "unmount":
@@ -228,7 +250,7 @@ export function reduceVoiceSession(
         state: { ...state, phase: "awaitingReply", interimText: "", acceptedText: event.text },
         effects: [
           { type: "cancelCapture", identity },
-          { type: "submitTurn", identity, text: event.text },
+          { type: "submitTurn", identity, text: event.text, attempt: state.replyAttempt },
         ],
       };
     case "retry":
@@ -236,9 +258,24 @@ export function reduceVoiceSession(
         return rejected(state, "request_key_reused");
       if (state.phase !== "error" || !state.retryable || state.acceptedText === null)
         return rejected(state, "invalid_transition");
+      if (state.replyAttempt === Number.MAX_SAFE_INTEGER)
+        return rejected(state, "attempt_exhausted");
       return {
-        state: { ...state, phase: "awaitingReply", retryable: false, error: null },
-        effects: [{ type: "submitTurn", identity, text: state.acceptedText }],
+        state: {
+          ...state,
+          phase: "awaitingReply",
+          replyAttempt: state.replyAttempt + 1,
+          retryable: false,
+          error: null,
+        },
+        effects: [
+          {
+            type: "submitTurn",
+            identity,
+            text: state.acceptedText,
+            attempt: state.replyAttempt + 1,
+          },
+        ],
       };
     case "reply":
       if (state.phase !== "awaitingReply") return rejected(state, "invalid_transition");
