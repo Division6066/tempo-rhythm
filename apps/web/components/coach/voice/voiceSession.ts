@@ -200,6 +200,8 @@ export function reduceVoiceSession(
   // Runtime adapters may supply malformed values despite the typed event contract.
   if (!event || typeof event !== "object" || Array.isArray(event))
     return rejected(state, "invalid_event");
+  if (!Object.hasOwn(event, "type") || typeof event.type !== "string")
+    return rejected(state, "invalid_event");
   switch (event.type) {
     case "start":
     case "replace":

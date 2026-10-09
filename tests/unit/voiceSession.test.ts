@@ -70,6 +70,66 @@ describe("inactive voice session reducer", () => {
     }
   });
 
+  test("inherited discriminators never authorize effects in any session phase", () => {
+    const types: VoiceSessionEvent["type"][] = [
+      "start",
+      "replace",
+      "bargeIn",
+      "stop",
+      "unmount",
+      "revoke",
+      "captureEnded",
+      "playbackEnded",
+      "interim",
+      "final",
+      "retry",
+      "reply",
+      "failure",
+    ];
+    for (const state of [createVoiceSessionState(), ...phases()]) {
+      for (const type of types) {
+        const event = Object.assign(Object.create({ type }), {
+          identity: state.identity ?? id,
+          next,
+          text: "Plan one thing",
+          attempt: state.replyAttempt,
+          crisis: false,
+          code: "reply_failed",
+          hasOwnProperty: () => true,
+        });
+        const result = reduceVoiceSession(state, event);
+        expect(result.rejected).toBe("invalid_event");
+        expect(result.state).toBe(state);
+        expect(result.effects).toEqual([]);
+      }
+    }
+  });
+
+  test("rejects inherited type getters without evaluating them", () => {
+    let reads = 0;
+    const prototype = Object.defineProperty({}, "type", {
+      get() {
+        reads += 1;
+        return "stop";
+      },
+    });
+    const state = start().state;
+    const event = Object.assign(Object.create(prototype), { identity: id });
+    const result = reduceVoiceSession(state, event);
+    expect(result.rejected).toBe("invalid_event");
+    expect(result.state).toBe(state);
+    expect(result.effects).toEqual([]);
+    expect(reads).toBe(0);
+  });
+
+  test("accepts an own valid discriminator on a null-prototype envelope", () => {
+    const event = Object.assign(Object.create(null), { type: "stop", identity: id });
+    const state = start().state;
+    expect(reduceVoiceSession(state, event)).toEqual(
+      reduceVoiceSession(state, { type: "stop", identity: id })
+    );
+  });
+
   test("starts only explicitly, with a copied allowlisted identity and inert capture intent", () => {
     expect(createVoiceSessionState()).toEqual({
       phase: "idle",
