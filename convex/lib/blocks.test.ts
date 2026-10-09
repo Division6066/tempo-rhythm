@@ -71,6 +71,23 @@ describe("Tempo block codec", () => {
     ]);
   });
 
+  test("applies CommonMark indentation to ordinary fences without consuming Tempo blocks", () => {
+    const nestedTempo = fence(meta);
+    const indentedContainer = `  \`\`\`\`markdown\n${nestedTempo}   \`\`\`\`\n`;
+    const body = `${indentedContainer}${fence(task)}`;
+    const parsed = parseTempoBlocks(body);
+
+    expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.task]);
+    expect(parsed[0]).toEqual({
+      kind: "markdown",
+      source: indentedContainer,
+      start: 0,
+      end: indentedContainer.length,
+    });
+    expect(serializeTempoBlocks(parsed)).toBe(body);
+    expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
+  });
+
   test("keeps malformed JSON and unclosed fences as broken source", () => {
     const malformed = "```json tempo\n{ nope }\n```\n";
     const unclosed = "tail\n```json tempo\n{}";
@@ -89,6 +106,36 @@ describe("Tempo block codec", () => {
     expect(brokenCodes(fence(meta) + fence({ ...meta, id: ids.template }))).toEqual([
       "duplicate_page_meta",
     ]);
+  });
+
+  test("reserves valid source IDs even when their first block is semantically broken", () => {
+    const invalidData = { ...task, data: { ...task.data, title: "" } };
+    const duplicateMeta = { ...meta, id: ids.template };
+    const laterTaskWithMetaId = { ...task, id: ids.template };
+
+    expect(brokenCodes(fence(invalidData) + fence(task))).toEqual(["invalid_data", "duplicate_id"]);
+    expect(brokenCodes(fence(meta) + fence(duplicateMeta) + fence(laterTaskWithMetaId))).toEqual([
+      "duplicate_page_meta",
+      "duplicate_id",
+    ]);
+    const body = fence(invalidData) + fence(task);
+    expect(serializeTempoBlocks(parseTempoBlocks(body))).toBe(body);
+  });
+
+  test("accepts only real calendar dates and ULIDs without overflow", () => {
+    for (const date of ["2024-02-29", "2026-01-31", "2026-12-31"]) {
+      expect(validSegments(fence({ ...meta, data: { ...meta.data, date } }))).toHaveLength(1);
+    }
+    for (const date of ["2023-02-29", "2026-02-30", "2026-04-31", "2026-13-01", "0000-00-00"]) {
+      expect(brokenCodes(fence({ ...meta, data: { ...meta.data, date } }))).toEqual(["invalid_data"]);
+    }
+
+    const overflowId = "blk_8" + "0".repeat(25);
+    expect(validSegments(fence({ ...task, id: "blk_7" + "Z".repeat(25) }))).toHaveLength(1);
+    expect(brokenCodes(fence({ ...task, id: overflowId }))).toEqual(["invalid_data"]);
+    const brokenOverflow = parseTempoBlocks(fence({ ...task, id: overflowId, v: 2 }))[0];
+    expect(brokenOverflow).toMatchObject({ kind: "broken", errorCode: "unsupported_version" });
+    expect(brokenOverflow?.kind === "broken" && brokenOverflow.blockId).toBeUndefined();
   });
 
   test("does not invent IDs for broken source but retains a syntactically valid source ID", () => {
@@ -115,5 +162,19 @@ describe("Tempo block codec", () => {
     for (const body of [hugeBody, hugeBlock, deep, repeated]) {
       expect(serializeTempoBlocks(parseTempoBlocks(body))).toBe(body);
     }
+  });
+
+  test("enforces every named string, text, and array limit at its boundary", () => {
+    const shortAtLimit = "s".repeat(BLOCK_CODEC_LIMITS.maxShortStringChars);
+    const textAtLimit = "t".repeat(BLOCK_CODEC_LIMITS.maxTextChars);
+    const arrayAtLimit = Array.from({ length: BLOCK_CODEC_LIMITS.maxArrayItems }, () => shortAtLimit);
+
+    expect(validSegments(fence({ ...meta, data: { ...meta.data, tags: arrayAtLimit } }))).toHaveLength(1);
+    expect(validSegments(fence({ ...task, data: { ...task.data, title: textAtLimit, reason: textAtLimit } }))).toHaveLength(1);
+    expect(validSegments(fence({ ...template, data: { ...template.data, name: textAtLimit, tokens: arrayAtLimit } }))).toHaveLength(1);
+
+    expect(brokenCodes(fence({ ...meta, data: { ...meta.data, tags: [shortAtLimit + "x"] } }))).toEqual(["invalid_data"]);
+    expect(brokenCodes(fence({ ...task, data: { ...task.data, title: textAtLimit + "x" } }))).toEqual(["invalid_data"]);
+    expect(brokenCodes(fence({ ...template, data: { ...template.data, tokens: [...arrayAtLimit, "x"] } }))).toEqual(["invalid_data"]);
   });
 });

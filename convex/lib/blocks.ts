@@ -13,9 +13,13 @@ export const BLOCK_CODEC_LIMITS = {
 const shortString = z.string().max(BLOCK_CODEC_LIMITS.maxShortStringChars);
 const text = z.string().min(1).max(BLOCK_CODEC_LIMITS.maxTextChars);
 const pageType = z.enum(["daily", "weekly", "project", "plain", "template"]);
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const isoDate = z.string().refine((value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const timestamp = Date.parse(`${value}T00:00:00Z`);
+  return !Number.isNaN(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value;
+}, "Invalid calendar date");
 const isoDateTime = z.string().datetime({ offset: true });
-const blockId = z.string().regex(/^blk_[0-9A-HJKMNP-TV-Z]{26}$/);
+const blockId = z.string().regex(/^blk_[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
 
 export const pageMetaDataSchema = z
   .object({
@@ -97,7 +101,7 @@ function tempoOpenerMatches(body: string): RegExpExecArray[] {
   let line: RegExpExecArray | null;
   while ((line = lines.exec(body)) !== null && line[0].length > 0) {
     const content = line[0].replace(/\r?\n$/, "");
-    const fence = /^(?<marks>`{3,}|~{3,})(?<info>.*)$/.exec(content);
+    const fence = /^(?<indent> {0,3})(?<marks>`{3,}|~{3,})(?<info>.*)$/.exec(content);
     if (!fence?.groups) continue;
     const marks = fence.groups.marks;
     const marker = marks[0] as "`" | "~";
@@ -108,7 +112,7 @@ function tempoOpenerMatches(body: string): RegExpExecArray[] {
       if (marker === ordinaryFence.marker && marks.length >= ordinaryFence.length && /^\s*$/.test(info)) {
         ordinaryFence = undefined;
       }
-    } else if (marks === "```" && /^json tempo[\t ]*$/.test(info)) {
+    } else if (fence.groups.indent === "" && marks === "```" && /^json tempo[\t ]*$/.test(info)) {
       matches.push(line);
       tempoFence = true;
     } else {
@@ -210,15 +214,18 @@ export function parseTempoBlocks(body: string): BlockSegment[] {
       continue;
     }
 
+    const sourceId = syntacticallyValidBlockId(value);
+    const duplicateId = sourceId !== undefined && seenIds.has(sourceId);
+    if (sourceId !== undefined) seenIds.add(sourceId);
+
     const result = tempoBlockSchema.safeParse(value);
-    if (!result.success) {
-      segments.push(broken(source, start, end, position, classifyError(value), value));
-    } else if (seenIds.has(result.data.id)) {
+    if (duplicateId) {
       segments.push(broken(source, start, end, position, "duplicate_id", value));
+    } else if (!result.success) {
+      segments.push(broken(source, start, end, position, classifyError(value), value));
     } else if (result.data.type === "page-meta" && seenPageMeta) {
       segments.push(broken(source, start, end, position, "duplicate_page_meta", value));
     } else {
-      seenIds.add(result.data.id);
       if (result.data.type === "page-meta") seenPageMeta = true;
       segments.push({ kind: "valid", source, start, end, position, block: result.data });
     }
