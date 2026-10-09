@@ -2,6 +2,7 @@ import { BrandMark, Wordmark } from "@tempo/ui/brand";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/marketing/ThemeToggle";
+import { getLandingCopy } from "@/lib/landing-copy";
 
 /**
  * Public marketing page.
@@ -13,11 +14,9 @@ import { ThemeToggle } from "@/components/marketing/ThemeToggle";
  * Account buttons go to /sign-in and /sign-up. No payment form.
  */
 
-export const metadata: Metadata = {
-  title: "Tempo Flow — A gentle planner for messy brains",
-  description:
-    "Tempo Flow is a calm, AI-gentle planner for ADHD brains, autistic brains, anxious brains, and anyone who's tried seventeen productivity apps and bounced off all of them.",
-};
+const copy = getLandingCopy("en");
+
+export const metadata: Metadata = copy.metadata;
 
 const wrap = "mx-auto w-full max-w-[1240px] px-6 md:px-8";
 
@@ -36,59 +35,38 @@ const sectionTitle =
   "mt-3 max-w-[18ch] font-serif text-[clamp(2rem,4.4vw,3.625rem)] font-normal leading-[1.08] tracking-tight";
 const sectionLede = "mt-5 max-w-[62ch] font-serif text-h3 leading-relaxed text-muted-foreground";
 
-const PROOF = [
-  ["42", "handcrafted screens"],
-  ["1", "person, one year"],
-  ["Free", "during beta"],
-  ["0", "guilt trips, ever"],
-] as const;
-
-const WEEK_INCLUDES = [
-  "All 42 screens, unlocked",
-  "AI coach · warmth dial · voice",
-  "Web + iOS + Android",
-  "No auto-enrollment",
-] as const;
-
-const PRO_INCLUDES = [
-  "Everything in the open beta",
-  "Unlimited journal + templates",
-  "Cloud sync across devices",
-  "Email the founder any time",
-] as const;
-
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <nav className={`${wrap} flex flex-wrap items-center gap-4 py-6 md:gap-8`}>
-        <Link href="/" className="flex items-center gap-3" aria-label="Tempo Flow home">
+        <Link href="/" className="flex items-center gap-3" aria-label={copy.nav.homeLabel}>
           <BrandMark size={32} />
           <Wordmark size={22} />
         </Link>
         <div className="ml-auto hidden items-center gap-6 text-small text-muted-foreground md:flex">
           <a href="#features" className="hover:text-foreground">
-            Features
+            {copy.nav.features}
           </a>
           <a href="#coach" className="hover:text-foreground">
-            Coach
+            {copy.nav.coach}
           </a>
           <a href="#pricing" className="hover:text-foreground">
-            Pricing
+            {copy.nav.pricing}
           </a>
           <a href="#letter" className="hover:text-foreground">
-            Manifesto
+            {copy.nav.manifesto}
           </a>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link href="/sign-in" className={ctaGhost}>
-            Sign in
+            {copy.nav.signIn}
           </Link>
           <Link href="/sign-up" className={ctaGhost}>
-            Sign up
+            {copy.nav.signUp}
           </Link>
           <Link href="/sign-up" className={`${ctaPrimary} px-4 py-2`}>
-            Join the free beta
+            {copy.nav.joinBeta}
           </Link>
         </div>
       </nav>
@@ -98,28 +76,27 @@ export default function LandingPage() {
           <div className={`${wrap} relative z-[2]`}>
             <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-small text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-tempo-orange" aria-hidden />
-              Closed beta open now
+              {copy.hero.badge}
             </p>
             <h1 className="max-w-[12ch] font-serif text-[clamp(2.75rem,6.8vw,5.75rem)] font-normal leading-[1.02] tracking-tight">
-              A planner that won&apos;t <em className="italic text-tempo-orange">shame</em>
+              {copy.hero.titleBefore}
+              <em className="italic text-tempo-orange">{copy.hero.titleEmphasis}</em>
               <br />
-              your nervous system.
+              {copy.hero.titleAfter}
             </h1>
             <p className="mt-6 max-w-[54ch] font-serif text-[clamp(1.125rem,1.8vw,1.5rem)] leading-relaxed text-muted-foreground">
-              Tempo Flow is a calm, AI-gentle planner for ADHD brains, autistic brains, anxious
-              brains, and anyone who&apos;s tried seventeen productivity apps and bounced off all of
-              them. Dump your thoughts. We&apos;ll help you find the next doable thing.
+              {copy.hero.lede}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/sign-up" className={ctaGradient}>
-                Join the free beta
+                {copy.nav.joinBeta}
               </Link>
               <Link href="/sign-up" className={ctaGhost}>
-                Sign up
+                {copy.nav.signUp}
               </Link>
             </div>
             <dl className="mt-10 flex flex-wrap gap-10">
-              {PROOF.map(([value, label]) => (
+              {copy.hero.proof.map(([value, label]) => (
                 <div key={label}>
                   <dt className="font-serif text-[28px] font-medium leading-none">{value}</dt>
                   <dd className="mt-1 text-small text-muted-foreground">{label}</dd>
@@ -134,28 +111,26 @@ export default function LandingPage() {
           >
             <article className="absolute left-5 top-10 w-[280px] -rotate-3 rounded-xl border border-border bg-card p-4 shadow-lift">
               <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-tempo-orange">
-                Brain Dump · 09:41
+                {copy.hero.brainDumpLabel}
               </p>
               <p className="font-serif text-[15px] leading-relaxed">
-                Finish landing copy. Book dentist. Ask Sam about Convex. Pick up groceries. Am I
-                shipping fast enough?
+                {copy.hero.brainDump}
               </p>
             </article>
             <article className="absolute left-[180px] top-[180px] w-[300px] rotate-2 rounded-xl tempo-gradient p-4 text-cream shadow-lift">
               <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-cream/85">
-                Coach
+                {copy.hero.coachLabel}
               </p>
               <p className="mb-1.5 font-serif text-h3 font-medium text-cream">
-                Three things look doable this afternoon.
+                {copy.hero.coachTitle}
               </p>
               <p className="text-small leading-relaxed text-cream/85">
-                I pulled them from your dump. The worry I left on the side — we&apos;ll look at it
-                tomorrow.
+                {copy.hero.coachBody}
               </p>
             </article>
             <article className="absolute left-[60px] top-[380px] w-[260px] -rotate-2 rounded-xl border border-border bg-card p-4 shadow-lift">
               <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-tempo-orange">
-                Today · 5-day streak
+                {copy.hero.streakLabel}
               </p>
               <div className="my-2 flex gap-1.5">
                 {["a", "b", "c", "d", "e"].map((day) => (
@@ -165,52 +140,47 @@ export default function LandingPage() {
                   <span key={day} className="h-7 w-7 rounded-md bg-surface-sunken" />
                 ))}
               </div>
-              <p className="text-small">Morning pages — five days running. Nice.</p>
+              <p className="text-small">{copy.hero.streakBody}</p>
             </article>
           </div>
         </header>
 
         <section id="features" className="py-10 md:py-16">
           <div className={wrap}>
-            <p className={eyebrow}>What&apos;s inside</p>
+            <p className={eyebrow}>{copy.features.eyebrow}</p>
             <h2 className={sectionTitle}>
-              Tasks, notes, and calendar — one markdown page per day.
+              {copy.features.title}
             </h2>
             <p className={sectionLede}>
-              Every feature below started as a frustration with another app. Dump, sort, plan, do,
-              reflect — in a single plaintext file you actually own. Linked, searchable, yours
-              forever.
+              {copy.features.lede}
             </p>
 
             <div className="mt-8 grid items-center gap-8 rounded-xl bg-mkt-dark-bg p-8 text-mkt-dark-fg md:grid-cols-2">
               <div>
-                <p className={eyebrow}>★ Daily Note</p>
+                <p className={eyebrow}>{copy.features.dailyNote.eyebrow}</p>
                 <h3 className="my-3 font-serif text-[clamp(1.75rem,3vw,2.25rem)] font-medium leading-tight tracking-tight text-mkt-dark-fg">
-                  Markdown-native. Bi-directionally linked. Gently animated.
+                  {copy.features.dailyNote.title}
                 </h3>
                 <p className="text-body leading-relaxed text-mkt-dark-fg-muted">
-                  Inspired by the clarity of tools like NotePlan — but warmer, quieter, and tuned
-                  for brains that need a little help staying on the page. A focus ring that
-                  breathes. Task completes that gently delight. Time blocks that pulse where you are
-                  right now.
+                  {copy.features.dailyNote.body}
                 </p>
                 <p className="mt-5 flex flex-wrap gap-5 font-mono text-[11px] uppercase tracking-[0.08em] text-mkt-dark-fg-subtle">
-                  <span>[[ bi-di links ]]</span>
-                  <span>⌘K command bar</span>
-                  <span>#tags · @people</span>
+                  <span>{copy.features.dailyNote.links}</span>
+                  <span>{copy.features.dailyNote.commandBar}</span>
+                  <span>{copy.features.dailyNote.tags}</span>
                 </p>
               </div>
               <pre className="overflow-x-auto rounded-lg bg-card p-5 font-mono text-caption leading-[1.9] text-foreground shadow-lift">
-                <span className="block text-muted-foreground"># ☀️ Thursday</span>
-                <span className="block text-tempo-orange">## Intentions</span>
-                <span className="block">Ship launch post by noon. Protect the afternoon.</span>
-                <span className="mt-2 block text-tempo-orange">## Tasks</span>
-                <span className="block">* [x] Morning pages — [[Journal]]</span>
-                <span className="block">* [ ] Draft launch post @09:30 #writing</span>
-                <span className="block">* [ ] Ten-minute walk @12:30</span>
-                <span className="mt-2 block text-tempo-orange">## Notes</span>
+                <span className="block text-muted-foreground">{copy.features.dailyNote.sample[0]}</span>
+                <span className="block text-tempo-orange">{copy.features.dailyNote.sample[1]}</span>
+                <span className="block">{copy.features.dailyNote.sample[2]}</span>
+                <span className="mt-2 block text-tempo-orange">{copy.features.dailyNote.sample[3]}</span>
+                <span className="block">{copy.features.dailyNote.sample[4]}</span>
+                <span className="block">{copy.features.dailyNote.sample[5]}</span>
+                <span className="block">{copy.features.dailyNote.sample[6]}</span>
+                <span className="mt-2 block text-tempo-orange">{copy.features.dailyNote.sample[7]}</span>
                 <span className="block text-muted-foreground">
-                  Sam replied on [[Convex migration]]...
+                  {copy.features.dailyNote.sample[8]}
                 </span>
               </pre>
             </div>
@@ -218,91 +188,85 @@ export default function LandingPage() {
             <div className="mt-10 grid grid-cols-12 gap-6">
               <article className="relative col-span-12 min-h-[260px] overflow-hidden rounded-xl border border-border bg-[linear-gradient(145deg,var(--color-cream-raised),var(--color-cream-deep))] p-6 lg:col-span-7 lg:min-h-[420px]">
                 <p className="font-mono text-caption font-semibold uppercase tracking-[0.16em] text-amber">
-                  01 — Brain Dump
+                  {copy.features.brainDump.eyebrow}
                 </p>
                 <h3 className="my-2 font-serif text-[26px] font-medium tracking-tight">
-                  Empty your head onto the page. We&apos;ll do the sorting.
+                  {copy.features.brainDump.title}
                 </h3>
                 <p className="max-w-[36ch] text-small leading-relaxed text-muted-foreground">
-                  Write everything — tasks, worries, ideas, grocery items — in one messy stream. Our
-                  AI untangles it into tasks, notes, journal fragments, and quiet &quot;let&apos;s
-                  sit with this&quot; items. No format to learn, no tags to choose.
+                  {copy.features.brainDump.body}
                 </p>
                 <div className="mt-6 rounded-lg bg-card p-4 shadow-lift lg:absolute lg:bottom-[-20px] lg:right-[-20px] lg:w-[60%]">
                   <p className="mb-2 font-mono text-[10px] tracking-[0.08em] text-muted-foreground">
-                    SORTED · 6 ITEMS
+                    {copy.features.brainDump.sortedLabel}
                   </p>
                   <ul className="flex flex-col gap-1.5 text-small">
                     <li className="flex justify-between gap-3 rounded-md bg-surface-sunken px-2.5 py-2">
-                      <span>✓ Finish landing copy</span>
-                      <span className="font-mono text-[10px] text-tempo-orange">TASK</span>
+                      <span>{copy.features.brainDump.items[0][0]}</span>
+                      <span className="font-mono text-[10px] text-tempo-orange">{copy.features.brainDump.items[0][1]}</span>
                     </li>
                     <li className="flex justify-between gap-3 rounded-md bg-surface-sunken px-2.5 py-2">
-                      <span>✓ Book dentist</span>
-                      <span className="font-mono text-[10px] text-tempo-orange">TASK</span>
+                      <span>{copy.features.brainDump.items[1][0]}</span>
+                      <span className="font-mono text-[10px] text-tempo-orange">
+                        {copy.features.brainDump.items[1][1]}
+                      </span>
                     </li>
                     <li className="flex justify-between gap-3 rounded-md bg-surface-sunken px-2.5 py-2">
-                      <span>◉ Am I shipping fast enough?</span>
-                      <span className="font-mono text-[10px] text-amber">WORRY</span>
+                      <span>{copy.features.brainDump.items[2][0]}</span>
+                      <span className="font-mono text-[10px] text-amber">{copy.features.brainDump.items[2][1]}</span>
                     </li>
                   </ul>
                 </div>
               </article>
 
               <article className="col-span-12 min-h-[260px] rounded-xl border border-border bg-card p-6 lg:col-span-5">
-                <p className={eyebrow}>02 — Coach</p>
+                <p className={eyebrow}>{copy.features.coach.eyebrow}</p>
                 <h3 className="my-2 font-serif text-[26px] font-medium tracking-tight">
-                  A voice that checks in, not checks up.
+                  {copy.features.coach.title}
                 </h3>
                 <p className="text-small leading-relaxed text-muted-foreground">
-                  Tap a warmth dial from 0 (businesslike) to 10 (your kindest friend). The coach
-                  reads your dump, suggests a plan, and stays quiet when you don&apos;t need it.
+                  {copy.features.coach.body}
                 </p>
                 <p className="mt-5 rounded-[10px] bg-surface-sunken p-3 font-serif text-small italic leading-relaxed">
-                  &quot;Three doable things. The rest can wait.&quot;
+                  {copy.features.coach.quote}
                 </p>
               </article>
 
               <article className="col-span-12 min-h-[260px] rounded-xl bg-mkt-dark-bg p-6 text-mkt-dark-fg">
-                <p className={eyebrow}>03 — First Plan</p>
+                <p className={eyebrow}>{copy.features.firstPlan.eyebrow}</p>
                 <h3 className="my-2 max-w-[24ch] font-serif text-[26px] font-medium tracking-tight text-mkt-dark-fg">
-                  A three-block day, already scheduled. You can still say no.
+                  {copy.features.firstPlan.title}
                 </h3>
                 <p className="max-w-[54ch] text-small leading-relaxed text-mkt-dark-fg-muted">
-                  On launch mornings, the plan is waiting. Drag to rearrange. Tap to skip. The
-                  calendar respects your energy — high-focus before noon, soft blocks after three,
-                  zero guilt if you close the laptop.
+                  {copy.features.firstPlan.body}
                 </p>
               </article>
 
               <article className="col-span-12 min-h-[220px] rounded-xl border border-border bg-card p-6 md:col-span-4">
-                <p className={eyebrow}>04 — Journal</p>
+                <p className={eyebrow}>{copy.features.journal.eyebrow}</p>
                 <h3 className="my-2 font-serif text-[26px] font-medium tracking-tight">
-                  Prompts that fit your day.
+                  {copy.features.journal.title}
                 </h3>
                 <p className="text-small leading-relaxed text-muted-foreground">
-                  Encrypted at rest, prompts that shift with your mood, and never, ever a red streak
-                  warning.
+                  {copy.features.journal.body}
                 </p>
               </article>
               <article className="col-span-12 min-h-[220px] rounded-xl border border-border bg-card p-6 md:col-span-4">
-                <p className={eyebrow}>05 — Routines</p>
+                <p className={eyebrow}>{copy.features.routines.eyebrow}</p>
                 <h3 className="my-2 font-serif text-[26px] font-medium tracking-tight">
-                  Guided, not gamified.
+                  {copy.features.routines.title}
                 </h3>
                 <p className="text-small leading-relaxed text-muted-foreground">
-                  Run a morning routine like a meditation — one step at a time, with gentle audio
-                  cues. Skip anything.
+                  {copy.features.routines.body}
                 </p>
               </article>
               <article className="col-span-12 min-h-[220px] rounded-xl border border-border bg-card p-6 md:col-span-4">
-                <p className={eyebrow}>06 — Weekly</p>
+                <p className={eyebrow}>{copy.features.weekly.eyebrow}</p>
                 <h3 className="my-2 font-serif text-[26px] font-medium tracking-tight">
-                  Sunday, softly.
+                  {copy.features.weekly.title}
                 </h3>
                 <p className="text-small leading-relaxed text-muted-foreground">
-                  A weekly recap written in the coach&apos;s voice — proud of what got done, gentle
-                  about what didn&apos;t.
+                  {copy.features.weekly.body}
                 </p>
               </article>
             </div>
@@ -311,64 +275,51 @@ export default function LandingPage() {
 
         <section id="coach" className="bg-mkt-dark-bg py-16 text-mkt-dark-fg md:py-20">
           <div className={wrap}>
-            <p className={eyebrow}>The coach</p>
+            <p className={eyebrow}>{copy.coach.eyebrow}</p>
             <h2 className={`${sectionTitle} text-mkt-dark-fg`}>
-              It sounds like a person who&apos;s met you before.
+              {copy.coach.title}
             </h2>
             <p className="mt-5 max-w-[62ch] font-serif text-h3 leading-relaxed text-mkt-dark-fg-muted">
-              Warmth dial set to 6 by default. Moves lower when you&apos;re heads-down, higher when
-              the dump feels anxious. Below: actual lines from actual days.
+              {copy.coach.lede}
             </p>
             <div className="mt-8 grid gap-5 md:grid-cols-3">
-              <blockquote className="rounded-lg border border-mkt-dark-border bg-mkt-dark-bubble p-5 font-serif text-h3 leading-relaxed text-mkt-dark-fg">
-                &quot;You finished two of three yesterday. That counts. Want to start with the
-                unfinished one, or a lighter warm-up?&quot;
-                <span className="mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-mkt-dark-fg-subtle">
-                  Monday · 09:12 · warmth 6
-                </span>
-              </blockquote>
-              <blockquote className="rounded-lg border border-mkt-dark-border bg-mkt-dark-bubble p-5 font-serif text-h3 leading-relaxed text-mkt-dark-fg">
-                &quot;The dump looks heavy today. Three items feel like worries, not tasks. Want to
-                park them, or look at one?&quot;
-                <span className="mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-mkt-dark-fg-subtle">
-                  Wednesday · 08:40 · warmth 7
-                </span>
-              </blockquote>
-              <blockquote className="rounded-lg border border-mkt-dark-border bg-mkt-dark-bubble p-5 font-serif text-h3 leading-relaxed text-mkt-dark-fg">
-                &quot;You protected the afternoon yesterday. That was a hard call. Noting it.&quot;
-                <span className="mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-mkt-dark-fg-subtle">
-                  Friday · evening recap · warmth 5
-                </span>
-              </blockquote>
+              {copy.coach.quotes.map((item) => (
+                <blockquote
+                  key={item.caption}
+                  className="rounded-lg border border-mkt-dark-border bg-mkt-dark-bubble p-5 font-serif text-h3 leading-relaxed text-mkt-dark-fg"
+                >
+                  {item.quote}
+                  <span className="mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-mkt-dark-fg-subtle">
+                    {item.caption}
+                  </span>
+                </blockquote>
+              ))}
             </div>
           </div>
         </section>
 
         <section id="pricing" className="py-16 md:py-20">
           <div className={wrap}>
-            <p className={eyebrow}>Pricing</p>
-            <h2 className={sectionTitle}>Free during beta. Open sign-up.</h2>
-            <p className={sectionLede}>
-              Every new account gets the full app while beta is open. No card, and no trial clock.
-            </p>
+            <p className={eyebrow}>{copy.pricing.eyebrow}</p>
+            <h2 className={sectionTitle}>{copy.pricing.title}</h2>
+            <p className={sectionLede}>{copy.pricing.lede}</p>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               <article className="rounded-xl border border-border bg-card p-8">
                 <p className="mb-4 font-mono text-caption uppercase tracking-[0.12em] opacity-70">
-                  Open beta
+                  {copy.pricing.beta.label}
                 </p>
                 <p className="font-serif text-[64px] font-medium leading-none">
-                  Free
+                  {copy.pricing.beta.price}
                   <span className="font-sans text-h3 font-normal text-muted-foreground">
                     {" "}
-                    · sign up
+                    {copy.pricing.beta.suffix}
                   </span>
                 </p>
                 <p className="my-6 text-small leading-relaxed">
-                  The whole app, for as long as beta stays open. Sign up when you want a place to
-                  put today.
+                  {copy.pricing.beta.body}
                 </p>
                 <ul className="mb-6 space-y-2 text-small leading-8">
-                  {WEEK_INCLUDES.map((item) => (
+                  {copy.pricing.beta.includes.map((item) => (
                     <li key={item} className="flex gap-2">
                       <span className="text-tempo-orange" aria-hidden>
                         →
@@ -378,29 +329,28 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link href="/sign-up" className={ctaPrimary}>
-                  Join the free beta →
+                  {copy.pricing.beta.cta}
                 </Link>
               </article>
               <article className="relative rounded-xl bg-gradient-to-br from-mkt-dark-bg to-mkt-dark-bg-2 p-8 text-mkt-dark-fg">
                 <p className="absolute right-5 top-5 rounded-full bg-tempo-orange px-2.5 py-1 text-[11px] font-semibold text-cream">
-                  Included now
+                  {copy.pricing.included.badge}
                 </p>
                 <p className="mb-4 font-mono text-caption uppercase tracking-[0.12em] text-mkt-dark-fg-subtle">
-                  What you get
+                  {copy.pricing.included.label}
                 </p>
                 <p className="font-serif text-[64px] font-medium leading-none">
-                  Free
+                  {copy.pricing.included.price}
                   <span className="font-sans text-h3 font-normal text-mkt-dark-fg-muted">
                     {" "}
-                    · during beta
+                    {copy.pricing.included.suffix}
                   </span>
                 </p>
                 <p className="my-6 text-small leading-relaxed">
-                  Journal, templates, and sync are part of the open beta. A paid price is not on
-                  this page, because signup does not charge one.
+                  {copy.pricing.included.body}
                 </p>
                 <ul className="mb-6 space-y-2 text-small leading-8">
-                  {PRO_INCLUDES.map((item) => (
+                  {copy.pricing.included.includes.map((item) => (
                     <li key={item} className="flex gap-2">
                       <span className="text-tempo-orange" aria-hidden>
                         →
@@ -410,7 +360,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link href="/sign-up" className={ctaGradient}>
-                  Join the free beta →
+                  {copy.pricing.included.cta}
                 </Link>
               </article>
             </div>
@@ -419,64 +369,27 @@ export default function LandingPage() {
 
         <section className="py-16 md:py-20">
           <div className={wrap}>
-            <p className={eyebrow}>Beta testers</p>
-            <h2 className={sectionTitle}>
-              Thirty people used it for four weeks. Here&apos;s what they said.
-            </h2>
+            <p className={eyebrow}>{copy.testimonials.eyebrow}</p>
+            <h2 className={sectionTitle}>{copy.testimonials.title}</h2>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
-              <figure className="rounded-lg border border-border bg-card p-6">
-                <blockquote className="font-serif text-h3 leading-relaxed">
-                  &quot;It&apos;s the first planner that didn&apos;t make me feel like a broken
-                  version of a neurotypical person. I used it for 23 out of 28 days. That&apos;s a
-                  record.&quot;
-                </blockquote>
-                <figcaption className="mt-4 flex items-center gap-2.5 text-small">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full tempo-gradient font-serif text-cream">
-                    M
-                  </span>
-                  <span className="font-medium">
-                    Mira K.
-                    <span className="block text-caption font-normal text-muted-foreground">
-                      Designer · ADHD
+              {copy.testimonials.items.map((item) => (
+                <figure key={item.name} className="rounded-lg border border-border bg-card p-6">
+                  <blockquote className="font-serif text-h3 leading-relaxed">
+                    {item.quote}
+                  </blockquote>
+                  <figcaption className="mt-4 flex items-center gap-2.5 text-small">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full tempo-gradient font-serif text-cream">
+                      {item.initial}
                     </span>
-                  </span>
-                </figcaption>
-              </figure>
-              <figure className="rounded-lg border border-border bg-card p-6">
-                <blockquote className="font-serif text-h3 leading-relaxed">
-                  &quot;I pay for Notion and Sunsama and Things. I&apos;d cancel all three for this.
-                  The coach understood when I was having a hard week without me having to spell it
-                  out.&quot;
-                </blockquote>
-                <figcaption className="mt-4 flex items-center gap-2.5 text-small">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full tempo-gradient font-serif text-cream">
-                    J
-                  </span>
-                  <span className="font-medium">
-                    Jonah R.
-                    <span className="block text-caption font-normal text-muted-foreground">
-                      Engineer · autistic
+                    <span className="font-medium">
+                      {item.name}
+                      <span className="block text-caption font-normal text-muted-foreground">
+                        {item.role}
+                      </span>
                     </span>
-                  </span>
-                </figcaption>
-              </figure>
-              <figure className="rounded-lg border border-border bg-card p-6">
-                <blockquote className="font-serif text-h3 leading-relaxed">
-                  &quot;The brain dump is genuinely unreasonable. I&apos;ve written 3000 words into
-                  it in two weeks and none of them are wasted.&quot;
-                </blockquote>
-                <figcaption className="mt-4 flex items-center gap-2.5 text-small">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full tempo-gradient font-serif text-cream">
-                    S
-                  </span>
-                  <span className="font-medium">
-                    Sana P.
-                    <span className="block text-caption font-normal text-muted-foreground">
-                      Writer
-                    </span>
-                  </span>
-                </figcaption>
-              </figure>
+                  </figcaption>
+                </figure>
+              ))}
             </div>
           </div>
         </section>
@@ -484,27 +397,15 @@ export default function LandingPage() {
         <section id="letter" className="bg-surface-sunken py-16 md:py-20">
           <div className={wrap}>
             <article className="mx-auto max-w-[780px] rounded-2xl border border-border bg-card p-8 md:p-12">
-              <p className={eyebrow}>A letter from Amit</p>
+              <p className={eyebrow}>{copy.letter.eyebrow}</p>
               <h2 className="mt-3 font-serif text-[36px] font-normal leading-tight tracking-tight">
-                Why I built this alone.
+                {copy.letter.title}
               </h2>
               <div className="mt-4 space-y-4 font-serif text-[19px] leading-[1.7]">
-                <p>
-                  I&apos;ve had sixteen planners. I&apos;ve paid for eight. I was diagnosed with
-                  ADHD at thirty-four, and the thing that surprised me most was not the diagnosis —
-                  it was how much software in my life had quietly been shaming me for not being a
-                  person I wasn&apos;t.
-                </p>
-                <p>
-                  Tempo Flow is one person&apos;s answer to that. It&apos;s small. It doesn&apos;t
-                  try to be your operating system. It tries to be the friend who texts &quot;what
-                  are you doing today?&quot; without judgment.
-                </p>
-                <p>
-                  If it works for you, that is enough. Beta is free while it is open. If it does not
-                  fit, you can leave it there.
-                </p>
-                <p className="pt-2 font-serif text-[28px] italic">— Amit</p>
+                {copy.letter.paragraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+                <p className="pt-2 font-serif text-[28px] italic">{copy.letter.signature}</p>
               </div>
             </article>
           </div>
@@ -513,13 +414,13 @@ export default function LandingPage() {
         <section className="tempo-gradient py-16 text-center text-cream md:py-20">
           <div className={wrap}>
             <h2 className="mx-auto max-w-[20ch] font-serif text-[clamp(2rem,4.4vw,3.625rem)] font-normal leading-[1.08] tracking-tight text-cream">
-              Free during beta. One gentle week at a time.
+              {copy.finalCta.title}
             </h2>
             <p className="mx-auto mt-4 max-w-[62ch] font-serif text-h3 leading-relaxed text-cream/90">
-              No credit card. No newsletter enrollment. No growth loops. Just the app.
+              {copy.finalCta.body}
             </p>
             <Link href="/sign-up" className={`${ctaOnDark} mt-8`}>
-              Join the free beta
+              {copy.finalCta.cta}
             </Link>
           </div>
         </section>
@@ -534,71 +435,71 @@ export default function LandingPage() {
                 <Wordmark size={22} color="var(--color-mkt-dark-fg)" />
               </div>
               <p className="max-w-[30ch] font-serif text-h3 leading-relaxed text-mkt-dark-fg-muted">
-                A gentle planner for messy brains. Made in Tel Aviv by one person.
+                {copy.footer.tagline}
               </p>
             </div>
             <div>
               <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-mkt-dark-fg-subtle">
-                Product
+                {copy.footer.product}
               </h2>
               <a
                 href="#features"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                Features
+                {copy.footer.features}
               </a>
               <a
                 href="#coach"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                The Coach
+                {copy.footer.coach}
               </a>
               <a
                 href="#pricing"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                Pricing
+                {copy.footer.pricing}
               </a>
               <Link
                 href="/sign-up"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                Sign up
+                {copy.footer.signUp}
               </Link>
             </div>
             <div>
               <h2 className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-mkt-dark-fg-subtle">
-                Legal
+                {copy.footer.legal}
               </h2>
               <Link
                 href="/privacy"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                Privacy
+                {copy.footer.privacy}
               </Link>
               <Link
                 href="/terms"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                Terms
+                {copy.footer.terms}
               </Link>
               <Link
                 href="/contact"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                Contact
+                {copy.footer.contact}
               </Link>
               <a
                 href="mailto:amit@tempoflow.app"
                 className="block text-small leading-8 text-mkt-dark-fg-muted hover:text-mkt-dark-fg"
               >
-                amit@tempoflow.app
+                {copy.footer.email}
               </a>
             </div>
           </div>
           <div className="mt-10 flex flex-wrap justify-between gap-3 border-t border-mkt-dark-border pt-6 font-mono text-caption text-mkt-dark-fg-subtle">
-            <span>© 2026 Tempo Flow · BUSL-1.1</span>
-            <span>v1.0.0 · Closed beta</span>
+            <span>{copy.footer.copyright}</span>
+            <span>{copy.footer.version}</span>
           </div>
         </div>
       </footer>
