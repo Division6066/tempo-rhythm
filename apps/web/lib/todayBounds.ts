@@ -1,7 +1,10 @@
 /** Start/end of the local calendar day as Unix ms; `endMs` is exclusive. */
 export function getLocalDayBoundsMs(d = new Date()): { startMs: number; endMs: number } {
-  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const end = start + 24 * 60 * 60 * 1000;
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const date = d.getDate();
+  const start = new Date(year, month, date).getTime();
+  const end = new Date(year, month, date + 1).getTime();
   return { startMs: start, endMs: end };
 }
 
