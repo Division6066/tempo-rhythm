@@ -45,3 +45,62 @@ export function findingsNote(findings, max = 12000) {
   const s = ["BUGBOT REVIEW FINDINGS (fix every one; stay inside the ticket scope):", ...findings.map((f, i) => `${i + 1}. ${f.path}${f.line ? ":" + f.line : ""}\n${(f.body || "").slice(0, 1500)}`)].join("\n\n");
   return s.slice(0, max);
 }
+
+// ---------- aiReviewState (unused primitive; not wired into any gate) ----------
+// aiReviewState() is pure, like bugbotState() above, but for an independent AI reviewer (Codex/Claude)
+// instead of Bugbot. It judges a pre-collected result; it never calls an API and it cannot authenticate
+// arbitrary JSON. A future I/O adapter — not written here — owns: checking the reviewer actor is who it
+// claims (real provider webhook/App identity, not a spoofable comment body), paginating threads/comments
+// to collect `otherFindings` completely, binding the result to the live PR/request (not a stale or
+// forged one), and re-reading refs immediately before judging so headSha/baseSha are fresh, not cached.
+// This function only trusts what the caller already verified and put in its input shape.
+export const SUPPORTED_AI_PROVIDERS = ["codex", "claude"];
+// "verified-provider" = the adapter confirmed the result came from the provider's own authenticated
+// channel (App/bot identity, signed webhook, native API read-back). "native-result" = the adapter read
+// the provider's own structured result object (not a human-style chat message) for that exact request.
+// Everything else (a 👍/👀 reaction, a generic "Completed"/"Done" summary comment, a green Actions job,
+// or the PR author asserting their own code is clean) is not evidence this function will accept.
+const VERIFIED_AI_EVIDENCE_KINDS = ["verified-provider", "native-result"];
+const FULL_SHA_RE = /^[0-9a-f]{40}$/i;
+const TUPLE_KEYS = ["repo", "pr", "headSha", "baseSha", "requestId"];
+
+function tupleMismatchKey(expected, observed) {
+  if (!expected || !observed) return TUPLE_KEYS[0];
+  return TUPLE_KEYS.find((k) => expected[k] !== observed[k]) || null;
+}
+
+// A finding blocks clean if it is unresolved (an outdated thread that was never resolved still counts —
+// unlike bugbotState, which lets the gate's own Bugbot ignore outdated threads), or carries severity
+// "P2" or no recognized severity at all (unknown severity is treated as the worst case, not the best).
+function blocksClean(f) {
+  return !f.resolved || f.severity === "P2" || !["P0", "P1", "P3"].includes(f.severity);
+}
+
+export function aiReviewState({ expected, observed, result, otherFindings = [], competingReview = false } = {}) {
+  const idKey = tupleMismatchKey(expected, observed);
+  if (idKey) return { state: "pending", findings: [], detail: `${idKey} mismatch between the expected and freshly observed request identity` };
+  if (!FULL_SHA_RE.test(expected.headSha) || !FULL_SHA_RE.test(expected.baseSha)) {
+    return { state: "pending", findings: [], detail: "headSha/baseSha must be the full 40-character SHA, not an abbreviated one" };
+  }
+
+  const blocking = (otherFindings || []).filter(blocksClean);
+  if (blocking.length) return { state: "findings", findings: blocking, detail: `${blocking.length} unresolved/P2/unknown-severity finding(s) from an already-used reviewer block clean` };
+
+  if (competingReview) return { state: "pending", findings: [], detail: "another review is active on this request; can't call it clean yet" };
+
+  if (!result) return { state: "pending", findings: [], detail: "no independent AI review result yet" };
+  if (result.status === "usage_limit") return { state: "blocked", findings: [], detail: `${result.provider || "provider"} usage limit reached` };
+  if (result.status !== "completed") {
+    return { state: "pending", findings: [], detail: `review data is ${result.status || "missing"} (incomplete/error/malformed results are never clean)` };
+  }
+  if (!SUPPORTED_AI_PROVIDERS.includes(result.provider)) return { state: "pending", findings: [], detail: `unsupported provider: ${result.provider || "none"}` };
+  if (!VERIFIED_AI_EVIDENCE_KINDS.includes(result.evidenceKind)) {
+    return { state: "pending", findings: [], detail: `evidence "${result.evidenceKind || "none"}" is not verified-provider/native-result evidence (no bare reactions, generic summaries, Actions success, or author self-attestation)` };
+  }
+  if (tupleMismatchKey(expected, result.tuple)) return { state: "pending", findings: [], detail: "the review result's own tuple does not match the expected/observed request" };
+
+  const own = (result.findings || []).filter(blocksClean);
+  if (own.length) return { state: "findings", findings: own, detail: `${own.length} unresolved finding(s) from ${result.provider}` };
+
+  return { state: "clean", findings: [], detail: `${result.provider} gave a verified clean result on ${expected.headSha.slice(0, 7)}` };
+}
